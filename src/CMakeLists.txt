@@ -1,0 +1,23 @@
+add_compile_definitions(BUILDING_WLIBC)
+
+if(BUILD_SHARED_LIBS)
+	add_compile_definitions(WLIBC_DLL)
+endif()
+
+if(ENABLE_DLFCN)
+	add_subdirectory(dlfcn)
+	list(APPEND modules dlfcn)
+endif()
+
+if(ENABLE_POSIX_IO)
+	add_subdirectory(fcntl)
+	add_subdirectory(dirent)
+	add_subdirectory(stdio)
+	add_subdirectory(unistd)
+	list(APPEND modules fcntl dirent stdio unistd)
+endif()
+
+add_subdirectory(internal)
+
+add_library(wlibc)
+target_link_libraries(wlibc ${modules} wlibc_internal)
