@@ -13,8 +13,10 @@ void map_win32_error_to_wlibc(unsigned long error)
 		errno = ENOMEM;
 		break;
 	case ERROR_ACCESS_DENIED:
+	case ERROR_SHARING_VIOLATION:
 		errno = EACCES;
 		break;
+	case ERROR_FILE_NOT_FOUND:
 	case ERROR_PATH_NOT_FOUND:
 		errno = ENOENT;
 		break;
@@ -24,8 +26,21 @@ void map_win32_error_to_wlibc(unsigned long error)
 	case ERROR_DIRECTORY:
 		errno = ENOTDIR;
 		break;
+	case ERROR_DIR_NOT_EMPTY:
+		errno = ENOTEMPTY;
+		break;
 	case ERROR_ALREADY_EXISTS:
 		errno = EEXIST;
+		break;
+	case ERROR_INVALID_HANDLE:
+		errno = EBADF;
+		break;
+	case ERROR_WRITE_FAULT:
+	case ERROR_READ_FAULT:
+		errno = EIO;
+		break;
+	case ERROR_INVALID_PARAMETER:
+		errno = EINVAL;
 		break;
 	default:
 		break;

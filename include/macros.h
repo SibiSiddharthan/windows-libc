@@ -20,4 +20,6 @@
 	#define _WLIBC_END_DECLS
 #endif
 
+#define WLIBC_INLINE __inline
+
 #endif

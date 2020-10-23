@@ -2,7 +2,7 @@
 #include <windows.h>
 #include <wlibc_errors.h>
 
-void *dlsym(void *handle, const char *symbol)
+void *wlibc_dlsym(void *handle, const char *symbol)
 {
 	void *ptr = GetProcAddress((HMODULE)handle, symbol);
 	if (ptr == NULL)

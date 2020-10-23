@@ -9,7 +9,7 @@
 #define ASSERT_ERRNO(expected) \
 	if(errno != expected) \
 	{ \
-		printf_s("Assertion failed at %s:%d. Expected value of %d but got %d\n",__FILE__,__LINE__,errno,expected);\
+		printf_s("Assertion failed at %s:%d. Expected value of %d but got %d\n",__FILE__,__LINE__,expected,errno);\
 		exit(1); \
 	}
 

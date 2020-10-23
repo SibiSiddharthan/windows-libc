@@ -2,7 +2,7 @@
 #include <windows.h>
 #include <wlibc_errors.h>
 
-char *dlerror()
+char *wlibc_dlerror()
 {
 	if (_last_dlfcn_error == ERROR_SUCCESS)
 	{
@@ -11,7 +11,7 @@ char *dlerror()
 
 	//Call the ANSI version explicitly as we are always returning char*
 	DWORD length = FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-								  NULL, _last_dlfcn_error, MAKELANGID( LANG_NEUTRAL, SUBLANG_DEFAULT ), _dlfcn_error_message, 65535, NULL);
+								  NULL, _last_dlfcn_error, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), _dlfcn_error_message, 65535, NULL);
 
 	_last_dlfcn_error = ERROR_SUCCESS;
 

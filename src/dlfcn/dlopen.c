@@ -4,7 +4,7 @@
 #include <wlibc_errors.h>
 #include <misc.h>
 
-void *dlopen(const char *filename, int flags /*unused*/)
+void *wlibc_dlopen(const char *filename, int flags /*unused*/)
 {
 	if (filename == NULL)
 	{

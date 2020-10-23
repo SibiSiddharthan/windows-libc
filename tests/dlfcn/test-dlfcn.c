@@ -1,5 +1,4 @@
 #include <dlfcn.h>
-#include <stdio.h>
 #include <test-macros.h>
 
 typedef unsigned long DWORD;
@@ -29,7 +28,8 @@ void test_dlclose()
 {
 	ASSERT_EQ(dlclose(NULL), -1);
 	void *handle = dlopen("kernel32.dll", 0);
-	ASSERT_EQ(dlclose(handle), 0);
+	int ret = dlclose(handle);
+	ASSERT_EQ(ret, 0);
 }
 
 void test_dlerror1()

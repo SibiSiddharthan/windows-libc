@@ -16,6 +16,26 @@ wchar_t *mb_to_wc(const char *str)
 	return wstr;
 }
 
+char *mbstrcat(const char *str1, const char *str2)
+{
+	int str1_length = strlen(str1);
+	int str2_length = strlen(str2);
+	char *ret = (char *)malloc(sizeof(char) * (str1_length + str2_length + 1));
+	strcpy(ret, str1);
+	strcat(ret, str2);
+	return ret;
+}
+
+wchar_t *wcstrcat(const wchar_t *wstr1, const wchar_t *wstr2)
+{
+	int wstr1_length = wcslen(wstr1);
+	int wstr2_length = wcslen(wstr2);
+	wchar_t *ret = (wchar_t *)malloc(sizeof(wchar_t) * (wstr1_length + wstr2_length + 1));
+	wcscpy(ret, wstr1);
+	wcscat(ret, wstr2);
+	return ret;
+}
+
 void fs_to_bs(char *path)
 {
 	while (*path != '\0')

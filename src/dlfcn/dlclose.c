@@ -1,7 +1,7 @@
 #include <dlfcn.h>
 #include <windows.h>
 
-int dlclose(void *handle)
+int wlibc_dlclose(void *handle)
 {
 	if (FreeLibrary((HMODULE)handle)) // success -> non zero
 	{
