@@ -5,7 +5,6 @@
 
 void map_win32_error_to_wlibc(unsigned long error)
 {
-	//printf("%lu\n", error);
 	switch (error)
 	{
 	case ERROR_NOT_ENOUGH_MEMORY:
@@ -40,6 +39,7 @@ void map_win32_error_to_wlibc(unsigned long error)
 		errno = EIO;
 		break;
 	case ERROR_INVALID_PARAMETER:
+	case ERROR_INVALID_FUNCTION:
 		errno = EINVAL;
 		break;
 	default:

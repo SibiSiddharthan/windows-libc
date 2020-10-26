@@ -25,7 +25,7 @@ int wmain(int argc, wchar_t **wargv)
 #ifdef WLIBC_DLFCN
 	dlfcn_init();
 #endif
-	
+
 	int exit_status = main(argc, argv);
 
 #ifdef WLIBC_POSIX_IO
@@ -39,7 +39,7 @@ int wmain(int argc, wchar_t **wargv)
 	{
 		for (int i = 0; i < argc; i++)
 		{
-			free (argv[i]);
+			free(argv[i]);
 		}
 		free(argv);
 	}

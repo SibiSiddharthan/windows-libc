@@ -17,7 +17,7 @@ void test_dlsym()
 {
 	void *handle = dlopen("kernel32.dll", 0);
 	DWORD expected = GetMaximumProcessorCount(ALL_PROCESSOR_GROUPS);
-	DWORD(*MyGetMaximumProcessorCount)(WORD);
+	DWORD (*MyGetMaximumProcessorCount)(WORD);
 	MyGetMaximumProcessorCount = (DWORD(*)(WORD))dlsym(handle, "GetMaximumProcessorCount");
 	DWORD actual = MyGetMaximumProcessorCount(ALL_PROCESSOR_GROUPS);
 	dlclose(handle);
@@ -28,8 +28,8 @@ void test_dlclose()
 {
 	ASSERT_EQ(dlclose(NULL), -1);
 	void *handle = dlopen("kernel32.dll", 0);
-	int ret = dlclose(handle);
-	ASSERT_EQ(ret, 0);
+	int status = dlclose(handle);
+	ASSERT_EQ(status, 0);
 }
 
 void test_dlerror1()
@@ -43,7 +43,7 @@ void test_dlerror2()
 {
 	void *handle = dlopen("kernel32.dll", 0);
 	void (*dummy)();
-	dummy = (void(*)())dlsym(handle,"dummy");
+	dummy = (void (*)())dlsym(handle, "dummy");
 	char *actual_err = dlerror();
 	ASSERT_STREQ(actual_err, "The specified procedure could not be found.\r\n")
 	dlclose(handle);

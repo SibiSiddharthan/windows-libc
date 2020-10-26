@@ -9,9 +9,9 @@ char *wlibc_dlerror()
 		return NULL;
 	}
 
-	//Call the ANSI version explicitly as we are always returning char*
-	DWORD length = FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-								  NULL, _last_dlfcn_error, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), _dlfcn_error_message, 65535, NULL);
+	// Call the ANSI version explicitly as we are always returning char*
+	DWORD length = FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, _last_dlfcn_error,
+								  MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), _dlfcn_error_message, 65535, NULL);
 
 	_last_dlfcn_error = ERROR_SUCCESS;
 

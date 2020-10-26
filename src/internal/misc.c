@@ -36,6 +36,30 @@ wchar_t *wcstrcat(const wchar_t *wstr1, const wchar_t *wstr2)
 	return ret;
 }
 
+int is_absolute_path(const char *str)
+{
+	if (str != NULL)
+	{
+		if (str[0] == '\\' || str[0] == '/' || str[1] == ':') //|| str[5] == ':') // "/" ,"\", "C:" , "//?/C:"
+		{
+			return 1;
+		}
+	}
+	return 0;
+}
+
+int is_absolute_pathw(const wchar_t *wstr)
+{
+	if (wstr != NULL)
+	{
+		if (wstr[0] == L'\\' || wstr[0] == L'/' || wstr[1] == L':') //|| wstr[5] == L':')
+		{
+			return 1;
+		}
+	}
+	return 0;
+}
+
 void fs_to_bs(char *path)
 {
 	while (*path != '\0')
