@@ -1,0 +1,40 @@
+/*
+   Copyright (c) 2020 Sibi Siddharthan
+
+   Distributed under MIT license.
+   See file LICENSE for detail or copy at https://opensource.org/licenses/MIT
+*/
+
+#include <unistd.h>
+#include <Windows.h>
+#include <wlibc_errors.h>
+#include <fcntl_internal.h>
+
+int common_sync(int fd)
+{
+	if (!validate_active_ffd(fd))
+	{
+		return -1;
+	}
+	HANDLE file = get_fd_handle(fd);
+	if (!FlushFileBuffers(file))
+	{
+		map_win32_error_to_wlibc(GetLastError());
+		return -1;
+	}
+
+	return 0;
+}
+
+/* Hack. There isn't a way (that I know of) to
+   flush the data to disk without updating it's metadata
+*/
+int wlibc_fdatasync(int fd)
+{
+	return common_sync(fd);
+}
+
+int wlibc_fsync(int fd)
+{
+	return common_sync(fd);
+}
