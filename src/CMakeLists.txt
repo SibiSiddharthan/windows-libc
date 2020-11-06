@@ -22,3 +22,7 @@ add_subdirectory(internal)
 
 add_library(wlibc)
 target_link_libraries(wlibc ${modules} wlibc_internal)
+
+install(TARGETS wlibc LIBRARY DESTINATION lib)
+install(FILES ${CMAKE_SOURCE_DIR}/include/wlibc-macros.h DESTINATION include)
+install(FILES ${CMAKE_SOURCE_DIR}/include/sys/types.h DESTINATION include/sys)

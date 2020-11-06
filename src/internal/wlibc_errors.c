@@ -1,7 +1,13 @@
+/*
+   Copyright (c) 2020 Sibi Siddharthan
+
+   Distributed under MIT license.
+   See file LICENSE for detail or copy at https://opensource.org/licenses/MIT
+*/
+
 #include <wlibc_errors.h>
 #include <errno.h>
 #include <windows.h>
-//#include <stdio.h>
 
 void map_win32_error_to_wlibc(unsigned long error)
 {
@@ -29,6 +35,7 @@ void map_win32_error_to_wlibc(unsigned long error)
 		errno = ENOTEMPTY;
 		break;
 	case ERROR_ALREADY_EXISTS:
+	case ERROR_FILE_EXISTS:
 		errno = EEXIST;
 		break;
 	case ERROR_INVALID_HANDLE:
@@ -40,6 +47,8 @@ void map_win32_error_to_wlibc(unsigned long error)
 		break;
 	case ERROR_INVALID_PARAMETER:
 	case ERROR_INVALID_FUNCTION:
+	case ERROR_INVALID_REPARSE_DATA: // We map this to EINVAL instead of ENOENT (glibc does this)
+	case ERROR_INVALID_NAME:
 		errno = EINVAL;
 		break;
 	default:

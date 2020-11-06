@@ -1,3 +1,10 @@
+/*
+   Copyright (c) 2020 Sibi Siddharthan
+
+   Distributed under MIT license.
+   See file LICENSE for detail or copy at https://opensource.org/licenses/MIT
+*/
+
 #include <misc.h>
 
 char *wc_to_mb(const wchar_t *wstr)
@@ -60,22 +67,20 @@ int is_absolute_pathw(const wchar_t *wstr)
 	return 0;
 }
 
-void fs_to_bs(char *path)
+int has_executable_extenstion(const wchar_t *wstr)
 {
-	while (*path != '\0')
+	wchar_t ext[4];
+	int length = wcslen(wstr);
+	if (length > 3)
 	{
-		if (*path == '/')
-			*path = '\\';
-		++path;
+		wcsncpy(ext, wstr + (length - 4), 4);
+		if (_wcsnicmp(ext, L".exe", 4) == 0 || _wcsnicmp(ext, L".cmd", 4) == 0 || _wcsnicmp(ext, L".bat", 4) == 0 ||
+			_wcsnicmp(ext, L".com", 4) == 0)
+		{
+			return 1;
+		}
 	}
+
+	return 0;
 }
 
-void wfs_to_bs(wchar_t *wpath)
-{
-	while (*wpath != L'\0')
-	{
-		if (*wpath == L'/')
-			*wpath = L'\\';
-		++wpath;
-	}
-}
