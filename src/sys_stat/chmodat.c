@@ -1,0 +1,60 @@
+/*
+   Copyright (c) 2020 Sibi Siddharthan
+
+   Distributed under MIT license.
+   See file LICENSE for detail or copy at https://opensource.org/licenses/MIT
+*/
+
+#include <sys/stat.h>
+#include <misc.h>
+#include <errno.h>
+#include <fcntl_internal.h>
+#include <fcntl.h>
+
+int common_chmod(const wchar_t *wname, mode_t mode);
+
+int common_fchmodat(int dirfd, const wchar_t *wname, mode_t mode, int flags)
+{
+	if (dirfd == AT_FDCWD || is_absolute_pathw(wname))
+	{
+		return common_chmod(wname, mode);
+	}
+
+	if (!validate_dirfd(dirfd))
+	{
+		return -1;
+	}
+
+	const wchar_t *dirpath = get_fd_path(dirfd);
+	wchar_t *newname = wcstrcat(dirpath, wname);
+	int status = common_chmod(newname, mode);
+	free(newname);
+
+	return status;
+}
+
+int wlibc_fchmodat(int dirfd, const char *name, mode_t mode, int flags)
+{
+	if (name == NULL)
+	{
+		errno = ENOENT;
+		return -1;
+	}
+
+	wchar_t *wname = mb_to_wc(name);
+	int status = common_fchmodat(dirfd, wname, mode, flags);
+	free(wname);
+
+	return status;
+}
+
+int wlibc_wfchmodat(int dirfd, const wchar_t *wname, mode_t mode, int flags)
+{
+	if (wname == NULL)
+	{
+		errno = ENOENT;
+		return -1;
+	}
+
+	return common_fchmodat(dirfd, wname, mode, flags);
+}
