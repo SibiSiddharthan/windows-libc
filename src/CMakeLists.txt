@@ -1,3 +1,10 @@
+#[[
+   Copyright (c) 2020 Sibi Siddharthan
+
+   Distributed under MIT license.
+   See file LICENSE for detail or copy at https://opensource.org/licenses/MIT
+]]
+
 add_compile_definitions(BUILDING_WLIBC)
 
 if(BUILD_SHARED_LIBS)

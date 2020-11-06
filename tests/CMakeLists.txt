@@ -1,3 +1,10 @@
+#[[
+   Copyright (c) 2020 Sibi Siddharthan
+
+   Distributed under MIT license.
+   See file LICENSE for detail or copy at https://opensource.org/licenses/MIT
+]]
+
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 if(ENABLE_DLFCN)

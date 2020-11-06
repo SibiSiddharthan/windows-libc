@@ -1,3 +1,10 @@
+#[[
+   Copyright (c) 2020 Sibi Siddharthan
+
+   Distributed under MIT license.
+   See file LICENSE for detail or copy at https://opensource.org/licenses/MIT
+]]
+
 cmake_minimum_required(VERSION 3.15)
 project(wlibc C)
 
@@ -15,7 +22,7 @@ endif()
 
 include_directories(include include/internal)
 
-option(BUILD_SHARED_LIBS "Build Shared Libraries" OFF) 
+option(BUILD_SHARED_LIBS "Build Shared Libraries" OFF)
 option(ENABLE_DLFCN "Enable dlfcn module" ON)
 option(ENABLE_POSIX_IO "Enable POSIX-like IO" ON)
 
