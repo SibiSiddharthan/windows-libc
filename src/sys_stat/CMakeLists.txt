@@ -7,11 +7,11 @@
 
 set(sys_stat_SOURCES
 chmod.c
-chmodat.c
+fchmodat.c
+fstatat.c
 mkdir.c
 mkdirat.c
-stat.c
-statat.c)
+stat.c)
 
 add_library(sys_stat OBJECT ${sys_stat_SOURCES})
 
