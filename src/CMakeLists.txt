@@ -25,6 +25,11 @@ if(ENABLE_POSIX_IO)
 	list(APPEND modules fcntl dirent stdio sys_stat unistd)
 endif()
 
+if(ENABLE_SYS_TIME)
+	add_subdirectory(sys_time)
+	list(APPEND modules sys_time)
+endif()
+
 add_subdirectory(internal)
 
 add_library(wlibc)
