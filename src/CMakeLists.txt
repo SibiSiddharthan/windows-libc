@@ -30,6 +30,11 @@ if(ENABLE_SYS_TIME)
 	list(APPEND modules sys_time)
 endif()
 
+if(ENABLE_STDLIB_EXT)
+	add_subdirectory(stdlib)
+	list(APPEND modules stdlib)
+endif()
+
 add_subdirectory(internal)
 
 add_library(wlibc)

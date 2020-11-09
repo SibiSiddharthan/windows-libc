@@ -18,3 +18,8 @@ if(ENABLE_POSIX_IO)
 	add_subdirectory(sys_stat)
 	add_subdirectory(unistd)
 endif()
+
+if(ENABLE_STDLIB_EXT)
+	add_subdirectory(stdlib)
+	list(APPEND modules stdlib)
+endif()

@@ -26,6 +26,7 @@ option(BUILD_SHARED_LIBS "Build Shared Libraries" OFF)
 option(ENABLE_DLFCN "Enable dlfcn module" ON)
 option(ENABLE_POSIX_IO "Enable POSIX-like IO" ON)
 option(ENABLE_SYS_TIME "Enable sys/time.h" ON)
+option(ENABLE_STDLIB_EXT "Enable stdlib extensions" ON)
 
 add_subdirectory(src)
 
