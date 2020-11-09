@@ -6,6 +6,10 @@
 ]]
 
 set(stdio_SOURCES
-stdio-hooks.c)
+stdio-hooks.c
+rename.c
+renameat.c)
 
 add_library(stdio OBJECT ${stdio_SOURCES})
+install(FILES ${CMAKE_SOURCE_DIR}/include/stdio-ext.h DESTINATION include)
+install(FILES ${CMAKE_SOURCE_DIR}/include/stdio-hooks.h DESTINATION include)

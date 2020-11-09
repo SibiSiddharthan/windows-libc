@@ -9,7 +9,9 @@ set(tests
 fdopen
 fopen
 fileno
-freopen)
+freopen
+rename
+renameat)
 
 foreach(t ${tests})
 	add_executable(test-${t} test-${t}.c)
