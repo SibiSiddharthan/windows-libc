@@ -85,4 +85,7 @@ bool validate_active_ffd(int _fd);
 
 // Return true if we have an entry and it is of type DIRECTORY_ACTIVE
 bool validate_active_dirfd(int _fd);
+
+// Return true if we have an entry and it is of type NORMAL_FILE_ACTIVE or DIRECTORY_ACTIVE
+bool validate_active_fd(int _fd);
 #endif

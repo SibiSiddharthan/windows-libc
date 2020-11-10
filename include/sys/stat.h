@@ -69,6 +69,9 @@ struct stat
 #define S_ISLNK(m)  (m & S_IFLNK)
 #define S_ISFIFO(m) (m & S_IFIFO)
 
+#define UTIME_NOW  -1 // Change timestamp to current timestamp
+#define UTIME_OMIT -2 // Ignore timestamp
+
 WLIBC_API int wlibc_chmod(const char *name, mode_t mode);
 WLIBC_API int wlibc_wchmod(const wchar_t *wname, mode_t mode);
 
@@ -172,6 +175,26 @@ WLIBC_INLINE int mkdirat(int dirfd, const char *path, mode_t mode)
 WLIBC_INLINE int wmkdirat(int dirfd, const wchar_t *wpath, mode_t mode)
 {
 	return wlibc_wmkdirat(dirfd, wpath, mode);
+}
+
+WLIBC_API int wlibc_utimensat(int dirfd, const char *name, const struct timespec times[2], int flags);
+WLIBC_API int wlibc_wutimensat(int dirfd, const wchar_t *wname, const struct timespec times[2], int flags);
+
+WLIBC_INLINE int utimensat(int dirfd, const char *name, const struct timespec times[2], int flags)
+{
+	return wlibc_utimensat(dirfd, name, times, flags);
+}
+
+WLIBC_INLINE int wutimensat(int dirfd, const wchar_t *wname, const struct timespec times[2], int flags)
+{
+	return wlibc_wutimensat(dirfd, wname, times, flags);
+}
+
+WLIBC_API int wlibc_futimens(int fd, const struct timespec times[2]);
+
+WLIBC_INLINE int futimens(int fd, const struct timespec times[2])
+{
+	return wlibc_futimens(fd, times);
 }
 
 _WLIBC_END_DECLS

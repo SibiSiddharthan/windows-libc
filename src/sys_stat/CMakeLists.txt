@@ -11,7 +11,8 @@ fchmodat.c
 fstatat.c
 mkdir.c
 mkdirat.c
-stat.c)
+stat.c
+utimens.c)
 
 add_library(sys_stat OBJECT ${sys_stat_SOURCES})
 

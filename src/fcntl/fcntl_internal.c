@@ -489,3 +489,27 @@ bool validate_active_dirfd(int _fd)
 	LeaveCriticalSection(&_fd_critical);
 	return condition;
 }
+
+static bool validate_active_fd_internal(int _fd)
+{
+	if (!validate_fd_internal(_fd))
+	{
+		errno = EBADF;
+		return false;
+	}
+	enum handle_type type = get_fd_type_internal(_fd);
+	if (!(type == DIRECTORY_ACTIVE || type == NORMAL_FILE_ACTIVE))
+	{
+		errno = EBADF;
+		return false;
+	}
+	return true;
+}
+
+bool validate_active_fd(int _fd)
+{
+	EnterCriticalSection(&_fd_critical);
+	bool condition = validate_active_fd_internal(_fd);
+	LeaveCriticalSection(&_fd_critical);
+	return condition;
+}

@@ -9,7 +9,8 @@ set(tests
 chmod
 mkdir
 mkdirat
-stat)
+stat
+utimens)
 
 foreach(t ${tests})
 	add_executable(test-${t} test-${t}.c)
