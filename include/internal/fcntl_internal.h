@@ -42,11 +42,14 @@ void init_fd_table();
 void cleanup_fd_table();
 
 // Primary functions
-// Create an entry in the fd table with the following values
+// Create an entry in the fd table with the following values, Return the lowest fd possible
 int register_to_fd_table(HANDLE _h, const wchar_t *_path, enum handle_type _type, int _flags);
 
 // Update the fd with these values
-void update_fd_table(int _fd, HANDLE _h, const wchar_t *_path, enum handle_type _type);
+void update_fd_table(int _fd, HANDLE _h, const wchar_t *_path, enum handle_type _type, int _flags);
+
+// Create an entry in the fd table with the following values
+void insert_into_fd_table(int _fd, HANDLE _h, const wchar_t *_path, enum handle_type _type, int _flags);
 
 // Remove the file descriptor from the table without closing the handle
 // Used by the hooks to stdio
@@ -80,12 +83,12 @@ bool validate_fd(int _fd);
 // Return true if we have an entry and it is of type DIRECTORY_ACTIVE or DIRECTORY_INACTIVE
 bool validate_dirfd(int _fd);
 
-// Return true if we have an entry and it is of type NORMAL_FILE_ACTIVE
+// Return true if we have an entry and it is of type NORMAL_FILE_ACTIVE or STD_STREAMS
 bool validate_active_ffd(int _fd);
 
 // Return true if we have an entry and it is of type DIRECTORY_ACTIVE
 bool validate_active_dirfd(int _fd);
 
-// Return true if we have an entry and it is of type NORMAL_FILE_ACTIVE or DIRECTORY_ACTIVE
+// Return true if we have an entry and it is of type NORMAL_FILE_ACTIVE or DIRECTORY_ACTIVE or STD_STREAMS
 bool validate_active_fd(int _fd);
 #endif

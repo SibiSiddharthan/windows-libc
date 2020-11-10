@@ -10,6 +10,7 @@ access.c
 close.c
 chdir.c
 chown.c
+dup.c
 faccessat.c
 fchownat.c
 fsync.c
@@ -17,6 +18,7 @@ getcwd.c
 getgid.c
 getpid.c
 getuid.c
+isatty.c
 kill.c
 link.c
 linkat.c

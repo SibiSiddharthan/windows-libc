@@ -15,6 +15,32 @@ struct fd_table *_fd_io = NULL;
 size_t _fd_table_size = 0;
 CRITICAL_SECTION _fd_critical;
 
+// Declaration of static functions
+static int internal_insert_fd(int index, HANDLE _h, const wchar_t *_path, enum handle_type _type, int _flags);
+static int register_to_fd_table_internal(HANDLE _h, const wchar_t *_path, enum handle_type _type, int _flags);
+static void update_fd_table_internal(int _fd, HANDLE _h, const wchar_t *_path, enum handle_type _type, int _flags);
+static void insert_into_fd_table_internal(int _fd, HANDLE _h, const wchar_t *_path, enum handle_type _type, int _flags);
+static void unregister_from_fd_table_internal(HANDLE _h);
+static int get_fd_internal(HANDLE _h);
+static int close_fd_internal(int _fd);
+
+static HANDLE get_fd_handle_internal(int _fd);
+static int get_fd_flags_internal(int _fd);
+static enum handle_type get_fd_type_internal(int _fd);
+static const wchar_t *get_path_internal(int _fd);
+
+static void set_fd_handle_internal(int _fd, HANDLE _handle);
+static void set_fd_flags_internal(int _fd, int _flags);
+static void set_fd_type_internal(int _fd, enum handle_type _type);
+static void set_fd_path_internal(int _fd, const wchar_t *_path);
+static void add_fd_flags_internal(int _fd, int _flags);
+
+static bool validate_fd_internal(int _fd);
+static bool validate_dirfd_internal(int _fd);
+static bool validate_active_ffd_internal(int _fd);
+static bool validate_active_dirfd_internal(int _fd);
+static bool validate_active_fd_internal(int _fd);
+
 ///////////////////////////////////////
 // Initialization and cleanup functions
 ///////////////////////////////////////
@@ -31,15 +57,21 @@ void init_fd_table()
 
 	_fd_io[0]._handle = hin;
 	_fd_io[0]._type = STD_STREAMS;
+	_fd_io[0]._flags = 0;
 	_fd_io[0]._free = 0;
+	wcscpy(_fd_io[0]._path, L"CON");
 
 	_fd_io[1]._handle = hout;
 	_fd_io[1]._type = STD_STREAMS;
+	_fd_io[1]._flags = 0;
 	_fd_io[1]._free = 0;
+	wcscpy(_fd_io[0]._path, L"CON");
 
 	_fd_io[2]._handle = herr;
 	_fd_io[2]._type = STD_STREAMS;
+	_fd_io[2]._flags = 0;
 	_fd_io[2]._free = 0;
+	wcscpy(_fd_io[0]._path, L"CON");
 
 	_fd_io[3]._free = 1; // set the last one as free, since we are allocating in powers of 2
 }
@@ -62,20 +94,26 @@ static int internal_insert_fd(int index, HANDLE _h, const wchar_t *_path, enum h
 	_fd_io[index]._type = _type;
 	_fd_io[index]._free = 0;
 
-	if (wcscmp(_path, L"NUL") != 0)
+	// We try to find the absolute path here
+	// We need this for *at functions to work properly
+	// This should not give an error
+	HANDLE file = CreateFile(_path, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING,
+							 FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT, NULL);
+	if (file == INVALID_HANDLE_VALUE)
 	{
-		// We try to find the absolute path here
-		// We need this for *at functions to work properly
-		// This should not give an error
-		HANDLE file = CreateFile(_path, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING,
-								 FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT, NULL);
-		if (file == INVALID_HANDLE_VALUE)
-		{
-			exit(GetLastError()); // die if it does
-		}
-		wchar_t temp_buf[MAX_PATH];
-		int length = GetFinalPathNameByHandle(file, temp_buf, MAX_PATH, VOLUME_NAME_DOS);
-		CloseHandle(file);
+		exit(GetLastError()); // die if it does
+	}
+	wchar_t temp_buf[MAX_PATH];
+	int length = GetFinalPathNameByHandle(file, temp_buf, MAX_PATH, VOLUME_NAME_DOS);
+	CloseHandle(file);
+
+	if (length == 0) // This will be true for a character device
+	{
+		wcscpy(_fd_io[index]._path, _path);
+	}
+
+	else
+	{
 
 		for (int i = 6; i < length; i++) // \\?\C:
 		{
@@ -96,10 +134,6 @@ static int internal_insert_fd(int index, HANDLE _h, const wchar_t *_path, enum h
 				wcscat(_fd_io[index]._path, L"/");
 			}
 		}
-	}
-	else
-	{
-		wcscpy(_fd_io[index]._path, L"NUL");
 	}
 
 	return index;
@@ -154,17 +188,48 @@ int register_to_fd_table(HANDLE _h, const wchar_t *_path, enum handle_type _type
 	return fd;
 }
 
-static void update_fd_table_internal(int _fd, HANDLE _h, const wchar_t *_path, enum handle_type _type)
+static void update_fd_table_internal(int _fd, HANDLE _h, const wchar_t *_path, enum handle_type _type, int _flags)
 {
 	_fd_io[_fd]._handle = _h;
 	_fd_io[_fd]._type = _type;
-	wcscpy(_fd_io[_fd]._path, _path);
+	_fd_io[_fd]._flags = _flags;
+	set_fd_path_internal(_fd, _path);
 }
 
-void update_fd_table(int _fd, HANDLE _h, const wchar_t *_path, enum handle_type _type)
+void update_fd_table(int _fd, HANDLE _h, const wchar_t *_path, enum handle_type _type, int _flags)
 {
 	EnterCriticalSection(&_fd_critical);
-	update_fd_table_internal(_fd, _h, _path, _type);
+	update_fd_table_internal(_fd, _h, _path, _type, _flags);
+	LeaveCriticalSection(&_fd_critical);
+}
+
+static void insert_into_fd_table_internal(int _fd, HANDLE _h, const wchar_t *_path, enum handle_type _type, int _flags)
+{
+	// grow the table
+	if (_fd >= _fd_table_size)
+	{
+		struct fd_table *temp = (struct fd_table *)malloc(sizeof(struct fd_table) * _fd_table_size);
+		memcpy(temp, _fd_io, sizeof(struct fd_table) * _fd_table_size);
+		_fd_io = (struct fd_table *)realloc(_fd_io, sizeof(struct fd_table) * _fd * 2); // Allocate double the requested fd number
+		memcpy(_fd_io, temp, sizeof(struct fd_table) * (_fd_table_size));
+		free(temp);
+
+		for (size_t i = _fd_table_size; i < _fd * 2; i++)
+		{
+			_fd_io[i]._free = 1;
+		}
+
+		_fd_table_size = _fd * 2;
+	}
+
+	_fd_io[_fd]._free = 0;
+	update_fd_table_internal(_fd, _h, _path, _type, _flags);
+}
+
+void insert_into_fd_table(int _fd, HANDLE _h, const wchar_t *_path, enum handle_type _type, int _flags)
+{
+	EnterCriticalSection(&_fd_critical);
+	insert_into_fd_table_internal(_fd, _h, _path, _type, _flags);
 	LeaveCriticalSection(&_fd_critical);
 }
 
@@ -340,14 +405,17 @@ void set_fd_type(int _fd, enum handle_type _type)
 
 static void set_fd_path_internal(int _fd, const wchar_t *_path)
 {
-	if (wcscmp(_path, L"NUL") != 0)
+	HANDLE file = get_fd_handle_internal(_fd);
+	if (file != NULL)
 	{
-		HANDLE file = get_fd_handle_internal(_fd);
-		if (file != NULL)
+		wchar_t temp_buf[MAX_PATH];
+		int length = GetFinalPathNameByHandle(file, temp_buf, MAX_PATH, VOLUME_NAME_DOS);
+		if (length == 0) // This will be true for a character device
 		{
-			wchar_t temp_buf[MAX_PATH];
-			int length = GetFinalPathNameByHandle(file, temp_buf, MAX_PATH, VOLUME_NAME_DOS);
-
+			wcscpy(_fd_io[_fd]._path, _path);
+		}
+		else
+		{
 			for (int i = 6; i < length; i++) // \\?\C:
 			{
 				if (temp_buf[i] == L'\\')
@@ -357,14 +425,10 @@ static void set_fd_path_internal(int _fd, const wchar_t *_path)
 			}
 			wcscpy(_fd_io[_fd]._path, temp_buf + 4);
 		}
-		else
-		{
-			wcscpy(_fd_io[_fd]._path, _path);
-		}
 	}
 	else
 	{
-		wcscpy(_fd_io[_fd]._path, L"NUL");
+		wcscpy(_fd_io[_fd]._path, _path);
 	}
 }
 
@@ -440,7 +504,7 @@ static bool validate_active_ffd_internal(int _fd)
 	}
 
 	enum handle_type type = get_fd_type_internal(_fd);
-	if (type != NORMAL_FILE_ACTIVE)
+	if (type != NORMAL_FILE_ACTIVE && type != STD_STREAMS)
 	{
 		if (type == DIRECTORY_ACTIVE || type == DIRECTORY_INACTIVE)
 		{
@@ -498,7 +562,7 @@ static bool validate_active_fd_internal(int _fd)
 		return false;
 	}
 	enum handle_type type = get_fd_type_internal(_fd);
-	if (!(type == DIRECTORY_ACTIVE || type == NORMAL_FILE_ACTIVE))
+	if (!(type == DIRECTORY_ACTIVE || type == NORMAL_FILE_ACTIVE || type == STD_STREAMS))
 	{
 		errno = EBADF;
 		return false;

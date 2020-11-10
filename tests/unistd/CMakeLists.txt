@@ -9,7 +9,9 @@ set(tests
 access
 close
 chdir
+dup
 getcwd
+isatty
 kill
 link
 linkat

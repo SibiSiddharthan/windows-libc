@@ -126,6 +126,25 @@ WLIBC_INLINE int wfchownat(int dirfd, const wchar_t *wname, uid_t owner, gid_t g
 	return wlibc_wfchownat(dirfd, wname, owner, group, flags);
 }
 
+WLIBC_API int wlibc_dup(int fd);
+WLIBC_API int wlibc_dup2(int oldfd, int newfd);
+WLIBC_API int wlibc_dup3(int oldfd, int newfd, int flags);
+
+WLIBC_INLINE int dup(int fd)
+{
+	return wlibc_dup(fd);
+}
+
+WLIBC_INLINE int dup2(int oldfd, int newfd)
+{
+	return wlibc_dup2(oldfd, newfd);
+}
+
+WLIBC_INLINE int dup3(int oldfd, int newfd, int flags)
+{
+	return wlibc_dup3(oldfd, newfd, flags);
+}
+
 WLIBC_API int wlibc_fdatasync(int fd);
 WLIBC_API int wlibc_fsync(int fd);
 
@@ -183,6 +202,13 @@ WLIBC_INLINE uid_t getuid()
 WLIBC_INLINE uid_t geteuid()
 {
 	return wlibc_geteuid();
+}
+
+WLIBC_API int wlibc_isatty(int fd);
+
+WLIBC_INLINE int isatty(int fd)
+{
+	return wlibc_isatty(fd);
 }
 
 WLIBC_API int wlibc_kill(pid_t pid, int sig);
