@@ -30,6 +30,11 @@ if(ENABLE_SYS_TIME)
 	list(APPEND modules sys_time)
 endif()
 
+if(ENABLE_SYS_RESOURCE)
+	add_subdirectory(sys_resource)
+	list(APPEND modules sys_resource)
+endif()
+
 if(ENABLE_STDLIB_EXT)
 	add_subdirectory(stdlib)
 	list(APPEND modules stdlib)
