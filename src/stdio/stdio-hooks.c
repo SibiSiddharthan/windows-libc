@@ -53,19 +53,23 @@ FILE *wlibc_fopen(const char *filename, const char *mode)
 {
 	DWORD attributes = GetFileAttributesA(filename);
 	char *filename_proper = NULL;
-	// Redirect /dev/null to NUL
-	if (strcmp(filename, "/dev/null") == 0)
-	{
-		filename_proper = "NUL";
-	}
 
 	// Do not open a directory
-	else if (attributes == FILE_ATTRIBUTE_DIRECTORY || (attributes == (FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_REPARSE_POINT)))
+	if (attributes == FILE_ATTRIBUTE_DIRECTORY || (attributes == (FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_REPARSE_POINT)))
 	{
 		errno = EISDIR;
 		return NULL;
 	}
 
+	// Redirect /dev/null to NUL and /dev/tty to CON
+	if (strcmp(filename, "/dev/null") == 0)
+	{
+		filename_proper = "NUL";
+	}
+	else if (strcmp(filename, "/dev/tty") == 0)
+	{
+		filename_proper = "CON";
+	}
 	else
 	{
 		filename_proper = (char *)filename;
@@ -109,19 +113,23 @@ FILE *wlibc_freopen(const char *filename, const char *mode, FILE *old_stream)
 {
 	DWORD attributes = GetFileAttributesA(filename);
 	char *filename_proper = NULL;
-	// Redirect /dev/null to NUL
-	if (strcmp(filename, "/dev/null") == 0)
-	{
-		filename_proper = "NUL";
-	}
 
 	// Do not open a directory
-	else if (attributes == FILE_ATTRIBUTE_DIRECTORY || (attributes == (FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_REPARSE_POINT)))
+	if (attributes == FILE_ATTRIBUTE_DIRECTORY || (attributes == (FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_REPARSE_POINT)))
 	{
 		errno = EISDIR;
 		return NULL;
 	}
 
+	// Redirect /dev/null to NUL and /dev/tty to CON
+	if (strcmp(filename, "/dev/null") == 0)
+	{
+		filename_proper = "NUL";
+	}
+	else if (strcmp(filename, "/dev/tty") == 0)
+	{
+		filename_proper = "CON";
+	}
 	else
 	{
 		filename_proper = (char *)filename;

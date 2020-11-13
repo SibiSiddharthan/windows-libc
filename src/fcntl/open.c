@@ -218,7 +218,11 @@ int wlibc_open(const char *name, const int oflags, va_list perm_args)
 		wchar_t *wname = L"NUL";
 		fd = common_open(wname, oflags, perm);
 	}
-
+	else if (strcmp(name, "/dev/tty") == 0)
+	{
+		wchar_t *wname = L"CON";
+		fd = common_open(wname, oflags, perm);
+	}
 	else
 	{
 		wchar_t *wname = mb_to_wc(name);
@@ -251,7 +255,11 @@ int wlibc_wopen(const wchar_t *wname, const int oflags, va_list perm_args)
 		wchar_t *wname = L"NUL";
 		return common_open(wname, oflags, perm);
 	}
-
+	else if (wcscmp(wname, L"/dev/tty") == 0)
+	{
+		wchar_t *wname = L"CON";
+		return common_open(wname, oflags, perm);
+	}
 	else
 	{
 		return common_open(wname, oflags, perm);
