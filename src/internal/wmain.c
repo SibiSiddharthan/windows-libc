@@ -1,13 +1,12 @@
 /*
    Copyright (c) 2020 Sibi Siddharthan
 
-   Distributed under MIT license.
-   See file LICENSE for detail or copy at https://opensource.org/licenses/MIT
+   Distributed under the MIT license.
+   Refer to the LICENSE file at the root directory for details.
 */
 
 #include <wchar.h>
 #include <stdlib.h>
-#include <string.h>
 #include <misc.h>
 #include <fcntl_internal.h>
 #include <dlfcn_internal.h>
