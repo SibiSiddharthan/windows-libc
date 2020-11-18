@@ -11,7 +11,6 @@ close
 chdir
 dup
 getcwd
-isatty
 kill
 link
 linkat
@@ -21,6 +20,10 @@ read_write
 rmdir
 unlink
 unlinkat)
+
+if(NOT DEFINED CI_BUILD)
+	list(APPEND tests isatty)
+endif()
 
 foreach(t ${tests})
 	add_executable(test-${t} test-${t}.c)

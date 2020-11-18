@@ -1,0 +1,18 @@
+name: WLIBC Build & Test
+
+on: [push, pull_request]
+
+jobs:
+  build_and_test:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v1
+    - name: configure
+      shell: cmd
+      run: cmake . -DCI_BUILD=1
+    - name: build
+      shell: cmd
+      run: cmake --build . --config Release
+    - name: test
+      shell: cmd
+      run: ctest -C Release
