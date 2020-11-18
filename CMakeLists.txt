@@ -20,6 +20,10 @@ if(CMAKE_C_COMPILER_ID STREQUAL "Clang")
 	add_compile_options(-fcolor-diagnostics -fansi-escape-codes -Wall -Wno-unused-variable)
 endif()
 
+if(CMAKE_C_COMPILER_ID STREQUAL "MSVC")
+	add_compile_options(/wd4098 /wd4477)
+endif()
+
 include_directories(include include/internal)
 
 option(BUILD_SHARED_LIBS "Build Shared Libraries" OFF)

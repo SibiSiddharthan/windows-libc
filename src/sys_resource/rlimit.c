@@ -13,10 +13,10 @@
 const rlim_t max_files = 8192;
 
 const rlim_t max_file_size = 17592186044416; // 16 TB
-rlim_t soft_file_size = max_file_size;
+rlim_t soft_file_size = 17592186044416;      // Prevent C2099 MSVC
 
 const rlim_t max_as = 140737488355328; // 128 TB with IMAGE_FILE_LARGE_ADDRESS_AWARE(default)
-rlim_t soft_as = max_as;
+rlim_t soft_as = 140737488355328;      // Prevent C2099 MSVC
 
 int wlibc_getrlimit(int resource, struct rlimit *rlim)
 {

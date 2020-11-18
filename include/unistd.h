@@ -12,6 +12,10 @@
 #include <sys/types.h>
 #include <wchar.h>
 
+// Avoid C2375: 'unlink': redefinition different linkage
+#include <stdio.h>
+#define unlink wlibc_unlink
+
 _WLIBC_BEGIN_DECLS
 
 #define SEEK_SET 0
@@ -325,11 +329,6 @@ WLIBC_INLINE ssize_t wreadlinkat(int dirfd, const wchar_t *wpath, wchar_t *wbuf,
 
 WLIBC_API int wlibc_unlink(const char *path);
 WLIBC_API int wlibc_wunlink(const wchar_t *wpath);
-
-WLIBC_INLINE int unlink(const char *path)
-{
-	return wlibc_unlink(path);
-}
 
 WLIBC_INLINE int wunlink(const wchar_t *wpath)
 {

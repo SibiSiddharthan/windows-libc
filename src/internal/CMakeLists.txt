@@ -11,7 +11,11 @@ wlibc_errors.c
 wmain.c)
 
 add_library(wlibc_internal OBJECT ${internal_SOURCES})
-target_link_options(wlibc_internal PUBLIC -Wl,-entry:wmainCRTStartup)
+if(CMAKE_C_COMPILER_ID STREQUAL "Clang")
+	target_link_options(wlibc_internal PUBLIC -Wl,-entry:wmainCRTStartup)
+elseif(CMAKE_C_COMPILER_ID STREQUAL "MSVC")
+	target_link_options(wlibc_internal PUBLIC /ENTRY:wmainCRTStartup /SUBSYSTEM:CONSOLE)
+endif()
 
 if(ENABLE_DLFCN)
 	target_compile_definitions(wlibc_internal PRIVATE WLIBC_DLFCN)

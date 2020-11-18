@@ -128,24 +128,24 @@ WLIBC_INLINE int dirfd(DIR *dirp)
 	return wlibc_dirfd(dirp);
 }
 
-WLIBC_API int wlibc_scandir(const char *restrict name, struct dirent ***restrict namelist, int (*selector)(const struct dirent *),
+WLIBC_API int wlibc_scandir(const char * name, struct dirent *** namelist, int (*selector)(const struct dirent *),
 							int (*cmp)(const struct dirent **, const struct dirent **));
-WLIBC_API int wlibc_wscandir(const wchar_t *restrict wname, struct wdirent ***restrict wnamelist, int (*selector)(const struct wdirent *),
+WLIBC_API int wlibc_wscandir(const wchar_t * wname, struct wdirent *** wnamelist, int (*selector)(const struct wdirent *),
 							 int (*cmp)(const struct wdirent **, const struct wdirent **));
 
-WLIBC_INLINE int scandir(const char *restrict name, struct dirent ***restrict namelist, int (*selector)(const struct dirent *),
+WLIBC_INLINE int scandir(const char * name, struct dirent *** namelist, int (*selector)(const struct dirent *),
 						 int (*cmp)(const struct dirent **, const struct dirent **))
 {
 	return wlibc_scandir(name, namelist, selector, cmp);
 }
 
-WLIBC_INLINE int wscandir(const wchar_t *restrict wname, struct wdirent ***restrict wnamelist, int (*selector)(const struct wdirent *),
+WLIBC_INLINE int wscandir(const wchar_t * wname, struct wdirent *** wnamelist, int (*selector)(const struct wdirent *),
 						  int (*cmp)(const struct wdirent **, const struct wdirent **))
 {
 	return wlibc_wscandir(wname, wnamelist, selector, cmp);
 }
 
-WLIBC_API int scandirat(int dfd, const char *restrict name, struct dirent ***restrict namelist, int (*selector)(const struct dirent *),
+WLIBC_API int scandirat(int dfd, const char * name, struct dirent *** namelist, int (*selector)(const struct dirent *),
 						int (*cmp)(const struct dirent **, const struct dirent **));
 
 WLIBC_API int wlibc_alphasort(const struct dirent **e1, const struct dirent **e2);

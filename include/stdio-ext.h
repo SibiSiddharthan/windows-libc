@@ -11,6 +11,11 @@
 #include <wlibc-macros.h>
 #include <wchar.h>
 
+// Avoid C2375: 'rename': redefinition different linkage
+#include <stdio.h>
+#define rename wlibc_rename
+
+
 _WLIBC_BEGIN_DECLS
 
 // For renameat2
@@ -21,11 +26,6 @@ _WLIBC_BEGIN_DECLS
 
 WLIBC_API int wlibc_rename(const char *oldname, const char *newname);
 WLIBC_API int wlibc_wrename(const wchar_t *woldname, const wchar_t *wnewname);
-
-WLIBC_INLINE int rename(const char *oldname, const char *newname)
-{
-	return wlibc_rename(oldname, newname);
-}
 
 WLIBC_INLINE int wrename(const wchar_t *woldname, const wchar_t *wnewname)
 {
