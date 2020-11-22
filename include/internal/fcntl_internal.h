@@ -22,6 +22,7 @@ enum handle_type
 	NORMAL_FILE_INACTIVE,
 	DIRECTORY_ACTIVE,
 	DIRECTORY_INACTIVE,
+	PIPE
 };
 
 struct fd_table
@@ -83,7 +84,7 @@ bool validate_fd(int _fd);
 // Return true if we have an entry and it is of type DIRECTORY_ACTIVE or DIRECTORY_INACTIVE
 bool validate_dirfd(int _fd);
 
-// Return true if we have an entry and it is of type NORMAL_FILE_ACTIVE or STD_STREAMS
+// Return true if we have an entry and it is of type NORMAL_FILE_ACTIVE or STD_STREAMS or PIPE
 bool validate_active_ffd(int _fd);
 
 // Return true if we have an entry and it is of type DIRECTORY_ACTIVE

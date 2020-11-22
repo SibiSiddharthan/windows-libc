@@ -6,6 +6,8 @@
 ]]
 
 set(stdio_SOURCES
+parse_mode.c
+pipe-hooks.c
 stdio-hooks.c
 rename.c
 renameat.c)

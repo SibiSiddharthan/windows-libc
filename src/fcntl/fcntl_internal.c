@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <wlibc_errors.h>
 #include <errno.h>
+#include <fcntl.h>
 
 struct fd_table *_fd_io = NULL;
 size_t _fd_table_size = 0;
@@ -57,19 +58,19 @@ void init_fd_table()
 
 	_fd_io[0]._handle = hin;
 	_fd_io[0]._type = STD_STREAMS;
-	_fd_io[0]._flags = 0;
+	_fd_io[0]._flags = O_RDONLY;
 	_fd_io[0]._free = 0;
 	wcscpy(_fd_io[0]._path, L"CON");
 
 	_fd_io[1]._handle = hout;
 	_fd_io[1]._type = STD_STREAMS;
-	_fd_io[1]._flags = 0;
+	_fd_io[1]._flags = O_WRONLY;
 	_fd_io[1]._free = 0;
 	wcscpy(_fd_io[0]._path, L"CON");
 
 	_fd_io[2]._handle = herr;
 	_fd_io[2]._type = STD_STREAMS;
-	_fd_io[2]._flags = 0;
+	_fd_io[2]._flags = O_WRONLY;
 	_fd_io[2]._free = 0;
 	wcscpy(_fd_io[0]._path, L"CON");
 
@@ -93,6 +94,13 @@ static int internal_insert_fd(int index, HANDLE _h, const wchar_t *_path, enum h
 	_fd_io[index]._flags = _flags;
 	_fd_io[index]._type = _type;
 	_fd_io[index]._free = 0;
+
+	// Empty _path for pipes
+	if (_type == PIPE)
+	{
+		_fd_io[index]._path[0] = L'\0';
+		return index;
+	}
 
 	// We try to find the absolute path here
 	// We need this for *at functions to work properly
@@ -504,7 +512,7 @@ static bool validate_active_ffd_internal(int _fd)
 	}
 
 	enum handle_type type = get_fd_type_internal(_fd);
-	if (type != NORMAL_FILE_ACTIVE && type != STD_STREAMS)
+	if (type != NORMAL_FILE_ACTIVE && type != STD_STREAMS && type != PIPE)
 	{
 		if (type == DIRECTORY_ACTIVE || type == DIRECTORY_INACTIVE)
 		{

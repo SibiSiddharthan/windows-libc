@@ -165,32 +165,38 @@ int common_stat(const wchar_t *wname, struct stat *statbuf, int do_lstat)
 		}
 	}
 
-	else if (type == FILE_TYPE_PIPE)
+	else
 	{
-		statbuf->st_mode = S_IFIFO; // TODO
-		statbuf->st_rdev = 0;
-	}
-	else if (type == FILE_TYPE_CHAR)
-	{
-		statbuf->st_mode = S_IFCHR;
-		statbuf->st_size = 0;
-		statbuf->st_dev = 0;
-		statbuf->st_rdev = 1;
-		statbuf->st_uid = 0;
-		statbuf->st_gid = 0;
-		statbuf->st_ino = 0;
-		statbuf->st_nlink = 1;
-
+		// Default values
 		struct timespec time_data = {0, 0};
 		statbuf->st_atim = time_data;
 		statbuf->st_ctim = time_data;
 		statbuf->st_mtim = time_data;
-	}
-	else
-	{
-		// Something bad happened, program flow should never reach here
-		errno = EINVAL;
-		return -1;
+
+		statbuf->st_size = 0;
+		statbuf->st_ino = 0;
+		statbuf->st_nlink = 1;
+		statbuf->st_blksize = 4096; // default
+		statbuf->st_blocks = 0;
+
+		statbuf->st_dev = 0;
+
+		if (type == FILE_TYPE_PIPE)
+		{
+			statbuf->st_mode = S_IFIFO;
+			statbuf->st_rdev = 0;
+		}
+		else if (type == FILE_TYPE_CHAR)
+		{
+			statbuf->st_mode = S_IFCHR;
+			statbuf->st_rdev = 1;
+		}
+		else
+		{
+			// Something bad happened, program flow should never reach here
+			errno = EINVAL;
+			return -1;
+		}
 	}
 
 	// Set these two to zero
@@ -261,6 +267,32 @@ int wlibc_fstat(int fd, struct stat *statbuf)
 	{
 		errno = EBADF;
 		return -1;
+	}
+
+	// Hack for pipes
+	if (get_fd_type(fd) == PIPE)
+	{
+		// Fill statbuf here itself and return
+		struct timespec time_data = {0, 0};
+		statbuf->st_atim = time_data;
+		statbuf->st_ctim = time_data;
+		statbuf->st_mtim = time_data;
+
+		statbuf->st_dev = 0;
+		statbuf->st_rdev = 0;
+
+		statbuf->st_size = 0;
+		statbuf->st_ino = 0;
+		statbuf->st_nlink = 1;
+		statbuf->st_blksize = 4096;
+		statbuf->st_blocks = 0;
+
+		statbuf->st_mode = S_IFIFO;
+
+		statbuf->st_uid = 0;
+		statbuf->st_gid = 0;
+
+		return 0;
 	}
 
 	const wchar_t *wname = get_fd_path(fd);

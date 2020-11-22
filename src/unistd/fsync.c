@@ -16,7 +16,15 @@ int common_sync(int fd)
 	{
 		return -1;
 	}
+
 	HANDLE file = get_fd_handle(fd);
+	// Fail if we are not a disk file
+	if (GetFileType(file) != FILE_TYPE_DISK)
+	{
+		errno = EPIPE;
+		return -1;
+	}
+
 	if (!FlushFileBuffers(file))
 	{
 		map_win32_error_to_wlibc(GetLastError());

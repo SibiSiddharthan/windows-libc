@@ -25,6 +25,13 @@ off_t wlibc_lseek(int fd, off_t offset, int whence)
 	}
 
 	HANDLE file = get_fd_handle(fd);
+	// Fail if we are not a disk file
+	if (GetFileType(file) != FILE_TYPE_DISK)
+	{
+		errno = EPIPE;
+		return -1;
+	}
+
 	LARGE_INTEGER _offset, _newpos;
 	_offset.QuadPart = offset;
 	if (!SetFilePointerEx(file, _offset, &_newpos, whence))

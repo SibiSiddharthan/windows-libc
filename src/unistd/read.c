@@ -41,5 +41,26 @@ ssize_t wlibc_read(int fd, void *buf, size_t count)
 		return -1;
 	}
 
+	if (get_fd_type(fd) == PIPE)
+	{
+		// ReadFile only reads till first CR for applications with ENABLE_LINE_INPUT
+		// So we fill up the buffer with subsequent calls
+		while (count != read_count)
+		{
+			DWORD new_count = 0;
+			ReadFile(file, (char *)buf + read_count, count - read_count, &new_count, NULL);
+
+			if (new_count == 0)
+			{
+				// We have read all the data;
+				break;
+			}
+			else
+			{
+				read_count += new_count;
+			}
+		}
+	}
+
 	return read_count;
 }

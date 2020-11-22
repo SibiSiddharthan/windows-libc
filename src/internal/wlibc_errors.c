@@ -51,6 +51,8 @@ void map_win32_error_to_wlibc(unsigned long error)
 	case ERROR_INVALID_NAME:
 		errno = EINVAL;
 		break;
+	case ERROR_BROKEN_PIPE:
+		errno = EPIPE;
 	default:
 		break;
 	};

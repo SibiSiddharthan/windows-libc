@@ -18,7 +18,7 @@ _WLIBC_BEGIN_DECLS
 #define S_IFMT  0xF000 // File type mask
 #define S_IFBLK 0x0100 // Block special
 #define S_IFLNK 0x0200 // Symbolic Link
-#define S_IFIFO 0x1000 // Pipe
+#define S_IFIFO 0x1000 // Pipe or FIFO (FIFO is unsupported)
 #define S_IFCHR 0x2000 // Character special
 #define S_IFDIR 0x4000 // Directory
 #define S_IFREG 0x8000 // Regular
