@@ -66,13 +66,13 @@ void init_fd_table()
 	_fd_io[1]._type = STD_STREAMS;
 	_fd_io[1]._flags = O_WRONLY;
 	_fd_io[1]._free = 0;
-	wcscpy(_fd_io[0]._path, L"CON");
+	wcscpy(_fd_io[1]._path, L"CON");
 
 	_fd_io[2]._handle = herr;
 	_fd_io[2]._type = STD_STREAMS;
 	_fd_io[2]._flags = O_WRONLY;
 	_fd_io[2]._free = 0;
-	wcscpy(_fd_io[0]._path, L"CON");
+	wcscpy(_fd_io[2]._path, L"CON");
 
 	_fd_io[3]._free = 1; // set the last one as free, since we are allocating in powers of 2
 }
@@ -294,7 +294,7 @@ static int close_fd_internal(int _fd)
 			return -1;
 		}
 	}
-	else if (_fd_io[_fd]._type == NORMAL_FILE_ACTIVE)
+	else if (_fd_io[_fd]._type == NORMAL_FILE_ACTIVE || _fd_io[_fd]._type == STD_STREAMS || _fd_io[_fd]._type == PIPE)
 	{
 		if (!CloseHandle(_fd_io[_fd]._handle))
 		{

@@ -9,6 +9,7 @@ set(fcntl_SOURCES
 open.c
 openat.c
 creat.c
+fcntl.c
 fcntl_internal.c)
 
 add_library(fcntl OBJECT ${fcntl_SOURCES})

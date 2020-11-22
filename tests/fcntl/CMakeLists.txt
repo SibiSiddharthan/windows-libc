@@ -7,7 +7,8 @@
 
 set(tests
 open
-openat)
+openat
+fcntl)
 
 foreach(t ${tests})
 	add_executable(test-${t} test-${t}.c)

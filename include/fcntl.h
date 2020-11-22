@@ -64,6 +64,15 @@ _WLIBC_BEGIN_DECLS
 #define AT_SYMLINK_NOFOLLOW 0x2 // Don't dereference symlinks
 #define AT_REMOVEDIR        0x4 // Remove a directory
 
+// fcntl operations
+#define FD_CLOEXEC      O_CLOEXEC
+#define F_DUPFD         1 // duplicate the file descriptor
+#define F_DUPFD_CLOEXEC 2 // same as above, but add O_CLOEXEC flag also.
+#define F_GETFD         3 // return O_CLOEXEC if set
+#define F_SETFD         4 // set O_CLOEXEC
+#define F_GETFL         5 // return the flags
+#define F_SETFL         6 // set the flags, only O_APPEND, O_DIRECT, O_NONBLOCK are supported
+
 WLIBC_API int wlibc_creat(const char *name, const mode_t perm);
 WLIBC_API int wlibc_wcreat(const wchar_t *wname, const mode_t perm);
 
