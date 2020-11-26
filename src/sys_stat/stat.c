@@ -103,6 +103,7 @@ int common_stat(const wchar_t *wname, struct stat *statbuf, int do_lstat)
 		if (!GetFinalPathNameByHandle(file, wbuf, MAX_PATH, FILE_NAME_NORMALIZED))
 		{
 			map_win32_error_to_wlibc(GetLastError());
+			CloseHandle(file);
 			return -1;
 		}
 		char drive_name;
@@ -114,6 +115,7 @@ int common_stat(const wchar_t *wname, struct stat *statbuf, int do_lstat)
 		if (!GetFileInformationByHandleEx(file, FileIdInfo, &INO_INFO, sizeof(FILE_ID_INFO)))
 		{
 			map_win32_error_to_wlibc(GetLastError());
+			CloseHandle(file);
 			return -1;
 		}
 		memcpy(&statbuf->st_ino, INO_INFO.FileId.Identifier, sizeof(ino_t)); // Capture the first 8 bytes, the rest are zero
@@ -123,6 +125,7 @@ int common_stat(const wchar_t *wname, struct stat *statbuf, int do_lstat)
 		if (!GetFileInformationByHandleEx(file, FileStandardInfo, &LINK_INFO, sizeof(FILE_STANDARD_INFO)))
 		{
 			map_win32_error_to_wlibc(GetLastError());
+			CloseHandle(file);
 			return -1;
 		}
 		statbuf->st_nlink = LINK_INFO.NumberOfLinks;
@@ -138,6 +141,7 @@ int common_stat(const wchar_t *wname, struct stat *statbuf, int do_lstat)
 		if (!GetDiskFreeSpace(root, &sectors_per_cluster, &bytes_per_sector, &number_of_free_clusters, &total_number_of_clusters))
 		{
 			map_win32_error_to_wlibc(GetLastError());
+			CloseHandle(file);
 			return -1;
 		}
 		statbuf->st_blksize = sectors_per_cluster * bytes_per_sector;

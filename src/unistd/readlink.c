@@ -45,6 +45,7 @@ ssize_t common_readlink(const wchar_t *wpath, wchar_t *wbuf, size_t bufsiz, int 
 	if (h_sym == INVALID_HANDLE_VALUE)
 	{
 		map_win32_error_to_wlibc(GetLastError());
+		CloseHandle(h_real);
 		return -1;
 	}
 
@@ -54,6 +55,8 @@ ssize_t common_readlink(const wchar_t *wpath, wchar_t *wbuf, size_t bufsiz, int 
 	if (length_real == 0)
 	{
 		map_win32_error_to_wlibc(GetLastError());
+		CloseHandle(h_real);
+		CloseHandle(h_sym);
 		return -1;
 	}
 
@@ -61,6 +64,8 @@ ssize_t common_readlink(const wchar_t *wpath, wchar_t *wbuf, size_t bufsiz, int 
 	if (length_sym == 0)
 	{
 		map_win32_error_to_wlibc(GetLastError());
+		CloseHandle(h_real);
+		CloseHandle(h_sym);
 		return -1;
 	}
 
