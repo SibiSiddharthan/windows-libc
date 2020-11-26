@@ -40,6 +40,11 @@ if(ENABLE_STDLIB_EXT)
 	list(APPEND modules stdlib)
 endif()
 
+if(ENABLE_LANGINFO)
+	add_subdirectory(langinfo)
+	list(APPEND modules langinfo)
+endif()
+
 add_subdirectory(internal)
 
 add_library(wlibc)

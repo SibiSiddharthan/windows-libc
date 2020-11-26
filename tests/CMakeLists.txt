@@ -21,5 +21,8 @@ endif()
 
 if(ENABLE_STDLIB_EXT)
 	add_subdirectory(stdlib)
-	list(APPEND modules stdlib)
+endif()
+
+if(ENABLE_LANGINFO)
+	add_subdirectory(langinfo)
 endif()

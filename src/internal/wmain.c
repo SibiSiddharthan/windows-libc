@@ -10,6 +10,7 @@
 #include <misc.h>
 #include <fcntl_internal.h>
 #include <dlfcn_internal.h>
+#include <langinfo_internal.h>
 
 int main(int argc, char **argv);
 
@@ -31,6 +32,9 @@ int wmain(int argc, wchar_t **wargv)
 #ifdef WLIBC_DLFCN
 	dlfcn_init();
 #endif
+#ifdef WLIBC_LANGINFO
+	langinfo_init();
+#endif
 
 	int exit_status = main(argc, argv);
 
@@ -39,6 +43,9 @@ int wmain(int argc, wchar_t **wargv)
 #endif
 #ifdef WLIBC_DLFCN
 	dlfcn_cleanup();
+#endif
+#ifdef WLIBC_LANGINFO
+	langinfo_cleanup();
 #endif
 
 	if (argc)

@@ -32,6 +32,7 @@ option(ENABLE_POSIX_IO "Enable POSIX-like IO" ON)
 option(ENABLE_SYS_TIME "Enable sys/time.h" ON)
 option(ENABLE_SYS_RESOURCE "Enable sys/resource.h" ON)
 option(ENABLE_STDLIB_EXT "Enable stdlib extensions" ON)
+option(ENABLE_LANGINFO "Enable langinfo.h" ON)
 
 add_subdirectory(src)
 
