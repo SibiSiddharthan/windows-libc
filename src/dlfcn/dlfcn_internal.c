@@ -5,7 +5,7 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <dlfcn.h>
+#include <dlfcn_internal.h>
 #include <stdlib.h>
 
 unsigned long _last_dlfcn_error = 0;

@@ -8,7 +8,8 @@
 #ifndef WLIBC_DLFCN_INTERNAL_H
 #define WLIBC_DLFCN_INTERNAL_H
 
-#include <dlfcn.h>
+extern unsigned long _last_dlfcn_error;
+extern char *_dlfcn_error_message;
 
 void dlfcn_init();
 void dlfcn_cleanup();

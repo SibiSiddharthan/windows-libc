@@ -6,7 +6,8 @@
 */
 
 #include <dlfcn.h>
-#include <windows.h>
+#include <dlfcn_internal.h>
+#include <Windows.h>
 #include <wlibc_errors.h>
 
 void *wlibc_dlsym(void *handle, const char *symbol)
