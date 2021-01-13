@@ -15,20 +15,32 @@ int common_unlink(const wchar_t *wpath)
 	if (!DeleteFile(wpath))
 	{
 		DWORD error = GetLastError();
-		if (error == ERROR_ACCESS_DENIED) // Try to remove the Readonly Attribute and try again
+		if (error == ERROR_ACCESS_DENIED)
 		{
+			// Try to remove the read-only attribute if it is set and try again
 			DWORD attributes;
 			attributes = GetFileAttributes(wpath);
-			attributes &= ~FILE_ATTRIBUTE_READONLY;
-			if (!SetFileAttributes(wpath, attributes))
+			if (attributes & FILE_ATTRIBUTE_READONLY)
 			{
-				map_win32_error_to_wlibc(GetLastError());
-				return -1;
-			}
+				attributes &= ~FILE_ATTRIBUTE_READONLY;
+				if (!SetFileAttributes(wpath, attributes))
+				{
+					map_win32_error_to_wlibc(GetLastError());
+					return -1;
+				}
 
-			if (!DeleteFile(wpath))
+				if (!DeleteFile(wpath))
+				{
+					map_win32_error_to_wlibc(GetLastError());
+					// re-set the read-only attribute
+					attributes |= FILE_ATTRIBUTE_READONLY;
+					SetFileAttributes(wpath, attributes);
+					return -1;
+				}
+			}
+			else
 			{
-				map_win32_error_to_wlibc(GetLastError());
+				map_win32_error_to_wlibc(error);
 				return -1;
 			}
 		}

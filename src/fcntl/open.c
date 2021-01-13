@@ -32,7 +32,8 @@ static DWORD determine_access_rights(const int oflags)
 	}
 	else
 	{
-		return -1ul;
+		// Lot of old code assumes O_RDONLY if nothing is given as O_RDONLY = 0x0 unlike us.
+		return GENERIC_READ;
 	}
 }
 
@@ -115,11 +116,6 @@ int common_open(const wchar_t *wname, const int oflags, const mode_t perm)
 
 	// access rights
 	access_rights = determine_access_rights(oflags);
-	if (access_rights == -1ul)
-	{
-		errno = EINVAL;
-		return -1;
-	}
 
 	// create how
 	create_how = determine_create_how(oflags);
