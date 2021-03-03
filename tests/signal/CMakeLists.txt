@@ -6,7 +6,8 @@
 ]]
 
 set(tests
-raise_signal)
+raise_signal
+sigprocmask)
 
 foreach(t ${tests})
 	add_executable(test-${t} test-${t}.c)

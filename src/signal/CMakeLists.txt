@@ -8,7 +8,8 @@
 set(signal_SOURCES
 raise.c
 signal.c
-signal_internal.c)
+signal_internal.c
+sigprocmask.c)
 
 add_library(signal OBJECT ${signal_SOURCES})
 

@@ -20,15 +20,20 @@ _crt_signal_t wlibc_signal(int sig, _crt_signal_t handler)
 {
 	switch (sig)
 	{
-	case SIGALRM:
 	case SIGHUP:
 	case SIGQUIT:
 	case SIGTRAP:
+	case SIGUSR1:
+	case SIGUSR2:
 	case SIGPIPE:
+	case SIGALRM:
+	case SIGSTKFLT:
 	case SIGCHLD:
-	case SIGSTOP:
 	case SIGCONT:
+	case SIGTSTP:
 		return wlibc_signal_internal(sig, handler);
+	case SIGBUS:
+		return signal(SIGSEGV, handler);
 	case SIGINT:
 	case SIGILL:
 	case SIGFPE:
