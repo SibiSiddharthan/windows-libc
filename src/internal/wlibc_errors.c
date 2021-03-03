@@ -52,6 +52,10 @@ void map_win32_error_to_wlibc(unsigned long error)
 		errno = EINVAL;
 		break;
 	case ERROR_BROKEN_PIPE:
+	case ERROR_BAD_PIPE:
+	case ERROR_PIPE_BUSY:
+	case ERROR_NO_DATA:
+	case ERROR_PIPE_NOT_CONNECTED:
 		errno = EPIPE;
 	default:
 		break;
