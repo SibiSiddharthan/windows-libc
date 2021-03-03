@@ -26,3 +26,7 @@ endif()
 if(ENABLE_LANGINFO)
 	add_subdirectory(langinfo)
 endif()
+
+if(ENABLE_SIGNALS)
+	add_subdirectory(signal)
+endif()

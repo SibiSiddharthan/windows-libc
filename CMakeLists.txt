@@ -33,6 +33,9 @@ option(ENABLE_SYS_TIME "Enable sys/time.h" ON)
 option(ENABLE_SYS_RESOURCE "Enable sys/resource.h" ON)
 option(ENABLE_STDLIB_EXT "Enable stdlib extensions" ON)
 option(ENABLE_LANGINFO "Enable langinfo.h" ON)
+option(ENABLE_SIGNALS "Enable POSIX like signals" ON)
+option(ENABLE_PROCESS "Enable POSIX process management" ON)
+#option(ENABLE_SOCKETS "Enable SOCKETS API" ON)
 
 add_subdirectory(src)
 

@@ -11,6 +11,8 @@
 #include <fcntl_internal.h>
 #include <dlfcn_internal.h>
 #include <langinfo_internal.h>
+#include <process_internal.h>
+#include <signal_internal.h>
 
 int main(int argc, char **argv);
 
@@ -35,6 +37,12 @@ int wmain(int argc, wchar_t **wargv)
 #ifdef WLIBC_LANGINFO
 	langinfo_init();
 #endif
+#ifdef WLIBC_PROCESS
+	process_init();
+#endif
+#ifdef WLIBC_SIGNALS
+	signal_init();
+#endif
 
 	int exit_status = main(argc, argv);
 
@@ -46,6 +54,12 @@ int wmain(int argc, wchar_t **wargv)
 #endif
 #ifdef WLIBC_LANGINFO
 	langinfo_cleanup();
+#endif
+#ifdef WLIBC_PROCESS
+	process_cleanup();
+#endif
+#ifdef WLIBC_SIGNALS
+	signal_cleanup();
 #endif
 
 	if (argc)

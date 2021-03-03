@@ -45,6 +45,16 @@ if(ENABLE_LANGINFO)
 	list(APPEND modules langinfo)
 endif()
 
+if(ENABLE_SIGNALS)
+	add_subdirectory(signal)
+	list(APPEND modules signal)
+endif()
+
+if(ENABLE_PROCESS)
+	add_subdirectory(sys_wait)
+	list(APPEND modules sys_wait)
+endif()
+
 add_subdirectory(internal)
 
 add_library(wlibc)
