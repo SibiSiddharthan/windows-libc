@@ -10,8 +10,13 @@
 #include <errno.h>
 
 #undef signal
-static _crt_signal_t wlibc_signal_internal(int sig, _crt_signal_t handler)
+_crt_signal_t wlibc_signal_internal(int sig, _crt_signal_t handler)
 {
+	if(handler == SIG_GET)
+	{
+		_crt_signal_t action = get_action(sig);
+		return action;
+	}
 	_crt_signal_t old_action = set_action(sig, handler);
 	return old_action;
 }
@@ -41,7 +46,7 @@ _crt_signal_t wlibc_signal(int sig, _crt_signal_t handler)
 	case SIGTERM:
 	case SIGBREAK:
 	case SIGABRT:
-		return signal(sig, handler); // call msvcrt raise
+		return signal(sig, handler); // call msvcrt signal
 	default:
 		errno = EINVAL;
 		return SIG_ERR;

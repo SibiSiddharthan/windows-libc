@@ -10,7 +10,7 @@
 #include <stdbool.h>
 #include <errno.h>
 
-static bool validate_signal(int sig)
+bool validate_signal(int sig)
 {
 	if (sig >= NSIG || sig == SIGKILL || sig == SIGSTOP)
 	{
@@ -152,16 +152,14 @@ int wlibc_sigprocmask(int how, const sigset_t *set, sigset_t *oldset)
 	LeaveCriticalSection(&_wlibc_signal_critical);
 
 	// Raise any pending signals
-	sigset_t pending_signals = get_pending_signals();;
+	sigset_t pending_signals = get_pending_signals();
 	if (pending_signals)
 	{
 		for (int i = 1; i < NSIG - 1; i++) // Don't check for SIGABRT_COMPAT -> 22
 		{
 			if (pending_signals & (1u << i))
 			{
-				EnterCriticalSection(&_wlibc_signal_critical);
-				_wlibc_pending_signals &= ~(1u << i);
-				LeaveCriticalSection(&_wlibc_signal_critical);
+				remove_pending_signals(i);
 				raise(i);
 			}
 		}

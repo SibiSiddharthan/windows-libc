@@ -9,6 +9,9 @@
 
 CRITICAL_SECTION _wlibc_signal_critical;
 _crt_signal_t _wlibc_signal_table[NSIG];
+int _wlibc_signal_flags[NSIG];
+int _wlibc_signal_mask[NSIG];
+
 sigset_t _wlibc_blocked_signals = 0;
 sigset_t _wlibc_pending_signals = 0;
 
@@ -31,6 +34,24 @@ void signal_init()
 	_wlibc_signal_table[SIGCONT] = SIG_IGN;
 	_wlibc_signal_table[SIGSTOP] = SIG_DFL;
 	_wlibc_signal_table[SIGTSTP] = SIG_IGN;
+
+	// Initialize the signal flags for sigaction
+	for (int i = 0; i < NSIG; i++)
+	{
+		_wlibc_signal_flags[i] = 0;
+	}
+	// msvcrt resets the signal handler on each raise
+	// Let's not bother with OS exceptions here
+	_wlibc_signal_flags[SIGABRT] = SA_RESETHAND;
+	_wlibc_signal_flags[SIGINT] = SA_RESETHAND;
+	_wlibc_signal_flags[SIGTERM] = SA_RESETHAND;
+	_wlibc_signal_flags[SIGBREAK] = SA_RESETHAND;
+
+	// Initialize the signal mask for sigaction
+	for (int i = 0; i < NSIG; i++)
+	{
+		_wlibc_signal_mask[i] = 0;
+	}
 }
 
 void signal_cleanup()
@@ -62,6 +83,22 @@ void add_pending_signals(int sig)
 	EnterCriticalSection(&_wlibc_signal_critical);
 	_wlibc_pending_signals |= 1u << sig;
 	LeaveCriticalSection(&_wlibc_signal_critical);
+}
+
+void remove_pending_signals(int sig)
+{
+	EnterCriticalSection(&_wlibc_signal_critical);
+	_wlibc_pending_signals &= ~(1u << sig);
+	LeaveCriticalSection(&_wlibc_signal_critical);
+}
+
+sigset_t get_blocked_signals()
+{
+	sigset_t result;
+	EnterCriticalSection(&_wlibc_signal_critical);
+	result = _wlibc_blocked_signals;
+	LeaveCriticalSection(&_wlibc_signal_critical);
+	return result;
 }
 
 sigset_t get_pending_signals()

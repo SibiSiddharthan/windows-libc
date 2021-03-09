@@ -7,6 +7,7 @@
 
 set(signal_SOURCES
 raise.c
+sigaction.c
 signal.c
 signal_internal.c
 sigprocmask.c)

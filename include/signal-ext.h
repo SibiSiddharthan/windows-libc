@@ -17,7 +17,16 @@
 _WLIBC_BEGIN_DECLS
 
 typedef int sigset_t;
-// 7,
+
+struct sigaction
+{
+	_crt_signal_t sa_handler;
+	// void (*sa_sigaction)(int, siginfo_t *, void *); Unsupported
+	sigset_t sa_mask;
+	int sa_flags;
+	void (*sa_restorer)(void); // Not intended for public use. See POSIX doc
+};
+
 // POSIX signals not supported by msvcrt
 #define SIGHUP    1
 #define SIGQUIT   3
@@ -42,6 +51,24 @@ typedef int sigset_t;
 #define SIG_UNBLOCK 1 // Unblock signals
 #define SIG_SETMASK 2 // Set the set of blocked signals
 
+// Values for sa_flags
+#define SA_NOCLDSTOP 0x01 // Don't raise SIGCHLD when children stop
+#define SA_NOCLDWAIT 0x02 // Unsupported. No zombies here
+#define SA_NODEFER   0x04 // Don't automatically block the signal when its handler is being executed
+#define SA_ONSTACK   0x08 // Unsupported
+#define SA_RESETHAND 0x10 // Reset the signal handler to the default action
+#define SA_RESTART   0x20 // Unsupported
+#define SA_RESTORER  0x40 // Not intended for public use. See POSIX doc
+
+/* DO NOT define this. If we define this, it implies that we support sa_sigaction.
+   sa_sigaction is not possible to emulate in user space.
+#define SA_SIGINFO 0x80 // Invoke the signal handler with 3 arguments
+*/
+
+#define SA_NOMASK  SA_NODEFER
+#define SA_ONESHOT SA_RESETHAND
+#define SA_STACK   SA_ONSTACK
+
 #define raise wlibc_raise
 WLIBC_API int wlibc_raise(int sig);
 
@@ -52,7 +79,7 @@ WLIBC_API _crt_signal_t wlibc_signal(int sig, _crt_signal_t handler);
 WLIBC_API int wlibc_sigemptyset(sigset_t *set);          // Initialize signal set
 WLIBC_API int wlibc_sigfillset(sigset_t *set);           // Initialize and fill signal set with all supported signals
 WLIBC_API int wlibc_sigaddset(sigset_t *set, int sig);   // Add to signal set
-WLIBC_API int wlibc_sigdelset(sigset_t *set, int sig);  // Delete from signal set
+WLIBC_API int wlibc_sigdelset(sigset_t *set, int sig);   // Delete from signal set
 WLIBC_API int wlibc_sigismember(sigset_t *set, int sig); // Is member
 WLIBC_API int wlibc_sigpending(sigset_t *set);           // Get the set of blocked signals that are raised
 WLIBC_API int wlibc_sigprocmask(int how, const sigset_t *set, sigset_t *oldset); // Block, Unblock signals based on signal set
@@ -90,6 +117,12 @@ WLIBC_INLINE int sigpending(sigset_t *set)
 WLIBC_INLINE int sigprocmask(int how, const sigset_t *newset, sigset_t *oldset)
 {
 	return wlibc_sigprocmask(how, newset, oldset);
+}
+
+WLIBC_API int wlibc_sigaction(int sig, const struct sigaction *new_action, struct sigaction *old_action);
+WLIBC_INLINE int sigaction(int sig, const struct sigaction *new_action, struct sigaction *old_action)
+{
+	return wlibc_sigaction(sig, new_action, old_action);
 }
 
 _WLIBC_END_DECLS

@@ -7,6 +7,7 @@
 
 set(tests
 raise_signal
+sigaction
 sigprocmask)
 
 foreach(t ${tests})
