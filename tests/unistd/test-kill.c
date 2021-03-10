@@ -8,33 +8,41 @@
 #include <unistd.h>
 #include <test-macros.h>
 #include <errno.h>
-#include <signal.h>
+#include <signal-ext.h>
+#include <sys/wait.h>
+
+#include <process_internal.h>
+#include <Windows.h>
 
 void test_EINVAL()
 {
 	errno = 0;
-	int status = kill(getpid(), 32);
-	ASSERT_ERRNO(EINVAL);
-	ASSERT_EQ(status, -1);
-}
-
-void test_bad_process()
-{
-	errno = 0;
-	int status = kill(-1, SIGTERM);
+	int status = kill(getpid(), 64);
 	ASSERT_ERRNO(EINVAL);
 	ASSERT_EQ(status, -1);
 }
 
 void test_okay()
 {
-	kill(getpid(), SIGTERM);
+	STARTUPINFOA si;
+	PROCESS_INFORMATION pi;
+
+	memset(&si, 0, sizeof(si));
+	si.cb = sizeof(si);
+	memset(&pi, 0, sizeof(pi));
+
+	BOOL result = CreateProcessA(NULL, "kill-helper", NULL, NULL, TRUE, 0, NULL, NULL, &si, &pi);
+	add_child(pi.dwProcessId, pi.hProcess);
+
+	kill(pi.dwProcessId, SIGTERM);
+	int wstatus;
+	waitpid(pi.dwProcessId, &wstatus, 0);
+	ASSERT_EQ(wstatus, 3);
 }
 
 int main()
 {
 	test_EINVAL();
-	test_bad_process();
 	test_okay();
 	return 0;
 }

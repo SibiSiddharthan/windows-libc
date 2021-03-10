@@ -6,7 +6,7 @@
 */
 
 #include <unistd.h>
-#include <signal.h>
+#include <signal-ext.h>
 #include <Windows.h>
 #include <errno.h>
 #include <wlibc_errors.h>
@@ -26,7 +26,7 @@ int wlibc_kill(pid_t pid, int sig)
 		return -1;
 	}
 
-	if (!TerminateProcess(process, 128 + sig))
+	if (!TerminateProcess(process, 3)) // All signals exit with status code 3. Maintain compatibility.
 	{
 		map_win32_error_to_wlibc(GetLastError());
 		return -1;

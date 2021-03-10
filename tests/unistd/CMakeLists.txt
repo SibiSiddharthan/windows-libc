@@ -31,5 +31,4 @@ foreach(t ${tests})
 	add_test(NAME test-${t} COMMAND test-${t} WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 endforeach()
 
-# temporary hack
-set_tests_properties(test-kill PROPERTIES SKIP_RETURN_CODE 143)
+add_executable(kill-helper kill-helper.c)

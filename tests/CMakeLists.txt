@@ -30,3 +30,7 @@ endif()
 if(ENABLE_SIGNALS)
 	add_subdirectory(signal)
 endif()
+
+if(ENABLE_PROCESS)
+	add_subdirectory(sys_wait)
+endif()
