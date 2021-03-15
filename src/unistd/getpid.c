@@ -12,3 +12,8 @@ pid_t wlibc_getpid()
 {
 	return GetCurrentProcessId();
 }
+
+pid_t wlibc_getppid()
+{
+	return GetCurrentProcessId();
+}

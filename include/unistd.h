@@ -189,10 +189,16 @@ WLIBC_INLINE gid_t getegid()
 }
 
 WLIBC_API pid_t wlibc_getpid();
+WLIBC_API pid_t wlibc_getppid();
 
 WLIBC_INLINE pid_t getpid()
 {
 	return wlibc_getpid();
+}
+
+WLIBC_INLINE pid_t getppid()
+{
+	return wlibc_getppid();
 }
 
 WLIBC_API uid_t wlibc_getuid();
