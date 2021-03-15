@@ -213,6 +213,12 @@ WLIBC_INLINE uid_t geteuid()
 	return wlibc_geteuid();
 }
 
+WLIBC_API int wlibc_getpagesize();
+WLIBC_INLINE int getpagesize()
+{
+	return wlibc_getpagesize();
+}
+
 WLIBC_API int wlibc_isatty(int fd);
 WLIBC_INLINE int isatty(int fd)
 {

@@ -18,6 +18,7 @@ getcwd.c
 getgid.c
 getpid.c
 getuid.c
+getpagesize.c
 isatty.c
 kill.c
 link.c
