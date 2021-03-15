@@ -58,7 +58,6 @@ WLIBC_INLINE int wfaccessat(int dirfd, const wchar_t *wname, int mode, int flags
 }
 
 WLIBC_API int wlibc_close(int fd);
-
 WLIBC_INLINE int close(int fd)
 {
 	return wlibc_close(fd);
@@ -215,14 +214,12 @@ WLIBC_INLINE uid_t geteuid()
 }
 
 WLIBC_API int wlibc_isatty(int fd);
-
 WLIBC_INLINE int isatty(int fd)
 {
 	return wlibc_isatty(fd);
 }
 
 WLIBC_API int wlibc_kill(pid_t pid, int sig);
-
 WLIBC_INLINE int kill(pid_t pid, int sig)
 {
 	return wlibc_kill(pid, sig);
@@ -255,14 +252,12 @@ WLIBC_INLINE int wlinkat(int olddirfd, const wchar_t *wsource, int newdirfd, con
 }
 
 WLIBC_API off_t wlibc_lseek(int fd, off_t offset, int whence);
-
 WLIBC_INLINE off_t lseek(int fd, off_t offset, int whence)
 {
 	return wlibc_lseek(fd, offset, whence);
 }
 
 WLIBC_API ssize_t wlibc_read(int fd, void *buf, size_t count);
-
 WLIBC_INLINE ssize_t read(int fd, void *buf, size_t count)
 {
 	return wlibc_read(fd, buf, count);
@@ -355,7 +350,6 @@ WLIBC_INLINE int wunlinkat(int dirfd, const wchar_t *wpath, int flags)
 }
 
 WLIBC_API ssize_t wlibc_write(int fd, void *buf, size_t count);
-
 WLIBC_INLINE ssize_t write(int fd, void *buf, size_t count)
 {
 	return wlibc_write(fd, buf, count);
