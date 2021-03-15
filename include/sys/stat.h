@@ -27,6 +27,10 @@ _WLIBC_BEGIN_DECLS
 #define S_IWRITE 0x0080 // Write permission, owner
 #define S_IEXEC  0x0040 // Execute/search permission, owner
 
+#define S_ISUID S_IEXEC // Set user ID on execution
+#define S_ISGID S_IEXEC // Set group ID on execution
+#define S_ISVTX S_IEXEC // Obsolete
+
 #define S_IRUSR   S_IREAD
 #define S_IRGRP   S_IREAD
 #define S_IROTH   S_IREAD

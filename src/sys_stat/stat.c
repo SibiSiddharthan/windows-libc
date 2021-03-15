@@ -44,7 +44,21 @@ int common_stat(const wchar_t *wname, struct stat *statbuf, int do_lstat)
 		lstat_flags |= FILE_FLAG_OPEN_REPARSE_POINT;
 	}
 
-	HANDLE file = CreateFile(wname, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING,
+	wchar_t *wname_proper = NULL;
+	if (wcscmp(wname, L"/dev/null") == 0)
+	{
+		wchar_t *wname_proper = L"NUL";
+	}
+	else if (wcscmp(wname, L"/dev/tty") == 0)
+	{
+		wchar_t *wname_proper = L"CON";
+	}
+	else
+	{
+		wname_proper = (wchar_t *)wname;
+	}
+
+	HANDLE file = CreateFile(wname_proper, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING,
 							 FILE_FLAG_BACKUP_SEMANTICS | lstat_flags, NULL);
 	if (file == INVALID_HANDLE_VALUE)
 	{
@@ -87,7 +101,7 @@ int common_stat(const wchar_t *wname, struct stat *statbuf, int do_lstat)
 				statbuf->st_mode |= S_IREAD | S_IWRITE;
 			}
 
-			if (has_executable_extenstion(wname))
+			if (has_executable_extenstion(wname_proper))
 			{
 				statbuf->st_mode |= S_IEXEC;
 			}
@@ -145,7 +159,8 @@ int common_stat(const wchar_t *wname, struct stat *statbuf, int do_lstat)
 			return -1;
 		}
 		statbuf->st_blksize = sectors_per_cluster * bytes_per_sector;
-		statbuf->st_blocks = (blkcnt_t)(LINK_INFO.AllocationSize.QuadPart / bytes_per_sector);
+		statbuf->st_blocks = (blkcnt_t)(LINK_INFO.AllocationSize.QuadPart / bytes_per_sector) +
+							 ((blkcnt_t)(LINK_INFO.AllocationSize.QuadPart % bytes_per_sector) == 0 ? 0 : 1);
 
 		// st_size
 		if (statbuf->st_mode & S_IFLNK)
