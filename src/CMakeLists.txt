@@ -59,6 +59,9 @@ add_subdirectory(internal)
 
 add_library(wlibc)
 target_link_libraries(wlibc ${modules} wlibc_internal)
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+	set_target_properties(wlibc PROPERTIES RUNTIME_OUTPUT_NAME "wlibcd" LIBRARY_OUTPUT_NAME "wlibcd" ARCHIVE_OUTPUT_NAME "wlibcd")
+endif()
 
 install(TARGETS wlibc LIBRARY DESTINATION lib)
 install(FILES ${CMAKE_SOURCE_DIR}/include/wlibc-macros.h DESTINATION include)
