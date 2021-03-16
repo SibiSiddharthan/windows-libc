@@ -30,6 +30,7 @@ read.c
 rmdir.c
 symlink.c
 symlinkat.c
+ttyname.c
 unlink.c
 unlinkat.c
 write.c)

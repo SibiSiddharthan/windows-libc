@@ -22,7 +22,7 @@ unlink
 unlinkat)
 
 if(NOT DEFINED CI_BUILD)
-	list(APPEND tests isatty)
+	list(APPEND tests isatty ttyname)
 endif()
 
 foreach(t ${tests})
