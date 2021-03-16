@@ -18,6 +18,7 @@ sym_read_link
 sym_read_linkat
 read_write
 rmdir
+truncate
 unlink
 unlinkat)
 

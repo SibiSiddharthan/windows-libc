@@ -334,6 +334,25 @@ WLIBC_INLINE ssize_t wreadlinkat(int dirfd, const wchar_t *wpath, wchar_t *wbuf,
 	return wlibc_wreadlinkat(dirfd, wpath, wbuf, bufsiz);
 }
 
+WLIBC_API int wlibc_truncate(const char *path, off_t length);
+WLIBC_API int wlibc_wtruncate(const wchar_t *wpath, off_t length);
+
+WLIBC_INLINE int truncate(const char *path, off_t length)
+{
+	return wlibc_truncate(path, length);
+}
+
+WLIBC_INLINE int wtruncate(const wchar_t *wpath, off_t length)
+{
+	return wlibc_wtruncate(wpath, length);
+}
+
+WLIBC_API int wlibc_ftruncate(int fd, off_t length);
+WLIBC_INLINE int ftruncate(int fd, off_t length)
+{
+	return wlibc_ftruncate(fd, length);
+}
+
 WLIBC_API char *wlibc_ttyname(int fd);
 WLIBC_API wchar_t *wlibc_wttyname(int fd);
 
