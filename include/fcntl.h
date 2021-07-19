@@ -29,6 +29,7 @@ _WLIBC_BEGIN_DECLS
 #define O_DIRECT      0x400000 // Disable caching
 #define O_DIRECTORY   0x2000   // Fail if not a directory
 #define O_OBTAIN_DIR  O_DIRECTORY
+#define O_SEARCH      O_DIRECTORY // Open directory for searching
 #define O_DSYNC       0x0800
 #define O_EXCL        0x0400 // open only if file doesn't already exist
 #define O_LARGEFILE   0x0    // We always use 64 bit file offsets
