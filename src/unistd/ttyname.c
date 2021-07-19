@@ -12,28 +12,10 @@
 #include <stdbool.h>
 #include <fcntl_internal.h>
 
-static bool validate_tty_fd(int fd)
-{
-	if (!validate_fd(fd))
-	{
-		errno = EBADF;
-		return false;
-	}
-
-	HANDLE tty = get_fd_handle(fd);
-	if (GetFileType(tty) != FILE_TYPE_CHAR)
-	{
-		errno = ENOTTY;
-		return false;
-	}
-
-	return true;
-}
-
 char *wlibc_ttyname(int fd)
 {
 	static char wlibc_ttyname_buffer[256];
-	if (validate_tty_fd(fd))
+	if (wlibc_isatty(fd))
 	{
 		GetConsoleOriginalTitleA(wlibc_ttyname_buffer, 256);
 		return wlibc_ttyname_buffer;
@@ -45,7 +27,7 @@ char *wlibc_ttyname(int fd)
 wchar_t *wlibc_wttyname(int fd)
 {
 	static wchar_t wlibc_wttyname_buffer[256];
-	if (validate_tty_fd(fd))
+	if (wlibc_isatty(fd))
 	{
 		GetConsoleOriginalTitleW(wlibc_wttyname_buffer, 256);
 		return wlibc_wttyname_buffer;
@@ -56,7 +38,7 @@ wchar_t *wlibc_wttyname(int fd)
 
 int wlibc_ttyname_r(int fd, char *buf, size_t bufsiz)
 {
-	if (validate_tty_fd(fd))
+	if (wlibc_isatty(fd))
 	{
 		if (GetConsoleOriginalTitleA(buf, bufsiz) == 0) // bufsiz is too small
 		{
@@ -71,9 +53,9 @@ int wlibc_ttyname_r(int fd, char *buf, size_t bufsiz)
 
 int wlibc_wttyname_r(int fd, wchar_t *wbuf, size_t bufsiz)
 {
-	if (validate_tty_fd(fd))
+	if (wlibc_isatty(fd))
 	{
-		if (GetConsoleOriginalTitleW(wbuf, bufsiz) == 0)
+		if (GetConsoleOriginalTitleW(wbuf, bufsiz) == 0) // bufsiz is too small
 		{
 			errno = ERANGE;
 			return errno;
