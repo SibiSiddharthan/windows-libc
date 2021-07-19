@@ -23,7 +23,7 @@ ssize_t common_readlinkat(int dirfd, const wchar_t *wpath, wchar_t *wbuf, size_t
 		return common_readlink(wpath, wbuf, bufsiz, 0);
 	}
 
-	if (!validate_dirfd(dirfd))
+	if (get_fd_type(dirfd) != DIRECTORY_HANDLE)
 	{
 		return -1;
 	}

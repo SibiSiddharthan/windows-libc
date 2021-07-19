@@ -25,7 +25,7 @@ static int do_dupfd(int old_fd, int new_fd, int o_cloexec)
 
 int wlibc_fcntl(int fd, int cmd, va_list args)
 {
-	if (!validate_active_ffd(fd))
+	if (!validate_fd(fd))
 	{
 		return -1;
 	}

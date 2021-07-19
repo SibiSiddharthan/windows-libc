@@ -20,12 +20,6 @@ int wlibc_isatty(int fd)
 	}
 
 	HANDLE handle = get_fd_handle(fd);
-	if (handle == NULL)
-	{
-		errno = EBADF;
-		return 0;
-	}
-
 	DWORD type = GetFileType(handle);
 	if (type == FILE_TYPE_CHAR)
 	{

@@ -21,7 +21,7 @@ int common_openat(int dirfd, const wchar_t *wname, int flags, va_list perm_args)
 		return wlibc_wopen(wname, flags, perm_args);
 	}
 
-	if (!validate_dirfd(dirfd))
+	if (get_fd_type(dirfd) != DIRECTORY_HANDLE)
 	{
 		return -1;
 	}

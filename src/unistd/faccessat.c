@@ -33,7 +33,7 @@ int common_faccessat(int dirfd, const wchar_t *wname, int mode, int flags)
 		return common_access(wname, mode, deference_symlinks);
 	}
 
-	if (!validate_dirfd(dirfd))
+	if (get_fd_type(dirfd) != DIRECTORY_HANDLE)
 	{
 		return -1;
 	}

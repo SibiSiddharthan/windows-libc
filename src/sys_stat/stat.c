@@ -289,7 +289,7 @@ int wlibc_fstat(int fd, struct stat *statbuf)
 	}
 
 	// Hack for pipes
-	if (get_fd_type(fd) == PIPE)
+	if (get_fd_type(fd) == PIPE_HANDLE)
 	{
 		// Fill statbuf here itself and return
 		struct timespec time_data = {0, 0};

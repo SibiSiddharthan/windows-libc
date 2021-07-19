@@ -17,12 +17,11 @@ typedef void *HANDLE;
 
 enum handle_type
 {
-	STD_STREAMS,
-	NORMAL_FILE_ACTIVE,
-	NORMAL_FILE_INACTIVE,
-	DIRECTORY_ACTIVE,
-	DIRECTORY_INACTIVE,
-	PIPE
+	STD_STREAMS_HANDLE,
+	FILE_HANDLE,
+	DIRECTORY_HANDLE,
+	PIPE_HANDLE,
+	INVALID_HANDLE = -1 // for errors
 };
 
 struct fd_table
@@ -81,15 +80,4 @@ void add_fd_flags(int _fd, int _flags);
 // Return true if we have an entry
 bool validate_fd(int _fd);
 
-// Return true if we have an entry and it is of type DIRECTORY_ACTIVE or DIRECTORY_INACTIVE
-bool validate_dirfd(int _fd);
-
-// Return true if we have an entry and it is of type NORMAL_FILE_ACTIVE or STD_STREAMS or PIPE
-bool validate_active_ffd(int _fd);
-
-// Return true if we have an entry and it is of type DIRECTORY_ACTIVE
-bool validate_active_dirfd(int _fd);
-
-// Return true if we have an entry and it is of type NORMAL_FILE_ACTIVE or DIRECTORY_ACTIVE or STD_STREAMS
-bool validate_active_fd(int _fd);
 #endif

@@ -12,7 +12,7 @@
 
 int common_sync(int fd)
 {
-	if (!validate_active_ffd(fd))
+	if (get_fd_type(fd) != FILE_HANDLE)
 	{
 		return -1;
 	}

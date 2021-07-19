@@ -18,23 +18,16 @@
 
 static DWORD determine_access_rights(const int oflags)
 {
-	if (oflags & O_RDONLY)
+	DWORD flags = FILE_READ_DATA;
+	if ((oflags & O_WRONLY) || (oflags & O_RDWR))
 	{
-		return GENERIC_READ;
+		flags |= FILE_WRITE_DATA;
 	}
-	else if (oflags & O_WRONLY)
+	if (oflags & O_APPEND)
 	{
-		return GENERIC_WRITE;
+		flags |= FILE_APPEND_DATA;
 	}
-	else if ((oflags & O_RDWR) || (oflags & (O_RDONLY | O_WRONLY)))
-	{
-		return GENERIC_READ | GENERIC_WRITE;
-	}
-	else
-	{
-		// Lot of old code assumes O_RDONLY if nothing is given as O_RDONLY = 0x0 unlike us.
-		return GENERIC_READ;
-	}
+	return flags;
 }
 
 static DWORD determine_create_how(const int oflags)
@@ -56,7 +49,7 @@ static DWORD determine_create_how(const int oflags)
 	case O_CREAT | O_TRUNC:
 		return CREATE_ALWAYS;
 	}
-	return -1ul;
+	return -1ul; // unused
 }
 
 static DWORD determine_file_attributes(const int oflags)
@@ -90,7 +83,6 @@ static DWORD determine_file_attributes(const int oflags)
 	{
 		attributes |= FILE_FLAG_OPEN_REPARSE_POINT;
 	}
-
 	return attributes;
 }
 
@@ -109,8 +101,15 @@ static DWORD determine_permissions(const mode_t perm)
 
 int common_open(const wchar_t *wname, const int oflags, const mode_t perm)
 {
-	DWORD access_rights = 0;
-	DWORD share_rights = FILE_SHARE_READ | FILE_SHARE_WRITE;
+	DWORD access_rights = FILE_READ_ATTRIBUTES |
+						  // chmod needs this as we change the read-only bit
+						  FILE_WRITE_ATTRIBUTES |
+						  FILE_LIST_DIRECTORY | // for directories
+						  // We don't technically need this as all users have BYPASS_TRAVERSE_CHECKING privelege, but just in case
+						  FILE_TRAVERSE;
+						  // chown
+						  // READ_CONTROL| WRITE_DAC;
+	DWORD share_rights = FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE;
 	DWORD create_how = 0;
 	DWORD file_attributes = FILE_FLAG_BACKUP_SEMANTICS; // To also open a directory
 
@@ -119,18 +118,9 @@ int common_open(const wchar_t *wname, const int oflags, const mode_t perm)
 
 	// create how
 	create_how = determine_create_how(oflags);
-	if (create_how == -1ul)
-	{
-		errno = EINVAL;
-		return -1;
-	}
 
 	// file attributes
 	file_attributes |= determine_file_attributes(oflags);
-	if (file_attributes == FILE_FLAG_BACKUP_SEMANTICS)
-	{
-		file_attributes |= FILE_ATTRIBUTE_NORMAL;
-	}
 
 	// permissions
 	file_attributes |= determine_permissions(perm);
@@ -142,27 +132,30 @@ int common_open(const wchar_t *wname, const int oflags, const mode_t perm)
 		return -1;
 	}
 
-	BY_HANDLE_FILE_INFORMATION INFO;
-	GetFileInformationByHandle(file, &INFO);
+	FILE_BASIC_INFO INFO;
+	if (!GetFileInformationByHandleEx(file, FileBasicInfo, &INFO, sizeof(FILE_BASIC_INFO)))
+	{
+		map_win32_error_to_wlibc(GetLastError());
+	}
 	int fd;
 
-	if ((oflags & O_NOFOLLOW) && (INFO.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT))
+	if (((oflags & O_NOFOLLOW) && ((oflags & O_PATH) == 0)) && (INFO.FileAttributes & FILE_ATTRIBUTE_REPARSE_POINT))
 	{
-		// Close the handle if file is symbolic link as O_NOFOLLOW dictates
+		// Close the handle if file is a symbolic link but only O_NOFOLLOW is specified. (Specify O_PATH also)
 		CloseHandle(file);
 		errno = ELOOP;
 		return -1;
 	}
 
-	if ((oflags & O_DIRECTORY) && ((INFO.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == 0))
+	if ((oflags & O_DIRECTORY) && ((INFO.FileAttributes & FILE_ATTRIBUTE_DIRECTORY) == 0))
 	{
-		// Close the handle if file is not a directory
+		// Close the handle if file is not a directory and O_DIRECTORY is specified
 		CloseHandle(file);
 		errno = ENOTDIR;
 		return -1;
 	}
 
-	if ((access_rights & GENERIC_WRITE) && (INFO.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
+	if ((access_rights & (FILE_READ_DATA | FILE_APPEND_DATA)) && (INFO.FileAttributes & FILE_ATTRIBUTE_DIRECTORY))
 	{
 		// Close the handle if we request write access to a directory
 		CloseHandle(file);
@@ -170,22 +163,7 @@ int common_open(const wchar_t *wname, const int oflags, const mode_t perm)
 		return -1;
 	}
 
-	if (INFO.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
-	{
-		// Use an empty handle for directories. This will later be filled up the fdopendir
-		CloseHandle(file);
-		fd = register_to_fd_table(NULL, wname, DIRECTORY_INACTIVE, 0);
-		return fd;
-	}
-
-	if (oflags & O_PATH)
-	{
-		CloseHandle(file);
-		fd = register_to_fd_table(NULL, wname, NORMAL_FILE_INACTIVE, 0);
-		return fd;
-	}
-
-	fd = register_to_fd_table(file, wname, NORMAL_FILE_ACTIVE, oflags);
+	fd = register_to_fd_table(file, wname, (INFO.FileAttributes & FILE_ATTRIBUTE_DIRECTORY) ? DIRECTORY_HANDLE : FILE_HANDLE, oflags);
 	return fd;
 }
 

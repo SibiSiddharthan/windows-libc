@@ -41,7 +41,7 @@ FILE *wlibc_popen(const char *command, const char *mode)
 	}
 	int flags = parse_mode(mode);
 	HANDLE pipe_handle = (HANDLE)_get_osfhandle(_fileno(_PIPE));
-	register_to_fd_table(pipe_handle, NULL, PIPE, flags);
+	register_to_fd_table(pipe_handle, NULL, PIPE_HANDLE, flags);
 	return _PIPE;
 }
 

@@ -32,7 +32,7 @@ int common_fstatat(int dirfd, const wchar_t *wname, struct stat *statbuf, int fl
 		return common_stat(wname, statbuf, do_lstat);
 	}
 
-	if (!validate_dirfd(dirfd))
+	if (get_fd_type(dirfd) != DIRECTORY_HANDLE)
 	{
 		return -1;
 	}

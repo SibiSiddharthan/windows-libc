@@ -11,7 +11,7 @@
 
 off_t wlibc_telldir(DIR *dirp)
 {
-	if (dirp == NULL || !validate_active_dirfd(dirp->fd))
+	if (dirp == NULL || get_fd_type(dirp->fd) != DIRECTORY_HANDLE)
 	{
 		errno = EBADF;
 		return -1;

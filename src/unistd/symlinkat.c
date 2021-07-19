@@ -21,7 +21,7 @@ int common_symlinkat(const wchar_t *wsource, int newdirfd, const wchar_t *wtarge
 		return common_symlink(wsource, wtarget);
 	}
 
-	if (!validate_dirfd(newdirfd))
+	if (get_fd_type(newdirfd) != DIRECTORY_HANDLE)
 	{
 		return -1;
 	}

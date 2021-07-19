@@ -37,10 +37,6 @@ static void set_fd_path_internal(int _fd, const wchar_t *_path);
 static void add_fd_flags_internal(int _fd, int _flags);
 
 static bool validate_fd_internal(int _fd);
-static bool validate_dirfd_internal(int _fd);
-static bool validate_active_ffd_internal(int _fd);
-static bool validate_active_dirfd_internal(int _fd);
-static bool validate_active_fd_internal(int _fd);
 
 ///////////////////////////////////////
 // Initialization and cleanup functions
@@ -57,19 +53,19 @@ void init_fd_table()
 	_fd_table_size = 4;
 
 	_fd_io[0]._handle = hin;
-	_fd_io[0]._type = STD_STREAMS;
+	_fd_io[0]._type = STD_STREAMS_HANDLE;
 	_fd_io[0]._flags = O_RDONLY;
 	_fd_io[0]._free = 0;
 	wcscpy(_fd_io[0]._path, L"CON");
 
 	_fd_io[1]._handle = hout;
-	_fd_io[1]._type = STD_STREAMS;
+	_fd_io[1]._type = STD_STREAMS_HANDLE;
 	_fd_io[1]._flags = O_WRONLY;
 	_fd_io[1]._free = 0;
 	wcscpy(_fd_io[1]._path, L"CON");
 
 	_fd_io[2]._handle = herr;
-	_fd_io[2]._type = STD_STREAMS;
+	_fd_io[2]._type = STD_STREAMS_HANDLE;
 	_fd_io[2]._flags = O_WRONLY;
 	_fd_io[2]._free = 0;
 	wcscpy(_fd_io[2]._path, L"CON");
@@ -96,7 +92,7 @@ static int internal_insert_fd(int index, HANDLE _h, const wchar_t *_path, enum h
 	_fd_io[index]._free = 0;
 
 	// Empty _path for pipes
-	if (_type == PIPE)
+	if (_type == PIPE_HANDLE)
 	{
 		_fd_io[index]._path[0] = L'\0';
 		return index;
@@ -105,15 +101,8 @@ static int internal_insert_fd(int index, HANDLE _h, const wchar_t *_path, enum h
 	// We try to find the absolute path here
 	// We need this for *at functions to work properly
 	// This should not give an error
-	HANDLE file = CreateFile(_path, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING,
-							 FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT, NULL);
-	if (file == INVALID_HANDLE_VALUE)
-	{
-		exit(GetLastError()); // die if it does
-	}
 	wchar_t temp_buf[MAX_PATH];
-	int length = GetFinalPathNameByHandle(file, temp_buf, MAX_PATH, VOLUME_NAME_DOS);
-	CloseHandle(file);
+	int length = GetFinalPathNameByHandle(_h, temp_buf, MAX_PATH, VOLUME_NAME_DOS);
 
 	if (length == 0) // This will be true for a character device
 	{
@@ -122,7 +111,6 @@ static int internal_insert_fd(int index, HANDLE _h, const wchar_t *_path, enum h
 
 	else
 	{
-
 		for (int i = 6; i < length; i++) // \\?\C:
 		{
 			if (temp_buf[i] == L'\\')
@@ -134,7 +122,7 @@ static int internal_insert_fd(int index, HANDLE _h, const wchar_t *_path, enum h
 		wcscpy(_fd_io[index]._path, temp_buf + 4);
 
 		// Append a trailing backslash(if necessary) if we are opening a directory
-		if (_type == DIRECTORY_ACTIVE || _type == DIRECTORY_INACTIVE)
+		if (_type == DIRECTORY_HANDLE)
 		{
 			length -= 4;
 			if (!(_fd_io[index]._path[length - 1] == L'/'))
@@ -286,21 +274,10 @@ int get_fd(HANDLE _h)
 
 static int close_fd_internal(int _fd)
 {
-	if (_fd_io[_fd]._type == DIRECTORY_ACTIVE)
+	if (!CloseHandle(_fd_io[_fd]._handle))
 	{
-		if (!FindClose(_fd_io[_fd]._handle))
-		{
-			map_win32_error_to_wlibc(GetLastError());
-			return -1;
-		}
-	}
-	else if (_fd_io[_fd]._type == NORMAL_FILE_ACTIVE || _fd_io[_fd]._type == STD_STREAMS || _fd_io[_fd]._type == PIPE)
-	{
-		if (!CloseHandle(_fd_io[_fd]._handle))
-		{
-			map_win32_error_to_wlibc(GetLastError());
-			return -1;
-		}
+		map_win32_error_to_wlibc(GetLastError());
+		return -1;
 	}
 	_fd_io[_fd]._handle = INVALID_HANDLE_VALUE;
 	_fd_io[_fd]._free = 1;
@@ -347,7 +324,10 @@ int get_fd_flags(int _fd)
 
 static enum handle_type get_fd_type_internal(int _fd)
 {
-	return _fd_io[_fd]._type;
+	if(validate_fd_internal(_fd))
+		return _fd_io[_fd]._type;
+	else
+		return INVALID_HANDLE;
 }
 
 enum handle_type get_fd_type(int _fd)
@@ -475,113 +455,6 @@ bool validate_fd(int _fd)
 {
 	EnterCriticalSection(&_fd_critical);
 	bool condition = validate_fd_internal(_fd);
-	LeaveCriticalSection(&_fd_critical);
-	return condition;
-}
-
-static bool validate_dirfd_internal(int _fd)
-{
-	if (!validate_fd_internal(_fd))
-	{
-		errno = EBADF;
-		return false;
-	}
-	enum handle_type type = get_fd_type_internal(_fd);
-	if (!(type == DIRECTORY_ACTIVE || type == DIRECTORY_INACTIVE))
-	{
-		errno = ENOTDIR;
-		return false;
-	}
-	return true;
-}
-
-bool validate_dirfd(int _fd)
-{
-	EnterCriticalSection(&_fd_critical);
-	bool condition = validate_dirfd_internal(_fd);
-	LeaveCriticalSection(&_fd_critical);
-	return condition;
-}
-
-static bool validate_active_ffd_internal(int _fd)
-{
-	if (!validate_fd_internal(_fd))
-	{
-		errno = EBADF;
-		return false;
-	}
-
-	enum handle_type type = get_fd_type_internal(_fd);
-	if (type != NORMAL_FILE_ACTIVE && type != STD_STREAMS && type != PIPE)
-	{
-		if (type == DIRECTORY_ACTIVE || type == DIRECTORY_INACTIVE)
-		{
-			errno = EISDIR;
-			return false;
-		}
-		errno = EBADF;
-		return false;
-	}
-	return true;
-}
-
-bool validate_active_ffd(int _fd)
-{
-	EnterCriticalSection(&_fd_critical);
-	bool condition = validate_active_ffd_internal(_fd);
-	LeaveCriticalSection(&_fd_critical);
-	return condition;
-}
-
-static bool validate_active_dirfd_internal(int _fd)
-{
-	if (!validate_fd_internal(_fd))
-	{
-		errno = EBADF;
-		return false;
-	}
-	enum handle_type type = get_fd_type_internal(_fd);
-	if (!(type == DIRECTORY_ACTIVE || type == DIRECTORY_INACTIVE))
-	{
-		errno = ENOTDIR;
-		return false;
-	}
-	if (type == DIRECTORY_INACTIVE)
-	{
-		errno = EBADF;
-		return false;
-	}
-	return true;
-}
-
-bool validate_active_dirfd(int _fd)
-{
-	EnterCriticalSection(&_fd_critical);
-	bool condition = validate_active_dirfd_internal(_fd);
-	LeaveCriticalSection(&_fd_critical);
-	return condition;
-}
-
-static bool validate_active_fd_internal(int _fd)
-{
-	if (!validate_fd_internal(_fd))
-	{
-		errno = EBADF;
-		return false;
-	}
-	enum handle_type type = get_fd_type_internal(_fd);
-	if (!(type == DIRECTORY_ACTIVE || type == NORMAL_FILE_ACTIVE || type == STD_STREAMS))
-	{
-		errno = EBADF;
-		return false;
-	}
-	return true;
-}
-
-bool validate_active_fd(int _fd)
-{
-	EnterCriticalSection(&_fd_critical);
-	bool condition = validate_active_fd_internal(_fd);
 	LeaveCriticalSection(&_fd_critical);
 	return condition;
 }

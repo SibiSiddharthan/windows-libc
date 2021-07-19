@@ -36,7 +36,7 @@ int common_linkat(int olddirfd, const wchar_t *wsource, int newdirfd, const wcha
 		use_olddirfd = 0;
 		newsource = (wchar_t *)wsource;
 	}
-	else if (!validate_dirfd(olddirfd))
+	else if (get_fd_type(olddirfd) != DIRECTORY_HANDLE)
 	{
 		return -1;
 	}
@@ -46,7 +46,7 @@ int common_linkat(int olddirfd, const wchar_t *wsource, int newdirfd, const wcha
 		use_newdirfd = 0;
 		newtarget = (wchar_t *)wtarget;
 	}
-	else if (!validate_dirfd(newdirfd))
+	else if (get_fd_type(newdirfd) != DIRECTORY_HANDLE)
 	{
 		return -1;
 	}

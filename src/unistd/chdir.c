@@ -51,7 +51,7 @@ int wlibc_wchdir(const wchar_t *wname)
 
 int wlibc_fchdir(int fd)
 {
-	if (!validate_dirfd(fd))
+	if (get_fd_type(fd) != DIRECTORY_HANDLE)
 	{
 		return -1;
 	}

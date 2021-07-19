@@ -14,7 +14,7 @@ void fill_dir_buffer(DIR *dirp);
 
 void wlibc_seekdir(DIR *dirp, long long int pos)
 {
-	if (dirp == NULL || !validate_active_dirfd(dirp->fd))
+	if (dirp == NULL || get_fd_type(dirp->fd) != DIRECTORY_HANDLE)
 	{
 		errno = EBADF;
 		return;

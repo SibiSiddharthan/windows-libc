@@ -67,7 +67,7 @@ int common_renameat(int olddirfd, const wchar_t *woldname, int newdirfd, const w
 		use_olddirfd = 0;
 		final_oldname = (wchar_t *)woldname;
 	}
-	else if (!validate_dirfd(olddirfd))
+	else if (get_fd_type(olddirfd) != DIRECTORY_HANDLE)
 	{
 		return -1;
 	}
@@ -77,7 +77,7 @@ int common_renameat(int olddirfd, const wchar_t *woldname, int newdirfd, const w
 		use_newdirfd = 0;
 		final_newname = (wchar_t *)wnewname;
 	}
-	else if (!validate_dirfd(newdirfd))
+	else if (get_fd_type(newdirfd) != DIRECTORY_HANDLE)
 	{
 		return -1;
 	}

@@ -35,7 +35,7 @@ int common_unlinkat(int dirfd, const wchar_t *wpath, int flags)
 		}
 	}
 
-	if (!validate_dirfd(dirfd))
+	if (get_fd_type(dirfd) != DIRECTORY_HANDLE)
 	{
 		return -1;
 	}

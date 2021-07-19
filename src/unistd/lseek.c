@@ -13,7 +13,7 @@
 
 off_t wlibc_lseek(int fd, off_t offset, int whence)
 {
-	if (!validate_active_ffd(fd))
+	if (get_fd_type(fd) != FILE_HANDLE)
 	{
 		return -1;
 	}

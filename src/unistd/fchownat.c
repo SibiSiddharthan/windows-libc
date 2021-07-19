@@ -32,7 +32,7 @@ int common_chownat(int dirfd, const wchar_t *wname, uid_t owner, gid_t group, in
 		return common_chown(wname, owner, group, do_lchown);
 	}
 
-	if (!validate_dirfd(dirfd))
+	if (get_fd_type(dirfd) != DIRECTORY_HANDLE)
 	{
 		return -1;
 	}

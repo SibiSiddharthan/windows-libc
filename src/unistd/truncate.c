@@ -92,7 +92,7 @@ int wlibc_wtruncate(const wchar_t *wpath, off_t length)
 
 int wlibc_ftruncate(int fd, off_t length)
 {
-	if (!validate_active_ffd(fd))
+	if (get_fd_type(fd) != FILE_HANDLE)
 	{
 		return -1;
 	}

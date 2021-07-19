@@ -20,7 +20,7 @@ ssize_t wlibc_write(int fd, void *buf, size_t count)
 		return -1;
 	}
 
-	if (!validate_active_ffd(fd))
+	if (get_fd_type(fd) != FILE_HANDLE)
 	{
 		return -1;
 	}

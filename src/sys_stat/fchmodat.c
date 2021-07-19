@@ -20,7 +20,7 @@ int common_fchmodat(int dirfd, const wchar_t *wname, mode_t mode, int flags)
 		return common_chmod(wname, mode);
 	}
 
-	if (!validate_dirfd(dirfd))
+	if (get_fd_type(dirfd) != DIRECTORY_HANDLE)
 	{
 		return -1;
 	}

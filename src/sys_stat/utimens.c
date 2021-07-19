@@ -109,7 +109,7 @@ int common_utimensat(int dirfd, const wchar_t *wname, const struct timespec time
 		use_dirfd = 0;
 		newname = (wchar_t *)wname;
 	}
-	else if (!validate_dirfd(dirfd))
+	else if (get_fd_type(dirfd) != DIRECTORY_HANDLE)
 	{
 		return -1;
 	}
@@ -168,7 +168,7 @@ int wlibc_wutimensat(int dirfd, const wchar_t *wname, const struct timespec time
 
 int wlibc_futimens(int fd, const struct timespec times[2])
 {
-	if (!validate_active_fd(fd))
+	if (!validate_fd(fd))
 	{
 		return -1;
 	}

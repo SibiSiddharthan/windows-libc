@@ -32,7 +32,7 @@ struct dirent *wlibc_readdir(DIR *dirp)
 
 struct wdirent *wlibc_wreaddir(DIR *dirp)
 {
-	if (dirp == NULL || !validate_active_dirfd(dirp->fd))
+	if (dirp == NULL || get_fd_type(dirp->fd) != DIRECTORY_HANDLE)
 	{
 		errno = EBADF;
 		return NULL;

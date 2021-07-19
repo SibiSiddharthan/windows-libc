@@ -23,7 +23,7 @@ int common_mkdirat(int dirfd, const wchar_t *wpath, mode_t mode)
 		return common_mkdir(wpath, mode);
 	}
 
-	if (!validate_dirfd(dirfd))
+	if (get_fd_type(dirfd) != DIRECTORY_HANDLE)
 	{
 		return -1;
 	}

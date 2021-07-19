@@ -51,7 +51,7 @@ FILE *wlibc_fopen(const char *filename, const char *mode)
 	HANDLE file_handle = (HANDLE)_get_osfhandle(_fileno(_FILE));
 	wchar_t *wpath = mb_to_wc(filename_proper);
 	int flags = parse_mode(mode);
-	register_to_fd_table(file_handle, wpath, NORMAL_FILE_ACTIVE, flags);
+	register_to_fd_table(file_handle, wpath, FILE_HANDLE, flags);
 	free(wpath);
 	return _FILE;
 }
@@ -59,7 +59,7 @@ FILE *wlibc_fopen(const char *filename, const char *mode)
 FILE *wlibc_fdopen(int fd, const char *mode)
 {
 	// We have the fd information
-	if (!validate_active_ffd(fd))
+	if (get_fd_type(fd) != FILE_HANDLE)
 	{
 		return NULL;
 	}
@@ -116,7 +116,7 @@ FILE *wlibc_freopen(const char *filename, const char *mode, FILE *old_stream)
 	int flags = parse_mode(mode);
 	wchar_t *wpath = mb_to_wc(filename_proper);
 	set_fd_handle(fd, new_handle);
-	set_fd_type(fd, NORMAL_FILE_ACTIVE);
+	set_fd_type(fd, FILE_HANDLE);
 	set_fd_flags(fd, flags);
 	set_fd_path(fd, wpath);
 	free(wpath);

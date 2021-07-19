@@ -52,7 +52,7 @@ int common_dup(int oldfd, int newfd, int flags)
 
 int wlibc_dup(int fd)
 {
-	if (!validate_active_ffd(fd))
+	if (!validate_fd(fd))
 	{
 		return -1;
 	}
@@ -62,7 +62,7 @@ int wlibc_dup(int fd)
 
 int wlibc_dup2(int oldfd, int newfd)
 {
-	if (!validate_active_ffd(oldfd))
+	if (!validate_fd(oldfd))
 	{
 		return -1;
 	}
@@ -83,7 +83,7 @@ int wlibc_dup2(int oldfd, int newfd)
 
 int wlibc_dup3(int oldfd, int newfd, int flags)
 {
-	if (!validate_active_ffd(oldfd))
+	if (!validate_fd(oldfd))
 	{
 		return -1;
 	}
