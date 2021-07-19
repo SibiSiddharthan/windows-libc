@@ -28,7 +28,7 @@ off_t wlibc_lseek(int fd, off_t offset, int whence)
 	// Fail if we are not a disk file
 	if (GetFileType(file) != FILE_TYPE_DISK)
 	{
-		errno = EPIPE;
+		errno = ESPIPE;
 		return -1;
 	}
 
