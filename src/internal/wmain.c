@@ -16,6 +16,8 @@
 
 int main(int argc, char **argv);
 
+__declspec(dllimport) int __cdecl _setmode(int fd, int mode);
+
 int wmain(int argc, wchar_t **wargv)
 {
 	char **argv = NULL;
@@ -28,6 +30,13 @@ int wmain(int argc, wchar_t **wargv)
 		}
 		argv[argc] = NULL;
 	}
+
+#ifdef WLIBC_BINARY_STD_STREAMS
+	// #define O_BINARY 0x8000
+	_setmode(0, 0x8000); // stdin
+	_setmode(1, 0x8000); // stdout
+	_setmode(2, 0x8000); // stderr
+#endif
 
 #ifdef WLIBC_POSIX_IO
 	init_fd_table();
