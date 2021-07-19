@@ -21,11 +21,12 @@ int wmain(int argc, wchar_t **wargv)
 	char **argv = NULL;
 	if (argc)
 	{
-		argv = (char **)malloc(sizeof(char *) * argc);
+		argv = (char **)malloc(sizeof(char *) * (argc + 1)); // argv ends with NULL
 		for (int i = 0; i < argc; i++)
 		{
 			argv[i] = wc_to_mb(wargv[i]);
 		}
+		argv[argc] = NULL;
 	}
 
 #ifdef WLIBC_POSIX_IO
