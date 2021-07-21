@@ -61,6 +61,7 @@ FILE *wlibc_fdopen(int fd, const char *mode)
 	// We have the fd information
 	if (get_fd_type(fd) != FILE_HANDLE)
 	{
+		errno = EISDIR;
 		return NULL;
 	}
 

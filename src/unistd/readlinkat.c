@@ -23,8 +23,10 @@ ssize_t common_readlinkat(int dirfd, const wchar_t *wpath, wchar_t *wbuf, size_t
 		return common_readlink(wpath, wbuf, bufsiz, 0);
 	}
 
-	if (get_fd_type(dirfd) != DIRECTORY_HANDLE)
+	enum handle_type _type = get_fd_type(dirfd);
+	if (_type != DIRECTORY_HANDLE || _type == INVALID_HANDLE)
 	{
+		errno = (_type == INVALID_HANDLE ? EBADF: ENOTDIR);
 		return -1;
 	}
 

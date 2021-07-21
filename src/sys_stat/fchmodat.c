@@ -20,8 +20,10 @@ int common_fchmodat(int dirfd, const wchar_t *wname, mode_t mode, int flags)
 		return common_chmod(wname, mode);
 	}
 
-	if (get_fd_type(dirfd) != DIRECTORY_HANDLE)
+	enum handle_type _type = get_fd_type(dirfd);
+	if (_type != DIRECTORY_HANDLE || _type == INVALID_HANDLE)
 	{
+		errno = (_type == INVALID_HANDLE ? EBADF: ENOTDIR);
 		return -1;
 	}
 

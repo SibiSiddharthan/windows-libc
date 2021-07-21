@@ -11,12 +11,12 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-void test_EBADF()
+void test_ENOTDIR()
 {
 	errno = 0;
 	int fd = open("CMakeCache.txt", O_RDONLY);
 	DIR *D = fdopendir(fd);
-	ASSERT_ERRNO(EBADF);
+	ASSERT_ERRNO(ENOTDIR);
 	ASSERT_NULL(D);
 	close(fd);
 }
@@ -32,7 +32,7 @@ void test_okay()
 
 int main()
 {
-	test_EBADF();
+	test_ENOTDIR();
 	test_okay();
 	return 0;
 }

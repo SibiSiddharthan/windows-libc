@@ -14,11 +14,9 @@
 void test_EBADF()
 {
 	errno = 0;
-	int fd = open("CMakeFiles/", O_RDONLY | O_EXCL | O_PATH);
-	int status = isatty(fd);
+	int status = isatty(3);
 	ASSERT_EQ(status, 0);
 	ASSERT_ERRNO(EBADF);
-	close(fd);
 }
 
 void test_ENOTTY()

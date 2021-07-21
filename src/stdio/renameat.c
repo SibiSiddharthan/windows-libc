@@ -61,15 +61,22 @@ int common_renameat(int olddirfd, const wchar_t *woldname, int newdirfd, const w
 	int use_olddirfd = 1, use_newdirfd = 1;
 	wchar_t *final_oldname = NULL;
 	wchar_t *final_newname = NULL;
+	enum handle_type _type;
 
 	if (olddirfd == AT_FDCWD || is_absolute_pathw(woldname))
 	{
 		use_olddirfd = 0;
 		final_oldname = (wchar_t *)woldname;
 	}
-	else if (get_fd_type(olddirfd) != DIRECTORY_HANDLE)
+
+	if (use_olddirfd)
 	{
-		return -1;
+		_type = get_fd_type(olddirfd);
+		if (_type != DIRECTORY_HANDLE || _type == INVALID_HANDLE)
+		{
+			errno = (_type == INVALID_HANDLE ? EBADF : ENOTDIR);
+			return -1;
+		}
 	}
 
 	if (newdirfd == AT_FDCWD || is_absolute_pathw(wnewname))
@@ -77,9 +84,15 @@ int common_renameat(int olddirfd, const wchar_t *woldname, int newdirfd, const w
 		use_newdirfd = 0;
 		final_newname = (wchar_t *)wnewname;
 	}
-	else if (get_fd_type(newdirfd) != DIRECTORY_HANDLE)
+
+	if (use_newdirfd)
 	{
-		return -1;
+		_type = get_fd_type(newdirfd);
+		if (_type != DIRECTORY_HANDLE || _type == INVALID_HANDLE)
+		{
+			errno = (_type == INVALID_HANDLE ? EBADF : ENOTDIR);
+			return -1;
+		}
 	}
 
 	if (use_olddirfd)

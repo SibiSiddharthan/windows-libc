@@ -58,8 +58,8 @@ int common_stat(const wchar_t *wname, struct stat *statbuf, int do_lstat)
 		wname_proper = (wchar_t *)wname;
 	}
 
-	HANDLE file = CreateFile(wname_proper, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING,
-							 FILE_FLAG_BACKUP_SEMANTICS | lstat_flags, NULL);
+	HANDLE file = CreateFile(wname_proper, FILE_READ_ATTRIBUTES, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL,
+							 OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS | lstat_flags, NULL);
 	if (file == INVALID_HANDLE_VALUE)
 	{
 		map_win32_error_to_wlibc(GetLastError());

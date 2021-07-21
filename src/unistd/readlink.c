@@ -32,15 +32,15 @@ ssize_t common_readlink(const wchar_t *wpath, wchar_t *wbuf, size_t bufsiz, int 
 	}
 	int bufsiz_fill = 0;
 
-	HANDLE h_real =
-		CreateFile(wpath, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS | FILE_ATTRIBUTE_NORMAL, NULL);
+	HANDLE h_real = CreateFile(wpath, FILE_READ_ATTRIBUTES, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL, OPEN_EXISTING,
+							   FILE_FLAG_BACKUP_SEMANTICS | FILE_ATTRIBUTE_NORMAL, NULL);
 	if (h_real == INVALID_HANDLE_VALUE)
 	{
 		map_win32_error_to_wlibc(GetLastError());
 		return -1;
 	}
 
-	HANDLE h_sym = CreateFile(wpath, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING,
+	HANDLE h_sym = CreateFile(wpath, FILE_READ_ATTRIBUTES, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL, OPEN_EXISTING,
 							  FILE_FLAG_BACKUP_SEMANTICS | FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OPEN_REPARSE_POINT, NULL);
 	if (h_sym == INVALID_HANDLE_VALUE)
 	{

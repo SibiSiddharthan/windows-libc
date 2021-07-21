@@ -34,6 +34,7 @@ int common_fstatat(int dirfd, const wchar_t *wname, struct stat *statbuf, int fl
 
 	if (get_fd_type(dirfd) != DIRECTORY_HANDLE)
 	{
+		errno = EBADF;
 		return -1;
 	}
 

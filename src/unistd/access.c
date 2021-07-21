@@ -27,7 +27,7 @@ int common_access(const wchar_t *wname, int mode, int deference_symlinks)
 		deference_symlinks_flags |= FILE_FLAG_OPEN_REPARSE_POINT;
 	}
 
-	HANDLE file = CreateFile(wname, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING,
+	HANDLE file = CreateFile(wname, FILE_READ_ATTRIBUTES, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL, OPEN_EXISTING,
 							 FILE_FLAG_BACKUP_SEMANTICS | deference_symlinks_flags, NULL);
 	if (file == INVALID_HANDLE_VALUE)
 	{

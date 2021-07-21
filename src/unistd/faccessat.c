@@ -33,8 +33,10 @@ int common_faccessat(int dirfd, const wchar_t *wname, int mode, int flags)
 		return common_access(wname, mode, deference_symlinks);
 	}
 
-	if (get_fd_type(dirfd) != DIRECTORY_HANDLE)
+	enum handle_type _type = get_fd_type(dirfd);
+	if (_type != DIRECTORY_HANDLE || _type == INVALID_HANDLE)
 	{
+		errno = (_type == INVALID_HANDLE ? EBADF: ENOTDIR);
 		return -1;
 	}
 

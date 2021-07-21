@@ -35,8 +35,10 @@ int common_unlinkat(int dirfd, const wchar_t *wpath, int flags)
 		}
 	}
 
-	if (get_fd_type(dirfd) != DIRECTORY_HANDLE)
+	enum handle_type _type = get_fd_type(dirfd);
+	if (_type != DIRECTORY_HANDLE || _type == INVALID_HANDLE)
 	{
+		errno = (_type == INVALID_HANDLE ? EBADF: ENOTDIR);
 		return -1;
 	}
 

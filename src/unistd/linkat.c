@@ -23,6 +23,7 @@ int common_linkat(int olddirfd, const wchar_t *wsource, int newdirfd, const wcha
 	wchar_t *finalsource = NULL;
 	wchar_t *newtarget = NULL;
 	wchar_t *wbuf = NULL;
+	enum handle_type _type;
 	int use_olddirfd = 1, use_newdirfd = 1;
 
 	if (flags != 0 && flags != AT_SYMLINK_FOLLOW)
@@ -36,9 +37,15 @@ int common_linkat(int olddirfd, const wchar_t *wsource, int newdirfd, const wcha
 		use_olddirfd = 0;
 		newsource = (wchar_t *)wsource;
 	}
-	else if (get_fd_type(olddirfd) != DIRECTORY_HANDLE)
+
+	if (use_olddirfd)
 	{
-		return -1;
+		_type = get_fd_type(olddirfd);
+		if (_type != DIRECTORY_HANDLE || _type == INVALID_HANDLE)
+		{
+			errno = (_type == INVALID_HANDLE ? EBADF : ENOTDIR);
+			return -1;
+		}
 	}
 
 	if (newdirfd == AT_FDCWD || is_absolute_pathw(wtarget))
@@ -46,9 +53,15 @@ int common_linkat(int olddirfd, const wchar_t *wsource, int newdirfd, const wcha
 		use_newdirfd = 0;
 		newtarget = (wchar_t *)wtarget;
 	}
-	else if (get_fd_type(newdirfd) != DIRECTORY_HANDLE)
+
+	if (use_newdirfd)
 	{
-		return -1;
+		_type = get_fd_type(newdirfd);
+		if (_type != DIRECTORY_HANDLE || _type == INVALID_HANDLE)
+		{
+			errno = (_type == INVALID_HANDLE ? EBADF : ENOTDIR);
+			return -1;
+		}
 	}
 
 	// Handle AT_SYMLINK_FOLLOW

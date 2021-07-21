@@ -109,19 +109,22 @@ int common_utimensat(int dirfd, const wchar_t *wname, const struct timespec time
 		use_dirfd = 0;
 		newname = (wchar_t *)wname;
 	}
-	else if (get_fd_type(dirfd) != DIRECTORY_HANDLE)
-	{
-		return -1;
-	}
 
 	if (use_dirfd)
 	{
+		enum handle_type _type = get_fd_type(dirfd);
+		if (_type != DIRECTORY_HANDLE || _type == INVALID_HANDLE)
+		{
+			errno = (_type == INVALID_HANDLE ? EBADF : ENOTDIR);
+			return -1;
+		}
+
 		const wchar_t *dirpath = get_fd_path(dirfd);
 		newname = wcstrcat(dirpath, wname);
 	}
 
-	HANDLE file = CreateFile(newname, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING,
-							 FILE_FLAG_BACKUP_SEMANTICS | symfile_flags, NULL);
+	HANDLE file = CreateFile(newname, FILE_READ_ATTRIBUTES | FILE_WRITE_ATTRIBUTES, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+							 NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS | symfile_flags, NULL);
 	if (file == INVALID_HANDLE_VALUE)
 	{
 		map_win32_error_to_wlibc(GetLastError());

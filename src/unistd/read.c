@@ -20,19 +20,14 @@ ssize_t wlibc_read(int fd, void *buf, size_t count)
 		return -1;
 	}
 
-	if (get_fd_type(fd) != FILE_HANDLE)
+	enum handle_type _type = get_fd_type(fd);
+	if (_type == DIRECTORY_HANDLE || _type == INVALID_HANDLE)
 	{
+		errno = (_type == DIRECTORY_HANDLE ? EISDIR : EBADF);
 		return -1;
 	}
 
 	HANDLE file = get_fd_handle(fd);
-	int flags = get_fd_flags(fd);
-	if ((flags & (O_RDONLY | O_RDWR)) == 0)
-	{
-		errno = EACCES;
-		return -1;
-	}
-
 	DWORD read_count;
 	BOOL status = ReadFile(file, buf, count, &read_count, NULL);
 	if (!status)
@@ -41,7 +36,7 @@ ssize_t wlibc_read(int fd, void *buf, size_t count)
 		return -1;
 	}
 
-	if (get_fd_type(fd) == PIPE_HANDLE)
+	if (_type == PIPE_HANDLE)
 	{
 		// ReadFile only reads till first CR for applications with ENABLE_LINE_INPUT
 		// So we fill up the buffer with subsequent calls

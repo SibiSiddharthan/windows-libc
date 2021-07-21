@@ -21,8 +21,10 @@ int common_symlinkat(const wchar_t *wsource, int newdirfd, const wchar_t *wtarge
 		return common_symlink(wsource, wtarget);
 	}
 
-	if (get_fd_type(newdirfd) != DIRECTORY_HANDLE)
+	enum handle_type _type = get_fd_type(newdirfd);
+	if (_type != DIRECTORY_HANDLE || _type == INVALID_HANDLE)
 	{
+		errno = (_type == INVALID_HANDLE ? EBADF: ENOTDIR);
 		return -1;
 	}
 

@@ -16,14 +16,14 @@
 // Returns 1 if true, 0 otherwise (even for failures)
 static int are_they_hardlinks(const wchar_t *woldname, const wchar_t *wnewname)
 {
-	HANDLE old = CreateFile(woldname, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING,
+	HANDLE old = CreateFile(woldname, FILE_READ_ATTRIBUTES, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL, OPEN_EXISTING,
 							FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT, NULL);
 	if (old == INVALID_HANDLE_VALUE)
 	{
 		return 0;
 	}
 
-	HANDLE new = CreateFile(wnewname, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING,
+	HANDLE new = CreateFile(wnewname, FILE_READ_ATTRIBUTES, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL, OPEN_EXISTING,
 							FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT, NULL);
 	if (new == INVALID_HANDLE_VALUE)
 	{

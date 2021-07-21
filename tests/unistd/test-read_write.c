@@ -12,20 +12,6 @@
 
 const char *content = "hello1\nhello2\n";
 
-void test_EBADF()
-{
-	errno = 0;
-	int fd = open("t-read", O_RDONLY | O_CREAT, 0700);
-	close(fd);
-	fd = open("t-read", O_RDONLY | O_EXCL | O_PATH);
-	char rbuf[16];
-	ssize_t length = read(fd, rbuf, 16);
-	ASSERT_EQ(length, -1);
-	ASSERT_ERRNO(EBADF);
-	close(fd);
-	unlink("t-read");
-}
-
 void test_EISDIR()
 {
 	errno = 0;
@@ -146,7 +132,6 @@ void test_lseek()
 
 int main()
 {
-	test_EBADF();
 	test_EISDIR();
 	test_read_write();
 	test_O_APPEND();

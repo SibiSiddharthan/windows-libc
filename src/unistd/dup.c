@@ -54,6 +54,7 @@ int wlibc_dup(int fd)
 {
 	if (!validate_fd(fd))
 	{
+		errno = EBADF;
 		return -1;
 	}
 
@@ -64,6 +65,7 @@ int wlibc_dup2(int oldfd, int newfd)
 {
 	if (!validate_fd(oldfd))
 	{
+		errno = EBADF;
 		return -1;
 	}
 
@@ -85,6 +87,7 @@ int wlibc_dup3(int oldfd, int newfd, int flags)
 {
 	if (!validate_fd(oldfd))
 	{
+		errno = EBADF;
 		return -1;
 	}
 
