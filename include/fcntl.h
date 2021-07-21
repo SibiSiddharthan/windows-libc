@@ -16,9 +16,9 @@
 _WLIBC_BEGIN_DECLS
 
 // One of these should be specified
-#define O_RDONLY  0x0001 // open for reading only
-#define O_WRONLY  0x0002 // open for writing only
-#define O_RDWR    0x0004 // open for reading and writing
+#define O_RDONLY  0x0000 // open for reading only
+#define O_WRONLY  0x0001 // open for writing only
+#define O_RDWR    0x0002 // open for reading and writing
 #define O_ACCMODE (O_RDONLY | O_WRONLY | O_RDWR)
 
 // Flags

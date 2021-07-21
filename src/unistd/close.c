@@ -6,11 +6,18 @@
 */
 
 #include <unistd.h>
+#include <fcntl.h>
 #include <fcntl_internal.h>
 #include <wlibc_errors.h>
 
 int wlibc_close(int fd)
 {
+	if(fd == AT_FDCWD)
+	{
+		// We do
+		return 0;
+	}
+
 	if (!validate_fd(fd))
 	{
 		errno = EBADF;
