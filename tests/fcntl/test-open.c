@@ -110,7 +110,7 @@ void test_O_RDONLY()
 	close(fd);
 }
 
-void test_O_WRONLY()
+void test_O_PATH()
 {
 	errno = 0;
 	int fd = open("t-open", O_WRONLY | O_CREAT, 0700);
@@ -118,6 +118,8 @@ void test_O_WRONLY()
 	char *buf = "hello";
 	ssize_t length = write(fd, buf, 5);
 	ASSERT_EQ(length, 5);
+	close(fd);
+	fd = open("t-open", O_PATH);
 	char rbuf[16];
 	length = read(fd, rbuf, 5);
 	ASSERT_EQ(length, -1);
@@ -137,6 +139,16 @@ void test_O_TRUNC()
 	unlink("t-open");
 }
 
+void test_O_TMPFILE()
+{
+	errno = 0;
+	int fd = open("t-open", O_CREAT | O_TMPFILE, 0700);
+	ASSERT_EQ(fd, 3);
+	close(fd);
+	ASSERT_EQ(unlink("t-open"), -1);
+	ASSERT_ERRNO(ENOENT);
+}
+
 int main()
 {
 	test_ENOENT();
@@ -149,7 +161,8 @@ int main()
 	test_dir_with_slashes();
 	test_dir_without_slashes();
 	test_O_RDONLY();
-	test_O_WRONLY();
+	test_O_PATH();
 	test_O_TRUNC();
+	test_O_TMPFILE();
 	return 0;
 }

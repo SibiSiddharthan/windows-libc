@@ -104,7 +104,6 @@ int common_open(const wchar_t *wname, const int oflags, const mode_t perm)
 	DWORD access_rights = FILE_READ_ATTRIBUTES |
 						  // chmod needs this as we change the read-only bit
 						  FILE_WRITE_ATTRIBUTES |
-						  FILE_LIST_DIRECTORY | // for directories
 						  // We don't technically need this as all users have BYPASS_TRAVERSE_CHECKING privelege, but just in case
 						  FILE_TRAVERSE;
 						  // chown
@@ -114,7 +113,11 @@ int common_open(const wchar_t *wname, const int oflags, const mode_t perm)
 	DWORD file_attributes = FILE_FLAG_BACKUP_SEMANTICS; // To also open a directory
 
 	// access rights
-	access_rights = determine_access_rights(oflags);
+	// If O_PATH is given file should not have read and write access
+	if ((oflags & O_PATH) == 0)
+	{
+		access_rights |= determine_access_rights(oflags);
+	}
 
 	// create how
 	create_how = determine_create_how(oflags);
@@ -155,7 +158,7 @@ int common_open(const wchar_t *wname, const int oflags, const mode_t perm)
 		return -1;
 	}
 
-	if ((access_rights & (FILE_READ_DATA | FILE_APPEND_DATA)) && (INFO.FileAttributes & FILE_ATTRIBUTE_DIRECTORY))
+	if ((access_rights & (FILE_WRITE_DATA | FILE_APPEND_DATA)) && (INFO.FileAttributes & FILE_ATTRIBUTE_DIRECTORY))
 	{
 		// Close the handle if we request write access to a directory
 		CloseHandle(file);
