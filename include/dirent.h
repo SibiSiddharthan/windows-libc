@@ -12,10 +12,6 @@
 #include <sys/types.h>
 #include <wchar.h>
 
-// forward declarations to avoid including windows.h
-struct _WIN32_FIND_DATAW;
-typedef struct _WIN32_FIND_DATAW WIN32_FIND_DATA;
-
 _WLIBC_BEGIN_DECLS
 
 #define DT_UNKNOWN 0
@@ -46,16 +42,14 @@ struct wdirent
 	wchar_t d_name[260];
 };
 
+#define DIRENT_DIR_BUFFER_SIZE 131072 // 128 KB. This allows a minimum of 250 entries.
 typedef struct
 {
 	int fd;
 	void *d_handle;
-	WIN32_FIND_DATA *data;
-	size_t buffer_length;
-	size_t size;   /* Total valid data in the block.  */
-	size_t offset; /* Current offset into the block.  */
-	off_t filepos; /* Position of next entry to read. */
-	int errcode;   /* Delayed error code.             */
+	void *buffer;
+	size_t offset;
+	int called_rewinddir;
 	struct dirent *_dirent;
 	struct wdirent *_wdirent;
 } DIR;
@@ -128,24 +122,24 @@ WLIBC_INLINE int dirfd(DIR *dirp)
 	return wlibc_dirfd(dirp);
 }
 
-WLIBC_API int wlibc_scandir(const char * name, struct dirent *** namelist, int (*selector)(const struct dirent *),
+WLIBC_API int wlibc_scandir(const char *name, struct dirent ***namelist, int (*selector)(const struct dirent *),
 							int (*cmp)(const struct dirent **, const struct dirent **));
-WLIBC_API int wlibc_wscandir(const wchar_t * wname, struct wdirent *** wnamelist, int (*selector)(const struct wdirent *),
+WLIBC_API int wlibc_wscandir(const wchar_t *wname, struct wdirent ***wnamelist, int (*selector)(const struct wdirent *),
 							 int (*cmp)(const struct wdirent **, const struct wdirent **));
 
-WLIBC_INLINE int scandir(const char * name, struct dirent *** namelist, int (*selector)(const struct dirent *),
+WLIBC_INLINE int scandir(const char *name, struct dirent ***namelist, int (*selector)(const struct dirent *),
 						 int (*cmp)(const struct dirent **, const struct dirent **))
 {
 	return wlibc_scandir(name, namelist, selector, cmp);
 }
 
-WLIBC_INLINE int wscandir(const wchar_t * wname, struct wdirent *** wnamelist, int (*selector)(const struct wdirent *),
+WLIBC_INLINE int wscandir(const wchar_t *wname, struct wdirent ***wnamelist, int (*selector)(const struct wdirent *),
 						  int (*cmp)(const struct wdirent **, const struct wdirent **))
 {
 	return wlibc_wscandir(wname, wnamelist, selector, cmp);
 }
 
-WLIBC_API int scandirat(int dfd, const char * name, struct dirent *** namelist, int (*selector)(const struct dirent *),
+WLIBC_API int scandirat(int dfd, const char *name, struct dirent ***namelist, int (*selector)(const struct dirent *),
 						int (*cmp)(const struct dirent **, const struct dirent **));
 
 WLIBC_API int wlibc_alphasort(const struct dirent **e1, const struct dirent **e2);

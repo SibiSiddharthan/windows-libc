@@ -14,8 +14,7 @@ readdir.c
 telldir.c
 rewinddir.c
 #scandir.c
-seekdir.c
-fill_dir_buffer.c)
+seekdir.c)
 
 add_library(dirent OBJECT ${dirent_SOURCES})
 

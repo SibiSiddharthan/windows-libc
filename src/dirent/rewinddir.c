@@ -18,4 +18,5 @@ void wlibc_rewinddir(DIR *dirp)
 	}
 
 	dirp->offset = 0;
+	dirp->called_rewinddir = 1;
 }

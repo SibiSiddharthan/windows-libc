@@ -15,64 +15,43 @@
 #include <fcntl_internal.h>
 #include <misc.h>
 
-void fill_dir_buffer(DIR *dirp);
+static void initialize_dirp(DIR **dirp, HANDLE directory_handle)
+{
+	*dirp = (DIR *)malloc(sizeof(DIR));
+	(*dirp)->d_handle = directory_handle;
+	(*dirp)->buffer = malloc(DIRENT_DIR_BUFFER_SIZE);
+	(*dirp)->offset = 0;
+	(*dirp)->called_rewinddir = 0;
+	(*dirp)->_dirent = (struct dirent *)malloc(sizeof(struct dirent));
+	(*dirp)->_wdirent = (struct wdirent *)malloc(sizeof(struct wdirent));
+}
 
 static DIR *common_opendir(const wchar_t *wname, int fd)
 {
-
-	int length = wcslen(wname);
-	wchar_t last = wname[length - 1];
-	wchar_t *wname_proper = (wchar_t *)malloc(sizeof(wchar_t) * (length + 3)); // '/0','/','*'
-	wcscpy(wname_proper, wname);
-
-	// Append "/*" or "*" as needed
-	if (last == L'/' || last == L'\\')
-	{
-		wcscat(wname_proper, L"*");
-	}
-	else
-	{
-		wcscat(wname_proper, L"/*");
-	}
-
-	WIN32_FIND_DATA find_file;
-	HANDLE directory_handle;
-	DIR *dirp = NULL;
-
-	directory_handle =
-		FindFirstFileEx(wname_proper, FindExInfoStandard, &find_file, FindExSearchNameMatch, NULL, FIND_FIRST_EX_LARGE_FETCH);
-
+	HANDLE directory_handle =
+		CreateFile(wname, FILE_READ_ATTRIBUTES | FILE_LIST_DIRECTORY | FILE_TRAVERSE,
+				   FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
 	if (directory_handle == INVALID_HANDLE_VALUE)
 	{
 		map_win32_error_to_wlibc(GetLastError());
 		return NULL;
 	}
 
-	dirp = (DIR *)malloc(sizeof(DIR));
-	dirp->d_handle = directory_handle;
-	dirp->buffer_length = 8;
-	dirp->data = (WIN32_FIND_DATA *)malloc(sizeof(WIN32_FIND_DATA) * dirp->buffer_length);
-	dirp->_dirent = (struct dirent *)malloc(sizeof(struct dirent));
-	dirp->_wdirent = (struct wdirent *)malloc(sizeof(struct wdirent));
-	dirp->offset = 0;
-	dirp->data[0] = find_file;
-	dirp->size = 1;
-
-	// fill a buffer of directory entries
-	fill_dir_buffer(dirp);
-
-	// Make/Update an entry in the fd table
-	if (fd == -1)
+	FILE_STANDARD_INFO INFO;
+	if (!GetFileInformationByHandleEx(directory_handle, FileStandardInfo, &INFO, sizeof(FILE_STANDARD_INFO)))
 	{
-		dirp->fd = register_to_fd_table(directory_handle, wname, DIRECTORY_ACTIVE, 0);
+		map_win32_error_to_wlibc(GetLastError());
 	}
-	else
+	if(!INFO.Directory)
 	{
-		set_fd_handle(fd, directory_handle);
-		set_fd_type(fd, DIRECTORY_ACTIVE);
+		CloseHandle(directory_handle);
+		errno = ENOTDIR;
+		return NULL;
 	}
 
-	free(wname_proper);
+	DIR *dirp = NULL;
+	initialize_dirp(&dirp, directory_handle);
+	dirp->fd = register_to_fd_table(directory_handle, wname, DIRECTORY_HANDLE, 0);
 	return dirp;
 }
 
@@ -103,13 +82,15 @@ DIR *wlibc_wopendir(const wchar_t *wname)
 
 DIR *wlibc_fdopendir(int fd)
 {
-	if (!validate_fd(fd) || get_fd_type(fd) != DIRECTORY_INACTIVE)
+	enum handle_type _type = get_fd_type(fd);
+	if (_type != DIRECTORY_HANDLE || _type == INVALID_HANDLE)
 	{
-		errno = EBADF;
+		errno = (_type == INVALID_HANDLE ? EBADF : ENOTDIR);
 		return NULL;
 	}
 
-	const wchar_t *path = get_fd_path(fd);
-	DIR *dirp = common_opendir(path, fd);
+	HANDLE directory_handle = get_fd_handle(fd);
+	DIR *dirp = NULL;
+	initialize_dirp(&dirp, directory_handle);
 	return dirp;
 }

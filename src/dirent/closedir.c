@@ -24,7 +24,7 @@ int wlibc_closedir(DIR *dirp)
 		// Free the memory of DIR and it's components
 		free(dirp->_wdirent);
 		free(dirp->_dirent);
-		free(dirp->data);
+		free(dirp->buffer);
 		free(dirp);
 		return 0;
 	}

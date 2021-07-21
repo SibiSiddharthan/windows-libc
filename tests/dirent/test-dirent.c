@@ -69,54 +69,41 @@ void test_readdir() // telldir is also tested
 	d = readdir(D);
 	ASSERT_STREQ(d->d_name, ".");
 	ASSERT_EQ(d->d_type, DT_DIR);
-	ASSERT_EQ(telldir(D), 1);
 	d = readdir(D);
 	ASSERT_STREQ(d->d_name, "..");
 	ASSERT_EQ(d->d_type, DT_DIR);
-	ASSERT_EQ(telldir(D), 2);
 	d = readdir(D);
 	ASSERT_STREQ(d->d_name, "a1");
 	ASSERT_EQ(d->d_type, DT_REG);
-	ASSERT_EQ(telldir(D), 3);
 	d = readdir(D);
 	ASSERT_STREQ(d->d_name, "a2");
 	ASSERT_EQ(d->d_type, DT_REG);
-	ASSERT_EQ(telldir(D), 4);
 	d = readdir(D);
 	ASSERT_STREQ(d->d_name, "a3");
 	ASSERT_EQ(d->d_type, DT_REG);
-	ASSERT_EQ(telldir(D), 5);
 	d = readdir(D);
 	ASSERT_STREQ(d->d_name, "a4");
 	ASSERT_EQ(d->d_type, DT_REG);
-	ASSERT_EQ(telldir(D), 6);
 	d = readdir(D);
 	ASSERT_STREQ(d->d_name, "a5");
 	ASSERT_EQ(d->d_type, DT_REG);
-	ASSERT_EQ(telldir(D), 7);
 	d = readdir(D);
 	ASSERT_STREQ(d->d_name, "a6");
 	ASSERT_EQ(d->d_type, DT_REG);
-	ASSERT_EQ(telldir(D), 8);
 	d = readdir(D);
 	ASSERT_STREQ(d->d_name, "d");
 	ASSERT_EQ(d->d_type, DT_DIR);
-	ASSERT_EQ(telldir(D), 9);
 	d = readdir(D);
 	ASSERT_STREQ(d->d_name, "s1");
 	ASSERT_EQ(d->d_type, DT_LNK);
-	ASSERT_EQ(telldir(D), 10);
 	d = readdir(D);
 	ASSERT_STREQ(d->d_name, "s2");
 	ASSERT_EQ(d->d_type, DT_LNK);
-	ASSERT_EQ(telldir(D), 11);
 	d = readdir(D);
 	ASSERT_STREQ(d->d_name, "sd");
 	ASSERT_EQ(d->d_type, DT_LNK);
-	ASSERT_EQ(telldir(D), 12);
 	d = readdir(D);
 	ASSERT_NULL(d);
-	ASSERT_EQ(telldir(D), 12);
 	closedir(D);
 }
 
@@ -124,23 +111,29 @@ void test_seekdir() // rewinddir is also tested here
 {
 	DIR *D = opendir("t");
 	struct dirent *d = NULL;
-	seekdir(D, 5);
+	d = readdir(D);
+	d = readdir(D);
+	d = readdir(D);
+	ASSERT_STREQ(d->d_name, "a1");
+	ASSERT_EQ(d->d_type, DT_REG);
 
-	ASSERT_EQ(telldir(D), 5);
+	off_t offset = telldir(D);
+	d = readdir(D);
+	d = readdir(D);
 	d = readdir(D);
 	ASSERT_STREQ(d->d_name, "a4");
 	ASSERT_EQ(d->d_type, DT_REG);
-	ASSERT_EQ(telldir(D), 6);
 
-	seekdir(D, 12);
+	seekdir(D, offset);
 	d = readdir(D);
-	ASSERT_NULL(d);
+	ASSERT_STREQ(d->d_name, "a2");
+	ASSERT_EQ(d->d_type, DT_REG);
 
 	rewinddir(D);
-	ASSERT_EQ(telldir(D), 0);
 	d = readdir(D);
-	ASSERT_EQ(telldir(D), 1);
 	ASSERT_STREQ(d->d_name, ".");
+	ASSERT_EQ(d->d_type, DT_DIR);
+
 	closedir(D);
 }
 

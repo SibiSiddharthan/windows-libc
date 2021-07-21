@@ -19,17 +19,6 @@ void wlibc_seekdir(DIR *dirp, long long int pos)
 		errno = EBADF;
 		return;
 	}
-
-	if (dirp->buffer_length <= pos)
-	{
-		size_t length = dirp->buffer_length;
-		WIN32_FIND_DATA *temp = (WIN32_FIND_DATA *)malloc(sizeof(WIN32_FIND_DATA) * length);
-		memcpy(temp, dirp->data, sizeof(WIN32_FIND_DATA) * length);
-		dirp->buffer_length = 2 * pos; // subject to change
-		dirp->data = (WIN32_FIND_DATA *)realloc(dirp->data, sizeof(WIN32_FIND_DATA) * dirp->buffer_length);
-		memcpy(dirp->data, temp, sizeof(WIN32_FIND_DATA) * length);
-		free(temp);
-		fill_dir_buffer(dirp);
-	}
+	// This value should be given by telldir
 	dirp->offset = pos;
 }

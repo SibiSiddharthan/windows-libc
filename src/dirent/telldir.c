@@ -16,6 +16,8 @@ off_t wlibc_telldir(DIR *dirp)
 		errno = EBADF;
 		return -1;
 	}
-
+	// Return the offset in DIR->buffer.
+	// NOTE: This is actually not the file offset in the directory entry.
+	// You should treat this strictly as an opaque value.
 	return dirp->offset;
 }
