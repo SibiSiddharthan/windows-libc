@@ -29,43 +29,8 @@ struct timespec FILETIME_to_timespec(FILETIME FT)
 	return result;
 }
 
-int common_stat(const wchar_t *wname, struct stat *statbuf, int do_lstat)
+int do_stat(HANDLE file, struct stat *statbuf)
 {
-	if (statbuf == NULL)
-	{
-		errno = EFAULT;
-		return -1;
-	}
-
-	int lstat_flags = 0;
-
-	if (do_lstat)
-	{
-		lstat_flags |= FILE_FLAG_OPEN_REPARSE_POINT;
-	}
-
-	wchar_t *wname_proper = NULL;
-	if (wcscmp(wname, L"/dev/null") == 0)
-	{
-		wchar_t *wname_proper = L"NUL";
-	}
-	else if (wcscmp(wname, L"/dev/tty") == 0)
-	{
-		wchar_t *wname_proper = L"CON";
-	}
-	else
-	{
-		wname_proper = (wchar_t *)wname;
-	}
-
-	HANDLE file = CreateFile(wname_proper, FILE_READ_ATTRIBUTES, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL,
-							 OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS | lstat_flags, NULL);
-	if (file == INVALID_HANDLE_VALUE)
-	{
-		map_win32_error_to_wlibc(GetLastError());
-		return -1;
-	}
-
 	DWORD type = GetFileType(file);
 
 	if (type == FILE_TYPE_DISK)
@@ -100,11 +65,6 @@ int common_stat(const wchar_t *wname, struct stat *statbuf, int do_lstat)
 			{
 				statbuf->st_mode |= S_IREAD | S_IWRITE;
 			}
-
-			if (has_executable_extenstion(wname_proper))
-			{
-				statbuf->st_mode |= S_IEXEC;
-			}
 		}
 
 		// st_[amc]tim
@@ -117,19 +77,23 @@ int common_stat(const wchar_t *wname, struct stat *statbuf, int do_lstat)
 		if (!GetFinalPathNameByHandle(file, wbuf, MAX_PATH, FILE_NAME_NORMALIZED))
 		{
 			map_win32_error_to_wlibc(GetLastError());
-			CloseHandle(file);
 			return -1;
 		}
 		char drive_name;
 		wcstombs(&drive_name, wbuf + 4, 1);     // '//?/'
 		statbuf->st_dev = drive_name - 'A' + 1; // A ->1, B->2 ...
 
+		// Set the S_IEXEC bit here as it requires the name
+		if (has_executable_extenstion(wbuf + 4))
+		{
+			statbuf->st_mode |= S_IEXEC;
+		}
+
 		// st_ino
 		FILE_ID_INFO INO_INFO;
 		if (!GetFileInformationByHandleEx(file, FileIdInfo, &INO_INFO, sizeof(FILE_ID_INFO)))
 		{
 			map_win32_error_to_wlibc(GetLastError());
-			CloseHandle(file);
 			return -1;
 		}
 		memcpy(&statbuf->st_ino, INO_INFO.FileId.Identifier, sizeof(ino_t)); // Capture the first 8 bytes, the rest are zero
@@ -139,7 +103,6 @@ int common_stat(const wchar_t *wname, struct stat *statbuf, int do_lstat)
 		if (!GetFileInformationByHandleEx(file, FileStandardInfo, &LINK_INFO, sizeof(FILE_STANDARD_INFO)))
 		{
 			map_win32_error_to_wlibc(GetLastError());
-			CloseHandle(file);
 			return -1;
 		}
 		statbuf->st_nlink = LINK_INFO.NumberOfLinks;
@@ -155,7 +118,6 @@ int common_stat(const wchar_t *wname, struct stat *statbuf, int do_lstat)
 		if (!GetDiskFreeSpace(root, &sectors_per_cluster, &bytes_per_sector, &number_of_free_clusters, &total_number_of_clusters))
 		{
 			map_win32_error_to_wlibc(GetLastError());
-			CloseHandle(file);
 			return -1;
 		}
 		statbuf->st_blksize = sectors_per_cluster * bytes_per_sector;
@@ -222,9 +184,51 @@ int common_stat(const wchar_t *wname, struct stat *statbuf, int do_lstat)
 	statbuf->st_uid = 0;
 	statbuf->st_gid = 0;
 
+	return 0;
+}
+
+int common_stat(const wchar_t *wname, struct stat *statbuf, int do_lstat)
+{
+	if (statbuf == NULL)
+	{
+		errno = EFAULT;
+		return -1;
+	}
+
+	int lstat_flags = 0;
+
+	if (do_lstat)
+	{
+		lstat_flags |= FILE_FLAG_OPEN_REPARSE_POINT;
+	}
+
+	wchar_t *wname_proper = NULL;
+	if (wcscmp(wname, L"/dev/null") == 0)
+	{
+		wchar_t *wname_proper = L"NUL";
+	}
+	else if (wcscmp(wname, L"/dev/tty") == 0)
+	{
+		wchar_t *wname_proper = L"CON";
+	}
+	else
+	{
+		wname_proper = (wchar_t *)wname;
+	}
+
+	HANDLE file = CreateFile(wname_proper, FILE_READ_ATTRIBUTES, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL,
+							 OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS | lstat_flags, NULL);
+	if (file == INVALID_HANDLE_VALUE)
+	{
+		map_win32_error_to_wlibc(GetLastError());
+		return -1;
+	}
+
+	int result = do_stat(file, statbuf);
+
 	CloseHandle(file);
 
-	return 0;
+	return result;
 }
 
 int wlibc_stat(const char *name, struct stat *statbuf)
@@ -314,6 +318,6 @@ int wlibc_fstat(int fd, struct stat *statbuf)
 		return 0;
 	}
 
-	const wchar_t *wname = get_fd_path(fd);
-	return common_stat(wname, statbuf, 0);
+	HANDLE file = get_fd_handle(fd);
+	return do_stat(file, statbuf);
 }
