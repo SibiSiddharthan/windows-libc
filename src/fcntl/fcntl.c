@@ -6,7 +6,7 @@
 */
 
 #include <fcntl.h>
-#include <fcntl_internal.h>
+#include <internal/fcntl.h>
 #include <errno.h>
 #include <stdarg.h>
 

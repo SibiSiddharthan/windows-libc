@@ -9,9 +9,9 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <wchar.h>
-#include <misc.h>
+#include <internal/misc.h>
 #include <Windows.h>
-#include <wlibc_errors.h>
+#include <internal/error.h>
 
 // Returns 1 if true, 0 otherwise (even for failures)
 static int are_they_hardlinks(const wchar_t *woldname, const wchar_t *wnewname)

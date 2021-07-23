@@ -11,7 +11,7 @@
 #include <signal-ext.h>
 #include <sys/wait.h>
 
-#include <process_internal.h>
+#include <internal/process.h>
 #include <Windows.h>
 
 void test_EINVAL()

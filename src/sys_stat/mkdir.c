@@ -7,8 +7,8 @@
 
 #include <sys/stat.h>
 #include <Windows.h>
-#include <wlibc_errors.h>
-#include <misc.h>
+#include <internal/error.h>
+#include <internal/misc.h>
 #include <errno.h>
 
 int common_mkdir(const wchar_t *wpath, mode_t mode)

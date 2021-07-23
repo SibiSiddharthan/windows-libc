@@ -10,7 +10,7 @@
 #include <Windows.h>
 #include <errno.h>
 #include <stdbool.h>
-#include <fcntl_internal.h>
+#include <internal/fcntl.h>
 
 char *wlibc_ttyname(int fd)
 {

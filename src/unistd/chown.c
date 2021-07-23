@@ -5,10 +5,10 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <misc.h>
+#include <internal/misc.h>
 #include <errno.h>
 #include <unistd.h>
-#include <fcntl_internal.h>
+#include <internal/fcntl.h>
 
 int common_chown(const wchar_t *wname, uid_t owner, gid_t group, int do_lchown)
 {

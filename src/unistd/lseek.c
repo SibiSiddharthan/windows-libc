@@ -7,9 +7,9 @@
 
 #include <unistd.h>
 #include <Windows.h>
-#include <wlibc_errors.h>
+#include <internal/error.h>
 #include <errno.h>
-#include <fcntl_internal.h>
+#include <internal/fcntl.h>
 
 off_t wlibc_lseek(int fd, off_t offset, int whence)
 {

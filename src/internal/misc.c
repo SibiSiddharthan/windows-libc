@@ -5,7 +5,7 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <misc.h>
+#include <internal/misc.h>
 
 char *wc_to_mb(const wchar_t *wstr)
 {

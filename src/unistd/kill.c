@@ -9,7 +9,7 @@
 #include <signal-ext.h>
 #include <Windows.h>
 #include <errno.h>
-#include <wlibc_errors.h>
+#include <internal/error.h>
 
 int wlibc_kill(pid_t pid, int sig)
 {

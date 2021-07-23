@@ -6,9 +6,9 @@
 */
 
 #include <dlfcn.h>
-#include <dlfcn_internal.h>
+#include <internal/dlfcn.h>
 #include <Windows.h>
-#include <wlibc_errors.h>
+#include <internal/error.h>
 
 char *wlibc_dlerror()
 {

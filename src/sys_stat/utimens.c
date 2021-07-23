@@ -7,12 +7,12 @@
 
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <misc.h>
+#include <internal/misc.h>
 #include <errno.h>
-#include <wlibc_errors.h>
+#include <internal/error.h>
 #include <Windows.h>
 #include <time.h>
-#include <fcntl_internal.h>
+#include <internal/fcntl.h>
 
 FILETIME get_current_filetime()
 {

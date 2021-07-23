@@ -5,12 +5,12 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <misc.h>
+#include <internal/misc.h>
 #include <errno.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <fcntl_internal.h>
-#include <wlibc_errors.h>
+#include <internal/fcntl.h>
+#include <internal/error.h>
 
 int common_access(const wchar_t *wname, int mode, int deference_symlinks);
 

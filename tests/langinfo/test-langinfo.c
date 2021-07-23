@@ -8,7 +8,7 @@
 #include <langinfo.h>
 #include <test-macros.h>
 #include <locale.h>
-#include <langinfo_internal.h>
+#include <internal/langinfo.h>
 
 void test_langinfo()
 {

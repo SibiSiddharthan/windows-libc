@@ -10,9 +10,9 @@
 #include <Windows.h>
 #include <errno.h>
 #include <io.h>
-#include <fcntl_internal.h>
+#include <internal/fcntl.h>
 #include <fcntl.h>
-#include <misc.h>
+#include <internal/misc.h>
 #include <stdlib.h>
 
 int parse_mode(const char *mode);

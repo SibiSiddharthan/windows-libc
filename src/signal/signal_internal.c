@@ -5,7 +5,7 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <signal_internal.h>
+#include <internal/signal.h>
 
 CRITICAL_SECTION _wlibc_signal_critical;
 _crt_signal_t _wlibc_signal_table[NSIG];

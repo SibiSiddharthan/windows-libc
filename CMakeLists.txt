@@ -24,7 +24,7 @@ if(CMAKE_C_COMPILER_ID STREQUAL "MSVC")
 	add_compile_options(/wd4098 /wd4477)
 endif()
 
-include_directories(include include/internal)
+include_directories(include)
 
 option(BUILD_SHARED_LIBS "Build Shared Libraries" OFF)
 option(ENABLE_DLFCN "Enable dlfcn module" ON)

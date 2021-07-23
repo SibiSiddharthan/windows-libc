@@ -6,9 +6,9 @@
 */
 
 #include <sys/stat.h>
-#include <misc.h>
+#include <internal/misc.h>
 #include <errno.h>
-#include <fcntl_internal.h>
+#include <internal/fcntl.h>
 #include <fcntl.h>
 
 int common_chmod(const wchar_t *wname, mode_t mode);

@@ -6,12 +6,12 @@
 */
 
 #include <sys/wait.h>
-#include <process_internal.h>
+#include <internal/process.h>
 #include <errno.h>
-#include <wlibc_errors.h>
+#include <internal/error.h>
 #include <stdlib.h>
 #include <Windows.h>
-#include <signal_internal.h>
+#include <internal/signal.h>
 #include <stdbool.h>
 
 pid_t wlibc_waitpid_implementation(pid_t pid, int *wstatus, int options)

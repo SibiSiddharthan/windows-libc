@@ -6,9 +6,9 @@
 */
 
 #include <unistd.h>
-#include <misc.h>
+#include <internal/misc.h>
 #include <Windows.h>
-#include <wlibc_errors.h>
+#include <internal/error.h>
 #include <stdlib.h>
 
 // Convert backslash to forward slash

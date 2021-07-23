@@ -7,12 +7,12 @@
 
 #include <wchar.h>
 #include <stdlib.h>
-#include <misc.h>
-#include <fcntl_internal.h>
-#include <dlfcn_internal.h>
-#include <langinfo_internal.h>
-#include <process_internal.h>
-#include <signal_internal.h>
+#include <internal/misc.h>
+#include <internal/fcntl.h>
+#include <internal/dlfcn.h>
+#include <internal/langinfo.h>
+#include <internal/process.h>
+#include <internal/signal.h>
 
 int main(int argc, char **argv);
 

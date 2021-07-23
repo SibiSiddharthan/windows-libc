@@ -7,10 +7,10 @@
 
 #include <fcntl.h>
 #include <Windows.h>
-#include <wlibc_errors.h>
-#include <misc.h>
+#include <internal/error.h>
+#include <internal/misc.h>
 #include <errno.h>
-#include <fcntl_internal.h>
+#include <internal/fcntl.h>
 #include <stdlib.h>
 #include <unistd.h>
 

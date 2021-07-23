@@ -5,10 +5,10 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <fcntl_internal.h>
+#include <internal/fcntl.h>
 #include <Windows.h>
 #include <stdlib.h>
-#include <wlibc_errors.h>
+#include <internal/error.h>
 #include <errno.h>
 #include <fcntl.h>
 

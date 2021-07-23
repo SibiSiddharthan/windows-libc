@@ -6,7 +6,7 @@
 */
 
 #include <signal-ext.h>
-#include <signal_internal.h>
+#include <internal/signal.h>
 #include <stdbool.h>
 #include <errno.h>
 

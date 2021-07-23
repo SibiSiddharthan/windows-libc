@@ -5,7 +5,7 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <langinfo_internal.h>
+#include <internal/langinfo.h>
 #include <stdlib.h>
 
 char **__nl_langinfo_buf = NULL;

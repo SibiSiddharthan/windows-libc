@@ -5,11 +5,11 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <misc.h>
+#include <internal/misc.h>
 #include <errno.h>
 #include <unistd.h>
-#include <wlibc_errors.h>
-#include <fcntl_internal.h>
+#include <internal/error.h>
+#include <internal/fcntl.h>
 #include <Windows.h>
 
 int common_chdir(const wchar_t *wname)

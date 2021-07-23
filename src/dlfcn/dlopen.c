@@ -6,11 +6,11 @@
 */
 
 #include <dlfcn.h>
-#include <dlfcn_internal.h>
+#include <internal/dlfcn.h>
 #include <Windows.h>
 #include <wchar.h>
-#include <wlibc_errors.h>
-#include <misc.h>
+#include <internal/error.h>
+#include <internal/misc.h>
 
 void *wlibc_dlopen(const char *filename, int flags /*unused*/)
 {

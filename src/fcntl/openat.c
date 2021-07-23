@@ -10,9 +10,9 @@
 #include <wchar.h>
 #include <string.h>
 #include <windows.h>
-#include <fcntl_internal.h>
+#include <internal/fcntl.h>
 #include <stdlib.h>
-#include <misc.h>
+#include <internal/misc.h>
 
 int common_openat(int dirfd, const wchar_t *wname, int flags, va_list perm_args)
 {

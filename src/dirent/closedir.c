@@ -7,9 +7,9 @@
 
 #include <dirent.h>
 #include <windows.h>
-#include <wlibc_errors.h>
+#include <internal/error.h>
 #include <stdlib.h>
-#include <fcntl_internal.h>
+#include <internal/fcntl.h>
 
 int wlibc_closedir(DIR *dirp)
 {

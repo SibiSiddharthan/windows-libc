@@ -6,7 +6,7 @@
 */
 
 #include <langinfo.h>
-#include <langinfo_internal.h>
+#include <internal/langinfo.h>
 #include <locale.h>
 #include <errno.h>
 #include <string.h>

@@ -10,10 +10,10 @@
 #include <wchar.h>
 #include <stdlib.h>
 #include <string.h>
-#include <wlibc_errors.h>
+#include <internal/error.h>
 #include <errno.h>
-#include <fcntl_internal.h>
-#include <misc.h>
+#include <internal/fcntl.h>
+#include <internal/misc.h>
 
 static void initialize_dirp(DIR **dirp, HANDLE directory_handle)
 {

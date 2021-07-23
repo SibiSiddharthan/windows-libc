@@ -9,11 +9,11 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <wchar.h>
-#include <misc.h>
+#include <internal/misc.h>
 #include <fcntl.h>
-#include <fcntl_internal.h>
+#include <internal/fcntl.h>
 #include <Windows.h>
-#include <wlibc_errors.h>
+#include <internal/error.h>
 
 int common_rename(const wchar_t *woldname, const wchar_t *wnewname, int overwrite);
 

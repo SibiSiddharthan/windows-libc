@@ -10,9 +10,9 @@
 #include <wchar.h>
 #include <stdlib.h>
 #include <string.h>
-#include <fcntl_internal.h>
-#include <misc.h>
-#include <wlibc_errors.h>
+#include <internal/fcntl.h>
+#include <internal/misc.h>
+#include <internal/error.h>
 
 int fill_dir_buffer(DIR *dirp)
 {

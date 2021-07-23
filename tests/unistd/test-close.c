@@ -10,7 +10,7 @@
 #include <test-macros.h>
 #include <errno.h>
 #include <Windows.h>
-#include <fcntl_internal.h>
+#include <internal/fcntl.h>
 
 void test_EBADF()
 {

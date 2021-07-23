@@ -5,7 +5,7 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <wlibc_errors.h>
+#include <internal/error.h>
 #include <errno.h>
 #include <windows.h>
 

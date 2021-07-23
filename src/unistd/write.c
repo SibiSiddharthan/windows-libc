@@ -7,9 +7,9 @@
 
 #include <unistd.h>
 #include <Windows.h>
-#include <wlibc_errors.h>
+#include <internal/error.h>
 #include <errno.h>
-#include <fcntl_internal.h>
+#include <internal/fcntl.h>
 #include <fcntl.h>
 
 ssize_t wlibc_write(int fd, void *buf, size_t count)

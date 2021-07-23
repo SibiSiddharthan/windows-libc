@@ -8,7 +8,7 @@
 #include <dirent.h>
 #include <windows.h>
 #include <stdlib.h>
-#include <fcntl_internal.h>
+#include <internal/fcntl.h>
 
 void fill_dir_buffer(DIR *dirp);
 

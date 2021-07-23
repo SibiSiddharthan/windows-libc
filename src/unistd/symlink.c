@@ -7,10 +7,10 @@
 
 #include <unistd.h>
 #include <wchar.h>
-#include <misc.h>
+#include <internal/misc.h>
 #include <errno.h>
 #include <Windows.h>
-#include <wlibc_errors.h>
+#include <internal/error.h>
 #include <stdlib.h>
 
 int common_symlink(const wchar_t *wsource, const wchar_t *wtarget)

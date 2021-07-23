@@ -6,11 +6,11 @@
 */
 
 #include <unistd.h>
-#include <misc.h>
-#include <wlibc_errors.h>
+#include <internal/misc.h>
+#include <internal/error.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <fcntl_internal.h>
+#include <internal/fcntl.h>
 
 int common_unlink(const wchar_t *wpath);
 int common_rmdir(const wchar_t *wpath);

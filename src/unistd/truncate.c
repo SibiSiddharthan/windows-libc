@@ -9,9 +9,9 @@
 #include <wchar.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <fcntl_internal.h>
+#include <internal/fcntl.h>
 #include <Windows.h>
-#include <wlibc_errors.h>
+#include <internal/error.h>
 #include <stdlib.h>
 
 static int common_truncate(HANDLE file, off_t length)

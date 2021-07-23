@@ -7,8 +7,8 @@
 
 #include <unistd.h>
 #include <fcntl.h>
-#include <fcntl_internal.h>
-#include <wlibc_errors.h>
+#include <internal/fcntl.h>
+#include <internal/error.h>
 
 int wlibc_close(int fd)
 {

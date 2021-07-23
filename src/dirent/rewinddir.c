@@ -7,7 +7,7 @@
 
 #include <dirent.h>
 #include <errno.h>
-#include <fcntl_internal.h>
+#include <internal/fcntl.h>
 
 void wlibc_rewinddir(DIR *dirp)
 {

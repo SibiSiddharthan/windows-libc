@@ -7,8 +7,8 @@
 
 #include <unistd.h>
 #include <Windows.h>
-#include <wlibc_errors.h>
-#include <fcntl_internal.h>
+#include <internal/error.h>
+#include <internal/fcntl.h>
 
 int common_sync(int fd)
 {

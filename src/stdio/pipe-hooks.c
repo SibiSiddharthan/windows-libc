@@ -7,7 +7,7 @@
 
 #include <stdio-hooks.h>
 #include <io.h>
-#include <fcntl_internal.h>
+#include <internal/fcntl.h>
 #include <fcntl.h>
 #include <Windows.h>
 #include <string.h>

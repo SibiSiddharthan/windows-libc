@@ -7,10 +7,10 @@
 
 #include <errno.h>
 #include <unistd.h>
-#include <wlibc_errors.h>
+#include <internal/error.h>
 #include <Windows.h>
 #include <fcntl.h>
-#include <fcntl_internal.h>
+#include <internal/fcntl.h>
 
 int common_dup(int oldfd, int newfd, int flags)
 {

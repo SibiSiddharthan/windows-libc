@@ -10,7 +10,7 @@
 #include <unistd.h>
 #include <test-macros.h>
 #include <errno.h>
-#include <fcntl_internal.h>
+#include <internal/fcntl.h>
 
 void test_dupfd()
 {

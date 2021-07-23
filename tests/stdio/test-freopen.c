@@ -7,7 +7,7 @@
 
 #include <stdio-hooks.h>
 #include <fcntl.h>
-#include <fcntl_internal.h>
+#include <internal/fcntl.h>
 #include <unistd.h>
 #include <test-macros.h>
 #include <errno.h>

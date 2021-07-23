@@ -10,11 +10,11 @@
 #include <wchar.h>
 #include <string.h>
 #include <windows.h>
-#include <fcntl_internal.h>
+#include <internal/fcntl.h>
 #include <stdarg.h>
-#include <wlibc_errors.h>
+#include <internal/error.h>
 #include <stdlib.h>
-#include <misc.h>
+#include <internal/misc.h>
 
 static DWORD determine_access_rights(const int oflags)
 {
