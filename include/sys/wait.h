@@ -22,7 +22,8 @@ _WLIBC_BEGIN_DECLS
 */
 #define WIFEXITED(wstatus)   ((wstatus) != 3)
 #define WIFSIGNALED(wstatus) ((wstatus) == 3)
-#define WTERMSIGN(wstatus)   ((SIGABRT))
+#define WTERMSIG(wstatus)    ((SIGABRT))
+#define WIFSTOPPED           WIFSIGNALED
 
 #define WUNTRACED  0x0 // Unsupported
 #define WNOHANG    0x1 // wait returns immediately
