@@ -15,6 +15,7 @@
 #include <internal/error.h>
 #include <stdlib.h>
 #include <internal/misc.h>
+#include <sys/stat.h>
 
 static DWORD determine_access_rights(const int oflags)
 {

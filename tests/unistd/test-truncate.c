@@ -9,6 +9,7 @@
 #include <fcntl.h>
 #include <test-macros.h>
 #include <errno.h>
+#include <sys/stat.h>
 
 void test_lesser_length()
 {
