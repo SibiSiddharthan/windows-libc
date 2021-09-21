@@ -8,7 +8,6 @@
 #include <sys/resource.h>
 #include <errno.h>
 #include <Windows.h>
-#include <stdio.h>
 
 const rlim_t max_files = 8192;
 
@@ -43,7 +42,7 @@ int wlibc_getrlimit(int resource, struct rlimit *rlim)
 		rlim->rlim_max = max_file_size;
 		break;
 	case RLIMIT_NOFILE:
-		rlim->rlim_cur = _getmaxstdio();
+		rlim->rlim_cur = max_files;
 		rlim->rlim_max = max_files;
 		break;
 	default:
@@ -71,7 +70,6 @@ int wlibc_setrlimit(int resource, const struct rlimit *rlim)
 			errno = EINVAL;
 			return -1;
 		}
-		_setmaxstdio(rlim->rlim_cur);
 		break;
 	default:
 		errno = EINVAL;
