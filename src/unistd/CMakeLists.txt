@@ -11,6 +11,7 @@ close.c
 chdir.c
 chown.c
 dup.c
+exec.c
 faccessat.c
 fchownat.c
 fsync.c
