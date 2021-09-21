@@ -29,6 +29,6 @@
 #	define _WLIBC_END_DECLS
 #endif
 
-#define WLIBC_INLINE __inline
+#define WLIBC_INLINE __forceinline
 
 #endif
