@@ -13,6 +13,7 @@
 #include <internal/langinfo.h>
 #include <internal/process.h>
 #include <internal/signal.h>
+#include <internal/stdio.h>
 
 int main(int argc, char **argv);
 
@@ -40,6 +41,7 @@ int wmain(int argc, wchar_t **wargv)
 
 #ifdef WLIBC_POSIX_IO
 	init_fd_table();
+	initialize_stdio();
 #endif
 #ifdef WLIBC_DLFCN
 	dlfcn_init();
@@ -57,6 +59,7 @@ int wmain(int argc, wchar_t **wargv)
 	int exit_status = main(argc, argv);
 
 #ifdef WLIBC_POSIX_IO
+	cleanup_stdio();
 	cleanup_fd_table();
 #endif
 #ifdef WLIBC_DLFCN
