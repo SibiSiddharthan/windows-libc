@@ -279,12 +279,14 @@ WLIBC_INLINE void clearerr(FILE *stream)
 	wlibc_clearerr(stream);
 }
 
+#if 0
 WLIBC_API void wlibc_perror(char const *message);
 
 WLIBC_INLINE void perror(char const *message)
 {
 	return wlibc_perror(message);
 }
+#endif
 
 // file locking
 //#define LOCK    0
