@@ -5,7 +5,7 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <stdio-hooks.h>
+#include <stdio.h>
 #include <test-macros.h>
 
 void test_std_streams()
