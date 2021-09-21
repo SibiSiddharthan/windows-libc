@@ -219,6 +219,18 @@ WLIBC_INLINE int getpagesize()
 	return wlibc_getpagesize();
 }
 
+WLIBC_API int wlibc_pipe(int pipefd[2]);
+WLIBC_INLINE int pipe(int pipefd[2])
+{
+	return wlibc_pipe(pipefd);
+}
+
+WLIBC_API int wlibc_pipe2(int pipefd[2], int flags);
+WLIBC_INLINE int pipe2(int pipefd[2], int flags)
+{
+	return wlibc_pipe2(pipefd, flags);
+}
+
 WLIBC_API int wlibc_isatty(int fd);
 WLIBC_INLINE int isatty(int fd)
 {

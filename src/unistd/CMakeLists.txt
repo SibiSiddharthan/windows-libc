@@ -24,6 +24,7 @@ kill.c
 link.c
 linkat.c
 lseek.c
+pipe.c
 readlink.c
 readlinkat.c
 read.c
