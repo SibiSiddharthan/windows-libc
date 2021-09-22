@@ -12,7 +12,7 @@
 #include <internal/fcntl.h>
 #include <fcntl.h>
 
-ssize_t wlibc_write(int fd, void *buf, size_t count)
+ssize_t wlibc_write(int fd, const void *buf, size_t count)
 {
 	if (buf == NULL)
 	{

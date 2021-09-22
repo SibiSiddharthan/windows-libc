@@ -412,8 +412,8 @@ WLIBC_INLINE int wunlinkat(int dirfd, const wchar_t *wpath, int flags)
 	return wlibc_wunlinkat(dirfd, wpath, flags);
 }
 
-WLIBC_API ssize_t wlibc_write(int fd, void *buf, size_t count);
-WLIBC_INLINE ssize_t write(int fd, void *buf, size_t count)
+WLIBC_API ssize_t wlibc_write(int fd, const void *buf, size_t count);
+WLIBC_INLINE ssize_t write(int fd, const void *buf, size_t count)
 {
 	return wlibc_write(fd, buf, count);
 }
