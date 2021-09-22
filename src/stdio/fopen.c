@@ -17,7 +17,7 @@ int parse_mode(const char *mode);
 int get_buf_mode(int flags);
 int common_open(const wchar_t *wname, const int oflags, const mode_t perm);
 
-FILE *wlibc_fopen(const char *name, const char *mode)
+FILE *wlibc_fopen(const char *restrict name, const char *restrict mode)
 {
 	if (name == NULL)
 	{

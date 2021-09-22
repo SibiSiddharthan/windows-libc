@@ -13,15 +13,15 @@
 
 _WLIBC_BEGIN_DECLS
 
-WLIBC_API int wlibc_setenv(const char *name, const char *value, int overwrite);
-WLIBC_API int wlibc_wsetenv(const wchar_t *name, const wchar_t *value, int overwrite);
+WLIBC_API int wlibc_setenv(const char *restrict name, const char *restrict value, int overwrite);
+WLIBC_API int wlibc_wsetenv(const wchar_t *restrict name, const wchar_t *restrict value, int overwrite);
 
-WLIBC_INLINE int setenv(const char *name, const char *value, int overwrite)
+WLIBC_INLINE int setenv(const char *restrict name, const char *restrict value, int overwrite)
 {
 	return wlibc_setenv(name, value, overwrite);
 }
 
-WLIBC_INLINE int wsetenv(const wchar_t *name, const wchar_t *value, int overwrite)
+WLIBC_INLINE int wsetenv(const wchar_t *restrict name, const wchar_t *restrict value, int overwrite)
 {
 	return wlibc_wsetenv(name, value, overwrite);
 }

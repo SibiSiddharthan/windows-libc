@@ -10,7 +10,7 @@
 #include <Windows.h>
 #include <internal/error.h>
 
-void *wlibc_dlsym(void *handle, const char *symbol)
+void *wlibc_dlsym(void *restrict handle, const char *restrict symbol)
 {
 	void *ptr = GetProcAddress((HMODULE)handle, symbol);
 	if (ptr == NULL)

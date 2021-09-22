@@ -11,9 +11,9 @@
 #include <fcntl.h>
 #include <internal/fcntl.h>
 
-int common_stat(const wchar_t *wname, struct stat *statbuf, int do_lstat);
+int common_stat(const wchar_t *restrict wname, struct stat *restrict statbuf, int do_lstat);
 
-int common_fstatat(int dirfd, const wchar_t *wname, struct stat *statbuf, int flags)
+int common_fstatat(int dirfd, const wchar_t *restrict wname, struct stat *restrict statbuf, int flags)
 {
 	if (flags != 0 && flags != AT_SYMLINK_NOFOLLOW)
 	{
@@ -46,7 +46,7 @@ int common_fstatat(int dirfd, const wchar_t *wname, struct stat *statbuf, int fl
 	return status;
 }
 
-int wlibc_fstatat(int dirfd, const char *name, struct stat *statbuf, int flags)
+int wlibc_fstatat(int dirfd, const char *restrict name, struct stat *restrict statbuf, int flags)
 {
 	if (name == NULL)
 	{
@@ -61,7 +61,7 @@ int wlibc_fstatat(int dirfd, const char *name, struct stat *statbuf, int flags)
 	return status;
 }
 
-int wlibc_wfstatat(int dirfd, const wchar_t *wname, struct stat *statbuf, int flags)
+int wlibc_wfstatat(int dirfd, const wchar_t *restrict wname, struct stat *restrict statbuf, int flags)
 {
 	if (wname == NULL)
 	{

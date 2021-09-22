@@ -18,7 +18,7 @@
    SetEnvironmentVariable().
 */
 
-int wlibc_setenv(const char *name, const char *value, int overwrite)
+int wlibc_setenv(const char *restrict name, const char *restrict value, int overwrite)
 {
 	errno_t err;
 	if (!getenv(name)) // Variable not found
@@ -40,7 +40,7 @@ int wlibc_setenv(const char *name, const char *value, int overwrite)
 	return err == 0 ? 0 : -1;
 }
 
-int wlibc_wsetenv(const wchar_t *name, const wchar_t *value, int overwrite)
+int wlibc_wsetenv(const wchar_t *restrict name, const wchar_t *restrict value, int overwrite)
 {
 	errno_t err;
 	if (!_wgetenv(name)) // Variable not found

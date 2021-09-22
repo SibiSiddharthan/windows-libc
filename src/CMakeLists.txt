@@ -55,6 +55,11 @@ if(ENABLE_PROCESS)
 	list(APPEND modules sys_wait)
 endif()
 
+#if(ENABLE_STRINGS_GNU)
+#	add_subdirectory(string)
+#	list(APPEND modules string)
+#endif()
+
 add_subdirectory(internal)
 
 add_library(wlibc)

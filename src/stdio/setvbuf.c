@@ -15,7 +15,7 @@
 
 int common_fflush(FILE *stream);
 
-int common_setvbuf(FILE *stream, char *buffer, int mode, size_t size)
+int common_setvbuf(FILE *restrict stream, char *restrict buffer, int mode, size_t size)
 {
 	int buf_type = stream->buf_mode & (_IOBUFFER_RDONLY | _IOBUFFER_WRONLY | _IOBUFFER_RDWR);
 	int prev_mode = stream->buf_mode & (_IONBF | _IOLBF | _IOFBF);
@@ -93,7 +93,7 @@ int common_setvbuf(FILE *stream, char *buffer, int mode, size_t size)
 	return 0;
 }
 
-int wlibc_setvbuf(FILE *stream, char *buffer, int mode, size_t size)
+int wlibc_setvbuf(FILE *restrict stream, char *restrict buffer, int mode, size_t size)
 {
 	VALIDATE_FILE_STREAM(stream, -1);
 

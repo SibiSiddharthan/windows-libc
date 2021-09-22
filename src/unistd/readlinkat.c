@@ -14,9 +14,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-ssize_t common_readlink(const wchar_t *wpath, wchar_t *wbuf, size_t bufsiz, int give_absolute);
+ssize_t common_readlink(const wchar_t *restrict wpath, wchar_t *restrict wbuf, size_t bufsiz, int give_absolute);
 
-ssize_t common_readlinkat(int dirfd, const wchar_t *wpath, wchar_t *wbuf, size_t bufsiz)
+ssize_t common_readlinkat(int dirfd, const wchar_t *restrict wpath, wchar_t *restrict wbuf, size_t bufsiz)
 {
 	if (dirfd == AT_FDCWD || is_absolute_pathw(wpath))
 	{
@@ -26,7 +26,7 @@ ssize_t common_readlinkat(int dirfd, const wchar_t *wpath, wchar_t *wbuf, size_t
 	enum handle_type _type = get_fd_type(dirfd);
 	if (_type != DIRECTORY_HANDLE || _type == INVALID_HANDLE)
 	{
-		errno = (_type == INVALID_HANDLE ? EBADF: ENOTDIR);
+		errno = (_type == INVALID_HANDLE ? EBADF : ENOTDIR);
 		return -1;
 	}
 
@@ -38,7 +38,7 @@ ssize_t common_readlinkat(int dirfd, const wchar_t *wpath, wchar_t *wbuf, size_t
 	return length;
 }
 
-ssize_t wlibc_readlinkat(int dirfd, const char *path, char *buf, size_t bufsiz)
+ssize_t wlibc_readlinkat(int dirfd, const char *restrict path, char *restrict buf, size_t bufsiz)
 {
 	if (path == NULL)
 	{
@@ -59,7 +59,7 @@ ssize_t wlibc_readlinkat(int dirfd, const char *path, char *buf, size_t bufsiz)
 	return length;
 }
 
-ssize_t wlibc_wreadlinkat(int dirfd, const wchar_t *wpath, wchar_t *wbuf, size_t bufsiz)
+ssize_t wlibc_wreadlinkat(int dirfd, const wchar_t *restrict wpath, wchar_t *restrict wbuf, size_t bufsiz)
 {
 	if (wpath == NULL)
 	{

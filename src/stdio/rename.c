@@ -14,7 +14,7 @@
 #include <internal/error.h>
 
 // Returns 1 if true, 0 otherwise (even for failures)
-static int are_they_hardlinks(const wchar_t *woldname, const wchar_t *wnewname)
+static int are_they_hardlinks(const wchar_t *restrict woldname, const wchar_t *restrict wnewname)
 {
 	HANDLE old = CreateFile(woldname, FILE_READ_ATTRIBUTES, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL, OPEN_EXISTING,
 							FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT, NULL);
@@ -60,7 +60,7 @@ static int are_they_hardlinks(const wchar_t *woldname, const wchar_t *wnewname)
 	return cond;
 }
 
-int common_rename(const wchar_t *woldname, const wchar_t *wnewname, int overwrite)
+int common_rename(const wchar_t *restrict woldname, const wchar_t *restrict wnewname, int overwrite)
 {
 
 	if (are_they_hardlinks(woldname, wnewname))
@@ -101,7 +101,7 @@ int common_rename(const wchar_t *woldname, const wchar_t *wnewname, int overwrit
 	return 0;
 }
 
-int wlibc_rename(const char *oldname, const char *newname)
+int wlibc_rename(const char *restrict oldname, const char *restrict newname)
 {
 	if (oldname == NULL || newname == NULL)
 	{
@@ -117,7 +117,7 @@ int wlibc_rename(const char *oldname, const char *newname)
 	return status;
 }
 
-int wlibc_wrename(const wchar_t *woldname, const wchar_t *wnewname)
+int wlibc_wrename(const wchar_t *restrict woldname, const wchar_t *restrict wnewname)
 {
 	if (woldname == NULL || wnewname == NULL)
 	{

@@ -13,11 +13,11 @@
 #include <internal/fcntl.h>
 #include <stdlib.h>
 
-int common_link(const wchar_t *wsource, const wchar_t *wtarget);
-ssize_t common_readlink(const wchar_t *wpath, wchar_t *wbuf, size_t bufsiz, int give_absolute);
-ssize_t common_readlinkat(int dirfd, const wchar_t *wpath, wchar_t *wbuf, size_t bufsiz);
+int common_link(const wchar_t *restrict wsource, const wchar_t *restrict wtarget);
+ssize_t common_readlink(const wchar_t *restrict wpath, wchar_t *restrict wbuf, size_t bufsiz, int give_absolute);
+ssize_t common_readlinkat(int dirfd, const wchar_t *restrict wpath, wchar_t *restrict wbuf, size_t bufsiz);
 
-int common_linkat(int olddirfd, const wchar_t *wsource, int newdirfd, const wchar_t *wtarget, int flags)
+int common_linkat(int olddirfd, const wchar_t *restrict wsource, int newdirfd, const wchar_t *restrict wtarget, int flags)
 {
 	wchar_t *newsource = NULL;
 	wchar_t *finalsource = NULL;
@@ -135,7 +135,7 @@ int common_linkat(int olddirfd, const wchar_t *wsource, int newdirfd, const wcha
 	return status;
 }
 
-int wlibc_linkat(int olddirfd, const char *source, int newdirfd, const char *target, int flags)
+int wlibc_linkat(int olddirfd, const char *restrict source, int newdirfd, const char *restrict target, int flags)
 {
 	if (source == NULL || target == NULL)
 	{
@@ -151,7 +151,7 @@ int wlibc_linkat(int olddirfd, const char *source, int newdirfd, const char *tar
 	return status;
 }
 
-int wlibc_wlinkat(int olddirfd, const wchar_t *wsource, int newdirfd, const wchar_t *wtarget, int flags)
+int wlibc_wlinkat(int olddirfd, const wchar_t *restrict wsource, int newdirfd, const wchar_t *restrict wtarget, int flags)
 {
 	if (wsource == NULL || wtarget == NULL)
 	{

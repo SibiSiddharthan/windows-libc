@@ -18,7 +18,7 @@
 int parse_mode(const char *mode);
 int get_buf_mode(int flags);
 
-FILE *wlibc_popen(const char *command, const char *mode)
+FILE *wlibc_popen(const char *restrict command, const char *restrict mode)
 {
 	if (command == NULL || mode == NULL)
 	{

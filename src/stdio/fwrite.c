@@ -12,7 +12,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-size_t common_fwrite(const void *buffer, size_t size, size_t count, FILE *stream)
+size_t common_fwrite(const void *restrict buffer, size_t size, size_t count, FILE *restrict stream)
 {
 	ssize_t result = 0;
 
@@ -126,7 +126,7 @@ size_t common_fwrite(const void *buffer, size_t size, size_t count, FILE *stream
 	return result / size;
 }
 
-size_t wlibc_fwrite_unlocked(const void *buffer, size_t size, size_t count, FILE *stream)
+size_t wlibc_fwrite_unlocked(const void *restrict buffer, size_t size, size_t count, FILE *restrict stream)
 {
 	if (buffer == NULL)
 	{
@@ -143,7 +143,7 @@ size_t wlibc_fwrite_unlocked(const void *buffer, size_t size, size_t count, FILE
 	return common_fwrite(buffer, size, count, stream);
 }
 
-size_t wlibc_fwrite(const void *buffer, size_t size, size_t count, FILE *stream)
+size_t wlibc_fwrite(const void *restrict buffer, size_t size, size_t count, FILE *restrict stream)
 {
 	if (buffer == NULL)
 	{

@@ -12,9 +12,9 @@
 #include <fcntl.h>
 #include <internal/fcntl.h>
 
-int common_symlink(const wchar_t *wsource, const wchar_t *wtarget);
+int common_symlink(const wchar_t *restrict wsource, const wchar_t *restrict wtarget);
 
-int common_symlinkat(const wchar_t *wsource, int newdirfd, const wchar_t *wtarget)
+int common_symlinkat(const wchar_t *restrict wsource, int newdirfd, const wchar_t *restrict wtarget)
 {
 	if (newdirfd == AT_FDCWD || is_absolute_pathw(wtarget))
 	{
@@ -36,7 +36,7 @@ int common_symlinkat(const wchar_t *wsource, int newdirfd, const wchar_t *wtarge
 	return status;
 }
 
-int wlibc_symlinkat(const char *source, int newdirfd, const char *target)
+int wlibc_symlinkat(const char *restrict source, int newdirfd, const char *restrict target)
 {
 	if (source == NULL || target == NULL)
 	{
@@ -53,7 +53,7 @@ int wlibc_symlinkat(const char *source, int newdirfd, const char *target)
 	return status;
 }
 
-int wlibc_wsymlinkat(const wchar_t *wsource, int newdirfd, const wchar_t *wtarget)
+int wlibc_wsymlinkat(const wchar_t *restrict wsource, int newdirfd, const wchar_t *restrict wtarget)
 {
 	if (wsource == NULL || wtarget == NULL)
 	{

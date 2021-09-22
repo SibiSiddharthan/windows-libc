@@ -8,7 +8,7 @@
 #include <stdio.h>
 #include <internal/stdio.h>
 
-size_t common_fread(void *buffer, size_t size, size_t count, FILE *stream);
+size_t common_fread(void *restrict buffer, size_t size, size_t count, FILE *restrict stream);
 
 int common_fgetc(FILE *stream)
 {

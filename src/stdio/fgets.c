@@ -8,15 +8,15 @@
 #include <stdio.h>
 #include <internal/stdio.h>
 
-size_t common_fread(void *buffer, size_t size, size_t count, FILE *stream);
+size_t common_fread(void *restrict buffer, size_t size, size_t count, FILE *restrict stream);
 
-char *common_fgets(void *buffer, size_t count, FILE *stream)
+char *common_fgets(void *restrict buffer, size_t count, FILE *restrict stream)
 {
 	common_fread(buffer, 1, count, stream);
 	return buffer;
 }
 
-char *wlibc_fgets_unlocked(void *buffer, size_t count, FILE *stream)
+char *wlibc_fgets_unlocked(void *restrict buffer, size_t count, FILE *restrict stream)
 {
 	if(buffer == NULL)
 	{
@@ -28,7 +28,7 @@ char *wlibc_fgets_unlocked(void *buffer, size_t count, FILE *stream)
 	return common_fgets(buffer, count, stream);
 }
 
-char *wlibc_fgets(void *buffer, size_t count, FILE *stream)
+char *wlibc_fgets(void *restrict buffer, size_t count, FILE *restrict stream)
 {
 	if(buffer == NULL)
 	{

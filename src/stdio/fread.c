@@ -12,7 +12,7 @@
 
 int common_fflush(FILE *stream);
 
-size_t common_fread(void *buffer, size_t size, size_t count, FILE *stream)
+size_t common_fread(void *restrict buffer, size_t size, size_t count, FILE *restrict stream)
 {
 	ssize_t result = 0;
 
@@ -116,7 +116,7 @@ size_t common_fread(void *buffer, size_t size, size_t count, FILE *stream)
 	return result / size;
 }
 
-size_t wlibc_fread_unlocked(void *buffer, size_t size, size_t count, FILE *stream)
+size_t wlibc_fread_unlocked(void *restrict buffer, size_t size, size_t count, FILE *restrict stream)
 {
 	if (buffer == NULL)
 	{
@@ -133,7 +133,7 @@ size_t wlibc_fread_unlocked(void *buffer, size_t size, size_t count, FILE *strea
 	return common_fread(buffer, size, count, stream);
 }
 
-size_t wlibc_fread(void *buffer, size_t size, size_t count, FILE *stream)
+size_t wlibc_fread(void *restrict buffer, size_t size, size_t count, FILE *restrict stream)
 {
 	if (buffer == NULL)
 	{

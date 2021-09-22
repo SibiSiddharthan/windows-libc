@@ -40,9 +40,9 @@ WLIBC_INLINE int dlclose(void *handle)
 	return wlibc_dlclose(handle);
 }
 
-WLIBC_API void *wlibc_dlsym(void *handle, const char *symbol);
+WLIBC_API void *wlibc_dlsym(void *restrict handle, const char *restrict symbol);
 
-WLIBC_INLINE void *dlsym(void *handle, const char *symbol)
+WLIBC_INLINE void *dlsym(void *restrict handle, const char *restrict symbol)
 {
 	return wlibc_dlsym(handle, symbol);
 }

@@ -15,9 +15,9 @@
 #include <Windows.h>
 #include <internal/error.h>
 
-int common_rename(const wchar_t *woldname, const wchar_t *wnewname, int overwrite);
+int common_rename(const wchar_t *restrict woldname, const wchar_t *restrict wnewname, int overwrite);
 
-int rename_exchange(const wchar_t *final_oldname, const wchar_t *final_newname)
+int rename_exchange(const wchar_t *restrict final_oldname, const wchar_t *restrict final_newname)
 {
 	wchar_t temp_path[MAX_PATH];
 	if (!GetTempFileName(L".", NULL, 0, temp_path))
@@ -56,7 +56,7 @@ int rename_exchange(const wchar_t *final_oldname, const wchar_t *final_newname)
 	return 0;
 }
 
-int common_renameat(int olddirfd, const wchar_t *woldname, int newdirfd, const wchar_t *wnewname, int flags)
+int common_renameat(int olddirfd, const wchar_t *restrict woldname, int newdirfd, const wchar_t *restrict wnewname, int flags)
 {
 	int use_olddirfd = 1, use_newdirfd = 1;
 	wchar_t *final_oldname = NULL;
@@ -136,7 +136,7 @@ int common_renameat(int olddirfd, const wchar_t *woldname, int newdirfd, const w
 	return status;
 }
 
-int wlibc_renameat(int olddirfd, const char *oldname, int newdirfd, const char *newname)
+int wlibc_renameat(int olddirfd, const char *restrict oldname, int newdirfd, const char *restrict newname)
 {
 	if (oldname == NULL || newname == NULL)
 	{
@@ -163,7 +163,7 @@ int wlibc_wrenameat(int olddirfd, const wchar_t *woldname, int newdirfd, const w
 	return common_renameat(olddirfd, woldname, newdirfd, wnewname, 0);
 }
 
-int common_renameat2(int olddirfd, const wchar_t *woldname, int newdirfd, const wchar_t *wnewname, unsigned int flags)
+int common_renameat2(int olddirfd, const wchar_t *restrict woldname, int newdirfd, const wchar_t *restrict wnewname, unsigned int flags)
 {
 	if ((flags & (RENAME_EXCHANGE | RENAME_NOREPLACE)) == (RENAME_EXCHANGE | RENAME_NOREPLACE))
 	{
@@ -180,7 +180,7 @@ int common_renameat2(int olddirfd, const wchar_t *woldname, int newdirfd, const 
 	return common_renameat(olddirfd, woldname, newdirfd, wnewname, flags);
 }
 
-int wlibc_renameat2(int olddirfd, const char *oldname, int newdirfd, const char *newname, unsigned int flags)
+int wlibc_renameat2(int olddirfd, const char *restrict oldname, int newdirfd, const char *restrict newname, unsigned int flags)
 {
 	if (oldname == NULL || newname == NULL)
 	{
@@ -196,7 +196,7 @@ int wlibc_renameat2(int olddirfd, const char *oldname, int newdirfd, const char 
 	return status;
 }
 
-int wlibc_wrenameat2(int olddirfd, const wchar_t *woldname, int newdirfd, const wchar_t *wnewname, unsigned int flags)
+int wlibc_wrenameat2(int olddirfd, const wchar_t *restrict woldname, int newdirfd, const wchar_t *restrict wnewname, unsigned int flags)
 {
 	if (woldname == NULL || wnewname == NULL)
 	{

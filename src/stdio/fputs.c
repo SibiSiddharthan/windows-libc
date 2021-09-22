@@ -9,16 +9,16 @@
 #include <internal/stdio.h>
 #include <string.h>
 
-size_t common_fwrite(const char *buffer, size_t size, size_t count, FILE *stream);
+size_t common_fwrite(const char *restrict buffer, size_t size, size_t count, FILE *restrict stream);
 
-int common_fputs(const char *buffer, FILE *stream)
+int common_fputs(const char *restrict buffer, FILE *restrict stream)
 {
 	size_t length = strlen(buffer);
 	int result = common_fwrite(buffer, 1, length, stream);
 	return result;
 }
 
-int wlibc_fputs_unlocked(const char *buffer, FILE *stream)
+int wlibc_fputs_unlocked(const char *restrict buffer, FILE *restrict stream)
 {
 	if (buffer == NULL)
 	{
@@ -30,7 +30,7 @@ int wlibc_fputs_unlocked(const char *buffer, FILE *stream)
 	return common_fputs(buffer, stream);
 }
 
-int wlibc_fputs(const char *buffer, FILE *stream)
+int wlibc_fputs(const char *restrict buffer, FILE *restrict stream)
 {
 	if (buffer == NULL)
 	{

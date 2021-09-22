@@ -15,7 +15,7 @@ int __cdecl __stdio_common_vsprintf_p(_In_ unsigned __int64 _Options, _Out_write
 									  _In_z_ _Printf_format_string_params_(2) char const *_Format, _In_opt_ _locale_t _Locale,
 									  va_list _ArgList);
 
-size_t number_of_chars(const char *format, va_list args)
+size_t number_of_chars(const char *restrict format, va_list args)
 {
 	if (format == NULL)
 	{
@@ -27,13 +27,13 @@ size_t number_of_chars(const char *format, va_list args)
 									 NULL, args);
 }
 
-int print_chars(char *buffer, size_t size, const char *format, va_list args)
+int print_chars(char *restrict buffer, size_t size, const char *restrict format, va_list args)
 {
 	return __stdio_common_vsprintf_p(_CRT_INTERNAL_LOCAL_PRINTF_OPTIONS | _CRT_INTERNAL_PRINTF_STANDARD_SNPRINTF_BEHAVIOR, buffer, size,
 									 format, NULL, args);
 }
 
-int wlibc_vfprintf(FILE *stream, const char *format, va_list args)
+int wlibc_vfprintf(FILE *restrict stream, const char *restrict format, va_list args)
 {
 	size_t count = number_of_chars(format, args);
 	if (count == -1)
@@ -48,7 +48,7 @@ int wlibc_vfprintf(FILE *stream, const char *format, va_list args)
 	return result;
 }
 
-int wlibc_vdprintf(int fd, const char *format, va_list args)
+int wlibc_vdprintf(int fd, const char *restrict format, va_list args)
 {
 	size_t count = number_of_chars(format, args);
 	if (count == -1)
@@ -62,7 +62,7 @@ int wlibc_vdprintf(int fd, const char *format, va_list args)
 	return result;
 }
 
-int wlibc_vasprintf(char **buffer, const char *format, va_list args)
+int wlibc_vasprintf(char **restrict buffer, const char *restrict format, va_list args)
 {
 	size_t count = number_of_chars(format, args);
 	if (count == -1)
@@ -74,7 +74,7 @@ int wlibc_vasprintf(char **buffer, const char *format, va_list args)
 	return print_chars(*buffer, count + 1, format, args);
 }
 
-int wlibc_vsnprintf(char *buffer, size_t size, const char *format, va_list args)
+int wlibc_vsnprintf(char *restrict buffer, size_t size, const char *restrict format, va_list args)
 {
 	if (format == NULL)
 	{

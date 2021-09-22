@@ -23,7 +23,7 @@ void convert_bs_to_fs(wchar_t *str, int length)
 	}
 }
 
-ssize_t common_readlink(const wchar_t *wpath, wchar_t *wbuf, size_t bufsiz, int give_absolute)
+ssize_t common_readlink(const wchar_t *restrict wpath, wchar_t *restrict wbuf, size_t bufsiz, int give_absolute)
 {
 	if (bufsiz < 1)
 	{
@@ -138,7 +138,7 @@ ssize_t common_readlink(const wchar_t *wpath, wchar_t *wbuf, size_t bufsiz, int 
 	return bufsiz_fill;
 }
 
-ssize_t wlibc_readlink(const char *path, char *buf, size_t bufsiz)
+ssize_t wlibc_readlink(const char *restrict path, char *restrict buf, size_t bufsiz)
 {
 	if (path == NULL)
 	{
@@ -158,7 +158,7 @@ ssize_t wlibc_readlink(const char *path, char *buf, size_t bufsiz)
 	return length;
 }
 
-ssize_t wlibc_wreadlink(const wchar_t *wpath, wchar_t *wbuf, size_t bufsiz)
+ssize_t wlibc_wreadlink(const wchar_t *restrict wpath, wchar_t *restrict wbuf, size_t bufsiz)
 {
 	if (wpath == NULL)
 	{

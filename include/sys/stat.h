@@ -109,23 +109,23 @@ WLIBC_INLINE int wfchmodat(int dirfd, const wchar_t *wname, mode_t mode, int fla
 	return wlibc_wfchmodat(dirfd, wname, mode, flags);
 }
 
-WLIBC_API int wlibc_stat(const char *name, struct stat *statbuf);
-WLIBC_API int wlibc_wstat(const wchar_t *wname, struct stat *statbuf);
+WLIBC_API int wlibc_stat(const char *restrict name, struct stat *restrict statbuf);
+WLIBC_API int wlibc_wstat(const wchar_t *restrict wname, struct stat *restrict statbuf);
 
-WLIBC_INLINE int stat(const char *name, struct stat *statbuf)
+WLIBC_INLINE int stat(const char *restrict name, struct stat *restrict statbuf)
 {
 	return wlibc_stat(name, statbuf);
 }
 
-WLIBC_INLINE int wstat(const wchar_t *wname, struct stat *statbuf)
+WLIBC_INLINE int wstat(const wchar_t *restrict wname, struct stat *restrict statbuf)
 {
 	return wlibc_wstat(wname, statbuf);
 }
 
-WLIBC_API int wlibc_lstat(const char *name, struct stat *statbuf);
-WLIBC_API int wlibc_wlstat(const wchar_t *wname, struct stat *statbuf);
+WLIBC_API int wlibc_lstat(const char *restrict name, struct stat *restrict statbuf);
+WLIBC_API int wlibc_wlstat(const wchar_t *restrict wname, struct stat *restrict statbuf);
 
-WLIBC_INLINE int lstat(const char *name, struct stat *statbuf)
+WLIBC_INLINE int lstat(const char *restrict name, struct stat *restrict statbuf)
 {
 	return wlibc_lstat(name, statbuf);
 }
@@ -142,15 +142,15 @@ WLIBC_INLINE int fstat(int fd, struct stat *statbuf)
 	return wlibc_fstat(fd, statbuf);
 }
 
-WLIBC_API int wlibc_fstatat(int dirfd, const char *name, struct stat *statbuf, int flags);
-WLIBC_API int wlibc_wfstatat(int dirfd, const wchar_t *wname, struct stat *statbuf, int flags);
+WLIBC_API int wlibc_fstatat(int dirfd, const char *restrict name, struct stat *restrict statbuf, int flags);
+WLIBC_API int wlibc_wfstatat(int dirfd, const wchar_t *restrict wname, struct stat *restrict statbuf, int flags);
 
-WLIBC_INLINE int fstatat(int dirfd, const char *name, struct stat *statbuf, int flags)
+WLIBC_INLINE int fstatat(int dirfd, const char *restrict name, struct stat *restrict statbuf, int flags)
 {
 	return wlibc_fstatat(dirfd, name, statbuf, flags);
 }
 
-WLIBC_INLINE int wfstatat(int dirfd, const wchar_t *wname, struct stat *statbuf, int flags)
+WLIBC_INLINE int wfstatat(int dirfd, const wchar_t *restrict wname, struct stat *restrict statbuf, int flags)
 {
 	return wlibc_wfstatat(dirfd, wname, statbuf, flags);
 }

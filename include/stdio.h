@@ -64,9 +64,9 @@ extern FILE *_wlibc_stderr;
 typedef long long fpos_t;
 
 // file access
-WLIBC_API FILE *wlibc_fopen(const char *name, const char *mode);
+WLIBC_API FILE *wlibc_fopen(const char *restrict name, const char *restrict mode);
 
-WLIBC_INLINE FILE *fopen(const char *name, const char *mode)
+WLIBC_INLINE FILE *fopen(const char *restrict name, const char *restrict mode)
 {
 	return wlibc_fopen(name, mode);
 }
@@ -78,9 +78,9 @@ WLIBC_INLINE FILE *fdopen(int fd, const char *mode)
 	return wlibc_fdopen(fd, mode);
 }
 
-WLIBC_API FILE *wlibc_freopen(const char *name, const char *mode, FILE *stream);
+WLIBC_API FILE *wlibc_freopen(const char *restrict name, const char *restrict mode, FILE *restrict stream);
 
-WLIBC_INLINE FILE *freopen(const char *name, const char *mode, FILE *stream)
+WLIBC_INLINE FILE *freopen(const char *restrict name, const char *restrict mode, FILE *restrict stream)
 {
 	return wlibc_freopen(name, mode, stream);
 }
@@ -92,9 +92,9 @@ WLIBC_INLINE int fclose(FILE *stream)
 	return wlibc_fclose(stream);
 }
 
-WLIBC_API FILE *wlibc_popen(const char *command, const char *mode);
+WLIBC_API FILE *wlibc_popen(const char *restrict command, const char *restrict mode);
 
-WLIBC_INLINE FILE *popen(const char *command, const char *mode)
+WLIBC_INLINE FILE *popen(const char *restrict command, const char *restrict mode)
 {
 	return wlibc_popen(command, mode);
 }
@@ -114,16 +114,16 @@ WLIBC_INLINE int fileno(FILE *stream)
 }
 
 // file input
-WLIBC_API size_t wlibc_fread(void *buffer, size_t size, size_t count, FILE *stream);
-WLIBC_API char *wlibc_fgets(void *buffer, size_t count, FILE *stream);
+WLIBC_API size_t wlibc_fread(void *restrict buffer, size_t size, size_t count, FILE *restrict stream);
+WLIBC_API char *wlibc_fgets(void *restrict buffer, size_t count, FILE *restrict stream);
 WLIBC_API int wlibc_fgetc(FILE *stream);
 
-WLIBC_INLINE size_t fread(void *buffer, size_t size, size_t count, FILE *stream)
+WLIBC_INLINE size_t fread(void *restrict buffer, size_t size, size_t count, FILE *restrict stream)
 {
 	return wlibc_fread(buffer, size, count, stream);
 }
 
-WLIBC_INLINE char *fgets(void *buffer, size_t count, FILE *stream)
+WLIBC_INLINE char *fgets(void *restrict buffer, size_t count, FILE *restrict stream)
 {
 	return wlibc_fgets(buffer, count, stream);
 }
@@ -143,29 +143,29 @@ WLIBC_INLINE int getchar(void)
 	return wlibc_fgetc(stdin);
 }
 
-WLIBC_API ssize_t wlibc_getdelim(char **buffer, size_t *size, int delimiter, FILE *stream);
+WLIBC_API ssize_t wlibc_getdelim(char **restrict buffer, size_t *restrict size, int delimiter, FILE *restrict stream);
 
-WLIBC_INLINE ssize_t getdelim(char **buffer, size_t *size, int delimiter, FILE *stream)
+WLIBC_INLINE ssize_t getdelim(char **restrict buffer, size_t *restrict size, int delimiter, FILE *restrict stream)
 {
 	return wlibc_getdelim(buffer, size, delimiter, stream);
 }
 
-WLIBC_INLINE ssize_t getline(char **buffer, size_t *size, FILE *stream)
+WLIBC_INLINE ssize_t getline(char **restrict buffer, size_t *restrict size, FILE *restrict stream)
 {
 	return wlibc_getdelim(buffer, size, '\n', stream);
 }
 
 // file output
-WLIBC_API size_t wlibc_fwrite(const void *buffer, size_t size, size_t count, FILE *stream);
-WLIBC_API int wlibc_fputs(const char *buffer, FILE *stream);
+WLIBC_API size_t wlibc_fwrite(const void *restrict buffer, size_t size, size_t count, FILE *restrict stream);
+WLIBC_API int wlibc_fputs(const char *restrict buffer, FILE *restrict stream);
 WLIBC_API int wlibc_fputc(int ch, FILE *stream);
 
-WLIBC_INLINE size_t fwrite(const void *buffer, size_t size, size_t count, FILE *stream)
+WLIBC_INLINE size_t fwrite(const void *restrict buffer, size_t size, size_t count, FILE *restrict stream)
 {
 	return wlibc_fwrite(buffer, size, count, stream);
 }
 
-WLIBC_INLINE int fputs(const char *buffer, FILE *stream)
+WLIBC_INLINE int fputs(const char *restrict buffer, FILE *restrict stream)
 {
 	return wlibc_fputs(buffer, stream);
 }
@@ -214,12 +214,12 @@ WLIBC_INLINE off_t ftello(FILE *stream)
 	return wlibc_ftell(stream);
 }
 
-WLIBC_INLINE int fsetpos(FILE *stream, fpos_t *pos)
+WLIBC_INLINE int fsetpos(FILE *restrict stream, fpos_t *restrict pos)
 {
 	return wlibc_fseek(stream, *pos, SEEK_SET);
 }
 
-WLIBC_INLINE int fgetpos(FILE *stream, fpos_t *pos)
+WLIBC_INLINE int fgetpos(FILE *restrict stream, fpos_t *restrict pos)
 {
 	*pos = wlibc_ftell(stream);
 	return *pos != -1ull ? 0 : -1;
@@ -245,14 +245,14 @@ WLIBC_INLINE int fflush(FILE *stream)
 	return wlibc_fflush(stream);
 }
 
-WLIBC_API int wlibc_setvbuf(FILE *stream, char *buffer, int mode, size_t size);
+WLIBC_API int wlibc_setvbuf(FILE *restrict stream, char *restrict buffer, int mode, size_t size);
 
-WLIBC_INLINE int setvbuf(FILE *stream, char *buffer, int mode, size_t size)
+WLIBC_INLINE int setvbuf(FILE *restrict stream, char *restrict buffer, int mode, size_t size)
 {
 	return wlibc_setvbuf(stream, buffer, mode, size);
 }
 
-WLIBC_INLINE int setbuf(FILE *stream, char *buffer)
+WLIBC_INLINE int setbuf(FILE *restrict stream, char *restrict buffer)
 {
 	return buffer == NULL ? wlibc_setvbuf(stream, NULL, _IONBF, 0) : wlibc_setvbuf(stream, buffer, _IOFBF, BUFSIZ);
 }
@@ -310,42 +310,42 @@ WLIBC_INLINE int wlibc_ftrylockfile(FILE *stream)
 }
 
 // printf
-WLIBC_API int wlibc_vsnprintf(char *buffer, size_t size, const char *format, va_list args);
-WLIBC_API int wlibc_vdprintf(int fd, const char *format, va_list args);
-WLIBC_API int wlibc_vfprintf(FILE *stream, const char *format, va_list args);
-WLIBC_API int wlibc_vasprintf(char **buffer, const char *format, va_list args);
+WLIBC_API int wlibc_vsnprintf(char *restrict buffer, size_t size, const char *restrict format, va_list args);
+WLIBC_API int wlibc_vdprintf(int fd, const char *restrict format, va_list args);
+WLIBC_API int wlibc_vfprintf(FILE *restrict stream, const char *restrict format, va_list args);
+WLIBC_API int wlibc_vasprintf(char **restrict buffer, const char *restrict format, va_list args);
 
-WLIBC_INLINE int vasprintf(char **buffer, const char *format, va_list args)
+WLIBC_INLINE int vasprintf(char **restrict buffer, const char *restrict format, va_list args)
 {
 	return wlibc_vasprintf(buffer, format, args);
 }
 
-WLIBC_INLINE int vsnprintf(char *buffer, size_t size, const char *format, va_list args)
+WLIBC_INLINE int vsnprintf(char *restrict buffer, size_t size, const char *restrict format, va_list args)
 {
 	return wlibc_vsnprintf(buffer, size, format, args);
 }
 
-WLIBC_INLINE int vsprintf(char *buffer, const char *format, va_list args)
+WLIBC_INLINE int vsprintf(char *restrict buffer, const char *restrict format, va_list args)
 {
 	return wlibc_vsnprintf(buffer, -1, format, args);
 }
 
-WLIBC_INLINE int vdprintf(int fd, const char *format, va_list args)
+WLIBC_INLINE int vdprintf(int fd, const char *restrict format, va_list args)
 {
 	return wlibc_vdprintf(fd, format, args);
 }
 
-WLIBC_INLINE int vfprintf(FILE *stream, const char *format, va_list args)
+WLIBC_INLINE int vfprintf(FILE *restrict stream, const char *restrict format, va_list args)
 {
 	return wlibc_vfprintf(stream, format, args);
 }
 
-WLIBC_INLINE int vprintf(const char *format, va_list args)
+WLIBC_INLINE int vprintf(const char *restrict format, va_list args)
 {
 	return wlibc_vfprintf(stdout, format, args);
 }
 
-WLIBC_INLINE int snprintf(char *buffer, size_t size, const char *format, ...)
+WLIBC_INLINE int snprintf(char *restrict buffer, size_t size, const char *restrict format, ...)
 {
 	va_list args;
 	va_start(args, format);
@@ -354,7 +354,7 @@ WLIBC_INLINE int snprintf(char *buffer, size_t size, const char *format, ...)
 	return result;
 }
 
-WLIBC_INLINE int sprintf(char *buffer, const char *format, ...)
+WLIBC_INLINE int sprintf(char *restrict buffer, const char *restrict format, ...)
 {
 	va_list args;
 	va_start(args, format);
@@ -363,7 +363,7 @@ WLIBC_INLINE int sprintf(char *buffer, const char *format, ...)
 	return result;
 }
 
-WLIBC_INLINE int dprintf(int fd, const char *format, ...)
+WLIBC_INLINE int dprintf(int fd, const char *restrict format, ...)
 {
 	va_list args;
 	va_start(args, format);
@@ -372,7 +372,7 @@ WLIBC_INLINE int dprintf(int fd, const char *format, ...)
 	return result;
 }
 
-WLIBC_INLINE int fprintf(FILE *stream, const char *format, ...)
+WLIBC_INLINE int fprintf(FILE *restrict stream, const char *restrict format, ...)
 {
 	va_list args;
 	va_start(args, format);
@@ -381,7 +381,7 @@ WLIBC_INLINE int fprintf(FILE *stream, const char *format, ...)
 	return result;
 }
 
-WLIBC_INLINE int printf(const char *format, ...)
+WLIBC_INLINE int printf(const char *restrict format, ...)
 {
 	va_list args;
 	va_start(args, format);
@@ -390,7 +390,7 @@ WLIBC_INLINE int printf(const char *format, ...)
 	return result;
 }
 
-WLIBC_INLINE int asprintf(char **buffer, const char *format, ...)
+WLIBC_INLINE int asprintf(char **restrict buffer, const char *restrict format, ...)
 {
 	va_list args;
 	va_start(args, format);
@@ -400,25 +400,25 @@ WLIBC_INLINE int asprintf(char **buffer, const char *format, ...)
 }
 
 // scanf
-WLIBC_API int wlibc_vsscanf(const char *str, const char *format, va_list args);
-WLIBC_API int wlibc_vfscanf(FILE *stream, const char *format, va_list args);
+WLIBC_API int wlibc_vsscanf(const char *restrict str, const char *restrict format, va_list args);
+WLIBC_API int wlibc_vfscanf(FILE *restrict stream, const char *restrict format, va_list args);
 
-WLIBC_INLINE int vsscanf(const char *str, const char *format, va_list args)
+WLIBC_INLINE int vsscanf(const char *restrict str, const char *restrict format, va_list args)
 {
 	return wlibc_vsscanf(str, format, args);
 }
 
-WLIBC_INLINE int vfscanf(FILE *stream, const char *format, va_list args)
+WLIBC_INLINE int vfscanf(FILE *restrict stream, const char *restrict format, va_list args)
 {
 	return wlibc_vfscanf(stream, format, args);
 }
 
-WLIBC_INLINE int vscanf(const char *format, va_list args)
+WLIBC_INLINE int vscanf(const char *restrict format, va_list args)
 {
 	return wlibc_vfscanf(stdin, format, args);
 }
 
-WLIBC_INLINE int sscanf(const char *str, const char *format, ...)
+WLIBC_INLINE int sscanf(const char *restrict str, const char *restrict format, ...)
 {
 	va_list args;
 	va_start(args, format);
@@ -427,7 +427,7 @@ WLIBC_INLINE int sscanf(const char *str, const char *format, ...)
 	return result;
 }
 
-WLIBC_INLINE int fscanf(FILE *stream, const char *format, ...)
+WLIBC_INLINE int fscanf(FILE *restrict stream, const char *restrict format, ...)
 {
 	va_list args;
 	va_start(args, format);
@@ -436,7 +436,7 @@ WLIBC_INLINE int fscanf(FILE *stream, const char *format, ...)
 	return result;
 }
 
-WLIBC_INLINE int scanf(const char *format, ...)
+WLIBC_INLINE int scanf(const char *restrict format, ...)
 {
 	va_list args;
 	va_start(args, format);
@@ -508,16 +508,16 @@ WLIBC_API FILE *wlibc_open_memstream(char **, size_t *);
 // Unlocked
 
 // input
-WLIBC_API size_t wlibc_fread_unlocked(void *buffer, size_t size, size_t count, FILE *stream);
-WLIBC_API char *wlibc_fgets_unlocked(void *buffer, size_t count, FILE *stream);
+WLIBC_API size_t wlibc_fread_unlocked(void *restrict buffer, size_t size, size_t count, FILE *restrict stream);
+WLIBC_API char *wlibc_fgets_unlocked(void *restrict buffer, size_t count, FILE *restrict stream);
 WLIBC_API int wlibc_fgetc_unlocked(FILE *stream);
 
-WLIBC_INLINE size_t fread_unlocked(void *buffer, size_t size, size_t count, FILE *stream)
+WLIBC_INLINE size_t fread_unlocked(void *restrict buffer, size_t size, size_t count, FILE *restrict stream)
 {
 	return wlibc_fread_unlocked(buffer, size, count, stream);
 }
 
-WLIBC_INLINE char *fgets_unlocked(void *buffer, size_t count, FILE *stream)
+WLIBC_INLINE char *fgets_unlocked(void *restrict buffer, size_t count, FILE *restrict stream)
 {
 	return wlibc_fgets_unlocked(buffer, count, stream);
 }
@@ -538,16 +538,16 @@ WLIBC_INLINE int getchar_unlocked(void)
 }
 
 // output
-WLIBC_API size_t wlibc_fwrite_unlocked(const void *buffer, size_t size, size_t count, FILE *stream);
-WLIBC_API int wlibc_fputs_unlocked(const char *buffer, FILE *stream);
+WLIBC_API size_t wlibc_fwrite_unlocked(const void *restrict buffer, size_t size, size_t count, FILE *restrict stream);
+WLIBC_API int wlibc_fputs_unlocked(const char *restrict buffer, FILE *restrict stream);
 WLIBC_API int wlibc_fputc_unlocked(int ch, FILE *stream);
 
-WLIBC_INLINE size_t fwrite_unlocked(const void *buffer, size_t size, size_t count, FILE *stream)
+WLIBC_INLINE size_t fwrite_unlocked(const void *restrict buffer, size_t size, size_t count, FILE *restrict stream)
 {
 	return wlibc_fwrite_unlocked(buffer, size, count, stream);
 }
 
-WLIBC_INLINE int fputs_unlocked(const char *buffer, FILE *stream)
+WLIBC_INLINE int fputs_unlocked(const char *restrict buffer, FILE *restrict stream)
 {
 	return wlibc_fputs_unlocked(buffer, stream);
 }

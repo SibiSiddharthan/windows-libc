@@ -10,7 +10,7 @@
 #include <Windows.h>
 #include <internal/error.h>
 
-int common_link(const wchar_t *wsource, const wchar_t *wtarget)
+int common_link(const wchar_t *restrict wsource, const wchar_t *restrict wtarget)
 {
 	if (!CreateHardLink(wtarget, wsource, NULL))
 	{
@@ -21,7 +21,7 @@ int common_link(const wchar_t *wsource, const wchar_t *wtarget)
 	return 0;
 }
 
-int wlibc_link(const char *source, const char *target)
+int wlibc_link(const char *restrict source, const char *restrict target)
 {
 	if (source == NULL || target == NULL)
 	{
@@ -37,7 +37,7 @@ int wlibc_link(const char *source, const char *target)
 	return status;
 }
 
-int wlibc_wlink(const wchar_t *wsource, const wchar_t *wtarget)
+int wlibc_wlink(const wchar_t *restrict wsource, const wchar_t *restrict wtarget)
 {
 	if (wsource == NULL || wtarget == NULL)
 	{

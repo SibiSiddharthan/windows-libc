@@ -243,28 +243,28 @@ WLIBC_INLINE int kill(pid_t pid, int sig)
 	return wlibc_kill(pid, sig);
 }
 
-WLIBC_API int wlibc_link(const char *source, const char *target);
-WLIBC_API int wlibc_wlink(const wchar_t *wsource, const wchar_t *wtarget);
+WLIBC_API int wlibc_link(const char *restrict source, const char *restrict target);
+WLIBC_API int wlibc_wlink(const wchar_t *restrict wsource, const wchar_t *restrict wtarget);
 
-WLIBC_INLINE int link(const char *source, const char *target)
+WLIBC_INLINE int link(const char *restrict source, const char *restrict target)
 {
 	return wlibc_link(source, target);
 }
 
-WLIBC_INLINE int wlink(const wchar_t *wsource, const wchar_t *wtarget)
+WLIBC_INLINE int wlink(const wchar_t *restrict wsource, const wchar_t *restrict wtarget)
 {
 	return wlibc_wlink(wsource, wtarget);
 }
 
-WLIBC_API int wlibc_linkat(int olddirfd, const char *source, int newdirfd, const char *target, int flags);
-WLIBC_API int wlibc_wlinkat(int olddirfd, const wchar_t *wsource, int newdirfd, const wchar_t *wtarget, int flags);
+WLIBC_API int wlibc_linkat(int olddirfd, const char *restrict source, int newdirfd, const char *restrict target, int flags);
+WLIBC_API int wlibc_wlinkat(int olddirfd, const wchar_t *restrict wsource, int newdirfd, const wchar_t *restrict wtarget, int flags);
 
-WLIBC_INLINE int linkat(int olddirfd, const char *source, int newdirfd, const char *target, int flags)
+WLIBC_INLINE int linkat(int olddirfd, const char *restrict source, int newdirfd, const char *restrict target, int flags)
 {
 	return wlibc_linkat(olddirfd, source, newdirfd, target, flags);
 }
 
-WLIBC_INLINE int wlinkat(int olddirfd, const wchar_t *wsource, int newdirfd, const wchar_t *wtarget, int flags)
+WLIBC_INLINE int wlinkat(int olddirfd, const wchar_t *restrict wsource, int newdirfd, const wchar_t *restrict wtarget, int flags)
 {
 	return wlibc_wlinkat(olddirfd, wsource, newdirfd, wtarget, flags);
 }
@@ -294,54 +294,54 @@ WLIBC_INLINE int wrmdir(const wchar_t *wpath)
 	return wlibc_wrmdir(wpath);
 }
 
-WLIBC_API int wlibc_symlink(const char *source, const char *target);
-WLIBC_API int wlibc_wsymlink(const wchar_t *wsource, const wchar_t *wtarget);
+WLIBC_API int wlibc_symlink(const char *restrict source, const char *restrict target);
+WLIBC_API int wlibc_wsymlink(const wchar_t *restrict wsource, const wchar_t *restrict wtarget);
 
-WLIBC_INLINE int symlink(const char *source, const char *target)
+WLIBC_INLINE int symlink(const char *restrict source, const char *restrict target)
 {
 	return wlibc_symlink(source, target);
 }
 
-WLIBC_INLINE int wsymlink(const wchar_t *wsource, const wchar_t *wtarget)
+WLIBC_INLINE int wsymlink(const wchar_t *restrict wsource, const wchar_t *restrict wtarget)
 {
 	return wlibc_wsymlink(wsource, wtarget);
 }
 
-WLIBC_API int wlibc_symlinkat(const char *source, int newdirfd, const char *target);
-WLIBC_API int wlibc_wsymlinkat(const wchar_t *wsource, int newdirfd, const wchar_t *wtarget);
+WLIBC_API int wlibc_symlinkat(const char *restrict source, int newdirfd, const char *restrict target);
+WLIBC_API int wlibc_wsymlinkat(const wchar_t *restrict wsource, int newdirfd, const wchar_t *restrict wtarget);
 
-WLIBC_INLINE int symlinkat(const char *source, int newdirfd, const char *target)
+WLIBC_INLINE int symlinkat(const char *restrict source, int newdirfd, const char *restrict target)
 {
 	return wlibc_symlinkat(source, newdirfd, target);
 }
 
-WLIBC_INLINE int wsymlinkat(const wchar_t *wsource, int newdirfd, const wchar_t *wtarget)
+WLIBC_INLINE int wsymlinkat(const wchar_t *restrict wsource, int newdirfd, const wchar_t *restrict wtarget)
 {
 	return wlibc_wsymlinkat(wsource, newdirfd, wtarget);
 }
 
-WLIBC_API ssize_t wlibc_readlink(const char *path, char *buf, size_t bufsiz);
-WLIBC_API ssize_t wlibc_wreadlink(const wchar_t *wpath, wchar_t *wbuf, size_t bufsiz);
+WLIBC_API ssize_t wlibc_readlink(const char *restrict path, char *restrict buf, size_t bufsiz);
+WLIBC_API ssize_t wlibc_wreadlink(const wchar_t *restrict wpath, wchar_t *restrict wbuf, size_t bufsiz);
 
-WLIBC_INLINE ssize_t readlink(const char *path, char *buf, size_t bufsiz)
+WLIBC_INLINE ssize_t readlink(const char *restrict path, char *restrict buf, size_t bufsiz)
 {
 	return wlibc_readlink(path, buf, bufsiz);
 }
 
-WLIBC_INLINE ssize_t wreadlink(const wchar_t *wpath, wchar_t *wbuf, size_t bufsiz)
+WLIBC_INLINE ssize_t wreadlink(const wchar_t *restrict wpath, wchar_t *restrict wbuf, size_t bufsiz)
 {
 	return wlibc_wreadlink(wpath, wbuf, bufsiz);
 }
 
-WLIBC_API ssize_t wlibc_readlinkat(int dirfd, const char *path, char *buf, size_t bufsiz);
-WLIBC_API ssize_t wlibc_wreadlinkat(int dirfd, const wchar_t *wpath, wchar_t *wbuf, size_t bufsiz);
+WLIBC_API ssize_t wlibc_readlinkat(int dirfd, const char *restrict path, char *restrict buf, size_t bufsiz);
+WLIBC_API ssize_t wlibc_wreadlinkat(int dirfd, const wchar_t *restrict wpath, wchar_t *restrict wbuf, size_t bufsiz);
 
-WLIBC_INLINE ssize_t readlinkat(int dirfd, const char *path, char *buf, size_t bufsiz)
+WLIBC_INLINE ssize_t readlinkat(int dirfd, const char *restrict path, char *restrict buf, size_t bufsiz)
 {
 	return wlibc_readlinkat(dirfd, path, buf, bufsiz);
 }
 
-WLIBC_INLINE ssize_t wreadlinkat(int dirfd, const wchar_t *wpath, wchar_t *wbuf, size_t bufsiz)
+WLIBC_INLINE ssize_t wreadlinkat(int dirfd, const wchar_t *restrict wpath, wchar_t *restrict wbuf, size_t bufsiz)
 {
 	return wlibc_wreadlinkat(dirfd, wpath, wbuf, bufsiz);
 }

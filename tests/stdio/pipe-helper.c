@@ -5,7 +5,6 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <stdio-hooks.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>

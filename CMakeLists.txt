@@ -17,11 +17,11 @@ add_compile_definitions(UNICODE _UNICODE
 						_CRT_SECURE_NO_WARNINGS _CRT_NONSTDC_NO_DEPRECATE)
 
 if(CMAKE_C_COMPILER_ID STREQUAL "Clang")
-	add_compile_options(-fcolor-diagnostics -fansi-escape-codes -Wall -Wno-unused-variable)
+	add_compile_options(-fcolor-diagnostics -fansi-escape-codes -Wall -Wno-unused-variable -std=c11)
 endif()
 
 if(CMAKE_C_COMPILER_ID STREQUAL "MSVC")
-	add_compile_options(/wd4098 /wd4477)
+	add_compile_options(/wd4098 /wd4477 /std:c11)
 endif()
 
 include_directories(include)
@@ -36,6 +36,7 @@ option(ENABLE_LANGINFO "Enable langinfo.h" ON)
 option(ENABLE_SIGNALS "Enable POSIX like signals" ON)
 option(ENABLE_PROCESS "Enable POSIX process management" ON)
 option(ENABLE_BINARY_STD_STREAMS "Enable binary(instead of text) std streams" ON)
+#option(ENABLE_STRINGS_GNU "Enable various GNU string extensions" ON)
 #option(ENABLE_SOCKETS "Enable SOCKETS API" ON)
 
 add_subdirectory(src)

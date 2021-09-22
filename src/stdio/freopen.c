@@ -17,7 +17,7 @@ int get_buf_mode(int flags);
 int common_fflush(FILE *stream);
 int common_open(const wchar_t *wname, const int oflags, const mode_t perm);
 
-FILE *wlibc_freopen(const char *name, const char *mode, FILE *stream)
+FILE *wlibc_freopen(const char *restrict name, const char *restrict mode, FILE *restrict stream)
 {
 	VALIDATE_FILE_STREAM(stream, NULL);
 

@@ -14,7 +14,7 @@
 #include <time.h>
 #include <unistd.h>
 
-ssize_t common_readlink(const wchar_t *wpath, wchar_t *wbuf, size_t bufsiz, int give_absolute);
+ssize_t common_readlink(const wchar_t *restrict wpath, wchar_t *restrict wbuf, size_t bufsiz, int give_absolute);
 
 /* 116444736000000000 is the number of 100 nanosecond intervals from
    January 1st 1601 to January 1st 1970 (UTC)
@@ -187,7 +187,7 @@ int do_stat(HANDLE file, struct stat *statbuf)
 	return 0;
 }
 
-int common_stat(const wchar_t *wname, struct stat *statbuf, int do_lstat)
+int common_stat(const wchar_t *restrict wname, struct stat *restrict statbuf, int do_lstat)
 {
 	if (statbuf == NULL)
 	{
@@ -231,7 +231,7 @@ int common_stat(const wchar_t *wname, struct stat *statbuf, int do_lstat)
 	return result;
 }
 
-int wlibc_stat(const char *name, struct stat *statbuf)
+int wlibc_stat(const char *restrict name, struct stat *restrict statbuf)
 {
 	if (name == NULL)
 	{
@@ -246,7 +246,7 @@ int wlibc_stat(const char *name, struct stat *statbuf)
 	return status;
 }
 
-int wlibc_wstat(const wchar_t *wname, struct stat *statbuf)
+int wlibc_wstat(const wchar_t *restrict wname, struct stat *restrict statbuf)
 {
 	if (wname == NULL)
 	{
@@ -257,7 +257,7 @@ int wlibc_wstat(const wchar_t *wname, struct stat *statbuf)
 	return common_stat(wname, statbuf, 0);
 }
 
-int wlibc_lstat(const char *name, struct stat *statbuf)
+int wlibc_lstat(const char *restrict name, struct stat *restrict statbuf)
 {
 	if (name == NULL)
 	{
@@ -272,7 +272,7 @@ int wlibc_lstat(const char *name, struct stat *statbuf)
 	return status;
 }
 
-int wlibc_wlstat(const wchar_t *wname, struct stat *statbuf)
+int wlibc_wlstat(const wchar_t *restrict wname, struct stat *restrict statbuf)
 {
 	if (wname == NULL)
 	{

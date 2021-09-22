@@ -8,7 +8,7 @@
 #include <stdio.h>
 #include <internal/stdio.h>
 
-size_t common_fwrite(void *buffer, size_t size, size_t count, FILE *stream);
+size_t common_fwrite(void *restrict buffer, size_t size, size_t count, FILE *restrict stream);
 
 int common_fputc(int ch, FILE *stream)
 {
