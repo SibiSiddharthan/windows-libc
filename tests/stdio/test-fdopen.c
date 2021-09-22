@@ -5,7 +5,7 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <stdio-hooks.h>
+#include <stdio.h>
 #include <fcntl.h>
 #include <internal/fcntl.h>
 #include <unistd.h>
@@ -27,17 +27,23 @@ void test_wrong_access()
 	errno = 0;
 	int fd = open("t-fdopen", O_RDONLY | O_CREAT, 0700);
 	FILE *f = fdopen(fd, "w");
-	// This actually won't write anything to the file
+	ASSERT_NULL(f);
+	ASSERT_ERRNO(EINVAL);
+
+#if 0
+	// This actually won't write anything to the file.
+	// Let's keep this bit just in case we plan to use hooks again.
 	size_t flength = fwrite((void *)"hello", 1, 6, f);
 	fclose(f);
-	ASSERT_EQ(validate_fd(fd), 0);
+	//ASSERT_EQ(validate_fd(fd), 0);
 
 	fd = open("t-fdopen", O_RDONLY | O_EXCL);
 	char rbuf[16];
 	ssize_t llength = read(fd, rbuf, 16);
 	ASSERT_EQ(llength, 0);
-	close(fd);
+#endif
 
+	close(fd);
 	unlink("t-fdopen");
 }
 

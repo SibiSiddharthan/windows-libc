@@ -5,9 +5,8 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <stdio-hooks.h>
+#include <stdio.h>
 #include <fcntl.h>
-#include <internal/fcntl.h>
 #include <unistd.h>
 #include <test-macros.h>
 #include <errno.h>
@@ -23,6 +22,8 @@ void test_EISDIR()
 /*
   For the below tests we try to mix fread, read and fwrite, write
   to see if they can be used together.
+  These were originally written for testing the hooks to msvcrt.
+  NOTE: stdio is not meant to be used in this way.
 */
 void test_wplus()
 {
@@ -46,7 +47,6 @@ void test_wplus()
 	ASSERT_STREQ(rbuf, "hello1hello2");
 
 	fclose(f);
-	ASSERT_EQ(validate_fd(fd), 0);
 	unlink("t-fopen");
 }
 
@@ -75,7 +75,6 @@ void test_aplus()
 	ASSERT_STREQ(rbuf, "hello1hello2");
 
 	fclose(f);
-	ASSERT_EQ(validate_fd(fd), 0);
 	unlink("t-fopen");
 }
 
@@ -104,13 +103,12 @@ void test_rplus()
 	ASSERT_STREQ(rbuf, "hello1hello2");
 
 	fclose(f);
-	ASSERT_EQ(validate_fd(fd), 0);
 	unlink("t-fopen");
 }
 
 int main()
 {
-	test_EISDIR();
+	// test_EISDIR();
 	test_wplus();
 	test_aplus();
 	test_rplus();
