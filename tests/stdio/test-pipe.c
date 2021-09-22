@@ -5,17 +5,16 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <stdio-hooks.h>
+#include <stdio.h>
 #include <test-macros.h>
 #include <unistd.h>
 
 void test_read()
 {
-	FILE *f = popen("./pipe-helper 1", "r");
-	int fd = fileno(f);
+	FILE *f = popen("pipe-helper 1", "r");
 
 	char buf[16];
-	ssize_t length = read(fd, buf, 16);
+	ssize_t length = fread(buf, 1, 16, f);
 	ASSERT_EQ(length, 5);
 	buf[5] = '\0';
 	ASSERT_STREQ(buf, "hello");
@@ -26,10 +25,9 @@ void test_read()
 
 void test_write()
 {
-	FILE *f = popen("./pipe-helper 2", "w");
-	int fd = fileno(f);
+	FILE *f = popen("pipe-helper 2", "w");
 
-	ssize_t length = write(fd, "hello", 5);
+	ssize_t length = fwrite("hello", 1, 5, f);
 	ASSERT_EQ(length, 5);
 
 	int status = pclose(f);
@@ -38,11 +36,10 @@ void test_write()
 
 void test_read_cr()
 {
-	FILE *f = popen("./pipe-helper 3", "r");
-	int fd = fileno(f);
+	FILE *f = popen("pipe-helper 3", "r");
 
 	char buf[16];
-	ssize_t length = read(fd, buf, 16);
+	ssize_t length = fread(buf, 1, 16, f);
 	ASSERT_EQ(length, 12);
 	buf[12] = '\0';
 	ASSERT_STREQ(buf, "hello\r\nworld");
@@ -53,10 +50,9 @@ void test_read_cr()
 
 void test_write_cr()
 {
-	FILE *f = popen("./pipe-helper 4", "w");
-	int fd = fileno(f);
+	FILE *f = popen("pipe-helper 4", "w");
 
-	ssize_t length = write(fd, "hello\r\nworld", 12);
+	ssize_t length = fwrite("hello\r\nworld", 1, 12, f);
 	ASSERT_EQ(length, 12);
 
 	int status = pclose(f);
