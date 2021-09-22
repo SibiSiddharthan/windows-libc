@@ -7,12 +7,16 @@
 
 set(tests
 fdopen
-fopen
+fflush
+fileio
 fileno
+fopen
 freopen
+internal
 pipe
 rename
-renameat)
+renameat
+ungetc)
 
 foreach(t ${tests})
 	add_executable(test-${t} test-${t}.c)
