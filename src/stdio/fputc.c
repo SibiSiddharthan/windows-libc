@@ -12,6 +12,14 @@ size_t common_fwrite(void *restrict buffer, size_t size, size_t count, FILE *res
 
 int common_fputc(int ch, FILE *stream)
 {
+	if (((stream->buf_mode & _IONBF) == 0) && stream->prev_op == OP_WRITE)
+	{
+		if (stream->start != stream->end && stream->pos != stream->end)
+		{
+			stream->buffer[stream->pos++ - stream->start] = ch;
+			return ch;
+		}
+	}
 	size_t res = common_fwrite(&ch, 1, 1, stream);
 	if (res != 1)
 	{

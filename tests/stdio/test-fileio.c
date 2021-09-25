@@ -593,6 +593,162 @@ void test_read_append()
 	close(fd);
 }
 
+void test_getc()
+{
+	FILE *f = fopen("t-fileio-getc", "r");
+	int result = setvbuf(f, NULL, _IOFBF, 4);
+	ASSERT_EQ(result, 0);
+	char ch;
+
+	// read 7 times -> refill buffer once
+	ch = fgetc(f);
+	ASSERT_EQ(ch, 'a');
+	ASSERT_EQ(ftell(f), 1);
+	ch = fgetc(f);
+	ASSERT_EQ(ch, 'b');
+	ASSERT_EQ(ftell(f), 2);
+	ch = fgetc(f);
+	ASSERT_EQ(ch, 'c');
+	ASSERT_EQ(ftell(f), 3);
+	ch = fgetc(f);
+	ASSERT_EQ(ch, 'd');
+	ASSERT_EQ(ftell(f), 4);
+	ch = fgetc(f);
+	ASSERT_EQ(ch, 'e');
+	ASSERT_EQ(ftell(f), 5);
+	ch = fgetc(f);
+	ASSERT_EQ(ch, 'f');
+	ASSERT_EQ(ftell(f), 6);
+	ch = fgetc(f);
+	ASSERT_EQ(ch, 'g');
+	ASSERT_EQ(ftell(f), 7);
+
+	fseek(f, -5, SEEK_END);
+	ASSERT_EQ(ftell(f), 31);
+	ch = fgetc(f);
+	ASSERT_EQ(ch, '5');
+	ASSERT_EQ(ftell(f), 32);
+	ch = fgetc(f);
+	ASSERT_EQ(ch, '6');
+	ASSERT_EQ(ftell(f), 33);
+	ch = fgetc(f);
+	ASSERT_EQ(ch, '7');
+	ASSERT_EQ(ftell(f), 34);
+	ch = fgetc(f);
+	ASSERT_EQ(ch, '8');
+	ASSERT_EQ(ftell(f), 35);
+	ch = fgetc(f);
+	ASSERT_EQ(ch, '9');
+	ASSERT_EQ(ftell(f), 36);
+	ch = fgetc(f);
+	ASSERT_EQ(ch, EOF);
+	ASSERT_EQ(ftell(f), 36);
+	ASSERT_EQ(feof(f), 1);
+
+	fclose(f);
+}
+
+void test_putc()
+{
+	FILE *f = fopen("t-fileio-putc", "w");
+	int result = setvbuf(f, NULL, _IOFBF, 4);
+	ASSERT_EQ(result, 0);
+	char ch;
+
+	// read 7 times -> refill buffer once
+	ch = fputc('a', f);
+	ASSERT_EQ(ch, 'a');
+	ASSERT_EQ(ftell(f), 1);
+	ch = fputc('b', f);
+	ASSERT_EQ(ch, 'b');
+	ASSERT_EQ(ftell(f), 2);
+	ch = fputc('c', f);
+	ASSERT_EQ(ch, 'c');
+	ASSERT_EQ(ftell(f), 3);
+	ch = fputc('d', f);
+	ASSERT_EQ(ch, 'd');
+	ASSERT_EQ(ftell(f), 4);
+	ch = fputc('e', f);
+	ASSERT_EQ(ch, 'e');
+	ASSERT_EQ(ftell(f), 5);
+	ch = fputc('f', f);
+	ASSERT_EQ(ch, 'f');
+	ASSERT_EQ(ftell(f), 6);
+	ch = fputc('g', f);
+	ASSERT_EQ(ch, 'g');
+	ASSERT_EQ(ftell(f), 7);
+
+	fclose(f);
+
+	int fd = open("t-fileio-putc", O_RDONLY);
+	char check_buffer[16];
+	ssize_t read_result = read(fd, check_buffer, 16);
+	ASSERT_EQ(read_result, 7);
+	ASSERT_MEMEQ(check_buffer, "abcdefg", 7);
+	close(fd);
+
+	unlink("t-fileio-putc");
+}
+
+void test_getc_putc()
+{
+	FILE *f = fopen("t-fileio-getc-putc", "r+");
+	int result = setvbuf(f, NULL, _IOFBF, 4);
+	ASSERT_EQ(result, 0);
+	char ch;
+
+	ch = fgetc(f);
+	ASSERT_EQ(ch, 'a');
+	ASSERT_EQ(ftell(f), 1);
+	ch = fputc('B', f);
+	ASSERT_EQ(ch, 'B');
+	ASSERT_EQ(ftell(f), 2);
+	ch = fgetc(f);
+	ASSERT_EQ(ch, 'c');
+	ASSERT_EQ(ftell(f), 3);
+	ch = fputc('D', f);
+	ASSERT_EQ(ch, 'D');
+	ASSERT_EQ(ftell(f), 4);
+	ch = fgetc(f);
+	ASSERT_EQ(ch, 'e');
+	ASSERT_EQ(ftell(f), 5);
+	ch = fputc('F', f);
+	ASSERT_EQ(ch, 'F');
+	ASSERT_EQ(ftell(f), 6);
+
+	fclose(f);
+
+	int fd = open("t-fileio-getc-putc", O_RDONLY);
+	char check_buffer[16];
+	ssize_t read_result = read(fd, check_buffer, 16);
+	ASSERT_EQ(read_result, 16);
+	ASSERT_MEMEQ(check_buffer, "aBcDeFgh", 8);
+	close(fd);
+}
+
+void test_gets()
+{
+	int fd = open("t-fileio-gets", O_CREAT | O_WRONLY | O_TRUNC, 0777);
+	write(fd, "abcdefg\nhijk", 12);
+	close(fd);
+
+	FILE *f = fopen("t-fileio-gets", "r");
+	char buf[16];
+
+	fgets(buf, 16, f);
+	ASSERT_STREQ(buf, "abcdefg\n");
+	ASSERT_EQ(ftell(f), 8);
+
+	fgets(buf, 16, f);
+	ASSERT_STREQ(buf, "hijk");
+	ASSERT_EQ(ftell(f), 12);
+	ASSERT_EQ(feof(f), 1);
+
+	fclose(f);
+
+	unlink("t-fileio-gets");
+}
+
 int main()
 {
 	test_read_write_basic();
@@ -622,6 +778,18 @@ int main()
 	prepare("t-fileio-read-append");
 	test_read_append();
 	cleanup("t-fileio-read-append");
+
+	prepare("t-fileio-getc");
+	test_getc();
+	cleanup("t-fileio-getc");
+
+	test_putc();
+
+	prepare("t-fileio-getc-putc");
+	test_getc_putc();
+	cleanup("t-fileio-getc-putc");
+
+	test_gets();
 
 	return 0;
 }

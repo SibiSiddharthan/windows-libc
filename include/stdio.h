@@ -115,7 +115,7 @@ WLIBC_INLINE int fileno(FILE *stream)
 
 // file input
 WLIBC_API size_t wlibc_fread(void *restrict buffer, size_t size, size_t count, FILE *restrict stream);
-WLIBC_API char *wlibc_fgets(void *restrict buffer, size_t count, FILE *restrict stream);
+WLIBC_API char *wlibc_fgets(char *restrict buffer, size_t count, FILE *restrict stream);
 WLIBC_API int wlibc_fgetc(FILE *stream);
 
 WLIBC_INLINE size_t fread(void *restrict buffer, size_t size, size_t count, FILE *restrict stream)
@@ -123,7 +123,7 @@ WLIBC_INLINE size_t fread(void *restrict buffer, size_t size, size_t count, FILE
 	return wlibc_fread(buffer, size, count, stream);
 }
 
-WLIBC_INLINE char *fgets(void *restrict buffer, size_t count, FILE *restrict stream)
+WLIBC_INLINE char *fgets(char *restrict buffer, size_t count, FILE *restrict stream)
 {
 	return wlibc_fgets(buffer, count, stream);
 }
@@ -509,7 +509,7 @@ WLIBC_API FILE *wlibc_open_memstream(char **, size_t *);
 
 // input
 WLIBC_API size_t wlibc_fread_unlocked(void *restrict buffer, size_t size, size_t count, FILE *restrict stream);
-WLIBC_API char *wlibc_fgets_unlocked(void *restrict buffer, size_t count, FILE *restrict stream);
+WLIBC_API char *wlibc_fgets_unlocked(char *restrict buffer, size_t count, FILE *restrict stream);
 WLIBC_API int wlibc_fgetc_unlocked(FILE *stream);
 
 WLIBC_INLINE size_t fread_unlocked(void *restrict buffer, size_t size, size_t count, FILE *restrict stream)
@@ -517,7 +517,7 @@ WLIBC_INLINE size_t fread_unlocked(void *restrict buffer, size_t size, size_t co
 	return wlibc_fread_unlocked(buffer, size, count, stream);
 }
 
-WLIBC_INLINE char *fgets_unlocked(void *restrict buffer, size_t count, FILE *restrict stream)
+WLIBC_INLINE char *fgets_unlocked(char *restrict buffer, size_t count, FILE *restrict stream)
 {
 	return wlibc_fgets_unlocked(buffer, count, stream);
 }

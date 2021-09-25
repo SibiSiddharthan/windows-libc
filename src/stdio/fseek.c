@@ -14,15 +14,8 @@
 
 int common_fflush(FILE *stream);
 
-int wlibc_fseek(FILE *stream, ssize_t offset, int whence)
+int common_fseek(FILE *stream, ssize_t offset, int whence)
 {
-	VALIDATE_FILE_STREAM(stream, EOF);
-	if (whence < 0 || whence > 2)
-	{
-		errno = EINVAL;
-		return EOF;
-	}
-
 	// If the stream was written to previously flush
 	if (stream->prev_op == OP_WRITE)
 	{
@@ -63,4 +56,20 @@ int wlibc_fseek(FILE *stream, ssize_t offset, int whence)
 	}
 
 	return -1;
+}
+
+int wlibc_fseek(FILE *stream, ssize_t offset, int whence)
+{
+	VALIDATE_FILE_STREAM(stream, EOF);
+	if (whence < 0 || whence > 2)
+	{
+		errno = EINVAL;
+		return EOF;
+	}
+
+	int result;
+	LOCK_FILE_STREAM(stream);
+	result = common_fseek(stream, offset, whence);
+	UNLOCK_FILE_STREAM(stream);
+	return result;
 }

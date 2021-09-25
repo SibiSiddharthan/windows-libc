@@ -13,9 +13,19 @@ size_t common_fread(void *restrict buffer, size_t size, size_t count, FILE *rest
 int common_fgetc(FILE *stream)
 {
 	char ch;
+	if (((stream->buf_mode & _IONBF) == 0) && stream->prev_op == OP_READ)
+	{
+		if (stream->start != stream->end && stream->pos != stream->end)
+		{
+			ch = stream->buffer[stream->pos++ - stream->start];
+			return ch;
+		}
+	}
 	common_fread(&ch, 1, 1, stream);
-	if(stream->error == _IOEOF)
+	if (stream->error == _IOEOF)
+	{
 		return EOF;
+	}
 	return ch;
 }
 

@@ -16,5 +16,9 @@
 ssize_t wlibc_ftell(FILE *stream)
 {
 	VALIDATE_FILE_STREAM(stream, EOF);
-	return stream->pos;
+	ssize_t result;
+	LOCK_FILE_STREAM(stream);
+	result = stream->pos;
+	UNLOCK_FILE_STREAM(stream);
+	return result;
 }
