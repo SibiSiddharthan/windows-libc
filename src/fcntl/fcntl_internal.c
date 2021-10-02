@@ -9,6 +9,7 @@
 #include <Windows.h>
 #include <stdlib.h>
 #include <internal/error.h>
+#include <internal/nt.h>
 #include <errno.h>
 #include <fcntl.h>
 
@@ -285,9 +286,10 @@ int get_fd(HANDLE _h)
 
 static int close_fd_internal(int _fd)
 {
-	if (!CloseHandle(_fd_io[_fd]._handle))
+	NTSTATUS status = NtClose(_fd_io[_fd]._handle);
+	if (status != STATUS_SUCCESS)
 	{
-		map_win32_error_to_wlibc(GetLastError());
+		map_ntstatus_to_errno(status);
 		return -1;
 	}
 	_fd_io[_fd]._handle = INVALID_HANDLE_VALUE;

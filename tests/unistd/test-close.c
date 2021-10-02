@@ -25,6 +25,7 @@ void test_okay_normal_file()
 	HANDLE handle = get_fd_handle(fd);
 	int status = close(fd);
 	ASSERT_EQ(status, 0);
+	// Check if the underlying handle is actually closed
 	BY_HANDLE_FILE_INFORMATION FILE_INFO;
 	GetFileInformationByHandle(handle, &FILE_INFO);
 	DWORD error = GetLastError();
@@ -38,6 +39,7 @@ void test_okay_directory()
 	HANDLE handle = get_fd_handle(fd);
 	int status = close(fd);
 	ASSERT_EQ(status, 0);
+	// Check if the underlying handle is actually closed
 	BY_HANDLE_FILE_INFORMATION FILE_INFO;
 	GetFileInformationByHandle(handle, &FILE_INFO);
 	DWORD error = GetLastError();
