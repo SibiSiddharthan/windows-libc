@@ -71,6 +71,7 @@ _WLIBC_BEGIN_DECLS
 #define AT_SYMLINK_FOLLOW   0x1 // Dereference symlinks
 #define AT_SYMLINK_NOFOLLOW 0x2 // Don't dereference symlinks
 #define AT_REMOVEDIR        0x4 // Remove a directory
+#define AT_REMOVEANY        0x8 // Remove both directory as well as a file
 
 // fcntl operations
 #define FD_CLOEXEC      O_CLOEXEC
@@ -143,8 +144,8 @@ WLIBC_API int wlibc_openat2(int dirfd, const char *name, int oflags, ...);
 
 #define creat(name, perm) wlibc_open2(name, O_WRONLY | O_CREAT | O_TRUNC, perm)
 /* int open(const char *name, const int oflags, ...); */
-#define open              wlibc_open2
-#define openat            wlibc_openat2
+#define open   wlibc_open2
+#define openat wlibc_openat2
 
 WLIBC_API int wlibc_open(const char *name, const int oflags, va_list perm_args);
 WLIBC_API int wlibc_wopen(const wchar_t *wname, const int oflags, va_list perm_args);

@@ -394,6 +394,15 @@ HANDLE really_do_open(OBJECT_ATTRIBUTES *object, ACCESS_MASK access, ULONG attri
 	return H;
 }
 
+HANDLE just_open(const wchar_t* u16_ntpath, ACCESS_MASK access, ULONG attributes, ULONG disposition, ULONG options)
+{
+	UNICODE_STRING u16_path;
+	RtlInitUnicodeString(&u16_path, u16_ntpath);
+	OBJECT_ATTRIBUTES object;
+	InitializeObjectAttributes(&object, &u16_path, OBJ_CASE_INSENSITIVE, NULL, NULL);
+	return really_do_open(&object,access,attributes,disposition,options);
+}
+
 int do_open(int dirfd, const char *name, int oflags, mode_t perm)
 {
 	int fd = -1;

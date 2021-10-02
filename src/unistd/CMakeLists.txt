@@ -29,13 +29,13 @@ pipe.c
 readlink.c
 readlinkat.c
 read.c
-rmdir.c
+#rmdir.c
 symlink.c
 symlinkat.c
 truncate.c
 ttyname.c
 unlink.c
-unlinkat.c
+#unlinkat.c
 write.c)
 
 add_library(unistd OBJECT ${unistd_SOURCES})

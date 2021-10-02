@@ -10,11 +10,8 @@
 
 #include <wlibc-macros.h>
 #include <sys/types.h>
+#include <fcntl.h>
 #include <wchar.h>
-
-// Avoid C2375: 'unlink': redefinition different linkage
-#include <stdio.h>
-#define unlink wlibc_unlink
 
 _WLIBC_BEGIN_DECLS
 
@@ -30,6 +27,8 @@ _WLIBC_BEGIN_DECLS
 #define R_OK 0x4 // Read permission
 #define W_OK 0x2 // Write permission
 #define X_OK 0x1 // Execute/Search permission
+
+WLIBC_API int wlibc_common_removeat(int dirfd, const char *path, int flags);
 
 WLIBC_API int wlibc_access(const char *name, int mode);
 WLIBC_API int wlibc_waccess(const wchar_t *wname, int mode);
@@ -281,17 +280,14 @@ WLIBC_INLINE ssize_t read(int fd, void *buf, size_t count)
 	return wlibc_read(fd, buf, count);
 }
 
-WLIBC_API int wlibc_rmdir(const char *path);
-WLIBC_API int wlibc_wrmdir(const wchar_t *wpath);
-
 WLIBC_INLINE int rmdir(const char *path)
 {
-	return wlibc_rmdir(path);
+	return wlibc_common_removeat(AT_FDCWD, path, AT_REMOVEDIR);
 }
 
-WLIBC_INLINE int wrmdir(const wchar_t *wpath)
+WLIBC_INLINE int rmdirat(int dirfd, const char *path)
 {
-	return wlibc_wrmdir(wpath);
+	return wlibc_common_removeat(dirfd, path, AT_REMOVEDIR);
 }
 
 WLIBC_API int wlibc_symlink(const char *restrict source, const char *restrict target);
@@ -391,25 +387,14 @@ WLIBC_INLINE int wttyname_r(int fd, wchar_t *wbuf, size_t bufsiz)
 	return wlibc_wttyname_r(fd, wbuf, bufsiz);
 }
 
-WLIBC_API int wlibc_unlink(const char *path);
-WLIBC_API int wlibc_wunlink(const wchar_t *wpath);
-
-WLIBC_INLINE int wunlink(const wchar_t *wpath)
+WLIBC_INLINE int unlink(const char *path)
 {
-	return wlibc_wunlink(wpath);
+	return wlibc_common_removeat(AT_FDCWD, path, 0);
 }
-
-WLIBC_API int wlibc_unlinkat(int dirfd, const char *path, int flags);
-WLIBC_API int wlibc_wunlinkat(int dirfd, const wchar_t *wpath, int flags);
 
 WLIBC_INLINE int unlinkat(int dirfd, const char *path, int flags)
 {
-	return wlibc_unlinkat(dirfd, path, flags);
-}
-
-WLIBC_INLINE int wunlinkat(int dirfd, const wchar_t *wpath, int flags)
-{
-	return wlibc_wunlinkat(dirfd, wpath, flags);
+	return wlibc_common_removeat(dirfd, path, flags);
 }
 
 WLIBC_API ssize_t wlibc_write(int fd, const void *buf, size_t count);

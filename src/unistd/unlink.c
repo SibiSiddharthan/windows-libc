@@ -9,72 +9,78 @@
 #include <internal/misc.h>
 #include <Windows.h>
 #include <internal/error.h>
+#include <internal/nt.h>
+#include <fcntl.h>
+#include <internal/fcntl.h>
 
-int common_unlink(const wchar_t *wpath)
+wchar_t *get_absolute_ntpath(int dirfd, const char *path);
+HANDLE just_open(const wchar_t *u16_ntpath, ACCESS_MASK access, ULONG attributes, ULONG disposition, ULONG options);
+
+int common_removeat(int dirfd, const char *path, int flags)
 {
-	if (!DeleteFile(wpath))
+	wchar_t *u16_ntpath = get_absolute_ntpath(dirfd, path);
+	if (u16_ntpath == NULL)
 	{
-		DWORD error = GetLastError();
-		if (error == ERROR_ACCESS_DENIED)
-		{
-			// Try to remove the read-only attribute if it is set and try again
-			DWORD attributes;
-			attributes = GetFileAttributes(wpath);
-			if (attributes & FILE_ATTRIBUTE_READONLY)
-			{
-				attributes &= ~FILE_ATTRIBUTE_READONLY;
-				if (!SetFileAttributes(wpath, attributes))
-				{
-					map_win32_error_to_wlibc(GetLastError());
-					return -1;
-				}
-
-				if (!DeleteFile(wpath))
-				{
-					map_win32_error_to_wlibc(GetLastError());
-					// re-set the read-only attribute
-					attributes |= FILE_ATTRIBUTE_READONLY;
-					SetFileAttributes(wpath, attributes);
-					return -1;
-				}
-			}
-			else
-			{
-				map_win32_error_to_wlibc(error);
-				return -1;
-			}
-		}
-		else
-		{
-			map_win32_error_to_wlibc(error);
-			return -1;
-		}
+		errno = ENOENT;
+		return -1;
 	}
+
+	ULONG options = FILE_OPEN_REPARSE_POINT;
+
+	switch (flags)
+	{
+	case 0:
+		options |= FILE_NON_DIRECTORY_FILE;
+		break;
+	case AT_REMOVEDIR:
+		options |= FILE_DIRECTORY_FILE;
+		break;
+	default: // AT_REMOVEANY
+		break;
+	}
+
+	HANDLE handle = just_open(u16_ntpath, DELETE, 0, FILE_OPEN, options);
+	free(u16_ntpath);
+
+	if (handle == INVALID_HANDLE_VALUE)
+	{
+		// errno wil be set by just_open
+		return -1;
+	}
+
+	IO_STATUS_BLOCK I;
+	FILE_DISPOSITION_INFORMATION_EX dispostion;
+	dispostion.Flags = FILE_DISPOSITION_DELETE | FILE_DISPOSITION_POSIX_SEMANTICS | FILE_DISPOSITION_IGNORE_READONLY_ATTRIBUTE;
+	NTSTATUS status = NtSetInformationFile(handle, &I, &dispostion, sizeof(FILE_DISPOSITION_INFORMATION_EX), FileDispositionInformationEx);
+	if (status != STATUS_SUCCESS)
+	{
+		map_ntstatus_to_errno(status);
+		return -1;
+	}
+	NtClose(handle);
 
 	return 0;
 }
 
-int wlibc_unlink(const char *path)
+int wlibc_common_removeat(int dirfd, const char *path, int flags)
 {
-	if (path == NULL)
+	if (path == NULL || path[0] == '\0')
 	{
 		errno = ENOENT;
 		return -1;
 	}
 
-	wchar_t *wpath = mb_to_wc(path);
-	int status = common_unlink(wpath);
-	free(wpath);
-	return status;
-}
-
-int wlibc_wunlink(const wchar_t *wpath)
-{
-	if (wpath == NULL)
+	if (flags != 0 && flags != AT_REMOVEDIR && flags != AT_REMOVEANY)
 	{
-		errno = ENOENT;
+		errno = EINVAL;
 		return -1;
 	}
 
-	return common_unlink(wpath);
+	if (dirfd != AT_FDCWD && get_fd_type(dirfd) != DIRECTORY_HANDLE)
+	{
+		errno = ENOTDIR;
+		return -1;
+	}
+
+	return common_removeat(dirfd, path, flags);
 }
