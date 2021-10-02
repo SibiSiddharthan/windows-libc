@@ -7,6 +7,7 @@
 
 set(fcntl_SOURCES
 open.c
+open2.c
 openat.c
 creat.c
 fcntl.c

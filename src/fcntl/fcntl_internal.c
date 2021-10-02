@@ -98,6 +98,17 @@ static int internal_insert_fd(int index, HANDLE _h, const wchar_t *_path, enum h
 		return index;
 	}
 
+	wcscpy(_fd_io[index]._path, _path);
+	if (_type == DIRECTORY_HANDLE)
+	{
+		int length = wcslen(_path);
+		if (_fd_io[index]._path[length - 1] != L'\\')
+		{
+			wcscat(_fd_io[index]._path, L"\\");
+		}
+	}
+
+#if 0
 	// We try to find the absolute path here
 	// We need this for *at functions to work properly
 	// This should not give an error
@@ -131,7 +142,7 @@ static int internal_insert_fd(int index, HANDLE _h, const wchar_t *_path, enum h
 			}
 		}
 	}
-
+#endif
 	return index;
 }
 
@@ -324,7 +335,7 @@ int get_fd_flags(int _fd)
 
 static enum handle_type get_fd_type_internal(int _fd)
 {
-	if(validate_fd_internal(_fd))
+	if (validate_fd_internal(_fd))
 		return _fd_io[_fd]._type;
 	else
 		return INVALID_HANDLE;

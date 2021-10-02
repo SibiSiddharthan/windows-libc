@@ -7,7 +7,7 @@
 
 #include <internal/error.h>
 #include <errno.h>
-#include <windows.h>
+#include <Windows.h>
 
 void map_win32_error_to_wlibc(unsigned long error)
 {
@@ -57,6 +57,70 @@ void map_win32_error_to_wlibc(unsigned long error)
 	case ERROR_NO_DATA:
 	case ERROR_PIPE_NOT_CONNECTED:
 		errno = EPIPE;
+	default:
+		break;
+	};
+}
+
+void map_ntstatus_to_errno(NTSTATUS error)
+{
+	switch (error)
+	{
+	case STATUS_NO_MEMORY:
+	case STATUS_FATAL_MEMORY_EXHAUSTION:
+		errno = ENOMEM;
+		break;
+	case STATUS_ACCESS_DENIED:
+	case STATUS_SHARING_VIOLATION:
+		errno = EACCES;
+		break;
+	case STATUS_OBJECT_NAME_NOT_FOUND:
+	case STATUS_OBJECT_PATH_NOT_FOUND:
+		errno = ENOENT;
+		break;
+	case STATUS_TOO_MANY_OPENED_FILES:
+		errno = EMFILE;
+		break;
+	case STATUS_NAME_TOO_LONG:
+		errno = ENAMETOOLONG;
+	case STATUS_NOT_A_DIRECTORY:
+		errno = ENOTDIR;
+		break;
+	case STATUS_DIRECTORY_NOT_EMPTY:
+		errno = ENOTEMPTY;
+		break;
+	case STATUS_OBJECT_NAME_EXISTS:
+	case STATUS_OBJECT_NAME_COLLISION:
+		errno = EEXIST;
+		break;
+	case STATUS_INVALID_HANDLE:
+		errno = EBADF;
+		break;
+	//case ERROR_WRITE_FAULT:
+	//case ERROR_READ_FAULT:
+	case STATUS_IO_TIMEOUT:
+	case STATUS_IO_UNALIGNED_WRITE:
+		errno = EIO;
+		break;
+	case STATUS_INVALID_PARAMETER:
+	case STATUS_ILLEGAL_FUNCTION:
+	//case ERROR_INVALID_REPARSE_DATA:
+	case STATUS_OBJECT_NAME_INVALID:
+		errno = EINVAL;
+		break;
+	case STATUS_FILE_IS_A_DIRECTORY:
+		errno = EISDIR;
+		break;
+	case STATUS_PIPE_BROKEN:
+	//case ERROR_BAD_PIPE:
+	case STATUS_PIPE_BUSY:
+	//case ERROR_NO_DATA:
+	case STATUS_PIPE_DISCONNECTED:
+	case STATUS_PIPE_NOT_AVAILABLE:
+		errno = EPIPE;
+	case STATUS_NOT_SUPPORTED:
+		errno = ENOTSUP;
+		break;
 	default:
 		break;
 	};

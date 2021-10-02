@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
+#include <wchar.h>
 
 #define ASSERT_ERRNO(expected)                                                                                       \
 	if (errno != expected)                                                                                           \
@@ -39,6 +40,13 @@
 	if (strcmp(actual, expected) != 0)                                                                                    \
 	{                                                                                                                     \
 		printf("Assertion failed at %s:%d. Expected value of \n%s\nbut got\n%s\n", __FILE__, __LINE__, expected, actual); \
+		exit(1);                                                                                                          \
+	}
+
+#define ASSERT_WSTREQ(actual, expected)                                                                                    \
+	if (wcscmp(actual, expected) != 0)                                                                                    \
+	{                                                                                                                     \
+		printf("Assertion failed at %s:%d. Expected value of \n%ls\nbut got\n%ls\n", __FILE__, __LINE__, expected, actual); \
 		exit(1);                                                                                                          \
 	}
 

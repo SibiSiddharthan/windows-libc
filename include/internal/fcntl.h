@@ -17,7 +17,9 @@ typedef void *HANDLE;
 
 enum handle_type
 {
-	STD_STREAMS_HANDLE,
+	STD_STREAMS_HANDLE, // remove this
+	NULL_HANDLE,
+	CONSOLE_HANDLE,
 	FILE_HANDLE,
 	DIRECTORY_HANDLE,
 	PIPE_HANDLE,

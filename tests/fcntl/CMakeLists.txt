@@ -8,6 +8,7 @@
 set(tests
 open
 openat
+path
 fcntl)
 
 foreach(t ${tests})
