@@ -6,28 +6,24 @@
 */
 
 #include <unistd.h>
-#include <Windows.h>
 #include <internal/error.h>
+#include <internal/nt.h>
 #include <internal/fcntl.h>
 
-int common_sync(int fd)
+int common_sync(int fd, int sync_all)
 {
 	if (get_fd_type(fd) != FILE_HANDLE)
 	{
+		errno = EROFS;
 		return -1;
 	}
 
 	HANDLE file = get_fd_handle(fd);
-	// Fail if we are not a disk file
-	if (GetFileType(file) != FILE_TYPE_DISK)
+	IO_STATUS_BLOCK I;
+	NTSTATUS status = NtFlushBuffersFileEx(file, sync_all == 1 ? 0 : FLUSH_FLAGS_FILE_DATA_SYNC_ONLY, NULL, 0, &I);
+	if (status != STATUS_SUCCESS)
 	{
-		errno = EPIPE;
-		return -1;
-	}
-
-	if (!FlushFileBuffers(file))
-	{
-		map_win32_error_to_wlibc(GetLastError());
+		map_ntstatus_to_errno(status);
 		return -1;
 	}
 
@@ -39,10 +35,10 @@ int common_sync(int fd)
 */
 int wlibc_fdatasync(int fd)
 {
-	return common_sync(fd);
+	return common_sync(fd, 0);
 }
 
 int wlibc_fsync(int fd)
 {
-	return common_sync(fd);
+	return common_sync(fd, 1);
 }
