@@ -19,15 +19,13 @@ int wlibc_isatty(int fd)
 		return 0;
 	}
 
-	HANDLE handle = get_fd_handle(fd);
-	DWORD type = GetFileType(handle);
-	if (type == FILE_TYPE_CHAR)
+	enum handle_type type = get_fd_type(fd);
+	if(type == CONSOLE_HANDLE)
 	{
 		return 1;
 	}
 	else
 	{
-		GetLastError(); // Clear Last Error if any
 		errno = ENOTTY;
 		return 0;
 	}

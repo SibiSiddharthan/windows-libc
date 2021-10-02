@@ -30,12 +30,26 @@ void test_ENOTTY()
 	unlink("t-isatty");
 }
 
-void test_okay()
+void test_null()
 {
 	errno = 0;
-	// Dont test with stdout and stderr as they are piped to a file by CTest
-	int status = isatty(0);
-	ASSERT_EQ(status, 1);
+	int fd = open("/dev/null", O_WRONLY);
+	int status = isatty(fd);
+	ASSERT_EQ(status, 0);
+	ASSERT_ERRNO(ENOTTY);
+	close(fd);
+}
+
+void test_tty()
+{
+	errno = 0;
+	int fd = open("/dev/tty", O_WRONLY);
+	if (fd != -1)
+	{
+		int status = isatty(fd);
+		ASSERT_EQ(status, 1);
+		close(fd);
+	}
 }
 
 void test_duped()
@@ -51,7 +65,8 @@ int main()
 {
 	test_EBADF();
 	test_ENOTTY();
-	test_okay();
+	test_null();
+	test_tty();
 	test_duped();
 	return 0;
 }

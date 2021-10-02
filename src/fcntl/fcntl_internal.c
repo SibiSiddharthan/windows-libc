@@ -53,20 +53,21 @@ void init_fd_table()
 	_fd_io = (struct fd_table *)malloc(sizeof(struct fd_table) * 4);
 	_fd_table_size = 4;
 
+	// TODO check whether these handles actually belong to the console
 	_fd_io[0]._handle = hin;
-	_fd_io[0]._type = STD_STREAMS_HANDLE;
+	_fd_io[0]._type = CONSOLE_HANDLE;
 	_fd_io[0]._flags = O_RDONLY;
 	_fd_io[0]._free = 0;
 	wcscpy(_fd_io[0]._path, L"CON");
 
 	_fd_io[1]._handle = hout;
-	_fd_io[1]._type = STD_STREAMS_HANDLE;
+	_fd_io[1]._type = CONSOLE_HANDLE;
 	_fd_io[1]._flags = O_WRONLY;
 	_fd_io[1]._free = 0;
 	wcscpy(_fd_io[1]._path, L"CON");
 
 	_fd_io[2]._handle = herr;
-	_fd_io[2]._type = STD_STREAMS_HANDLE;
+	_fd_io[2]._type = CONSOLE_HANDLE;
 	_fd_io[2]._flags = O_WRONLY;
 	_fd_io[2]._free = 0;
 	wcscpy(_fd_io[2]._path, L"CON");
