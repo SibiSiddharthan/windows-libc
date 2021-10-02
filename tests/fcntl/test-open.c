@@ -11,9 +11,6 @@
 #include <test-macros.h>
 #include <errno.h>
 
-int wlibc_open2(const char *name, int oflags, ...);
-#define open wlibc_open2
-
 void test_ENOENT()
 {
 	errno = 0;

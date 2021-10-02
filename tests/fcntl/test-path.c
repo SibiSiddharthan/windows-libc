@@ -13,9 +13,6 @@
 #include <string.h>
 #include <wchar.h>
 
-int wlibc_open2(const char *name, int oflags, ...);
-#define open wlibc_open2
-
 wchar_t *get_absolute_ntpath(int dirfd, const char *path);
 static wchar_t cwd[32768]; // MAX_PATH for windows
 static int length;
