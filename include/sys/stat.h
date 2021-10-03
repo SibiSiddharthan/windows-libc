@@ -12,6 +12,7 @@
 #include <wchar.h>
 #include <sys/types.h>
 #include <time.h>
+#include <fcntl.h>
 
 _WLIBC_BEGIN_DECLS
 
@@ -155,30 +156,16 @@ WLIBC_INLINE int wfstatat(int dirfd, const wchar_t *restrict wname, struct stat 
 	return wlibc_wfstatat(dirfd, wname, statbuf, flags);
 }
 
-WLIBC_API int wlibc_mkdir(const char *path, mode_t mode);
-WLIBC_API int wlibc_wmkdir(const wchar_t *wpath, mode_t mode);
+WLIBC_API int wlibc_common_mkdir(int dirfd, const char *path, mode_t mode);
 
 WLIBC_INLINE int mkdir(const char *path, mode_t mode)
 {
-	return wlibc_mkdir(path, mode);
+	return wlibc_common_mkdir(AT_FDCWD, path, mode);
 }
-
-WLIBC_INLINE int wmkdir(const wchar_t *wpath, mode_t mode)
-{
-	return wlibc_wmkdir(wpath, mode);
-}
-
-WLIBC_API int wlibc_mkdirat(int dirfd, const char *path, mode_t mode);
-WLIBC_API int wlibc_wmkdirat(int dirfd, const wchar_t *wpath, mode_t mode);
 
 WLIBC_INLINE int mkdirat(int dirfd, const char *path, mode_t mode)
 {
-	return wlibc_mkdirat(dirfd, path, mode);
-}
-
-WLIBC_INLINE int wmkdirat(int dirfd, const wchar_t *wpath, mode_t mode)
-{
-	return wlibc_wmkdirat(dirfd, wpath, mode);
+	return wlibc_common_mkdir(dirfd, path, mode);
 }
 
 WLIBC_API int wlibc_utimensat(int dirfd, const char *name, const struct timespec times[2], int flags);

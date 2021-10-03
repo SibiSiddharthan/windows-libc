@@ -9,11 +9,14 @@
 #include <Windows.h>
 #include <internal/error.h>
 #include <internal/misc.h>
+#include <internal/fcntl.h>
+#include <internal/nt.h>
 #include <errno.h>
 
+#if 0
 int common_mkdir(const wchar_t *wpath, mode_t mode)
 {
-	if(!CreateDirectory(wpath,NULL))
+	if (!CreateDirectory(wpath, NULL))
 	{
 		map_win32_error_to_wlibc(GetLastError());
 		return -1;
@@ -21,26 +24,40 @@ int common_mkdir(const wchar_t *wpath, mode_t mode)
 
 	return 0;
 }
+#endif
 
-int wlibc_mkdir(const char *path, mode_t mode)
+int wlibc_common_mkdir(int dirfd, const char *path, mode_t mode)
 {
+	if (mode > 0777)
+	{
+		errno = EINVAL;
+		return -1;
+	}
+	VALIDATE_PATH_AND_DIRFD(path, dirfd);
+
+	wchar_t *u16_ntpath = get_absolute_ntpath(dirfd, path);
 	if (path == NULL)
 	{
 		errno = ENOENT;
 		return -1;
 	}
-	wchar_t *wpath = mb_to_wc(path);
-	int status = common_mkdir(wpath, mode);
-	free(wpath);
-	return status;
-}
 
-int wlibc_wmkdir(const wchar_t *wpath, mode_t mode)
-{
-	if (wpath == NULL)
+	IO_STATUS_BLOCK I;
+	UNICODE_STRING u16_path;
+	RtlInitUnicodeString(&u16_path, u16_ntpath);
+	OBJECT_ATTRIBUTES object;
+	InitializeObjectAttributes(&object, &u16_path, OBJ_CASE_INSENSITIVE, NULL, NULL);
+	HANDLE handle;
+	NTSTATUS status = NtCreateFile(&handle, FILE_READ_ATTRIBUTES, &object, &I, NULL, 0, FILE_SHARE_READ | FILE_SHARE_WRITE, FILE_CREATE,
+								   FILE_DIRECTORY_FILE, NULL, 0);
+	NtClose(handle);
+	free(u16_ntpath);
+
+	if (status != STATUS_SUCCESS)
 	{
-		errno = ENOENT;
+		map_ntstatus_to_errno(status);
 		return -1;
 	}
-	return common_mkdir(wpath, mode);
+
+	return 0;
 }

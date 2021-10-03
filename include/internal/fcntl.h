@@ -94,11 +94,21 @@ HANDLE just_open(const wchar_t *u16_ntpath, ACCESS_MASK access, ULONG attributes
 
 #define IS_ABSOLUTE_PATH(path) (((isalpha(path[0])) && (path[1] == ':')))
 
-#define VALIDATE_DIRFD(dirfd)                                        \
-	if (dirfd != AT_FDCWD && get_fd_type(dirfd) != DIRECTORY_HANDLE) \
-	{                                                                \
-		errno = ENOTDIR;                                             \
-		return -1;                                                   \
+#define VALIDATE_DIRFD(dirfd)                       \
+	if (dirfd != AT_FDCWD)                          \
+	{                                               \
+                                                    \
+		enum handle_type type = get_fd_type(dirfd); \
+		if (type == INVALID_HANDLE)                 \
+		{                                           \
+			errno = EBADF;                          \
+			return -1;                              \
+		}                                           \
+		if (type != DIRECTORY_HANDLE)               \
+		{                                           \
+			errno = ENOTDIR;                        \
+			return -1;                              \
+		}                                           \
 	}
 
 #define VALIDATE_PATH_AND_DIRFD(path, dirfd) \

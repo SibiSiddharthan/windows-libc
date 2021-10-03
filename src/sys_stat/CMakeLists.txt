@@ -10,7 +10,7 @@ chmod.c
 fchmodat.c
 fstatat.c
 mkdir.c
-mkdirat.c
+#mkdirat.c
 stat.c
 utimens.c)
 
