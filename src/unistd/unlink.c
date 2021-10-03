@@ -48,16 +48,17 @@ int common_removeat(int dirfd, const char *path, int flags)
 		return -1;
 	}
 
+	// SetFileInformationByHandle with FileDispositionInfoEx can also be used
 	IO_STATUS_BLOCK I;
 	FILE_DISPOSITION_INFORMATION_EX dispostion;
 	dispostion.Flags = FILE_DISPOSITION_DELETE | FILE_DISPOSITION_POSIX_SEMANTICS | FILE_DISPOSITION_IGNORE_READONLY_ATTRIBUTE;
 	NTSTATUS status = NtSetInformationFile(handle, &I, &dispostion, sizeof(FILE_DISPOSITION_INFORMATION_EX), FileDispositionInformationEx);
+	NtClose(handle);
 	if (status != STATUS_SUCCESS)
 	{
 		map_ntstatus_to_errno(status);
 		return -1;
 	}
-	NtClose(handle);
 
 	return 0;
 }

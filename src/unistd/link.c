@@ -67,15 +67,15 @@ int common_link(int olddirfd, const char *restrict source, int newdirfd, const c
 
 	NTSTATUS status = NtSetInformationFile(handle, &I, link_info, size_of_link_info, FileLinkInformationEx);
 	free(link_info);
+	if (flags != AT_EMPTY_PATH)
+	{
+		NtClose(handle);
+	}
+
 	if (status != STATUS_SUCCESS)
 	{
 		map_ntstatus_to_errno(status);
 		return -1;
-	}
-
-	if (flags != AT_EMPTY_PATH)
-	{
-		NtClose(handle);
 	}
 
 	return 0;

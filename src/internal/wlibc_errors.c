@@ -74,6 +74,9 @@ void map_ntstatus_to_errno(NTSTATUS error)
 	case STATUS_SHARING_VIOLATION:
 		errno = EACCES;
 		break;
+	case STATUS_CANNOT_DELETE:
+		errno = EPERM;
+		break;
 	case STATUS_OBJECT_NAME_NOT_FOUND:
 	case STATUS_OBJECT_PATH_NOT_FOUND:
 		errno = ENOENT;

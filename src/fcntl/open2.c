@@ -46,7 +46,7 @@ static ACCESS_MASK determine_access_rights(int oflags)
 		// We don't technically need this as all users have BYPASS_TRAVERSE_CHECKING privilege, but just in case.
 		access_rights |= FILE_TRAVERSE;
 	}
-	if(oflags & O_TMPFILE)
+	if (oflags & O_TMPFILE)
 	{
 		access_rights |= DELETE;
 	}
@@ -403,6 +403,21 @@ HANDLE really_do_open(OBJECT_ATTRIBUTES *object, ACCESS_MASK access, ULONG attri
 HANDLE just_open(const wchar_t *u16_ntpath, ACCESS_MASK access, ULONG attributes, ULONG disposition, ULONG options)
 {
 	UNICODE_STRING u16_path;
+	// Opening the console requires either FILE_GENERIC_READ or FILE_GENERIC_WRITE
+	if (memcmp(u16_ntpath, L"\\??\\CON", 16) == 0)
+	{
+		attributes = 0;
+		options = FILE_SYNCHRONOUS_IO_NONALERT;
+
+		if (access & (FILE_WRITE_DATA | FILE_WRITE_ATTRIBUTES | FILE_WRITE_EA | WRITE_DAC))
+		{
+			access = FILE_GENERIC_WRITE;
+		}
+		else
+		{
+			access = FILE_GENERIC_READ;
+		}
+	}
 	RtlInitUnicodeString(&u16_path, u16_ntpath);
 	OBJECT_ATTRIBUTES object;
 	InitializeObjectAttributes(&object, &u16_path, OBJ_CASE_INSENSITIVE, NULL, NULL);
