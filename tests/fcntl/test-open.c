@@ -153,8 +153,6 @@ void test_O_TMPFILE()
 	int fd = open(".", O_WRONLY | O_CREAT | O_TMPFILE, 0700);
 	ASSERT_EQ(fd, 3);
 	close(fd);
-	// ASSERT_EQ(unlink("t-open"), -1);
-	// ASSERT_ERRNO(ENOENT);
 }
 
 void test_null()
@@ -193,7 +191,7 @@ int main()
 	test_O_RDONLY();
 	test_O_PATH();
 	test_O_TRUNC();
-	// test_O_TMPFILE();// Incorrect implementation
+	test_O_TMPFILE();
 	test_null();
 	return 0;
 }

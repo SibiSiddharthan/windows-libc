@@ -5,6 +5,8 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
+#define _CRT_RAND_S
+
 #include <fcntl.h>
 #include <errno.h>
 #include <stdbool.h>
@@ -43,6 +45,10 @@ static ACCESS_MASK determine_access_rights(int oflags)
 	{
 		// We don't technically need this as all users have BYPASS_TRAVERSE_CHECKING privilege, but just in case.
 		access_rights |= FILE_TRAVERSE;
+	}
+	if(oflags & O_TMPFILE)
+	{
+		access_rights |= DELETE;
 	}
 	if (oflags & O_PATH)
 	{
@@ -86,7 +92,7 @@ static ULONG determine_create_options(int oflags)
 	ULONG options = FILE_SYNCHRONOUS_IO_NONALERT;
 	if (oflags & O_TMPFILE)
 	{
-		options |= FILE_DELETE_ON_CLOSE;
+		options |= FILE_DELETE_ON_CLOSE | FILE_NON_DIRECTORY_FILE;
 	}
 	if (oflags & O_DIRECT)
 	{
@@ -394,13 +400,13 @@ HANDLE really_do_open(OBJECT_ATTRIBUTES *object, ACCESS_MASK access, ULONG attri
 	return H;
 }
 
-HANDLE just_open(const wchar_t* u16_ntpath, ACCESS_MASK access, ULONG attributes, ULONG disposition, ULONG options)
+HANDLE just_open(const wchar_t *u16_ntpath, ACCESS_MASK access, ULONG attributes, ULONG disposition, ULONG options)
 {
 	UNICODE_STRING u16_path;
 	RtlInitUnicodeString(&u16_path, u16_ntpath);
 	OBJECT_ATTRIBUTES object;
 	InitializeObjectAttributes(&object, &u16_path, OBJ_CASE_INSENSITIVE, NULL, NULL);
-	return really_do_open(&object,access,attributes,disposition,options);
+	return really_do_open(&object, access, attributes, disposition, options);
 }
 
 int do_open(int dirfd, const char *name, int oflags, mode_t perm)
@@ -426,10 +432,10 @@ int do_open(int dirfd, const char *name, int oflags, mode_t perm)
 
 	if (oflags & O_TMPFILE)
 	{
-		int length = wcslen(u16_ntpath) + 1;
+		int length = wcslen(u16_ntpath) + 1; // L'\0'
 		wchar_t *temp = (wchar_t *)malloc(sizeof(wchar_t) * length);
 		memcpy(temp, u16_ntpath, sizeof(wchar_t) * length);
-		u16_ntpath = (wchar_t *)realloc(u16_ntpath, sizeof(wchar_t) * (length + 6)); // number of digits of 16bit random(5) + slash(1)
+		u16_ntpath = (wchar_t *)realloc(u16_ntpath, sizeof(wchar_t) * (length + 6)); // number of digits of 32bit random(5) + slash(1)
 		memcpy(u16_ntpath, temp, sizeof(wchar_t) * length);
 		memset(u16_ntpath + length, 0, sizeof(wchar_t) * 6);
 		free(temp);
@@ -439,10 +445,12 @@ int do_open(int dirfd, const char *name, int oflags, mode_t perm)
 			u16_ntpath[length++ - 1] = L'\\';
 		}
 
-		// unsigned int rn;
-		//_rdrand32_step(&rn);
+		// Generate a random number, convert it to a wchar_t string with base 36(0-9,a-z)
+		unsigned int rn;
+		rand_s(&rn);
 		wchar_t rbuf[8] = {0, 0, 0, 0, 0, 0, 0, 0};
-		_itow_s(rand(), rbuf, 8, 36);
+		_ultow_s(rn, rbuf, 8, 36);
+		// Append the string to u16_ntpath
 		wcsncat(u16_ntpath, rbuf, 5);
 	}
 
