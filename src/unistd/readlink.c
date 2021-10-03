@@ -9,20 +9,26 @@
 #include <internal/misc.h>
 #include <Windows.h>
 #include <internal/error.h>
+#include <internal/fcntl.h>
+#include <internal/nt.h>
 #include <stdlib.h>
 
+wchar_t *get_absolute_ntpath(int dirfd, const char *path);
+HANDLE just_open(const wchar_t *u16_ntpath, ACCESS_MASK access, ULONG attributes, ULONG disposition, ULONG options);
+
 // Convert backslash to forward slash
-void convert_bs_to_fs(wchar_t *str, int length)
+void convert_bs_to_fs(char *str, int length)
 {
 	for (int i = 0; i < length; i++)
 	{
-		if (str[i] == L'\\')
+		if (str[i] == '\\')
 		{
-			str[i] = L'/';
+			str[i] = '/';
 		}
 	}
 }
 
+#if 0
 ssize_t common_readlink(const wchar_t *restrict wpath, wchar_t *restrict wbuf, size_t bufsiz, int give_absolute)
 {
 	if (bufsiz < 1)
@@ -167,4 +173,183 @@ ssize_t wlibc_wreadlink(const wchar_t *restrict wpath, wchar_t *restrict wbuf, s
 	}
 
 	return common_readlink(wpath, wbuf, bufsiz, 0);
+}
+
+#endif
+
+ssize_t do_readlink(HANDLE handle, char *restrict buf, size_t bufsiz)
+{
+	ssize_t result = -1;
+	NTSTATUS status;
+	IO_STATUS_BLOCK I;
+	FILE_ATTRIBUTE_TAG_INFORMATION INFO;
+
+	status = NtQueryInformationFile(handle, &I, &INFO, sizeof(FILE_ATTRIBUTE_TAG_INFORMATION), FileAttributeTagInformation);
+	if (status != STATUS_SUCCESS)
+	{
+		map_ntstatus_to_errno(status);
+		return -1;
+	}
+
+	if ((INFO.FileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) == 0)
+	{
+		errno = EINVAL;
+		return -1;
+	}
+
+	// Only support these two
+	if (INFO.ReparseTag != IO_REPARSE_TAG_SYMLINK && INFO.ReparseTag != IO_REPARSE_TAG_MOUNT_POINT)
+	{
+		errno = EINVAL;
+		return -1;
+	}
+
+	PREPARSE_DATA_BUFFER reparse_buffer = (PREPARSE_DATA_BUFFER)malloc(MAXIMUM_REPARSE_DATA_BUFFER_SIZE);
+	status =
+		NtFsControlFile(handle, NULL, NULL, NULL, &I, FSCTL_GET_REPARSE_POINT, NULL, 0, reparse_buffer, MAXIMUM_REPARSE_DATA_BUFFER_SIZE);
+
+	if (INFO.ReparseTag == IO_REPARSE_TAG_SYMLINK)
+	{
+		if (reparse_buffer->SymbolicLinkReparseBuffer.SubstituteNameLength != 0)
+		{
+			wchar_t *data = (wchar_t *)malloc(reparse_buffer->SymbolicLinkReparseBuffer.SubstituteNameLength + 2);
+			UNICODE_STRING u16_data;
+			UTF8_STRING u8_data;
+			memcpy(data,
+				   reparse_buffer->SymbolicLinkReparseBuffer.PathBuffer +
+					   reparse_buffer->SymbolicLinkReparseBuffer.SubstituteNameOffset / sizeof(WCHAR),
+				   reparse_buffer->SymbolicLinkReparseBuffer.SubstituteNameLength);
+			data[reparse_buffer->SymbolicLinkReparseBuffer.SubstituteNameLength / sizeof(WCHAR)] = L'\0';
+			RtlInitUnicodeString(&u16_data, data);
+			RtlUnicodeStringToUTF8String(&u8_data, &u16_data, TRUE);
+			free(data);
+			memcpy(buf, u8_data.Buffer, u8_data.Length <= bufsiz ? u8_data.Length : bufsiz);
+			result = u8_data.Length <= bufsiz ? u8_data.Length : bufsiz;
+			RtlFreeUTF8String(&u8_data);
+		}
+		else if (reparse_buffer->SymbolicLinkReparseBuffer.PrintNameLength != 0)
+		{
+			wchar_t *data = (wchar_t *)malloc(reparse_buffer->SymbolicLinkReparseBuffer.PrintNameLength + 2);
+			UNICODE_STRING u16_data;
+			UTF8_STRING u8_data;
+			memcpy(data,
+				   reparse_buffer->SymbolicLinkReparseBuffer.PathBuffer +
+					   reparse_buffer->SymbolicLinkReparseBuffer.PrintNameOffset / sizeof(WCHAR),
+				   reparse_buffer->SymbolicLinkReparseBuffer.PrintNameLength);
+			data[reparse_buffer->SymbolicLinkReparseBuffer.PrintNameLength / sizeof(WCHAR)] = L'\0';
+			RtlInitUnicodeString(&u16_data, data);
+			RtlUnicodeStringToUTF8String(&u8_data, &u16_data, TRUE);
+			free(data);
+			memcpy(buf, u8_data.Buffer, u8_data.Length <= bufsiz ? u8_data.Length : bufsiz);
+			result = u8_data.Length <= bufsiz ? u8_data.Length : bufsiz;
+			RtlFreeUTF8String(&u8_data);
+		}
+		else
+		{
+			// This should not happen
+			errno = EBADF;
+		}
+	}
+
+	if (INFO.ReparseTag == IO_REPARSE_TAG_MOUNT_POINT)
+	{
+		if (reparse_buffer->MountPointReparseBuffer.SubstituteNameLength != 0)
+		{
+			wchar_t *data = (wchar_t *)malloc(reparse_buffer->MountPointReparseBuffer.SubstituteNameLength + 2);
+			UNICODE_STRING u16_data;
+			UTF8_STRING u8_data;
+			memcpy(data,
+				   reparse_buffer->MountPointReparseBuffer.PathBuffer +
+					   reparse_buffer->MountPointReparseBuffer.SubstituteNameOffset / sizeof(WCHAR),
+				   reparse_buffer->MountPointReparseBuffer.SubstituteNameLength);
+			data[reparse_buffer->MountPointReparseBuffer.SubstituteNameLength / sizeof(WCHAR)] = L'\0';
+			RtlInitUnicodeString(&u16_data, data);
+			RtlUnicodeStringToUTF8String(&u8_data, &u16_data, TRUE);
+			free(data);
+			memcpy(buf, u8_data.Buffer, u8_data.Length <= bufsiz ? u8_data.Length : bufsiz);
+			result = u8_data.Length <= bufsiz ? u8_data.Length : bufsiz;
+			RtlFreeUTF8String(&u8_data);
+		}
+		else if (reparse_buffer->MountPointReparseBuffer.PrintNameLength != 0)
+		{
+			wchar_t *data = (wchar_t *)malloc(reparse_buffer->MountPointReparseBuffer.SubstituteNameLength + 2);
+			UNICODE_STRING u16_data;
+			UTF8_STRING u8_data;
+			memcpy(data,
+				   reparse_buffer->MountPointReparseBuffer.PathBuffer +
+					   reparse_buffer->MountPointReparseBuffer.SubstituteNameOffset / sizeof(WCHAR),
+				   reparse_buffer->MountPointReparseBuffer.SubstituteNameLength);
+			data[reparse_buffer->MountPointReparseBuffer.SubstituteNameLength / sizeof(WCHAR)] = L'\0';
+			RtlInitUnicodeString(&u16_data, data);
+			RtlUnicodeStringToUTF8String(&u8_data, &u16_data, TRUE);
+			free(data);
+			memcpy(buf, u8_data.Buffer, u8_data.Length <= bufsiz ? u8_data.Length : bufsiz);
+			result = u8_data.Length <= bufsiz ? u8_data.Length : bufsiz;
+			RtlFreeUTF8String(&u8_data);
+		}
+		else
+		{
+			// This should not happen
+			errno = EBADF;
+		}
+	}
+
+	free(reparse_buffer);
+	if (result != -1)
+	{
+		convert_bs_to_fs(buf, result);
+	}
+	return result;
+}
+
+ssize_t common_readlink(int dirfd, const char *restrict path, char *restrict buf, size_t bufsiz)
+{
+	wchar_t *u16_ntpath = get_absolute_ntpath(dirfd, path);
+	if (u16_ntpath == NULL)
+	{
+		errno = ENOENT;
+		return -1;
+	}
+
+	HANDLE handle = just_open(u16_ntpath, FILE_READ_ATTRIBUTES, 0, FILE_OPEN, FILE_OPEN_REPARSE_POINT);
+	free(u16_ntpath);
+
+	if (handle == INVALID_HANDLE_VALUE)
+	{
+		// errno wil be set by just_open
+		return -1;
+	}
+
+	int result = do_readlink(handle, buf, bufsiz);
+	NtClose(handle);
+
+	return result;
+}
+
+ssize_t wlibc_readlinkat(int dirfd, const char *restrict path, char *restrict buf, size_t bufsiz)
+{
+	if(buf == NULL)
+	{
+		errno = EINVAL;
+		return -1;
+	}
+
+	if (path == NULL || path[0] == '\0')
+	{
+		if (validate_fd(dirfd) && (get_fd_flags(dirfd) & (O_NOFOLLOW | O_PATH)) == (O_NOFOLLOW | O_PATH))
+		{
+			return do_readlink(get_fd_handle(dirfd), buf, bufsiz);
+		}
+
+		errno = ENOENT;
+		return -1;
+	}
+
+	if (dirfd != AT_FDCWD && get_fd_type(dirfd) != DIRECTORY_HANDLE)
+	{
+		errno = ENOTDIR;
+		return -1;
+	}
+
+	return common_readlink(dirfd, path, buf, bufsiz);
 }

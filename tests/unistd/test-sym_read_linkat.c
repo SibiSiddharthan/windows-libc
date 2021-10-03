@@ -31,8 +31,29 @@ void test_okay()
 	close(fd);
 }
 
+void test_empty_path()
+{
+	int fd;
+	fd = creat("t-readlink-empty", 0700);
+	close(fd);
+	int status = symlink("t-readlink-empty", "t-readlink-empty.sym");
+	fd = open("t-readlink-empty.sym", O_NOFOLLOW | O_PATH);
+	ASSERT_EQ(fd, 3);
+
+	char buf[MAX_PATH];
+	ssize_t length = readlinkat(fd, "", buf, MAX_PATH);
+	buf[length] = '\0';
+	ASSERT_EQ(length, 16);
+	ASSERT_STREQ(buf, "t-readlink-empty");
+	close(fd);
+
+	unlink("t-readlink-empty.sym");
+	unlink("t-readlink-empty");
+}
+
 int main()
 {
 	test_okay();
+	test_empty_path();
 	return 0;
 }

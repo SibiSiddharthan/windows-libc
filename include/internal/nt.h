@@ -1365,4 +1365,65 @@ typedef struct _TEB
 //#define NtCurrentProcessId() (NtCurrentTeb()->ClientId.UniqueProcess)
 //#define NtCurrentThreadId() (NtCurrentTeb()->ClientId.UniqueThread)
 
+#define CTL_CODE(DeviceType, Function, Method, Access) (((DeviceType) << 16) | ((Access) << 14) | ((Function) << 2) | (Method))
+#define DEVICE_TYPE_FROM_CTL_CODE(ctrlCode)            (((ULONG)(ctrlCode & 0xffff0000)) >> 16)
+#define METHOD_FROM_CTL_CODE(ctrlCode)                 ((ULONG)(ctrlCode & 3))
+
+#define METHOD_BUFFERED             0
+#define METHOD_IN_DIRECT            1
+#define METHOD_OUT_DIRECT           2
+#define METHOD_NEITHER              3
+#define METHOD_DIRECT_TO_HARDWARE   METHOD_IN_DIRECT
+#define METHOD_DIRECT_FROM_HARDWARE METHOD_OUT_DIRECT
+
+#define FILE_ANY_ACCESS     0
+#define FILE_SPECIAL_ACCESS (FILE_ANY_ACCESS)
+#define FILE_READ_ACCESS    (0x0001) // file & pipe
+#define FILE_WRITE_ACCESS   (0x0002) // file & pipe
+
+#define FSCTL_SET_REPARSE_POINT    CTL_CODE(FILE_DEVICE_FILE_SYSTEM, 41, METHOD_BUFFERED, FILE_SPECIAL_ACCESS) // REPARSE_DATA_BUFFER,
+#define FSCTL_GET_REPARSE_POINT    CTL_CODE(FILE_DEVICE_FILE_SYSTEM, 42, METHOD_BUFFERED, FILE_ANY_ACCESS)     // REPARSE_DATA_BUFFER
+#define FSCTL_DELETE_REPARSE_POINT CTL_CODE(FILE_DEVICE_FILE_SYSTEM, 43, METHOD_BUFFERED, FILE_SPECIAL_ACCESS) // REPARSE_DATA_BUFFER,
+
+#define SYMLINK_FLAG_RELATIVE 0x00000001 // If set then this is a relative symlink.
+#define SYMLINK_DIRECTORY \
+	0x80000000 // If set then this is a directory symlink. This is not persisted on disk and is programmatically set by file system.
+#define SYMLINK_FILE \
+	0x40000000 // If set then this is a file symlink. This is not persisted on disk and is programmatically set by file system.
+
+#define SYMLINK_RESERVED_MASK 0xF0000000 // We reserve the high nibble for internal use
+
+typedef struct _REPARSE_DATA_BUFFER
+{
+	ULONG ReparseTag;
+	USHORT ReparseDataLength;
+	USHORT Reserved;
+
+	_Field_size_bytes_(ReparseDataLength) union {
+		struct
+		{
+			USHORT SubstituteNameOffset;
+			USHORT SubstituteNameLength;
+			USHORT PrintNameOffset;
+			USHORT PrintNameLength;
+			ULONG Flags;
+			WCHAR PathBuffer[1];
+		} SymbolicLinkReparseBuffer;
+		struct
+		{
+			USHORT SubstituteNameOffset;
+			USHORT SubstituteNameLength;
+			USHORT PrintNameOffset;
+			USHORT PrintNameLength;
+			WCHAR PathBuffer[1];
+		} MountPointReparseBuffer;
+		struct
+		{
+			UCHAR DataBuffer[1];
+		} GenericReparseBuffer;
+	} DUMMYUNIONNAME;
+} REPARSE_DATA_BUFFER, *PREPARSE_DATA_BUFFER;
+
+#define REPARSE_DATA_BUFFER_HEADER_SIZE UFIELD_OFFSET(REPARSE_DATA_BUFFER, GenericReparseBuffer)
+
 #endif

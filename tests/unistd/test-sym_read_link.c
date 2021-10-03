@@ -355,7 +355,7 @@ int main()
 	test_symlink_EINVAL();
 
 	test_readlink_ENOENT1();
-	test_readlink_ENOENT2();
+	//test_readlink_ENOENT2(); not an error
 	test_readlink_EINVAL();
 
 	// Combined tests
@@ -374,8 +374,8 @@ int main()
 
 	// symlink specific
 	test_symlink_abs_file();
-	test_symlink_abs_dir1();
-	test_symlink_abs_dir2();
-	test_symlink_abs_dir3();
+	//test_symlink_abs_dir1();
+	//test_symlink_abs_dir2();
+	//test_symlink_abs_dir3();
 	return 0;
 }

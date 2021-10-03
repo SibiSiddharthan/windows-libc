@@ -27,11 +27,11 @@ link.c
 lseek.c
 pipe.c
 readlink.c
-readlinkat.c
+#readlinkat.c
 read.c
 #rmdir.c
 symlink.c
-symlinkat.c
+#symlinkat.c
 truncate.c
 ttyname.c
 unlink.c

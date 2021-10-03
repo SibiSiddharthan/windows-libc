@@ -275,56 +275,26 @@ WLIBC_INLINE int rmdirat(int dirfd, const char *path)
 	return wlibc_common_removeat(dirfd, path, AT_REMOVEDIR);
 }
 
-WLIBC_API int wlibc_symlink(const char *restrict source, const char *restrict target);
-WLIBC_API int wlibc_wsymlink(const wchar_t *restrict wsource, const wchar_t *restrict wtarget);
+WLIBC_API int wlibc_symlinkat(const char *restrict source, int dirfd, const char *restrict target);
+WLIBC_INLINE int symlinkat(const char *restrict source, int dirfd, const char *restrict target)
+{
+	return wlibc_symlinkat(source, dirfd, target);
+}
 
 WLIBC_INLINE int symlink(const char *restrict source, const char *restrict target)
 {
-	return wlibc_symlink(source, target);
-}
-
-WLIBC_INLINE int wsymlink(const wchar_t *restrict wsource, const wchar_t *restrict wtarget)
-{
-	return wlibc_wsymlink(wsource, wtarget);
-}
-
-WLIBC_API int wlibc_symlinkat(const char *restrict source, int newdirfd, const char *restrict target);
-WLIBC_API int wlibc_wsymlinkat(const wchar_t *restrict wsource, int newdirfd, const wchar_t *restrict wtarget);
-
-WLIBC_INLINE int symlinkat(const char *restrict source, int newdirfd, const char *restrict target)
-{
-	return wlibc_symlinkat(source, newdirfd, target);
-}
-
-WLIBC_INLINE int wsymlinkat(const wchar_t *restrict wsource, int newdirfd, const wchar_t *restrict wtarget)
-{
-	return wlibc_wsymlinkat(wsource, newdirfd, wtarget);
-}
-
-WLIBC_API ssize_t wlibc_readlink(const char *restrict path, char *restrict buf, size_t bufsiz);
-WLIBC_API ssize_t wlibc_wreadlink(const wchar_t *restrict wpath, wchar_t *restrict wbuf, size_t bufsiz);
-
-WLIBC_INLINE ssize_t readlink(const char *restrict path, char *restrict buf, size_t bufsiz)
-{
-	return wlibc_readlink(path, buf, bufsiz);
-}
-
-WLIBC_INLINE ssize_t wreadlink(const wchar_t *restrict wpath, wchar_t *restrict wbuf, size_t bufsiz)
-{
-	return wlibc_wreadlink(wpath, wbuf, bufsiz);
+	return wlibc_symlinkat(source, AT_FDCWD, target);
 }
 
 WLIBC_API ssize_t wlibc_readlinkat(int dirfd, const char *restrict path, char *restrict buf, size_t bufsiz);
-WLIBC_API ssize_t wlibc_wreadlinkat(int dirfd, const wchar_t *restrict wpath, wchar_t *restrict wbuf, size_t bufsiz);
-
 WLIBC_INLINE ssize_t readlinkat(int dirfd, const char *restrict path, char *restrict buf, size_t bufsiz)
 {
 	return wlibc_readlinkat(dirfd, path, buf, bufsiz);
 }
 
-WLIBC_INLINE ssize_t wreadlinkat(int dirfd, const wchar_t *restrict wpath, wchar_t *restrict wbuf, size_t bufsiz)
+WLIBC_INLINE ssize_t readlink(const char *restrict path, char *restrict buf, size_t bufsiz)
 {
-	return wlibc_wreadlinkat(dirfd, wpath, wbuf, bufsiz);
+	return wlibc_readlinkat(AT_FDCWD, path, buf, bufsiz);
 }
 
 WLIBC_API int wlibc_truncate(const char *path, off_t length);
