@@ -80,51 +80,25 @@ int common_link(int olddirfd, const char *restrict source, int newdirfd, const c
 
 int wlibc_common_link(int olddirfd, const char *restrict source, int newdirfd, const char *restrict target, int flags)
 {
-	if (target == NULL)
-	{
-		errno = ENOENT;
-		return -1;
-	}
-
-	if (flags != AT_EMPTY_PATH)
-	{
-		if (source == NULL)
-		{
-			errno = ENOENT;
-			return -1;
-		}
-
-		if (olddirfd != AT_FDCWD && get_fd_type(olddirfd) != DIRECTORY_HANDLE)
-		{
-			errno = ENOTDIR;
-			return -1;
-		}
-	}
-	else
-	{
-		if (get_fd_type(olddirfd) != FILE_HANDLE)
-		{
-			errno = EBADF;
-			return -1;
-		}
-
-		if (get_fd_flags(olddirfd) & O_EXCL)
-		{
-			errno = EBADF;
-			return -1;
-		}
-	}
-
-	if (newdirfd != AT_FDCWD && get_fd_type(newdirfd) != DIRECTORY_HANDLE)
-	{
-		errno = ENOTDIR;
-		return -1;
-	}
-
 	if (flags != 0 && flags != AT_EMPTY_PATH && flags != AT_SYMLINK_FOLLOW)
 	{
 		errno = EINVAL;
 		return -1;
+	}
+
+	VALIDATE_PATH_AND_DIRFD(target, newdirfd);
+
+	if (flags != AT_EMPTY_PATH)
+	{
+		VALIDATE_PATH_AND_DIRFD(source, olddirfd);
+	}
+	else
+	{
+		if (get_fd_type(olddirfd) != FILE_HANDLE || get_fd_flags(olddirfd) & O_EXCL)
+		{
+			errno = EBADF;
+			return -1;
+		}
 	}
 
 	return common_link(olddirfd, source, newdirfd, target, flags);

@@ -621,17 +621,7 @@ int open_tty(const int oflags)
 
 int common_open2(int dirfd, const char *name, int oflags, va_list perm_args)
 {
-	if (name == NULL || name[0] == '\0')
-	{
-		errno = ENOENT;
-		return -1;
-	}
-
-	if (dirfd != AT_FDCWD && get_fd_type(dirfd) != DIRECTORY_HANDLE)
-	{
-		errno = ENOTDIR;
-		return -1;
-	}
+	VALIDATE_PATH_AND_DIRFD(name, dirfd);
 
 	if (!validate_oflags(oflags))
 	{

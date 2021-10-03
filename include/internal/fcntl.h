@@ -85,4 +85,27 @@ bool validate_fd(int _fd);
 wchar_t *get_absolute_ntpath(int dirfd, const char *path);
 HANDLE just_open(const wchar_t *u16_ntpath, ACCESS_MASK access, ULONG attributes, ULONG disposition, ULONG options);
 
+#define VALIDATE_PATH(path, error)       \
+	if (path == NULL || path[0] == '\0') \
+	{                                    \
+		errno = error;                   \
+		return -1;                       \
+	}
+
+#define IS_ABSOLUTE_PATH(path) (((isalpha(path[0])) && (path[1] == ':')))
+
+#define VALIDATE_DIRFD(dirfd)                                        \
+	if (dirfd != AT_FDCWD && get_fd_type(dirfd) != DIRECTORY_HANDLE) \
+	{                                                                \
+		errno = ENOTDIR;                                             \
+		return -1;                                                   \
+	}
+
+#define VALIDATE_PATH_AND_DIRFD(path, dirfd) \
+	VALIDATE_PATH(path, ENOENT);             \
+	if (!IS_ABSOLUTE_PATH(path))             \
+	{                                        \
+		VALIDATE_DIRFD(dirfd)                \
+	}
+
 #endif

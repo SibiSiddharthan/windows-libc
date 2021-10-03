@@ -10,11 +10,11 @@
 #include <errno.h>
 #include <fcntl.h>
 
-void test_EINVAL()
+void test_ENOENT()
 {
 	errno = 0;
 	int status = chdir("");
-	ASSERT_ERRNO(EINVAL);
+	ASSERT_ERRNO(ENOENT);
 	ASSERT_EQ(status, -1);
 }
 
@@ -65,7 +65,7 @@ void test_dot()
 
 int main()
 {
-	test_EINVAL();
+	test_ENOENT();
 	test_okay();
 	test_okay_with_slashes();
 	test_fchdir();

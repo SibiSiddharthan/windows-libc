@@ -62,23 +62,13 @@ int common_remove(int dirfd, const char *path, int flags)
 
 int wlibc_common_remove(int dirfd, const char *path, int flags)
 {
-	if (path == NULL || path[0] == '\0')
-	{
-		errno = ENOENT;
-		return -1;
-	}
-
 	if (flags != 0 && flags != AT_REMOVEDIR && flags != AT_REMOVEANY)
 	{
 		errno = EINVAL;
 		return -1;
 	}
 
-	if (dirfd != AT_FDCWD && get_fd_type(dirfd) != DIRECTORY_HANDLE)
-	{
-		errno = ENOTDIR;
-		return -1;
-	}
+	VALIDATE_PATH_AND_DIRFD(path, dirfd);
 
 	return common_remove(dirfd, path, flags);
 }

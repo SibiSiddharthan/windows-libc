@@ -77,11 +77,7 @@ static int common_truncate(HANDLE handle, off_t length)
 
 int wlibc_truncate(const char *path, off_t length)
 {
-	if (path == NULL)
-	{
-		errno = ENOENT;
-		return -1;
-	}
+	VALIDATE_PATH(path, ENOENT);
 
 	wchar_t *u16_ntpath = get_absolute_ntpath(AT_FDCWD, path);
 	if (u16_ntpath == NULL)

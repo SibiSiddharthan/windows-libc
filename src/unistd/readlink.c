@@ -342,11 +342,7 @@ ssize_t wlibc_common_readlink(int dirfd, const char *restrict path, char *restri
 		return -1;
 	}
 
-	if (dirfd != AT_FDCWD && get_fd_type(dirfd) != DIRECTORY_HANDLE)
-	{
-		errno = ENOTDIR;
-		return -1;
-	}
+	VALIDATE_DIRFD(dirfd);
 
 	return common_readlink(dirfd, path, buf, bufsiz);
 }

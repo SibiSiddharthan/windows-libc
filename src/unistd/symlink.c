@@ -188,23 +188,8 @@ int common_symlink(const char *restrict source, int dirfd, const char *restrict 
 
 int wlibc_common_symlink(const char *restrict source, int dirfd, const char *restrict target)
 {
-	if (source == NULL || source[0] == '\0')
-	{
-		errno = EINVAL;
-		return -1;
-	}
-
-	if (target == NULL || target[0] == '\0')
-	{
-		errno = ENOENT;
-		return -1;
-	}
-
-	if (dirfd != AT_FDCWD && get_fd_type(dirfd) != DIRECTORY_HANDLE)
-	{
-		errno = ENOTDIR;
-		return -1;
-	}
+	VALIDATE_PATH(source, EINVAL);
+	VALIDATE_PATH_AND_DIRFD(target, dirfd);
 
 	return common_symlink(source, dirfd, target);
 }
