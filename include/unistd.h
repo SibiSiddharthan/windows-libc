@@ -242,30 +242,15 @@ WLIBC_INLINE int kill(pid_t pid, int sig)
 	return wlibc_kill(pid, sig);
 }
 
-WLIBC_API int wlibc_link(const char *restrict source, const char *restrict target);
-WLIBC_API int wlibc_wlink(const wchar_t *restrict wsource, const wchar_t *restrict wtarget);
-
-WLIBC_INLINE int link(const char *restrict source, const char *restrict target)
-{
-	return wlibc_link(source, target);
-}
-
-WLIBC_INLINE int wlink(const wchar_t *restrict wsource, const wchar_t *restrict wtarget)
-{
-	return wlibc_wlink(wsource, wtarget);
-}
-
 WLIBC_API int wlibc_linkat(int olddirfd, const char *restrict source, int newdirfd, const char *restrict target, int flags);
-WLIBC_API int wlibc_wlinkat(int olddirfd, const wchar_t *restrict wsource, int newdirfd, const wchar_t *restrict wtarget, int flags);
-
 WLIBC_INLINE int linkat(int olddirfd, const char *restrict source, int newdirfd, const char *restrict target, int flags)
 {
 	return wlibc_linkat(olddirfd, source, newdirfd, target, flags);
 }
 
-WLIBC_INLINE int wlinkat(int olddirfd, const wchar_t *restrict wsource, int newdirfd, const wchar_t *restrict wtarget, int flags)
+WLIBC_INLINE int link(const char *restrict source, const char *restrict target)
 {
-	return wlibc_wlinkat(olddirfd, wsource, newdirfd, wtarget, flags);
+	return wlibc_linkat(AT_FDCWD, source, AT_FDCWD, target, 0);
 }
 
 WLIBC_API off_t wlibc_lseek(int fd, off_t offset, int whence);

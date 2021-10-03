@@ -92,11 +92,35 @@ void test_AT_SYMLINK_FOLLOW_abs()
 	close(fd2);
 }
 
+void test_AT_EMPTY_PATH()
+{
+	int fd = open(".", O_WRONLY | O_TMPFILE, 0700);
+	ssize_t result;
+
+	result = write(fd, "hello", 5);
+	ASSERT_EQ(result, 5);
+
+	int status = linkat(fd, NULL, AT_FDCWD, "t-link-at-empty-path", AT_EMPTY_PATH);
+	ASSERT_EQ(status, 0);
+	close(fd);
+
+	fd = open("t-link-at-empty-path", O_RDONLY);
+	char buf[8];
+	result = read(fd, buf, 8);
+	ASSERT_EQ(result, 5);
+	ASSERT_MEMEQ(buf, "hello", 5);
+	close(fd);
+
+	status = unlink("t-link-at-empty-path");
+	ASSERT_EQ(status, 0);
+}
+
 int main()
 {
 	test_same_fd();
 	test_different_fd();
 	test_AT_SYMLINK_FOLLOW();
 	test_AT_SYMLINK_FOLLOW_abs();
+	test_AT_EMPTY_PATH();
 	return 0;
 }

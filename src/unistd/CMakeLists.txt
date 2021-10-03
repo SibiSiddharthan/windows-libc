@@ -23,7 +23,7 @@ getpagesize.c
 isatty.c
 kill.c
 link.c
-linkat.c
+#linkat.c
 lseek.c
 pipe.c
 readlink.c
