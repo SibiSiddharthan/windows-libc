@@ -13,10 +13,7 @@
 #include <fcntl.h>
 #include <internal/fcntl.h>
 
-wchar_t *get_absolute_ntpath(int dirfd, const char *path);
-HANDLE just_open(const wchar_t *u16_ntpath, ACCESS_MASK access, ULONG attributes, ULONG disposition, ULONG options);
-
-int common_removeat(int dirfd, const char *path, int flags)
+int common_remove(int dirfd, const char *path, int flags)
 {
 	wchar_t *u16_ntpath = get_absolute_ntpath(dirfd, path);
 	if (u16_ntpath == NULL)
@@ -63,7 +60,7 @@ int common_removeat(int dirfd, const char *path, int flags)
 	return 0;
 }
 
-int wlibc_common_removeat(int dirfd, const char *path, int flags)
+int wlibc_common_remove(int dirfd, const char *path, int flags)
 {
 	if (path == NULL || path[0] == '\0')
 	{
@@ -83,5 +80,5 @@ int wlibc_common_removeat(int dirfd, const char *path, int flags)
 		return -1;
 	}
 
-	return common_removeat(dirfd, path, flags);
+	return common_remove(dirfd, path, flags);
 }

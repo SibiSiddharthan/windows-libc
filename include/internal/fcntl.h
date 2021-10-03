@@ -81,4 +81,8 @@ void add_fd_flags(int _fd, int _flags);
 // Return true if we have an entry
 bool validate_fd(int _fd);
 
+// Few helper functions used by many functions
+wchar_t *get_absolute_ntpath(int dirfd, const char *path);
+HANDLE just_open(const wchar_t *u16_ntpath, ACCESS_MASK access, ULONG attributes, ULONG disposition, ULONG options);
+
 #endif

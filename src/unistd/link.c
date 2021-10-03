@@ -11,9 +11,6 @@
 #include <internal/error.h>
 #include <internal/fcntl.h>
 
-wchar_t *get_absolute_ntpath(int dirfd, const char *path);
-HANDLE just_open(const wchar_t *u16_ntpath, ACCESS_MASK access, ULONG attributes, ULONG disposition, ULONG options);
-
 int common_link(int olddirfd, const char *restrict source, int newdirfd, const char *restrict target, int flags)
 {
 	HANDLE handle = INVALID_HANDLE_VALUE;
@@ -81,7 +78,7 @@ int common_link(int olddirfd, const char *restrict source, int newdirfd, const c
 	return 0;
 }
 
-int wlibc_linkat(int olddirfd, const char *restrict source, int newdirfd, const char *restrict target, int flags)
+int wlibc_common_link(int olddirfd, const char *restrict source, int newdirfd, const char *restrict target, int flags)
 {
 	if (target == NULL)
 	{

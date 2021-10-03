@@ -28,7 +28,7 @@ _WLIBC_BEGIN_DECLS
 #define W_OK 0x2 // Write permission
 #define X_OK 0x1 // Execute/Search permission
 
-WLIBC_API int wlibc_common_removeat(int dirfd, const char *path, int flags);
+WLIBC_API int wlibc_common_remove(int dirfd, const char *path, int flags);
 
 WLIBC_API int wlibc_access(const char *name, int mode);
 WLIBC_API int wlibc_waccess(const wchar_t *wname, int mode);
@@ -242,15 +242,15 @@ WLIBC_INLINE int kill(pid_t pid, int sig)
 	return wlibc_kill(pid, sig);
 }
 
-WLIBC_API int wlibc_linkat(int olddirfd, const char *restrict source, int newdirfd, const char *restrict target, int flags);
+WLIBC_API int wlibc_common_link(int olddirfd, const char *restrict source, int newdirfd, const char *restrict target, int flags);
 WLIBC_INLINE int linkat(int olddirfd, const char *restrict source, int newdirfd, const char *restrict target, int flags)
 {
-	return wlibc_linkat(olddirfd, source, newdirfd, target, flags);
+	return wlibc_common_link(olddirfd, source, newdirfd, target, flags);
 }
 
 WLIBC_INLINE int link(const char *restrict source, const char *restrict target)
 {
-	return wlibc_linkat(AT_FDCWD, source, AT_FDCWD, target, 0);
+	return wlibc_common_link(AT_FDCWD, source, AT_FDCWD, target, 0);
 }
 
 WLIBC_API off_t wlibc_lseek(int fd, off_t offset, int whence);
@@ -267,34 +267,34 @@ WLIBC_INLINE ssize_t read(int fd, void *buf, size_t count)
 
 WLIBC_INLINE int rmdir(const char *path)
 {
-	return wlibc_common_removeat(AT_FDCWD, path, AT_REMOVEDIR);
+	return wlibc_common_remove(AT_FDCWD, path, AT_REMOVEDIR);
 }
 
 WLIBC_INLINE int rmdirat(int dirfd, const char *path)
 {
-	return wlibc_common_removeat(dirfd, path, AT_REMOVEDIR);
+	return wlibc_common_remove(dirfd, path, AT_REMOVEDIR);
 }
 
-WLIBC_API int wlibc_symlinkat(const char *restrict source, int dirfd, const char *restrict target);
-WLIBC_INLINE int symlinkat(const char *restrict source, int dirfd, const char *restrict target)
-{
-	return wlibc_symlinkat(source, dirfd, target);
-}
-
-WLIBC_INLINE int symlink(const char *restrict source, const char *restrict target)
-{
-	return wlibc_symlinkat(source, AT_FDCWD, target);
-}
-
-WLIBC_API ssize_t wlibc_readlinkat(int dirfd, const char *restrict path, char *restrict buf, size_t bufsiz);
+WLIBC_API ssize_t wlibc_common_readlink(int dirfd, const char *restrict path, char *restrict buf, size_t bufsiz);
 WLIBC_INLINE ssize_t readlinkat(int dirfd, const char *restrict path, char *restrict buf, size_t bufsiz)
 {
-	return wlibc_readlinkat(dirfd, path, buf, bufsiz);
+	return wlibc_common_readlink(dirfd, path, buf, bufsiz);
 }
 
 WLIBC_INLINE ssize_t readlink(const char *restrict path, char *restrict buf, size_t bufsiz)
 {
-	return wlibc_readlinkat(AT_FDCWD, path, buf, bufsiz);
+	return wlibc_common_readlink(AT_FDCWD, path, buf, bufsiz);
+}
+
+WLIBC_API int wlibc_common_symlink(const char *restrict source, int dirfd, const char *restrict target);
+WLIBC_INLINE int symlinkat(const char *restrict source, int dirfd, const char *restrict target)
+{
+	return wlibc_common_symlink(source, dirfd, target);
+}
+
+WLIBC_INLINE int symlink(const char *restrict source, const char *restrict target)
+{
+	return wlibc_common_symlink(source, AT_FDCWD, target);
 }
 
 WLIBC_API int wlibc_truncate(const char *path, off_t length);
@@ -337,12 +337,12 @@ WLIBC_INLINE int wttyname_r(int fd, wchar_t *wbuf, size_t bufsiz)
 
 WLIBC_INLINE int unlink(const char *path)
 {
-	return wlibc_common_removeat(AT_FDCWD, path, 0);
+	return wlibc_common_remove(AT_FDCWD, path, 0);
 }
 
 WLIBC_INLINE int unlinkat(int dirfd, const char *path, int flags)
 {
-	return wlibc_common_removeat(dirfd, path, flags);
+	return wlibc_common_remove(dirfd, path, flags);
 }
 
 WLIBC_API ssize_t wlibc_write(int fd, const void *buf, size_t count);

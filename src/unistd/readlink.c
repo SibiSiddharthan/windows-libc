@@ -13,9 +13,6 @@
 #include <internal/nt.h>
 #include <stdlib.h>
 
-wchar_t *get_absolute_ntpath(int dirfd, const char *path);
-HANDLE just_open(const wchar_t *u16_ntpath, ACCESS_MASK access, ULONG attributes, ULONG disposition, ULONG options);
-
 // Convert backslash to forward slash
 void convert_bs_to_fs(char *str, int length)
 {
@@ -326,9 +323,9 @@ ssize_t common_readlink(int dirfd, const char *restrict path, char *restrict buf
 	return result;
 }
 
-ssize_t wlibc_readlinkat(int dirfd, const char *restrict path, char *restrict buf, size_t bufsiz)
+ssize_t wlibc_common_readlink(int dirfd, const char *restrict path, char *restrict buf, size_t bufsiz)
 {
-	if(buf == NULL)
+	if (buf == NULL)
 	{
 		errno = EINVAL;
 		return -1;

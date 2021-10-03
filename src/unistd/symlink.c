@@ -15,9 +15,6 @@
 #include <internal/nt.h>
 #include <stdlib.h>
 
-wchar_t *get_absolute_ntpath(int dirfd, const char *path);
-HANDLE just_open(const wchar_t *u16_ntpath, ACCESS_MASK access, ULONG attributes, ULONG disposition, ULONG options);
-
 #if 0
 int common_symlink(const wchar_t *restrict wsource, const wchar_t *restrict wtarget)
 {
@@ -189,7 +186,7 @@ int common_symlink(const char *restrict source, int dirfd, const char *restrict 
 	return 0;
 }
 
-int wlibc_symlinkat(const char *restrict source, int dirfd, const char *restrict target)
+int wlibc_common_symlink(const char *restrict source, int dirfd, const char *restrict target)
 {
 	if (source == NULL || source[0] == '\0')
 	{

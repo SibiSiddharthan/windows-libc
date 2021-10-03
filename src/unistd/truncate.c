@@ -14,9 +14,6 @@
 #include <stdlib.h>
 #include <internal/nt.h>
 
-wchar_t *get_absolute_ntpath(int dirfd, const char *path);
-HANDLE just_open(const wchar_t *u16_ntpath, ACCESS_MASK access, ULONG attributes, ULONG disposition, ULONG options);
-
 static int common_truncate(HANDLE handle, off_t length)
 {
 	// Let's keep this below snippet for reference
