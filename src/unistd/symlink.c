@@ -127,11 +127,10 @@ int common_symlink(const char *restrict source, int dirfd, const char *restrict 
 			errno = 0; // clear errno
 		}
 	}
-	else // file exists and is a normal file
+	else // file exists and is a normal file, close the handle
 	{
-		options = FILE_NON_DIRECTORY_FILE;
+		NtClose(source_handle);
 	}
-	NtClose(source_handle);
 
 	HANDLE target_handle = just_open(u16_nttarget, FILE_READ_ATTRIBUTES | FILE_WRITE_ATTRIBUTES, 0, FILE_CREATE, options);
 	free(u16_nttarget);
@@ -155,7 +154,7 @@ int common_symlink(const char *restrict source, int dirfd, const char *restrict 
 		}
 	}
 
-	size_t total_reparse_data_length = REPARSE_DATA_BUFFER_HEADER_SIZE + 12 + 2 * u16_source.Length; // For PrintName, SubstituteName
+	size_t total_reparse_data_length = REPARSE_DATA_BUFFER_HEADER_SIZE + 12 + 2 * u16_source.Length; // For SubstituteName, PrintName
 	IO_STATUS_BLOCK I;
 	PREPARSE_DATA_BUFFER reparse_data = (PREPARSE_DATA_BUFFER)malloc(total_reparse_data_length);
 	memset(reparse_data, 0, total_reparse_data_length);

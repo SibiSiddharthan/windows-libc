@@ -204,8 +204,13 @@ ssize_t do_readlink(HANDLE handle, char *restrict buf, size_t bufsiz)
 	PREPARSE_DATA_BUFFER reparse_buffer = (PREPARSE_DATA_BUFFER)malloc(MAXIMUM_REPARSE_DATA_BUFFER_SIZE);
 	status =
 		NtFsControlFile(handle, NULL, NULL, NULL, &I, FSCTL_GET_REPARSE_POINT, NULL, 0, reparse_buffer, MAXIMUM_REPARSE_DATA_BUFFER_SIZE);
+	if (status != STATUS_SUCCESS)
+	{
+		map_ntstatus_to_errno(status);
+		return -1;
+	}
 
-	if (INFO.ReparseTag == IO_REPARSE_TAG_SYMLINK)
+	if (reparse_buffer->ReparseTag == IO_REPARSE_TAG_SYMLINK)
 	{
 		if (reparse_buffer->SymbolicLinkReparseBuffer.SubstituteNameLength != 0)
 		{
@@ -248,7 +253,7 @@ ssize_t do_readlink(HANDLE handle, char *restrict buf, size_t bufsiz)
 		}
 	}
 
-	if (INFO.ReparseTag == IO_REPARSE_TAG_MOUNT_POINT)
+	if (reparse_buffer->ReparseTag == IO_REPARSE_TAG_MOUNT_POINT)
 	{
 		if (reparse_buffer->MountPointReparseBuffer.SubstituteNameLength != 0)
 		{
