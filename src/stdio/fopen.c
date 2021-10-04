@@ -15,7 +15,7 @@
 
 int parse_mode(const char *mode);
 int get_buf_mode(int flags);
-int common_open(const wchar_t *wname, const int oflags, const mode_t perm);
+int do_open(int dirfd, const char *name, int oflags, mode_t perm);
 
 FILE *wlibc_fopen(const char *restrict name, const char *restrict mode)
 {
@@ -31,10 +31,10 @@ FILE *wlibc_fopen(const char *restrict name, const char *restrict mode)
 		return NULL;
 	}
 
-	wchar_t *wname = NULL;
-
 	int flags = parse_mode(mode);
 
+#if 0
+	wchar_t *wname = NULL;
 	// This conversion should be moved inside common_open itself. TODO/FIXME
 	if (strcmp(name, "/dev/null") == 0)
 	{
@@ -51,6 +51,8 @@ FILE *wlibc_fopen(const char *restrict name, const char *restrict mode)
 	{
 		free(wname);
 	}
+#endif
+	int fd = do_open(AT_FDCWD, name, flags | O_NOTDIR , 0700);
 
 	if (fd == -1)
 	{

@@ -108,7 +108,7 @@ void test_rplus()
 
 int main()
 {
-	// test_EISDIR();
+	test_EISDIR();
 	test_wplus();
 	test_aplus();
 	test_rplus();

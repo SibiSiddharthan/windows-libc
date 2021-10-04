@@ -23,6 +23,7 @@ int parse_mode(const char *mode)
 			flags |= O_WRONLY | O_CREAT | O_TRUNC;
 			break;
 		case '+':
+			flags &= ~O_WRONLY; // remove O_WRONLY as O_RDONLY is 0
 			flags |= O_RDWR;
 			break;
 		case 'a':
@@ -33,7 +34,7 @@ int parse_mode(const char *mode)
 			flags |= O_EXCL;
 			break;
 		case 'm':
-			//flags // mmap TODO
+			// flags // mmap TODO
 			break;
 		// Microsoft Extensions
 		case 'b':
@@ -57,7 +58,7 @@ int parse_mode(const char *mode)
 			break;
 		case 'T': // fallthrough
 		case 'D':
-			flags |= O_TMPFILE;
+			flags |= O_SHORT_LIVED;
 			break;
 		default:
 			break;

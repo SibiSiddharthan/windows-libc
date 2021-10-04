@@ -10,18 +10,19 @@
 #include <errno.h>
 #include <wchar.h>
 #include <internal/misc.h>
+#include <internal/nt.h>
 #include <fcntl.h>
 
 int parse_mode(const char *mode);
 int get_buf_mode(int flags);
 int common_fflush(FILE *stream);
-int common_open(const wchar_t *wname, const int oflags, const mode_t perm);
+int do_open(int dirfd, const char *name, int oflags, mode_t perm);
 
 FILE *wlibc_freopen(const char *restrict name, const char *restrict mode, FILE *restrict stream)
 {
 	VALIDATE_FILE_STREAM(stream, NULL);
 
-	const wchar_t *old_name = get_fd_path(stream->fd);
+	const wchar_t *oldname = get_fd_path(stream->fd);
 	int new_fd;
 
 	// Flush the stream first
@@ -34,13 +35,16 @@ FILE *wlibc_freopen(const char *restrict name, const char *restrict mode, FILE *
 
 	if (name == NULL)
 	{
-		new_fd = common_open(old_name, flags, 0);
+		UTF8_STRING u8_oldname;
+		UNICODE_STRING u16_oldname;
+		RtlInitUnicodeString(&u16_oldname, oldname);
+		RtlUnicodeStringToUTF8String(&u8_oldname, &u16_oldname, TRUE);
+		new_fd = do_open(AT_FDCWD, u8_oldname.Buffer, flags | O_NOTDIR, 0700);
+		RtlFreeUTF8String(&u8_oldname);
 	}
 	else
 	{
-		wchar_t *wname = mb_to_wc(name);
-		new_fd = common_open(wname, flags, 0);
-		free(wname);
+		new_fd = do_open(AT_FDCWD, name, flags | O_NOTDIR, 0700);
 	}
 
 	if (new_fd == -1)

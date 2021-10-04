@@ -48,8 +48,8 @@ _WLIBC_BEGIN_DECLS
 #define O_SEQUENTIAL  0x0020  // file access is primarily sequential
 #define O_RANDOM      0x0010  // file access is primarily random
 #define O_TMPFILE     0x0040  // temporary file
-#define O_SHORT_LIVED O_TEMPORARY
 #define O_TEMPORARY   O_TMPFILE
+#define O_SHORT_LIVED 0x1000 // like temporary file but name of file is given(to implement msvc T,D)
 
 // Unsupported
 #define O_LARGEFILE 0x0 // We always use 64 bit file offsets
@@ -139,14 +139,39 @@ WLIBC_INLINE int wopenat(int dirfd, const wchar_t *wname, int oflags, ...)
 }
 #endif
 
-WLIBC_API int wlibc_open2(const char *name, const int oflags, ...);
-WLIBC_API int wlibc_openat2(int dirfd, const char *name, int oflags, ...);
+WLIBC_API int wlibc_common_open(int dirfd, const char *name, int oflags, va_list perm_args);
 
-#define creat(name, perm) wlibc_open2(name, O_WRONLY | O_CREAT | O_TRUNC, perm)
+//WLIBC_API int wlibc_open2(const char *name, const int oflags, ...);
+//WLIBC_API int wlibc_openat2(int dirfd, const char *name, int oflags, ...);
+
+WLIBC_INLINE int open(const char *name, const int oflags, ...)
+{
+	va_list perm_args;
+	va_start(perm_args, oflags);
+	int fd = wlibc_common_open(AT_FDCWD, name, oflags, perm_args);
+	va_end(perm_args);
+	return fd;
+}
+
+WLIBC_INLINE int openat(int dirfd, const char *name, const int oflags, ...)
+{
+	va_list perm_args;
+	va_start(perm_args, oflags);
+	int fd = wlibc_common_open(dirfd, name, oflags, perm_args);
+	va_end(perm_args);
+	return fd;
+}
+
+WLIBC_INLINE int creat(const char *name, mode_t mode)
+{
+	return open(name, O_WRONLY | O_CREAT | O_TRUNC, mode);
+}
+//#define creat(name, perm) wlibc_open2(name, O_WRONLY | O_CREAT | O_TRUNC, perm)
 /* int open(const char *name, const int oflags, ...); */
-#define open   wlibc_open2
-#define openat wlibc_openat2
+//#define open   wlibc_open2
+//#define openat wlibc_openat2
 
+#if 0
 WLIBC_API int wlibc_open(const char *name, const int oflags, va_list perm_args);
 WLIBC_API int wlibc_wopen(const wchar_t *wname, const int oflags, va_list perm_args);
 WLIBC_INLINE int wopen(const wchar_t *wname, const int oflags, ...)
@@ -157,6 +182,7 @@ WLIBC_INLINE int wopen(const wchar_t *wname, const int oflags, ...)
 	va_end(perm_args);
 	return fd;
 }
+#endif
 WLIBC_API int wlibc_fcntl(int fd, int cmd, va_list args);
 
 WLIBC_INLINE int fcntl(int fd, int cmd, ...)

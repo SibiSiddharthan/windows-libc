@@ -6,9 +6,9 @@
 ]]
 
 set(fcntl_SOURCES
-open.c
+#open.c
 open2.c
-openat.c
+#openat.c
 #creat.c
 fcntl.c
 fcntl_internal.c)

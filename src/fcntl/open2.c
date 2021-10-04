@@ -46,7 +46,7 @@ static ACCESS_MASK determine_access_rights(int oflags)
 		// We don't technically need this as all users have BYPASS_TRAVERSE_CHECKING privilege, but just in case.
 		access_rights |= FILE_TRAVERSE;
 	}
-	if (oflags & O_TMPFILE)
+	if (oflags & O_TMPFILE || oflags & O_SHORT_LIVED)
 	{
 		access_rights |= DELETE;
 	}
@@ -90,7 +90,7 @@ static ULONG determine_create_dispostion(int oflags)
 static ULONG determine_create_options(int oflags)
 {
 	ULONG options = FILE_SYNCHRONOUS_IO_NONALERT;
-	if (oflags & O_TMPFILE)
+	if (oflags & O_TMPFILE || oflags & O_SHORT_LIVED)
 	{
 		options |= FILE_DELETE_ON_CLOSE | FILE_NON_DIRECTORY_FILE;
 	}
@@ -619,7 +619,9 @@ int open_tty(const int oflags)
 }
 #endif
 
-int common_open2(int dirfd, const char *name, int oflags, va_list perm_args)
+
+
+int wlibc_common_open(int dirfd, const char *name, int oflags, va_list perm_args)
 {
 	VALIDATE_PATH_AND_DIRFD(name, dirfd);
 
@@ -644,11 +646,12 @@ int common_open2(int dirfd, const char *name, int oflags, va_list perm_args)
 	return do_open(dirfd, name, oflags, perm);
 }
 
+#if 0
 int wlibc_openat2(int dirfd, const char *name, int oflags, ...)
 {
 	va_list perm_args;
 	va_start(perm_args, oflags);
-	int fd = common_open2(dirfd, name, oflags, perm_args);
+	int fd = wlibc_common_open(dirfd, name, oflags, perm_args);
 	va_end(perm_args);
 	return fd;
 }
@@ -657,7 +660,8 @@ int wlibc_open2(const char *name, int oflags, ...)
 {
 	va_list perm_args;
 	va_start(perm_args, oflags);
-	int fd = common_open2(AT_FDCWD, name, oflags, perm_args);
+	int fd = wlibc_common_open(AT_FDCWD, name, oflags, perm_args);
 	va_end(perm_args);
 	return fd;
 }
+#endif
