@@ -8,7 +8,7 @@
 set(sys_stat_SOURCES
 chmod.c
 fchmodat.c
-fstatat.c
+#fstatat.c
 mkdir.c
 #mkdirat.c
 stat.c
