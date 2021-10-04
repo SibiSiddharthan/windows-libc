@@ -9,7 +9,8 @@ set(tests
 open
 openat
 path
-fcntl)
+fcntl
+sanity)
 
 foreach(t ${tests})
 	add_executable(test-${t} test-${t}.c)
