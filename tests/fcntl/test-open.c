@@ -155,6 +155,40 @@ void test_O_TMPFILE()
 	close(fd);
 }
 
+void test_O_NOATIME()
+{
+	errno = 0;
+	char buf[16];
+	int fd;
+	struct stat before, after;
+
+	fd = creat("t-open-NOATIME", 0700);
+	write(fd, "hello", 5);
+	close(fd);
+
+	fd = open("t-open-NOATIME", O_RDONLY);
+	fstat(fd, &before);
+	read(fd, buf, 16);
+	ASSERT_MEMEQ(buf, "hello", 5);
+	fstat(fd, &after);
+	close(fd);
+	// check tv_nsec only as tv_sec might be equal
+	ASSERT_NOTEQ(before.st_atim.tv_nsec, after.st_atim.tv_nsec);
+
+	memset(buf, 0, 16);
+
+	fd = open("t-open-NOATIME", O_RDONLY | O_NOATIME);
+	fstat(fd, &before);
+	read(fd, buf, 16);
+	ASSERT_MEMEQ(buf, "hello", 5);
+	fstat(fd, &after);
+	close(fd);
+	ASSERT_EQ(before.st_atim.tv_sec, after.st_atim.tv_sec);
+	ASSERT_EQ(before.st_atim.tv_nsec, after.st_atim.tv_nsec);
+
+	unlink("t-open-NOATIME");
+}
+
 void test_null()
 {
 	errno = 0;
@@ -165,15 +199,14 @@ void test_null()
 	ASSERT_EQ(fd, 3);
 
 	result = read(fd, buf, 16);
-	ASSERT_EQ(result,0);
+	ASSERT_EQ(result, 0);
 	ASSERT_ERRNO(0);
 
 	result = write(fd, "abc", 3);
-	ASSERT_EQ(result,3);
+	ASSERT_EQ(result, 3);
 	ASSERT_ERRNO(0);
 
 	close(fd);
-
 }
 
 int main()
@@ -192,6 +225,7 @@ int main()
 	test_O_PATH();
 	test_O_TRUNC();
 	test_O_TMPFILE();
+	test_O_NOATIME();
 	test_null();
 	return 0;
 }

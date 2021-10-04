@@ -36,6 +36,13 @@
 		exit(1);                                                                                                            \
 	}
 
+#define ASSERT_NOTEQ(val_1, val_2)                                                                                                       \
+	if (val_1 == val_2)                                                                                                                  \
+	{                                                                                                                                    \
+		printf("Assertion failed at %s:%d. %lld should not be equal to %lld\n", __FILE__, __LINE__, (long long)val_1, (long long)val_2); \
+		exit(1);                                                                                                                         \
+	}
+
 #define ASSERT_STREQ(actual, expected)                                                                                    \
 	if (strcmp(actual, expected) != 0)                                                                                    \
 	{                                                                                                                     \
@@ -43,11 +50,11 @@
 		exit(1);                                                                                                          \
 	}
 
-#define ASSERT_WSTREQ(actual, expected)                                                                                    \
-	if (wcscmp(actual, expected) != 0)                                                                                    \
-	{                                                                                                                     \
+#define ASSERT_WSTREQ(actual, expected)                                                                                     \
+	if (wcscmp(actual, expected) != 0)                                                                                      \
+	{                                                                                                                       \
 		printf("Assertion failed at %s:%d. Expected value of \n%ls\nbut got\n%ls\n", __FILE__, __LINE__, expected, actual); \
-		exit(1);                                                                                                          \
+		exit(1);                                                                                                            \
 	}
 
 #define ASSERT_MEMEQ(actual, expected, size)                                                                                              \
