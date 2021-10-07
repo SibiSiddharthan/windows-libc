@@ -31,7 +31,7 @@ perror.c
 popen.c
 printf.c
 rename.c
-renameat.c
+#renameat.c
 scanf.c
 setvbuf.c
 ungetc.c

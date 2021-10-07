@@ -5,7 +5,7 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <stdio-ext.h>
+#include <stdio.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <test-macros.h>

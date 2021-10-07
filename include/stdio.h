@@ -11,6 +11,7 @@
 #include <wlibc-macros.h>
 #include <stdarg.h>
 #include <sys/types.h>
+#include <fcntl.h>
 
 _WLIBC_BEGIN_DECLS
 
@@ -48,7 +49,6 @@ extern FILE *_wlibc_stderr;
 #define _IOFBF 0x0010 // Full buffering
 #define _IOLBF 0x0020 // line buffering
 #define _IONBF 0x0040 // no buffering
-
 
 /* Seek method constants */
 
@@ -446,11 +446,11 @@ WLIBC_INLINE int scanf(const char *restrict format, ...)
 }
 
 // misc
-WLIBC_API int wlibc_remove(const char *path);
-
+// from unistd.h
+WLIBC_API int wlibc_common_remove(int dirfd, const char *path, int flags);
 WLIBC_INLINE int remove(const char *path)
 {
-	return wlibc_remove(path);
+	return wlibc_common_remove(AT_FDCWD, path, AT_REMOVEANY);
 }
 
 WLIBC_API FILE *wlibc_tmpfile();
@@ -475,31 +475,27 @@ WLIBC_INLINE int fcloseall()
 }
 
 
-#if 0 
-// For renameat2
-// Using same values from linux/fs.h
+// Available flags
+#define RENAME_WHITEOUT  0x0 // Unsupported
 #define RENAME_NOREPLACE 0x1 // Don't overwrite
 #define RENAME_EXCHANGE  0x2 // Exchange the files
-#define RENAME_WHITEOUT  0x4 // Unsupported
 
-WLIBC_API int wlibc_renameat2(int olddirfd, const char *oldname, int newdirfd, const char *newname, unsigned int flags);
+WLIBC_API int wlibc_common_rename(int olddirfd, const char *restrict oldpath, int newdirfd, const char *restrict newpath, int flags);
 
-WLIBC_INLINE int rename(const char *oldname, const char *newname)
+WLIBC_INLINE int rename(const char *restrict oldname, const char *restrict newname)
 {
-	// FIXME put AT_FDCWD here
-	return wlibc_renameat2(0x1000000, oldname, 0x1000000, newname, 0);
+	return wlibc_common_rename(AT_FDCWD, oldname, AT_FDCWD, newname, 0);
 }
 
-WLIBC_INLINE int renameat(int olddirfd, const char *oldname, int newdirfd, const char *newname)
+WLIBC_INLINE int renameat(int olddirfd, const char *restrict oldname, int newdirfd, const char *restrict newname)
 {
-	return wlibc_renameat2(olddirfd, oldname, newdirfd, newname, 0);
+	return wlibc_common_rename(olddirfd, oldname, newdirfd, newname, 0);
 }
 
-WLIBC_INLINE int renameat2(int olddirfd, const char *oldname, int newdirfd, const char *newname, unsigned int flags)
+WLIBC_INLINE int renameat2(int olddirfd, const char *restrict oldname, int newdirfd, const char *restrict newname, unsigned int flags)
 {
-	return wlibc_renameat2(olddirfd, oldname, newdirfd, newname, flags);
+	return wlibc_common_rename(olddirfd, oldname, newdirfd, newname, flags);
 }
-#endif
 
 // memstream
 WLIBC_API FILE *wlibc_fmemopen(void *restrict, size_t, const char *restrict);
