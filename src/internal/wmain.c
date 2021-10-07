@@ -15,9 +15,7 @@
 #include <internal/signal.h>
 #include <internal/stdio.h>
 
-int main(int argc, char **argv);
-
-__declspec(dllimport) int __cdecl _setmode(int fd, int mode);
+extern int main(int argc, char **argv);
 
 int wmain(int argc, wchar_t **wargv)
 {
@@ -32,32 +30,32 @@ int wmain(int argc, wchar_t **wargv)
 		argv[argc] = NULL;
 	}
 
-#ifdef WLIBC_BINARY_STD_STREAMS
-	// #define O_BINARY 0x8000
-	_setmode(0, 0x8000); // stdin
-	_setmode(1, 0x8000); // stdout
-	_setmode(2, 0x8000); // stderr
-#endif
-
 #ifdef WLIBC_POSIX_IO
+	// DONT change the order of this. 
 	init_fd_table();
 	initialize_stdio();
+	atexit(cleanup_fd_table);
+	atexit(cleanup_stdio);
 #endif
 #ifdef WLIBC_DLFCN
 	dlfcn_init();
+	atexit(dlfcn_cleanup);
 #endif
 #ifdef WLIBC_LANGINFO
 	langinfo_init();
+	atexit(langinfo_cleanup);
 #endif
 #ifdef WLIBC_PROCESS
 	process_init();
+	atexit(process_cleanup);
 #endif
 #ifdef WLIBC_SIGNALS
 	signal_init();
+	atexit(signal_cleanup);
 #endif
 
 	int exit_status = main(argc, argv);
-
+#if 0
 #ifdef WLIBC_POSIX_IO
 	cleanup_stdio();
 	cleanup_fd_table();
@@ -74,7 +72,7 @@ int wmain(int argc, wchar_t **wargv)
 #ifdef WLIBC_SIGNALS
 	signal_cleanup();
 #endif
-
+#endif
 	if (argc)
 	{
 		for (int i = 0; i < argc; i++)
