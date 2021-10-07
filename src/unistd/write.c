@@ -10,6 +10,7 @@
 #include <internal/error.h>
 #include <errno.h>
 #include <internal/fcntl.h>
+#include <internal/nt.h>
 #include <fcntl.h>
 
 ssize_t wlibc_write(int fd, const void *buf, size_t count)
@@ -29,19 +30,31 @@ ssize_t wlibc_write(int fd, const void *buf, size_t count)
 
 	HANDLE file = get_fd_handle(fd);
 	int flags = get_fd_flags(fd);
-	if ((flags & (O_WRONLY | O_RDWR)) == 0)
-	{
-		errno = EACCES;
-		return -1;
-	}
+	LARGE_INTEGER offset;
+	offset.HighPart = -1;
 
 	if (flags & O_APPEND)
 	{
+#if 0
 		LARGE_INTEGER L;
 		L.QuadPart = 0;
 		SetFilePointerEx(file, L, NULL, FILE_END);
+#endif
+		offset.LowPart = FILE_WRITE_TO_END_OF_FILE;
+	}
+	else
+	{
+		offset.LowPart = FILE_USE_FILE_POINTER_POSITION;
 	}
 
+	IO_STATUS_BLOCK I;
+	NTSTATUS status = NtWriteFile(file, NULL, NULL, NULL, &I, (PVOID)buf, count, &offset, NULL);
+	if (status != STATUS_SUCCESS && status != STATUS_PENDING)
+	{
+		map_ntstatus_to_errno(status);
+		return -1;
+	}
+#if 0
 	DWORD write_count;
 	BOOL status = WriteFile(file, buf, count, &write_count, NULL);
 	if (!status)
@@ -49,6 +62,7 @@ ssize_t wlibc_write(int fd, const void *buf, size_t count)
 		map_win32_error_to_wlibc(GetLastError());
 		return -1;
 	}
+#endif
 
-	return write_count;
+	return I.Information;
 }
