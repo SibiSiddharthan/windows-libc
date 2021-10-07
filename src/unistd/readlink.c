@@ -207,6 +207,7 @@ ssize_t do_readlink(HANDLE handle, char *restrict buf, size_t bufsiz)
 	if (status != STATUS_SUCCESS)
 	{
 		map_ntstatus_to_errno(status);
+		free(reparse_buffer);
 		return -1;
 	}
 

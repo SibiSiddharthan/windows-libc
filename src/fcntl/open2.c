@@ -337,31 +337,6 @@ wchar_t *get_absolute_ntpath(int dirfd, const char *path)
 	}
 	u16_ntpath_final[final_length++] = L'\0';
 
-#if 0
-	int total_length = (8 + 2 + 2 + length_path + length_root) / sizeof(wchar_t);
-	for (int i = 4; u16_ntpath[i] != L'\0'; i++)
-	{
-		if (u16_ntpath[i] == L'.')
-		{
-			if (u16_ntpath[i - 1] == L'\\' && u16_ntpath[i + 1] == L'\0') // somepath\. trailing .
-			{
-				u16_ntpath[i - 1] = L'\0';
-				break; // We have reached the end, break the loop
-			}
-
-			else if (i + 2 < total_length && u16_ntpath[i - 1] == L'\\' && u16_ntpath[i + 1] == L'.' &&
-					 u16_ntpath[i + 2] == L'\0') // somepath\. trailing .
-			{
-				u16_ntpath[i - 1] = L'\0';
-				break; // We have reached the end, break the loop
-			}
-
-			else if (u16_ntpath[i - 1] == L'\\' && u16_ntpath[i + 1] == L'\\') // somepath\.\file
-			{
-			}
-		}
-	}
-#endif
 	free(query_buffer);
 	free(components);
 	free(u16_ntpath);
@@ -591,36 +566,6 @@ finish:
 	return fd;
 }
 
-#if 0
-
-int open_tty(const int oflags)
-{
-	HANDLE H;
-	OBJECT_ATTRIBUTES O;
-	IO_STATUS_BLOCK I;
-	UNICODE_STRING S;
-	InitializeObjectAttributes(&O, &S, OBJ_CASE_INSENSITIVE | OBJ_INHERIT, NULL, NULL);
-	if (oflags & O_NOINHERIT)
-	{
-		O.Attributes &= ~OBJ_INHERIT;
-	}
-	ACCESS_MASK A = GENERIC_READ | GENERIC_WRITE; // this requires the generic access constants
-	if (oflags & O_WRONLY)
-	{
-		RtlInitUnicodeString(&S, L"\\??\\CONOUT$");
-	}
-	else
-	{
-		RtlInitUnicodeString(&S, L"\\??\\CONIN$");
-	}
-
-	NTSTATUS STATUS =
-		NtCreateFile(&H, A, &O, &I, NULL, 0, FILE_SHARE_READ | FILE_SHARE_WRITE, FILE_OPEN, FILE_SYNCHRONOUS_IO_NONALERT, NULL, 0);
-}
-#endif
-
-
-
 int wlibc_common_open(int dirfd, const char *name, int oflags, va_list perm_args)
 {
 	VALIDATE_PATH_AND_DIRFD(name, dirfd);
@@ -637,31 +582,12 @@ int wlibc_common_open(int dirfd, const char *name, int oflags, va_list perm_args
 		perm = va_arg(perm_args, mode_t);
 	}
 
-	if (perm > 0777)
-	{
-		errno = EINVAL;
-		return -1;
-	}
+	// glibc does not do bounds checking. Will set a bound for perm when ACLs are implemented
+	// if (perm > 0777)
+	//{
+	//	errno = EINVAL;
+	//	return -1;
+	//}
 
 	return do_open(dirfd, name, oflags, perm);
 }
-
-#if 0
-int wlibc_openat2(int dirfd, const char *name, int oflags, ...)
-{
-	va_list perm_args;
-	va_start(perm_args, oflags);
-	int fd = wlibc_common_open(dirfd, name, oflags, perm_args);
-	va_end(perm_args);
-	return fd;
-}
-
-int wlibc_open2(const char *name, int oflags, ...)
-{
-	va_list perm_args;
-	va_start(perm_args, oflags);
-	int fd = wlibc_common_open(AT_FDCWD, name, oflags, perm_args);
-	va_end(perm_args);
-	return fd;
-}
-#endif

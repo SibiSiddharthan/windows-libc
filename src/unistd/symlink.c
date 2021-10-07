@@ -108,6 +108,7 @@ int common_symlink(const char *restrict source, int dirfd, const char *restrict 
 	if (u16_ntsource == NULL)
 	{
 		errno = ENOENT;
+		free(u16_nttarget);
 		return -1;
 	}
 

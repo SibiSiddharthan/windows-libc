@@ -48,13 +48,17 @@ int common_link(int olddirfd, const char *restrict source, int newdirfd, const c
 	if (u16_nttarget == NULL)
 	{
 		errno = ENOENT; // bad path
+		if (flags != AT_EMPTY_PATH)
+		{
+			NtClose(handle);
+		}
 		return -1;
 	}
 
 	int length = wcslen(u16_nttarget) * sizeof(wchar_t);
 	size_t size_of_link_info = sizeof(FILE_LINK_INFORMATION) - sizeof(WCHAR) + length;
 	IO_STATUS_BLOCK I;
-	PFILE_LINK_INFORMATION link_info = malloc(size_of_link_info);
+	PFILE_LINK_INFORMATION link_info = (PFILE_LINK_INFORMATION)malloc(size_of_link_info);
 	memset(link_info, 0, size_of_link_info);
 	// No need to set RootDirectory as we are zeroing the memory
 	link_info->Flags = FILE_LINK_POSIX_SEMANTICS;

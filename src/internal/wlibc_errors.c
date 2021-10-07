@@ -121,6 +121,7 @@ void map_ntstatus_to_errno(NTSTATUS error)
 	case STATUS_PIPE_DISCONNECTED:
 	case STATUS_PIPE_NOT_AVAILABLE:
 		errno = EPIPE;
+		break;
 	case STATUS_INVALID_DEVICE_REQUEST:
 		errno = EROFS;
 		break;

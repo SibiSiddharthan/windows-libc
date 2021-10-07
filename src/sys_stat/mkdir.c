@@ -50,14 +50,13 @@ int wlibc_common_mkdir(int dirfd, const char *path, mode_t mode)
 	HANDLE handle;
 	NTSTATUS status = NtCreateFile(&handle, FILE_READ_ATTRIBUTES, &object, &I, NULL, 0, FILE_SHARE_READ | FILE_SHARE_WRITE, FILE_CREATE,
 								   FILE_DIRECTORY_FILE, NULL, 0);
-	NtClose(handle);
 	free(u16_ntpath);
-
 	if (status != STATUS_SUCCESS)
 	{
 		map_ntstatus_to_errno(status);
 		return -1;
 	}
+	NtClose(handle);
 
 	return 0;
 }
