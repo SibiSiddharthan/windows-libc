@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 jobs:
   build_and_test:
-    runs-on: windows-latest
+    runs-on: windows-2022
     steps:
     - uses: actions/checkout@v1
     - name: configure
@@ -15,4 +15,4 @@ jobs:
       run: cmake --build . --config Release
     - name: test
       shell: cmd
-      run: ctest -C Release
+      run: ctest -VV -C Release
