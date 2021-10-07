@@ -39,38 +39,161 @@ static void add_fd_flags_internal(int _fd, int _flags);
 
 static bool validate_fd_internal(int _fd);
 
+enum handle_type determine_type(DEVICE_TYPE type)
+{
+	switch (type)
+	{
+	case FILE_DEVICE_NULL:
+		return NULL_HANDLE;
+	case FILE_DEVICE_CONSOLE:
+		return CONSOLE_HANDLE;
+	case FILE_DEVICE_DISK: // Assume no one is going to give a directory handle as a std stream
+		return FILE_HANDLE;
+	case FILE_DEVICE_NAMED_PIPE:
+		return PIPE_HANDLE;
+	default:
+		return INVALID_HANDLE;
+	}
+}
+
+HANDLE open_conin()
+{
+	HANDLE handle = INVALID_HANDLE_VALUE;
+	IO_STATUS_BLOCK io;
+	UNICODE_STRING name;
+	OBJECT_ATTRIBUTES object;
+	RtlInitUnicodeString(&name, L"\\??\\CON");
+	InitializeObjectAttributes(&object, &name, OBJ_CASE_INSENSITIVE | OBJ_INHERIT, NULL, NULL);
+	NTSTATUS status = NtCreateFile(&handle, FILE_GENERIC_READ, &object, &io, NULL, 0, FILE_SHARE_READ | FILE_SHARE_WRITE, FILE_OPEN,
+								   FILE_SYNCHRONOUS_IO_NONALERT, NULL, 0);
+	return handle;
+}
+
+HANDLE open_conout()
+{
+	HANDLE handle = INVALID_HANDLE_VALUE;
+	IO_STATUS_BLOCK io;
+	UNICODE_STRING name;
+	OBJECT_ATTRIBUTES object;
+	RtlInitUnicodeString(&name, L"\\??\\CON");
+	InitializeObjectAttributes(&object, &name, OBJ_CASE_INSENSITIVE | OBJ_INHERIT, NULL, NULL);
+	NTSTATUS status = NtCreateFile(&handle, FILE_GENERIC_WRITE, &object, &io, NULL, 0, FILE_SHARE_READ | FILE_SHARE_WRITE, FILE_OPEN,
+								   FILE_SYNCHRONOUS_IO_NONALERT, NULL, 0);
+	return handle;
+}
+
 ///////////////////////////////////////
 // Initialization and cleanup functions
 ///////////////////////////////////////
 void init_fd_table()
 {
-	HANDLE hin = GetStdHandle(STD_INPUT_HANDLE);
-	HANDLE hout = GetStdHandle(STD_OUTPUT_HANDLE);
-	HANDLE herr = GetStdHandle(STD_ERROR_HANDLE);
-
 	InitializeCriticalSection(&_fd_critical);
+	// HANDLE hin = GetStdHandle(STD_INPUT_HANDLE);
+	// HANDLE hout = GetStdHandle(STD_OUTPUT_HANDLE);
+	// HANDLE herr = GetStdHandle(STD_ERROR_HANDLE);
+	bool console_subsystem = true;
+	if (NtCurrentPeb()->ProcessParameters->ConsoleHandle == 0 || NtCurrentPeb()->ProcessParameters->ConsoleHandle == (HANDLE)-1)
+	{
+		console_subsystem = false;
+	}
+	HANDLE hin = NtCurrentPeb()->ProcessParameters->StandardInput;
+	HANDLE hout = NtCurrentPeb()->ProcessParameters->StandardOutput;
+	HANDLE herr = NtCurrentPeb()->ProcessParameters->StandardError;
+
+	IO_STATUS_BLOCK I;
+	NTSTATUS status;
+	FILE_FS_DEVICE_INFORMATION device_info;
 
 	_fd_io = (struct fd_table *)malloc(sizeof(struct fd_table) * 4);
 	_fd_table_size = 4;
 
-	// TODO check whether these handles actually belong to the console
-	_fd_io[0]._handle = hin;
-	_fd_io[0]._type = CONSOLE_HANDLE;
-	_fd_io[0]._flags = O_RDONLY;
-	_fd_io[0]._free = 0;
-	wcscpy(_fd_io[0]._path, L"CON");
+	status = NtQueryVolumeInformationFile(hin, &I, &device_info, sizeof(FILE_FS_DEVICE_INFORMATION), FileFsDeviceInformation);
+	if (status == STATUS_SUCCESS)
+	{
+		_fd_io[0]._handle = hin;
+		_fd_io[0]._type = determine_type(device_info.DeviceType);
+		_fd_io[0]._flags = O_RDONLY;
+		_fd_io[0]._free = 0;
+		wcscpy(_fd_io[0]._path, L"CON");
+	}
+	else if (console_subsystem)
+	{
+		_fd_io[0]._handle = open_conin();
+		if (_fd_io[0]._handle != INVALID_HANDLE_VALUE)
+		{
+			_fd_io[0]._type = CONSOLE_HANDLE;
+			_fd_io[0]._flags = O_RDONLY;
+			_fd_io[0]._free = 0;
+			wcscpy(_fd_io[0]._path, L"CON");
+		}
+		else
+		{
+			_fd_io[0]._free = 1;
+		}
+	}
 
-	_fd_io[1]._handle = hout;
-	_fd_io[1]._type = CONSOLE_HANDLE;
-	_fd_io[1]._flags = O_WRONLY;
-	_fd_io[1]._free = 0;
-	wcscpy(_fd_io[1]._path, L"CON");
+	status = NtQueryVolumeInformationFile(hout, &I, &device_info, sizeof(FILE_FS_DEVICE_INFORMATION), FileFsDeviceInformation);
+	if (status == STATUS_SUCCESS)
+	{
+		_fd_io[1]._handle = hout;
+		_fd_io[1]._type = determine_type(device_info.DeviceType);
+		_fd_io[1]._flags = O_WRONLY | (device_info.DeviceType == FILE_DEVICE_NAMED_PIPE ? O_APPEND : 0);
+		_fd_io[1]._free = 0;
+		wcscpy(_fd_io[1]._path, L"CON");
+	}
+	else if (console_subsystem)
+	{
+		_fd_io[1]._handle = open_conout();
+		if (_fd_io[1]._handle != INVALID_HANDLE_VALUE)
+		{
+			_fd_io[1]._type = CONSOLE_HANDLE;
+			_fd_io[1]._flags = O_RDONLY;
+			_fd_io[1]._free = 0;
+			wcscpy(_fd_io[1]._path, L"CON");
+		}
+		else
+		{
+			_fd_io[1]._free = 1;
+		}
+	}
 
-	_fd_io[2]._handle = herr;
-	_fd_io[2]._type = CONSOLE_HANDLE;
-	_fd_io[2]._flags = O_WRONLY;
-	_fd_io[2]._free = 0;
-	wcscpy(_fd_io[2]._path, L"CON");
+	status = NtQueryVolumeInformationFile(herr, &I, &device_info, sizeof(FILE_FS_DEVICE_INFORMATION), FileFsDeviceInformation);
+	if (status == STATUS_SUCCESS)
+	{
+		_fd_io[2]._handle = herr;
+		_fd_io[2]._type = determine_type(device_info.DeviceType);
+		_fd_io[2]._flags = O_WRONLY | (device_info.DeviceType == FILE_DEVICE_NAMED_PIPE ? O_APPEND : 0);
+		_fd_io[2]._free = 0;
+		wcscpy(_fd_io[2]._path, L"CON");
+	}
+	else if (console_subsystem)
+	{
+		_fd_io[2]._handle = open_conout();
+		if (_fd_io[2]._handle != INVALID_HANDLE_VALUE)
+		{
+			_fd_io[2]._type = CONSOLE_HANDLE;
+			_fd_io[2]._flags = O_RDONLY;
+			_fd_io[2]._free = 0;
+			wcscpy(_fd_io[2]._path, L"CON");
+		}
+		else
+		{
+			_fd_io[2]._free = 1;
+		}
+	}
+
+	// Cygwin/MSYS gives the same handle as stdout and stderr, duplicate the handle
+	if ((_fd_io[1]._free == 0 && _fd_io[2]._free == 0) && _fd_io[1]._handle == _fd_io[2]._handle)
+	{
+		HANDLE new_stderr;
+		NTSTATUS status = NtDuplicateObject(NtCurrentProcess(), _fd_io[1]._handle, NtCurrentProcess(), &new_stderr, 0, 0,
+											DUPLICATE_SAME_ACCESS | DUPLICATE_SAME_ATTRIBUTES);
+		if (status == STATUS_SUCCESS)
+		{
+			// Don't do anything in case of failure
+			_fd_io[2]._handle = new_stderr;
+		}
+	}
 
 	_fd_io[3]._free = 1; // set the last one as free, since we are allocating in powers of 2
 }
@@ -104,6 +227,7 @@ static int internal_insert_fd(int index, HANDLE _h, const wchar_t *_path, enum h
 	if (_type == DIRECTORY_HANDLE)
 	{
 		int length = wcslen(_path);
+		// Append trailing slash
 		if (_fd_io[index]._path[length - 1] != L'\\')
 		{
 			wcscat(_fd_io[index]._path, L"\\");

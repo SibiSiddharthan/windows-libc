@@ -22,7 +22,13 @@ FILE *wlibc_freopen(const char *restrict name, const char *restrict mode, FILE *
 {
 	VALIDATE_FILE_STREAM(stream, NULL);
 
-	const wchar_t *oldname = get_fd_path(stream->fd);
+	// Treat name = NULL as an error for now
+	if(name == NULL)
+	{
+		errno = EINVAL;
+		return NULL;
+	}
+	// const wchar_t *oldname = get_fd_path(stream->fd);
 	int new_fd;
 
 	// Flush the stream first
@@ -32,7 +38,7 @@ FILE *wlibc_freopen(const char *restrict name, const char *restrict mode, FILE *
 	close_fd(stream->fd);
 
 	int flags = parse_mode(mode);
-
+#if 0
 	if (name == NULL)
 	{
 		UTF8_STRING u8_oldname;
@@ -43,6 +49,7 @@ FILE *wlibc_freopen(const char *restrict name, const char *restrict mode, FILE *
 		RtlFreeUTF8String(&u8_oldname);
 	}
 	else
+#endif
 	{
 		new_fd = do_open(AT_FDCWD, name, flags | O_NOTDIR, 0700);
 	}

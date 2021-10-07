@@ -24,12 +24,8 @@ void initialize_stdio()
 {
 	InitializeCriticalSection(&_wlibc_stdio_critical);
 
-	// Something is wrong with Git-Bash. Setting these streams as buffered does not print anything to the console.
-	// CMD works fine. File redirection also works fine.
-	//_wlibc_stdin = create_stream(0, _IOFBF | _IOBUFFER_INTERNAL | _IOBUFFER_RDONLY, 512);
-	//_wlibc_stdout = create_stream(1, _IOFBF | _IOBUFFER_INTERNAL | _IOBUFFER_WRONLY, 512);
-	_wlibc_stdin = create_stream(0, _IONBF | _IOBUFFER_RDONLY, 0);
-	_wlibc_stdout = create_stream(1, _IONBF | _IOBUFFER_WRONLY, 0);
+	_wlibc_stdin = create_stream(0, _IOFBF | _IOBUFFER_INTERNAL | _IOBUFFER_RDONLY, 512);
+	_wlibc_stdout = create_stream(1, _IOFBF | _IOBUFFER_INTERNAL | _IOBUFFER_WRONLY, 512);
 	_wlibc_stderr = create_stream(2, _IONBF | _IOBUFFER_WRONLY, 0);
 
 	// Initialize the linked list
