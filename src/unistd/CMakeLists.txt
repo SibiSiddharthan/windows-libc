@@ -30,6 +30,7 @@ readlink.c
 #readlinkat.c
 read.c
 #rmdir.c
+sleep.c
 symlink.c
 #symlinkat.c
 truncate.c

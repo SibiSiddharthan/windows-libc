@@ -315,32 +315,36 @@ typedef struct _FILE_FS_DEVICE_INFORMATION
 	ULONG Characteristics;
 } FILE_FS_DEVICE_INFORMATION, *PFILE_FS_DEVICE_INFORMATION;
 
-typedef struct _FILE_FS_LABEL_INFORMATION {
-    ULONG VolumeLabelLength;
-    WCHAR VolumeLabel[1];
+typedef struct _FILE_FS_LABEL_INFORMATION
+{
+	ULONG VolumeLabelLength;
+	WCHAR VolumeLabel[1];
 } FILE_FS_LABEL_INFORMATION, *PFILE_FS_LABEL_INFORMATION;
 
-typedef struct _FILE_FS_VOLUME_INFORMATION {
-    LARGE_INTEGER VolumeCreationTime;
-    ULONG VolumeSerialNumber;
-    ULONG VolumeLabelLength;
-    BOOLEAN SupportsObjects;
-    WCHAR VolumeLabel[1];
+typedef struct _FILE_FS_VOLUME_INFORMATION
+{
+	LARGE_INTEGER VolumeCreationTime;
+	ULONG VolumeSerialNumber;
+	ULONG VolumeLabelLength;
+	BOOLEAN SupportsObjects;
+	WCHAR VolumeLabel[1];
 } FILE_FS_VOLUME_INFORMATION, *PFILE_FS_VOLUME_INFORMATION;
 
-typedef struct _FILE_FS_SIZE_INFORMATION {
-    LARGE_INTEGER TotalAllocationUnits;
-    LARGE_INTEGER AvailableAllocationUnits;
-    ULONG SectorsPerAllocationUnit;
-    ULONG BytesPerSector;
+typedef struct _FILE_FS_SIZE_INFORMATION
+{
+	LARGE_INTEGER TotalAllocationUnits;
+	LARGE_INTEGER AvailableAllocationUnits;
+	ULONG SectorsPerAllocationUnit;
+	ULONG BytesPerSector;
 } FILE_FS_SIZE_INFORMATION, *PFILE_FS_SIZE_INFORMATION;
 
-typedef struct _FILE_FS_FULL_SIZE_INFORMATION {
-    LARGE_INTEGER TotalAllocationUnits;
-    LARGE_INTEGER CallerAvailableAllocationUnits;
-    LARGE_INTEGER ActualAvailableAllocationUnits;
-    ULONG SectorsPerAllocationUnit;
-    ULONG BytesPerSector;
+typedef struct _FILE_FS_FULL_SIZE_INFORMATION
+{
+	LARGE_INTEGER TotalAllocationUnits;
+	LARGE_INTEGER CallerAvailableAllocationUnits;
+	LARGE_INTEGER ActualAvailableAllocationUnits;
+	ULONG SectorsPerAllocationUnit;
+	ULONG BytesPerSector;
 } FILE_FS_FULL_SIZE_INFORMATION, *PFILE_FS_FULL_SIZE_INFORMATION;
 
 typedef enum _OBJECT_INFORMATION_CLASS
@@ -534,6 +538,11 @@ NTSTATUS
 NTAPI
 NtDuplicateObject(_In_ HANDLE SourceProcessHandle, _In_ HANDLE SourceHandle, _In_opt_ HANDLE TargetProcessHandle,
 				  _Out_opt_ PHANDLE TargetHandle, _In_ ACCESS_MASK DesiredAccess, _In_ ULONG HandleAttributes, _In_ ULONG Options);
+
+NTSYSCALLAPI
+NTSTATUS
+NTAPI
+NtDelayExecution(_In_ BOOLEAN Alertable, _In_opt_ PLARGE_INTEGER DelayInterval);
 
 NTSYSAPI
 VOID NTAPI RtlInitUTF8String(_Out_ PUTF8_STRING DestinationString, _In_opt_z_ PCSTR SourceString);
@@ -1076,16 +1085,18 @@ typedef struct _FILE_VALID_DATA_LENGTH_INFORMATION
 	LARGE_INTEGER ValidDataLength;
 } FILE_VALID_DATA_LENGTH_INFORMATION, *PFILE_VALID_DATA_LENGTH_INFORMATION;
 
-typedef struct _FILE_POSITION_INFORMATION {
-  LARGE_INTEGER CurrentByteOffset;
+typedef struct _FILE_POSITION_INFORMATION
+{
+	LARGE_INTEGER CurrentByteOffset;
 } FILE_POSITION_INFORMATION, *PFILE_POSITION_INFORMATION;
 
-typedef struct _FILE_STANDARD_INFORMATION {
-  LARGE_INTEGER AllocationSize;
-  LARGE_INTEGER EndOfFile;
-  ULONG         NumberOfLinks;
-  BOOLEAN       DeletePending;
-  BOOLEAN       Directory;
+typedef struct _FILE_STANDARD_INFORMATION
+{
+	LARGE_INTEGER AllocationSize;
+	LARGE_INTEGER EndOfFile;
+	ULONG NumberOfLinks;
+	BOOLEAN DeletePending;
+	BOOLEAN Directory;
 } FILE_STANDARD_INFORMATION, *PFILE_STANDARD_INFORMATION;
 
 //

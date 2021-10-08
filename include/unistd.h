@@ -297,6 +297,22 @@ WLIBC_INLINE int symlink(const char *restrict source, const char *restrict targe
 	return wlibc_common_symlink(source, AT_FDCWD, target);
 }
 
+WLIBC_API int wlibc_common_sleep(long long nanoseconds_100);
+WLIBC_INLINE int sleep(unsigned int seconds)
+{
+	return wlibc_common_sleep(seconds * 10000000);
+}
+
+WLIBC_INLINE int msleep(unsigned int milliseconds)
+{
+	return wlibc_common_sleep(milliseconds * 10000);
+}
+
+WLIBC_INLINE int usleep(useconds_t microseconds)
+{
+	return wlibc_common_sleep(microseconds * 10);
+}
+
 WLIBC_API int wlibc_truncate(const char *path, off_t length);
 WLIBC_INLINE int truncate(const char *path, off_t length)
 {
