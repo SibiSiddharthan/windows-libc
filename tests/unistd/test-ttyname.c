@@ -44,7 +44,11 @@ int main()
 {
 	test_EBADF();
 	test_ENOTTY();
-	test_ERANGE();
-	test_okay();
+	// Only run these if stdin is a console device
+	if (isatty(0))
+	{
+		test_ERANGE();
+		test_okay();
+	}
 	return 0;
 }

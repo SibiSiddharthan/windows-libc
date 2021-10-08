@@ -11,6 +11,7 @@ close
 chdir
 dup
 getcwd
+isatty
 kill
 link
 linkat
@@ -19,12 +20,9 @@ sym_read_linkat
 read_write
 rmdir
 truncate
+ttyname
 unlink
 unlinkat)
-
-if(NOT DEFINED CI_BUILD)
-	list(APPEND tests isatty ttyname)
-endif()
 
 foreach(t ${tests})
 	add_executable(test-${t} test-${t}.c)

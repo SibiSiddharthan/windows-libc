@@ -40,7 +40,7 @@ void setup()
 
 void cleanup()
 {
-	rmdir("t/sd");
+	unlink("t/sd");
 	rmdir("t/d");
 	unlink("t/s1");
 	unlink("t/s2");

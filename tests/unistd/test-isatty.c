@@ -54,11 +54,16 @@ void test_tty()
 
 void test_duped()
 {
-	int fd = dup(0);
-	ASSERT_EQ(fd, 3);
-	int status = isatty(fd);
-	ASSERT_EQ(status, 1);
-	close(fd);
+	errno = 0;
+	int tty_fd = open("/dev/tty", O_WRONLY);
+	if (tty_fd != -1)
+	{
+		int dup_fd = dup(tty_fd);
+		int status = isatty(dup_fd);
+		ASSERT_EQ(status, 1);
+		close(tty_fd);
+		close(dup_fd);
+	}
 }
 
 int main()
