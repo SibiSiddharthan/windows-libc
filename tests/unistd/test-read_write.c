@@ -126,6 +126,19 @@ void test_lseek()
 	rbuf[length] = '\0';
 	ASSERT_STREQ(rbuf, "hellohello2\n");
 
+	offset = lseek(fd, 2, SEEK_END); // move past end of file
+	ASSERT_EQ(offset, 14);
+	length = read(fd, rbuf, 16);
+	ASSERT_EQ(length, 0); // end of file
+	length = write(fd,"\n",1);
+	ASSERT_EQ(length, 1);
+
+	offset = lseek(fd, 0, SEEK_SET);
+	ASSERT_EQ(offset, 0)
+	length = read(fd, rbuf, 16);
+	ASSERT_EQ(length, 15);
+	ASSERT_MEMEQ(rbuf, "hellohello2\n\0\0\n",15);
+
 	close(fd);
 	unlink("t-lseek");
 }
