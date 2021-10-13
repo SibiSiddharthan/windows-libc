@@ -12,6 +12,22 @@
 
 int common_fflush(FILE *stream);
 
+static size_t read_wrapper(FILE *restrict stream, void *restrict buffer, size_t size)
+{
+	size_t result = read(stream->fd, buffer, size);
+	// Set the stream error states
+	if (result == 0)
+	{
+		stream->error = _IOEOF;
+	}
+	if (result == -1)
+	{
+		stream->error = _IOERROR;
+		result = 0;
+	}
+	return result; // never -1
+}
+
 size_t common_fread(void *restrict buffer, size_t size, size_t count, FILE *restrict stream)
 {
 	ssize_t result = 0;
@@ -20,9 +36,8 @@ size_t common_fread(void *restrict buffer, size_t size, size_t count, FILE *rest
 	if ((stream->buf_mode & _IONBF))
 	{
 
-		result = read(stream->fd, buffer, size * count);
-
-		if (result != -1)
+		result = read_wrapper(stream, buffer, size * count);
+		if (result != 0)
 		{
 			stream->pos += result;
 			stream->start = stream->pos;
@@ -70,8 +85,8 @@ size_t common_fread(void *restrict buffer, size_t size, size_t count, FILE *rest
 			while (bytes_read + stream->buf_size < data_size)
 			{
 				// Store the reads directly into the target buffer
-				read_result = read(stream->fd, (char *)buffer + bytes_read, stream->buf_size);
-				if (read_result <= 0) // EOF or ERROR
+				read_result = read_wrapper(stream, (char *)buffer + bytes_read, stream->buf_size);
+				if (read_result == 0) // EOF or ERROR
 				{
 					break;
 				}
@@ -85,32 +100,30 @@ size_t common_fread(void *restrict buffer, size_t size, size_t count, FILE *rest
 
 			if (read_result > 0)
 			{
-				// read the last block into the stream buffer
-				read_result = read(stream->fd, stream->buffer, stream->buf_size);
-
-				if (read_result > 0)
+				size_t last_read_count = 0;
+				while (last_read_count < stream->buf_size && last_read_count < (data_size - bytes_read))
 				{
-					size_t remaining_copy_size = (data_size - bytes_read) < read_result ? (data_size - bytes_read) : read_result;
-					// copy only what we need into the target buffer;
+					// read the last block into the stream buffer
+					read_result = read_wrapper(stream, stream->buffer + last_read_count, stream->buf_size - last_read_count);
+					if (read_result == 0) // EOF or ERROR
+					{
+						break;
+					}
+					last_read_count += read_result;
+				}
+
+				if (last_read_count > 0)
+				{
+					size_t remaining_copy_size = (data_size - bytes_read) < last_read_count ? (data_size - bytes_read) : last_read_count;
+					// copy only what is required into the target buffer;
 					memcpy((char *)buffer + bytes_read, stream->buffer, remaining_copy_size);
-					stream->end = stream->pos + read_result;
+					stream->end = stream->pos + last_read_count;
 					stream->start = stream->pos;
 					stream->pos += remaining_copy_size;
 					result += remaining_copy_size;
 				}
 			}
 		}
-	}
-
-	if (result == -1)
-	{
-		stream->error = _IOERROR;
-	}
-
-	else if (result < size * count)
-	{
-		// check this
-		stream->error = _IOEOF;
 	}
 
 	return result / size;

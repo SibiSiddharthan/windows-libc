@@ -31,49 +31,17 @@ ssize_t wlibc_read(int fd, void *buf, size_t count)
 	IO_STATUS_BLOCK I;
 	I.Information = 0;
 	NTSTATUS status = NtReadFile(file, NULL, NULL, NULL, &I, buf, count, NULL, NULL);
-	if (status != STATUS_SUCCESS && status != STATUS_PENDING && status != STATUS_END_OF_FILE)
+	if (status != STATUS_SUCCESS && status != STATUS_PENDING && status != STATUS_END_OF_FILE && status != STATUS_PIPE_BROKEN)
 	{
-		// When status is set to STATUS_PIPE_BROKEN set errno as EPIPE and return 0 as glibc does.
+		// When status is set to STATUS_PIPE_BROKEN , it is not treated as an error.
+		// Reading from a pipe with no write end is not an error apparently???.
 		// Lots of software depend on this behaviour, changing this would lead to breakage.
 		map_ntstatus_to_errno(status);
-		if (errno != EPIPE)
-		{
-			return -1;
-		}
+		return -1;
 	}
-	// When we are reading from a pipe, if the write end is duplicated, only the result of one of those
-	// writes will be read in. As a workaround we try reading until the requested count is satisfied or
-	// until we encounter STATUS_PIPE_BROKEN. The below code belongs to the old implementation, the new
-	// implementation will be done at a later date.
-#if 0
-	DWORD read_count;
-	BOOL status = ReadFile(file, buf, count, &read_count, NULL);
-	if (!status)
-	{
-		map_win32_error_to_wlibc(GetLastError());
-		if(errno != EPIPE)
-			return -1;
-	}
-
-	if (_type == PIPE_HANDLE)
-	{
-		while (count != read_count)
-		{
-			DWORD new_count = 0;
-			ReadFile(file, (char *)buf + read_count, count - read_count, &new_count, NULL);
-
-			if (new_count == 0)
-			{
-				// We have read all the data;
-				break;
-			}
-			else
-			{
-				read_count += new_count;
-			}
-		}
-	}
-#endif
-
+	// NOTE: When we are reading from a pipe, if the write end is duplicated, only the result of one of those
+	// writes will be read in.
+	// `read` on linux reads all the data, even from the duplicated write ends in one shot(provided the given buffer is big enough).
+	// We strictly don't have to conform to this as applications will check for the result of read, if 0 it means no more data is left.
 	return I.Information;
 }
