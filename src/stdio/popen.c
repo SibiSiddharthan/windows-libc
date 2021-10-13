@@ -71,7 +71,6 @@ FILE *wlibc_popen(const char *restrict command, const char *restrict mode)
 	if (pmode == O_RDONLY)
 	{
 		SINFO.hStdOutput = write_end;
-		SINFO.hStdError = write_end;
 	}
 	else
 	{
