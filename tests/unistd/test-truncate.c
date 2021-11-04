@@ -75,6 +75,7 @@ int test_ftruncate()
 {
 	int status;
 	int fd;
+	off_t offset;
 	ssize_t length;
 	char read_buffer[16];
 	const char *filename = "t-ftruncate";
@@ -88,10 +89,12 @@ int test_ftruncate()
 	status = ftruncate(fd, 10);
 	ASSERT_EQ(status, 0);
 
-	lseek(fd, 0, SEEK_SET); // TODO fix bug here
+	// ftruncate does not alter the file pointer
+	offset = lseek(fd, 0, SEEK_CUR);
+	ASSERT_EQ(offset, 5);
 	length = read(fd, read_buffer, 16);
-	ASSERT_EQ(length, 10);
-	ASSERT_MEMEQ(read_buffer, "hello\0\0\0\0\0", 10);
+	ASSERT_EQ(length, 5);
+	ASSERT_MEMEQ(read_buffer, "\0\0\0\0\0", 5);
 
 	ASSERT_SUCCESS(close(fd));
 	ASSERT_SUCCESS(unlink(filename));

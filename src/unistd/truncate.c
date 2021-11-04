@@ -75,6 +75,36 @@ static int common_truncate(HANDLE handle, off_t length)
 	return 0;
 }
 
+static int do_ftruncate(HANDLE handle, off_t length)
+{
+	NTSTATUS status;
+	IO_STATUS_BLOCK I;
+	FILE_POSITION_INFORMATION pos_info;
+
+	status = NtQueryInformationFile(handle, &I, &pos_info, sizeof(FILE_POSITION_INFORMATION), FilePositionInformation);
+	if (status != STATUS_SUCCESS)
+	{
+		map_ntstatus_to_errno(status);
+		return -1;
+	}
+
+	status = common_truncate(handle, length);
+	if (status != 0)
+	{
+		return -1;
+	}
+
+	// truncate does not alter the file position
+	status = NtSetInformationFile(handle, &I, &pos_info, sizeof(FILE_POSITION_INFORMATION), FilePositionInformation);
+	if (status != STATUS_SUCCESS)
+	{
+		map_ntstatus_to_errno(status);
+		return -1;
+	}
+
+	return 0;
+}
+
 int wlibc_truncate(const char *path, off_t length)
 {
 	VALIDATE_PATH(path, ENOENT);
@@ -115,5 +145,5 @@ int wlibc_ftruncate(int fd, off_t length)
 	}
 
 	HANDLE handle = get_fd_handle(fd);
-	return common_truncate(handle, length);
+	return do_ftruncate(handle, length);
 }
