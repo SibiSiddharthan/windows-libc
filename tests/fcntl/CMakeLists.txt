@@ -8,7 +8,6 @@
 set(tests
 at
 open
-#openat
 path
 fcntl
 sanity)
