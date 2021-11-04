@@ -92,5 +92,6 @@ DIR *wlibc_fdopendir(int fd)
 	HANDLE directory_handle = get_fd_handle(fd);
 	DIR *dirp = NULL;
 	initialize_dirp(&dirp, directory_handle);
+	dirp->fd = fd;
 	return dirp;
 }
