@@ -200,16 +200,21 @@ int test_rmdir_ENOTEMPTY()
 
 int test_rmdir()
 {
-	errno = 0;
 	int status;
 	int fd;
 	const char *dirname = "t-rmdir";
 
 	ASSERT_SUCCESS(mkdir(dirname, 0700));
 
+	errno = 0;
+	status = unlink(dirname);
+	ASSERT_EQ(status, -1);
+	ASSERT_ERRNO(EISDIR);
+
 	status = rmdir(dirname);
 	ASSERT_EQ(status, 0);
 
+	errno = 0;
 	fd = open(dirname, O_RDONLY | O_EXCL);
 	ASSERT_EQ(fd, -1);
 	ASSERT_ERRNO(ENOENT);
@@ -227,15 +232,14 @@ int test_rmdir_symlink()
 	ASSERT_SUCCESS(mkdir(dirname, 0700));
 	ASSERT_SUCCESS(symlink(dirname, dirname_symlink));
 
+	/* This is not POSIX behaviour. According to POSIX
+	   `rmdir` should not be able to remove a symlink to a directory with errno = ENOTDIR.
+	*/
 	errno = 0;
 	status = rmdir(dirname_symlink);
-	ASSERT_EQ(status, -1);
-	ASSERT_ERRNO(ENOTDIR);
-
-	status = rmdir(dirname);
 	ASSERT_EQ(status, 0);
 
-	status = unlink(dirname_symlink);
+	status = rmdir(dirname);
 	ASSERT_EQ(status, 0);
 
 	errno = 0;
@@ -316,7 +320,7 @@ int main()
 	TEST(test_rmdir_ENOTDIR());
 	TEST(test_rmdir_ENOTEMPTY());
 	TEST(test_rmdir());
-	// TEST(test_rmdir_symlink()); TODO check dirent also
+	TEST(test_rmdir_symlink());
 
 	// remove
 	TEST(test_remove());
