@@ -11,98 +11,151 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-void test_ENOENT()
+int test_ENOENT()
 {
 	errno = 0;
 	int status = access("", F_OK);
 	ASSERT_EQ(status, -1);
 	ASSERT_ERRNO(ENOENT);
+	return 0;
 }
 
-void test_EINVAL()
+int test_EINVAL()
 {
 	errno = 0;
-	int status = access("CMakeFiles", 8);
+	int status = access("valid-filename", 8);
 	ASSERT_EQ(status, -1);
 	ASSERT_ERRNO(EINVAL);
+	return 0;
 }
 
-void test_DIR()
+int test_DIR()
 {
 	errno = 0;
-	int status = access("CMakeFiles", F_OK | R_OK | W_OK | X_OK);
+	int status;
+	const char *dirname = "t-access.dir";
+
+	ASSERT_SUCCESS(mkdir(dirname, 0700));
+
+	status = access(dirname, F_OK | R_OK | W_OK | X_OK);
 	ASSERT_EQ(status, 0);
+
+	ASSERT_SUCCESS(rmdir(dirname));
+
+	return 0;
 }
 
-void test_FILE()
+int test_FILE()
 {
 	int fd;
-	fd = creat("t-access", 0700);
-	close(fd);
 	int status;
+	const char *filename = "t-access.file";
 
-	status = access("t-access", F_OK | R_OK | W_OK | X_OK);
+	fd = creat(filename, 0700);
+	ASSERT_EQ(fd, 3);
+	ASSERT_SUCCESS(close(fd));
+
+	status = access(filename, F_OK | R_OK | W_OK | X_OK);
 	ASSERT_EQ(status, -1);
-	status = access("t-access", F_OK | R_OK | W_OK);
+	status = access(filename, F_OK | R_OK | W_OK);
 	ASSERT_EQ(status, 0);
-	chmod("t-access", S_IREAD);
-	status = access("t-access", F_OK | R_OK | W_OK);
+
+	ASSERT_SUCCESS(chmod(filename, S_IREAD));
+
+	status = access(filename, F_OK | R_OK | W_OK);
 	ASSERT_EQ(status, -1);
-	status = access("t-access", F_OK | R_OK);
+	status = access(filename, F_OK | R_OK);
 	ASSERT_EQ(status, 0);
 
-	unlink("t-access");
+	ASSERT_SUCCESS(unlink(filename));
 
-	fd = creat("t-access.exe", 0700);
-	close(fd);
+	return 0;
 
-	status = access("t-access.exe", F_OK | R_OK | X_OK);
-	ASSERT_EQ(status, 0);
-	unlink("t-access.exe");
+	// fd = creat("t-access.exe", 0700);
+	// close(fd);
+	//
+	// status = access("t-access.exe", F_OK | R_OK | X_OK);
+	// ASSERT_EQ(status, 0);
+	// unlink("t-access.exe");
 }
 
-void test_symlink()
+int test_symlink()
 {
 	int fd;
-	fd = creat("t-access", 0700);
-	close(fd);
-	symlink("t-access", "t-access.sym");
 	int status;
+	const char *filename = "t-access";
+	const char *filename_symlink = "t-access.sym";
 
-	status = access("t-access.sym", F_OK | R_OK | W_OK | X_OK);
+	fd = creat(filename, 0700);
+	ASSERT_EQ(fd, 3);
+	ASSERT_SUCCESS(close(fd));
+
+	ASSERT_SUCCESS(symlink(filename, filename_symlink));
+
+	status = access(filename_symlink, F_OK | R_OK | W_OK | X_OK);
 	ASSERT_EQ(status, -1);
-	status = access("t-access.sym", F_OK | R_OK | W_OK);
+	status = access(filename_symlink, F_OK | R_OK | W_OK);
 	ASSERT_EQ(status, 0);
 
-	unlink("t-access.sym");
-	unlink("t-access");
+	ASSERT_SUCCESS(unlink(filename_symlink));
+	ASSERT_SUCCESS(unlink(filename));
+
+	return 0;
 }
 
-void test_faccessat()
+int test_faccessat()
 {
-	int dirfd = open("CMakeFiles/", O_RDONLY | O_EXCL);
-	int fd = creat("CMakeFiles/t-access", 0700);
-	close(fd);
-	symlinkat("t-access", dirfd, "t-access.sym");
+	int fd, dirfd;
 	int status;
+	const char *dirname = "t-faccessat.dir";
+	const char *filename = "t-faccessat.file";
+	const char *filename_symlink = "t-faccessat.file.sym";
 
-	status = faccessat(dirfd, "t-access.sym", F_OK | R_OK | W_OK | X_OK, 0);
+	ASSERT_SUCCESS(mkdir(dirname, 0700));
+
+	dirfd = open(dirname, O_RDONLY | O_EXCL);
+	ASSERT_EQ(dirfd, 3);
+	fd = openat(dirfd, filename, O_CREAT | O_WRONLY, 0700);
+	ASSERT_EQ(fd, 4);
+	ASSERT_SUCCESS(close(fd));
+
+	ASSERT_SUCCESS(symlinkat(filename, dirfd, filename_symlink));
+
+	status = faccessat(dirfd, filename_symlink, F_OK | R_OK | W_OK | X_OK, 0);
 	ASSERT_EQ(status, -1);
-	status = faccessat(dirfd, "t-access.sym", F_OK | R_OK | W_OK | X_OK, AT_SYMLINK_NOFOLLOW);
+	status = faccessat(dirfd, filename_symlink, F_OK | R_OK | W_OK | X_OK, AT_SYMLINK_NOFOLLOW);
 	ASSERT_EQ(status, 0);
 
-	unlinkat(dirfd, "t-access", 0);
-	unlinkat(dirfd, "t-access.sym", 0);
-	close(dirfd);
+	ASSERT_SUCCESS(unlinkat(dirfd, filename, 0));
+	ASSERT_SUCCESS(unlinkat(dirfd, filename_symlink, 0));
+	ASSERT_SUCCESS(close(dirfd));
+	ASSERT_SUCCESS(rmdir(dirname));
+
+	return 0;
+}
+
+void cleanup()
+{
+	remove("t-access.dir");
+	remove("t-access.file");
+	remove("t-access");
+	remove("t-access.sym");
+	remove("t-faccessat.dir/t-faccessat.file.sym");
+	remove("t-faccessat.dir/t-faccessat.file");
+	remove("t-faccessat.dir");
 }
 
 int main()
 {
-	test_ENOENT();
-	test_EINVAL();
-	test_DIR();
-	test_FILE();
-	test_symlink();
-	test_faccessat();
-	return 0;
+	INITIAILIZE_TESTS();
+	CLEANUP(cleanup);
+
+	TEST(test_ENOENT());
+	TEST(test_EINVAL());
+	TEST(test_DIR());
+	TEST(test_FILE());
+	TEST(test_symlink());
+	TEST(test_faccessat());
+
+	VERIFY_RESULT_AND_EXIT();
 }

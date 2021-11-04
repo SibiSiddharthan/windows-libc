@@ -11,9 +11,12 @@
 #include <test-macros.h>
 
 // fclose is also tested here
-void test_list()
+int test_list()
 {
+	int result;
 	FILE *f1, *f2, *list;
+	const char *filename1 = "t-list1";
+	const char *filename2 = "t-list2";
 
 	// Check std streams
 	list = _wlibc_stdio_head;
@@ -32,7 +35,8 @@ void test_list()
 	ASSERT_NULL(list->prev);
 	ASSERT_EQ(list->next->fd, 1);
 
-	f1 = fopen("t-list1", "wD"); // delete automatically when stream is closed
+	f1 = fopen(filename1, "wD"); // delete automatically when stream is closed
+	ASSERT_NOTNULL(f1);
 
 	// reset
 	list = _wlibc_stdio_head;
@@ -40,13 +44,14 @@ void test_list()
 	ASSERT_NULL(list->next);
 	ASSERT_EQ(list->prev->fd, 2);
 
-	fclose(stdin); // close first stream
+	ASSERT_SUCCESS(fclose(stdin)); // close first stream
 
 	list = list->prev->prev;
 	ASSERT_EQ(list->fd, 1);
 	ASSERT_NULL(list->prev);
 
-	f2 = fopen("t-list2", "wD"); // delete automatically when stream is closed
+	f2 = fopen(filename2, "wD"); // delete automatically when stream is closed
+	ASSERT_NOTNULL(f2);
 
 	// reset
 	list = _wlibc_stdio_head;
@@ -54,7 +59,7 @@ void test_list()
 	ASSERT_NULL(list->next);
 	ASSERT_EQ(list->prev->fd, 3);
 
-	fclose(f2); // close last stream
+	ASSERT_SUCCESS(fclose(f2)); // close last stream
 
 	// reset
 	list = _wlibc_stdio_head;
@@ -62,7 +67,7 @@ void test_list()
 	ASSERT_NULL(list->next);
 	ASSERT_EQ(list->prev->fd, 2);
 
-	fclose(stderr); // close something in the middle
+	ASSERT_SUCCESS(fclose(stderr)); // close something in the middle
 
 	// reset
 	list = _wlibc_stdio_head;
@@ -73,21 +78,21 @@ void test_list()
 	list = list->prev;
 	ASSERT_NULL(list->prev);
 
-	int result = fcloseall();
+	result = fcloseall();
 	ASSERT_EQ(result, 0);
 
 	list = _wlibc_stdio_head;
 	ASSERT_NULL(list);
 
 	// Check whether 'D' works
-	result = unlink("t-list1");
-	ASSERT_EQ(result, -1);
-	result = unlink("t-list2");
-	ASSERT_EQ(result, -1);
+	ASSERT_FAIL(unlink(filename1));
+	ASSERT_FAIL(unlink(filename2));
+
+	return 0;
 }
 
 int main()
 {
-	test_list();
-	return 0;
+	// no macros for this one as we are closing all streams
+	return test_list();
 }

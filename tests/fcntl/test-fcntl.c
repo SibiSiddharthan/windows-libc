@@ -12,15 +12,17 @@
 #include <errno.h>
 #include <internal/fcntl.h>
 
-void test_dupfd()
+int test_dupfd()
 {
 	int old_fd = STDOUT_FILENO;
 	int new_fd = fcntl(old_fd, F_DUPFD, 0);
 	ASSERT_EQ(new_fd, 3);
-	close(new_fd);
+	ASSERT_SUCCESS(close(new_fd));
+
+	return 0;
 }
 
-void test_flags()
+int test_flags()
 {
 	int fd = creat("t-fcntl", 0700);
 
@@ -31,13 +33,24 @@ void test_flags()
 	flags = fcntl(fd, F_GETFL);
 	ASSERT_EQ(flags, (O_WRONLY | O_CREAT | O_TRUNC | O_APPEND));
 
-	close(fd);
-	unlink("t-fcntl");
+	ASSERT_SUCCESS(close(fd));
+	ASSERT_SUCCESS(unlink("t-fcntl"));
+
+	return 0;
+}
+
+void cleanup()
+{
+	remove("t-fcntl");
 }
 
 int main()
 {
-	test_dupfd();
-	test_flags();
-	return 0;
+	INITIAILIZE_TESTS();
+	CLEANUP(cleanup);
+
+	TEST(test_dupfd());
+	TEST(test_flags());
+
+	VERIFY_RESULT_AND_EXIT();
 }

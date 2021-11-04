@@ -11,36 +11,54 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-void test_EBADF()
+int test_EBADF()
 {
 	errno = 0;
 	int status = isatty(3);
 	ASSERT_EQ(status, 0);
 	ASSERT_ERRNO(EBADF);
+	return 0;
 }
 
-void test_ENOTTY()
+int test_ENOTTY()
 {
 	errno = 0;
-	int fd = creat("t-isatty", 0700);
-	int status = isatty(fd);
+	int status;
+	int fd;
+	const char *filename = "t-isatty-notty";
+
+	fd = creat(filename, 0700);
+	ASSERT_EQ(fd, 3);
+
+	status = isatty(fd);
 	ASSERT_EQ(status, 0);
 	ASSERT_ERRNO(ENOTTY);
-	close(fd);
-	unlink("t-isatty");
+
+	ASSERT_SUCCESS(close(fd));
+	ASSERT_SUCCESS(unlink(filename));
+
+	return 0;
 }
 
-void test_null()
+int test_null()
 {
 	errno = 0;
-	int fd = open("/dev/null", O_WRONLY);
-	int status = isatty(fd);
+	int status;
+	int fd;
+
+	fd = open("/dev/null", O_WRONLY);
+	ASSERT_EQ(fd, 3);
+
+	status = isatty(fd);
 	ASSERT_EQ(status, 0);
 	ASSERT_ERRNO(ENOTTY);
-	close(fd);
+
+	ASSERT_SUCCESS(close(fd));
+
+	return 0;
 }
 
-void test_tty()
+int test_tty()
 {
 	errno = 0;
 	int fd = open("/dev/tty", O_WRONLY);
@@ -48,11 +66,13 @@ void test_tty()
 	{
 		int status = isatty(fd);
 		ASSERT_EQ(status, 1);
-		close(fd);
+		ASSERT_SUCCESS(close(fd));
 	}
+
+	return 0;
 }
 
-void test_duped()
+int test_duped()
 {
 	errno = 0;
 	int tty_fd = open("/dev/tty", O_WRONLY);
@@ -61,17 +81,28 @@ void test_duped()
 		int dup_fd = dup(tty_fd);
 		int status = isatty(dup_fd);
 		ASSERT_EQ(status, 1);
-		close(tty_fd);
-		close(dup_fd);
+		ASSERT_SUCCESS(close(tty_fd));
+		ASSERT_SUCCESS(close(dup_fd));
 	}
+
+	return 0;
+}
+
+void cleanup()
+{
+	remove("t-isatty-notty");
 }
 
 int main()
 {
-	test_EBADF();
-	test_ENOTTY();
-	test_null();
-	test_tty();
-	test_duped();
-	return 0;
+	INITIAILIZE_TESTS();
+	CLEANUP(cleanup);
+
+	TEST(test_EBADF());
+	TEST(test_ENOTTY());
+	TEST(test_null());
+	TEST(test_tty());
+	TEST(test_duped());
+
+	VERIFY_RESULT_AND_EXIT();
 }

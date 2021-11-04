@@ -16,15 +16,18 @@ void my_sighandler(int sig)
 	global_variable += sig;
 }
 
-void test_SA_NODEFER()
+int test_SA_NODEFER()
 {
 	global_variable = 0;
-
+	int status;
 	struct sigaction S;
+	sigset_t s;
+
 	S.sa_handler = my_sighandler;
 	S.sa_flags = 0;
 	S.sa_mask = 0;
-	sigaction(SIGHUP, &S, NULL);
+	status = sigaction(SIGHUP, &S, NULL);
+	ASSERT_EQ(status, 0);
 
 	raise(SIGHUP);
 	ASSERT_EQ(global_variable, SIGHUP);
@@ -33,40 +36,51 @@ void test_SA_NODEFER()
 	ASSERT_EQ(global_variable, SIGHUP);
 
 	S.sa_flags = SA_NODEFER;
-	sigaction(SIGHUP, &S, NULL);
+	status = sigaction(SIGHUP, &S, NULL);
+	ASSERT_EQ(status, 0);
 
 	// unblock SIGHUP
-	sigset_t s;
-	sigemptyset(&s);
-	sigprocmask(SIG_SETMASK, &s, NULL);
+	status = sigemptyset(&s);
+	ASSERT_EQ(status, 0);
+	status = sigprocmask(SIG_SETMASK, &s, NULL);
+	ASSERT_EQ(status, 0);
 	// pending SIGHUP is raised here
 	ASSERT_EQ(global_variable, SIGHUP + SIGHUP);
 
 	raise(SIGHUP);
 	ASSERT_EQ(global_variable, SIGHUP + SIGHUP + SIGHUP);
+
+	return 0;
 }
 
-void test_SA_RESETHAND()
+int test_SA_RESETHAND()
 {
 	global_variable = 0;
-
 	struct sigaction S;
+	int status;
+
 	S.sa_handler = my_sighandler;
 	S.sa_flags = SA_RESETHAND | SA_NODEFER;
 	S.sa_mask = 0;
 	// Pick one with SIG_IGN
-	sigaction(SIGCONT, &S, NULL);
+	status = sigaction(SIGCONT, &S, NULL);
+	ASSERT_EQ(status, 0);
 
 	raise(SIGCONT);
 	ASSERT_EQ(global_variable, SIGCONT);
 	// SIGCONT now must be noop
 	raise(SIGCONT);
 	ASSERT_EQ(global_variable, SIGCONT);
+
+	return 0;
 }
 
 int main()
 {
-	test_SA_NODEFER();
-	test_SA_RESETHAND();
-	return 0;
+	INITIAILIZE_TESTS();
+
+	TEST(test_SA_NODEFER());
+	TEST(test_SA_RESETHAND());
+
+	VERIFY_RESULT_AND_EXIT();
 }

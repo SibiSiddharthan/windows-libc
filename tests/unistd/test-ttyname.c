@@ -10,45 +10,52 @@
 #include <test-macros.h>
 #include <errno.h>
 
-void test_EBADF()
+int test_EBADF()
 {
 	char *name = ttyname(3);
 	ASSERT_ERRNO(EBADF);
 	ASSERT_NULL(name);
+	return 0;
 }
 
-void test_ENOTTY()
+int test_ENOTTY()
 {
 	int fd = creat("t-ttyname", 0700);
 	char *name = ttyname(fd);
 	ASSERT_ERRNO(ENOTTY);
 	ASSERT_NULL(name);
-	close(fd);
-	unlink("t-ttyname");
+	ASSERT_SUCCESS(close(fd));
+	ASSERT_SUCCESS(unlink("t-ttyname"));
+	return 0;
 }
 
-void test_ERANGE()
+int test_ERANGE()
 {
 	char name[4];
 	int result = ttyname_r(0, name, 4);
 	ASSERT_ERRNO(ERANGE);
 	ASSERT_EQ(result, ERANGE);
+	return 0;
 }
 
-void test_okay()
+int test_okay()
 {
 	fprintf(stderr, "%s\n", ttyname(0));
+	return 0;
 }
 
 int main()
 {
-	test_EBADF();
-	test_ENOTTY();
+	INITIAILIZE_TESTS();
+
+	TEST(test_EBADF());
+	TEST(test_ENOTTY());
 	// Only run these if stdin is a console device
 	if (isatty(0))
 	{
-		test_ERANGE();
-		test_okay();
+		TEST(test_ERANGE());
+		TEST(test_okay());
 	}
-	return 0;
+
+	VERIFY_RESULT_AND_EXIT();
 }

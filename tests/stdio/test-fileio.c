@@ -12,23 +12,47 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-void test_read_write_basic()
+static int prepare(const char *filename)
+{
+	int fd = open(filename, O_CREAT | O_WRONLY | O_TRUNC, 0700);
+	ssize_t result = write(fd, "abcdefghijklmnopqrstuvwxyz0123456789", 36);
+	ASSERT_EQ(result, 36);
+	ASSERT_SUCCESS(close(fd));
+
+	return 0;
+}
+
+static int write_check(const char *filename)
+{
+	char buffer[64];
+	int fd = open(filename, O_RDONLY);
+	ssize_t result = read(fd, buffer, 64);
+	ASSERT_EQ(result, 36);
+	ASSERT_MEMEQ(buffer, "abcdefghijklmnopqrstuvwxyz0123456789", 36);
+	ASSERT_SUCCESS(close(fd));
+
+	return 0;
+}
+
+int test_read_write_basic()
 {
 	FILE *f = NULL;
+	size_t elements_read, elements_written;
+	char read_buffer[512], write_buffer[256];
+	const char *filename = "t-fileio-basic";
 
-	f = fopen("t-fileio", "w");
-	char write_buffer[256];
+	f = fopen(filename, "w");
+	ASSERT_EQ(fileno(f), 3);
 	memset(write_buffer, '@', 256);
-	size_t elements_written = fwrite(write_buffer, 1, 256, f);
+	elements_written = fwrite(write_buffer, 1, 256, f);
 	ASSERT_EQ(elements_written, 256);
 	elements_written = fwrite(write_buffer, 2, 128, f);
 	ASSERT_EQ(elements_written, 128);
-	fclose(f);
+	ASSERT_SUCCESS(fclose(f));
 
-	f = fopen("t-fileio", "r");
-	char read_buffer[512];
+	f = fopen(filename, "r");
 	memset(read_buffer, '\0', 512);
-	size_t elements_read = fread(read_buffer, 1, 256, f);
+	elements_read = fread(read_buffer, 1, 256, f);
 	ASSERT_EQ(elements_read, 256);
 	ASSERT_EQ(strncmp(read_buffer, write_buffer, 256), 0);
 	memset(read_buffer, 0, 512);
@@ -39,27 +63,27 @@ void test_read_write_basic()
 	elements_read = fread(read_buffer, 2, 128, f);
 	ASSERT_EQ(elements_read, 0);
 	ASSERT_EQ(feof(f), 1);
-	fclose(f);
+	ASSERT_SUCCESS(fclose(f));
 
-	unlink("t-fileio");
+	ASSERT_SUCCESS(unlink(filename));
+
+	return 0;
 }
 
-void prepare(const char *filename)
+int test_read_small_buffer_internal()
 {
-	int fd = open(filename, O_CREAT | O_WRONLY | O_TRUNC, 0777);
-	ssize_t result = write(fd, "abcdefghijklmnopqrstuvwxyz0123456789", 36);
-	ASSERT_EQ(result, 36);
-	close(fd);
-}
-
-void test_read_small_buffer_internal()
-{
-	FILE *f = fopen("t-fileio-read", "r");
-	int result = setvbuf(f, NULL, _IOFBF, 16);
-	ASSERT_EQ(result, 0);
-
+	int result;
+	size_t elements_read;
+	FILE *f;
 	char buffer[32];
-	size_t elements_read = 0;
+	const char *filename = "t-fileio-read-internal-buffer";
+
+	ASSERT_SUCCESS(prepare(filename));
+
+	f = fopen(filename, "r");
+	ASSERT_EQ(fileno(f), 3);
+	result = setvbuf(f, NULL, _IOFBF, 16);
+	ASSERT_EQ(result, 0);
 
 	// 1st read
 	elements_read = fread(buffer, 1, 8, f);
@@ -111,18 +135,27 @@ void test_read_small_buffer_internal()
 	ASSERT_EQ(feof(f), 1);
 	ASSERT_MEMEQ(buffer, "yz0123456789", 12);
 
-	fclose(f);
+	ASSERT_SUCCESS(fclose(f));
+	ASSERT_SUCCESS(unlink(filename));
+
+	return 0;
 }
 
-void test_read_small_buffer_external()
+int test_read_small_buffer_external()
 {
-	FILE *f = fopen("t-fileio-read", "r");
+	int result;
+	size_t elements_read;
+	FILE *f;
 	char file_buffer[16];
-	int result = setvbuf(f, file_buffer, _IOFBF, 16);
-	ASSERT_EQ(result, 0);
-
 	char buffer[32];
-	size_t elements_read = 0;
+	const char *filename = "t-fileio-read-external-buffer";
+
+	ASSERT_SUCCESS(prepare(filename));
+
+	f = fopen(filename, "r");
+	ASSERT_EQ(fileno(f), 3);
+	result = setvbuf(f, file_buffer, _IOFBF, 16);
+	ASSERT_EQ(result, 0);
 
 	// 1st read
 	elements_read = fread(buffer, 1, 8, f);
@@ -180,17 +213,25 @@ void test_read_small_buffer_external()
 	ASSERT_MEMEQ(buffer, "yz0123456789", 12);
 	ASSERT_MEMEQ(file_buffer, "6789uvwxyz012345", 16);
 
-	fclose(f);
+	ASSERT_SUCCESS(fclose(f));
+	ASSERT_SUCCESS(unlink(filename));
+
+	return 0;
 }
 
-void test_read_buffer_change()
+int test_read_buffer_change()
 {
-	FILE *f = fopen("t-fileio-read", "r");
-	char file_buffer[16];
 	int result;
-
+	size_t elements_read;
+	FILE *f;
+	char file_buffer[16];
 	char buffer[32];
-	size_t elements_read = 0;
+	const char *filename = "t-fileio-read-varying-buffer";
+
+	ASSERT_SUCCESS(prepare(filename));
+
+	f = fopen(filename, "r");
+	ASSERT_EQ(fileno(f), 3);
 
 	// 1st read
 	elements_read = fread(buffer, 1, 8, f);
@@ -241,32 +282,21 @@ void test_read_buffer_change()
 	ASSERT_MEMEQ(buffer, "23456789", 8);
 	ASSERT_MEMEQ(file_buffer, "23456789", 8);
 
-	fclose(f);
+	ASSERT_SUCCESS(fclose(f));
+	ASSERT_SUCCESS(unlink(filename));
+
+	return 0;
 }
 
-void cleanup(const char *filename)
+int test_write_small_buffer_internal()
 {
-	unlink(filename);
-}
-
-void write_check()
-{
-	int fd = open("t-fileio-write", O_RDONLY);
-	char buffer[64];
-	ssize_t result = read(fd, buffer, 64);
-	ASSERT_EQ(result, 36);
-	ASSERT_MEMEQ(buffer, "abcdefghijklmnopqrstuvwxyz0123456789", 36);
-	close(fd);
-	unlink("t-fileio-write");
-}
-
-void test_write_small_buffer_internal()
-{
-	FILE *f = NULL;
-	size_t elements_written = 0;
 	int result;
+	size_t elements_written = 0;
+	FILE *f = NULL;
+	const char *filename = "t-fileio-write-internal-buffer";
 
-	f = fopen("t-fileio-write", "w");
+	f = fopen(filename, "w");
+	ASSERT_EQ(fileno(f), 3);
 	result = setvbuf(f, NULL, _IOFBF, 16);
 	ASSERT_EQ(result, 0);
 
@@ -285,11 +315,12 @@ void test_write_small_buffer_internal()
 	ASSERT_EQ(elements_written, 12);
 	ASSERT_EQ(ftell(f), 36);
 
-	fclose(f);
+	ASSERT_SUCCESS(fclose(f));
+	ASSERT_SUCCESS(write_check(filename));
+	ASSERT_SUCCESS(unlink(filename));
 
-	write_check();
-
-	f = fopen("t-fileio-write", "w");
+	f = fopen(filename, "w");
+	ASSERT_EQ(fileno(f), 3);
 	result = setvbuf(f, NULL, _IOFBF, 16);
 	ASSERT_EQ(result, 0);
 
@@ -298,19 +329,23 @@ void test_write_small_buffer_internal()
 	ASSERT_EQ(elements_written, 36);
 	ASSERT_EQ(ftell(f), 36);
 
-	fclose(f);
+	ASSERT_SUCCESS(fclose(f));
+	ASSERT_SUCCESS(write_check(filename));
+	ASSERT_SUCCESS(unlink(filename));
 
-	write_check();
+	return 0;
 }
 
-void test_write_small_buffer_external()
+int test_write_small_buffer_external()
 {
-	FILE *f = NULL;
-	size_t elements_written = 0;
 	int result;
+	size_t elements_written = 0;
+	FILE *f = NULL;
 	char file_buffer[16];
+	const char *filename = "t-fileio-write-external-buffer";
 
-	f = fopen("t-fileio-write", "w");
+	f = fopen(filename, "w");
+	ASSERT_EQ(fileno(f), 3);
 	result = setvbuf(f, file_buffer, _IOFBF, 16);
 	ASSERT_EQ(result, 0);
 
@@ -332,11 +367,12 @@ void test_write_small_buffer_external()
 	ASSERT_EQ(ftell(f), 36);
 	ASSERT_MEMEQ(file_buffer, "6789uvwxyz012345", 16);
 
-	fclose(f);
+	ASSERT_SUCCESS(fclose(f));
+	ASSERT_SUCCESS(write_check(filename));
+	ASSERT_SUCCESS(unlink(filename));
 
-	write_check();
-
-	f = fopen("t-fileio-write", "w");
+	f = fopen(filename, "w");
+	ASSERT_EQ(fileno(f), 3);
 	result = setvbuf(f, file_buffer, _IOFBF, 16);
 	ASSERT_EQ(result, 0);
 
@@ -346,19 +382,23 @@ void test_write_small_buffer_external()
 	ASSERT_EQ(ftell(f), 36);
 	ASSERT_MEMEQ(file_buffer, "6789", 4);
 
-	fclose(f);
+	ASSERT_SUCCESS(fclose(f));
+	ASSERT_SUCCESS(write_check(filename));
+	ASSERT_SUCCESS(unlink(filename));
 
-	write_check();
+	return 0;
 }
 
-void test_write_buffer_change()
+int test_write_buffer_change()
 {
+	int result;
 	FILE *f = NULL;
 	size_t elements_written = 0;
-	int result;
 	char file_buffer[16];
+	const char *filename = "t-fileio-write-varying-buffer";
 
-	f = fopen("t-fileio-write", "w");
+	f = fopen(filename, "w");
+	ASSERT_EQ(fileno(f), 3);
 
 	// 1st write
 	elements_written = fwrite("abcdefgh", 1, 8, f);
@@ -403,21 +443,28 @@ void test_write_buffer_change()
 	ASSERT_EQ(ftell(f), 36);
 	ASSERT_MEMEQ(file_buffer, "23456789", 8);
 
-	fclose(f);
+	ASSERT_SUCCESS(fclose(f));
+	ASSERT_SUCCESS(write_check(filename));
+	ASSERT_SUCCESS(unlink(filename));
 
-	write_check();
+	return 0;
 }
 
-void test_read_write()
+int test_read_write()
 {
-	FILE *f = fopen("t-fileio-read-write", "r+");
-	char file_buffer[16];
-	int result = setvbuf(f, file_buffer, _IOFBF, 16);
-	ASSERT_EQ(result, 0);
+	int fd, result;
+	size_t elements_read, elements_written;
+	ssize_t read_result;
+	FILE *f;
+	char file_buffer[16], buffer[32], check_buffer[64];
+	const char *filename = "t-fileio-read-write";
 
-	char buffer[32];
-	size_t elements_read = 0;
-	size_t elements_written = 0;
+	ASSERT_SUCCESS(prepare(filename));
+
+	f = fopen(filename, "r+");
+	ASSERT_EQ(fileno(f), 3);
+	result = setvbuf(f, file_buffer, _IOFBF, 16);
+	ASSERT_EQ(result, 0);
 
 	// 1st read
 	elements_read = fread(buffer, 1, 8, f);
@@ -453,26 +500,34 @@ void test_read_write()
 	ASSERT_MEMEQ(buffer, "23456789", 8);
 	ASSERT_MEMEQ(file_buffer, "23456789uvwxyz01", 16);
 
-	fclose(f);
+	ASSERT_SUCCESS(fclose(f));
 
-	int fd = open("t-fileio-read-write", O_RDONLY);
-	char check_buffer[64];
-	ssize_t read_result = read(fd, check_buffer, 64);
+	fd = open(filename, O_RDONLY);
+	ASSERT_EQ(fd, 3);
+	read_result = read(fd, check_buffer, 64);
 	ASSERT_EQ(read_result, 36);
 	ASSERT_MEMEQ(check_buffer, "abcdefgh@@@@mnopqrst########23456789", 36);
-	close(fd);
+	ASSERT_SUCCESS(close(fd));
+
+	ASSERT_SUCCESS(unlink(filename));
+	return 0;
 }
 
-void test_read_write_seek()
+int test_read_write_seek()
 {
-	FILE *f = fopen("t-fileio-read-write-seek", "r+");
-	char file_buffer[16];
-	int result = setvbuf(f, file_buffer, _IOFBF, 16);
-	ASSERT_EQ(result, 0);
+	int fd, result;
+	size_t elements_read, elements_written;
+	ssize_t read_result;
+	FILE *f;
+	char file_buffer[16], buffer[32], check_buffer[64];
+	const char *filename = "t-fileio-read-write-seek";
 
-	char buffer[32];
-	size_t elements_read = 0;
-	size_t elements_written = 0;
+	ASSERT_SUCCESS(prepare(filename));
+
+	f = fopen(filename, "r+");
+	ASSERT_EQ(fileno(f), 3);
+	result = setvbuf(f, file_buffer, _IOFBF, 16);
+	ASSERT_EQ(result, 0);
 
 	// 1st read
 	elements_read = fread(buffer, 1, 8, f);
@@ -531,26 +586,34 @@ void test_read_write_seek()
 	ASSERT_EQ(ftell(f), 44);
 	ASSERT_MEMEQ(file_buffer, "&&&&yz0123456789", 16);
 
-	fclose(f);
+	ASSERT_SUCCESS(fclose(f));
 
-	int fd = open("t-fileio-read-write-seek", O_RDONLY);
-	char check_buffer[64];
-	ssize_t read_result = read(fd, check_buffer, 64);
+	fd = open(filename, O_RDONLY);
+	ASSERT_EQ(fd, 3);
+	read_result = read(fd, check_buffer, 64);
 	ASSERT_EQ(read_result, 44);
 	ASSERT_MEMEQ(check_buffer, "abcdefghijkl@@@@qrstuvwxyz012345####\0\0\0\0&&&&", 44);
-	close(fd);
+	ASSERT_SUCCESS(close(fd));
+
+	ASSERT_SUCCESS(unlink(filename));
+	return 0;
 }
 
-void test_read_append()
+int test_read_append()
 {
-	FILE *f = fopen("t-fileio-read-append", "a+");
-	char file_buffer[16];
-	int result = setvbuf(f, file_buffer, _IOFBF, 16);
-	ASSERT_EQ(result, 0);
+	int fd, result;
+	size_t elements_read, elements_written;
+	ssize_t read_result;
+	FILE *f;
+	char file_buffer[16], buffer[32], check_buffer[64];
+	const char *filename = "t-fileio-read-append";
 
-	char buffer[32];
-	size_t elements_read = 0;
-	size_t elements_written = 0;
+	ASSERT_SUCCESS(prepare(filename));
+
+	f = fopen(filename, "a+");
+	ASSERT_EQ(fileno(f), 3);
+	result = setvbuf(f, file_buffer, _IOFBF, 16);
+	ASSERT_EQ(result, 0);
 
 	// 1st read
 	elements_read = fread(buffer, 1, 8, f);
@@ -583,22 +646,33 @@ void test_read_append()
 	ASSERT_EQ(ftell(f), 48);
 	ASSERT_MEMEQ(file_buffer, "####@@@@ijklmnop", 16);
 
-	fclose(f);
+	ASSERT_SUCCESS(fclose(f));
 
-	int fd = open("t-fileio-read-append", O_RDONLY);
-	char check_buffer[64];
-	ssize_t read_result = read(fd, check_buffer, 64);
+	fd = open(filename, O_RDONLY);
+	ASSERT_EQ(fd, 3);
+	read_result = read(fd, check_buffer, 64);
 	ASSERT_EQ(read_result, 48);
 	ASSERT_MEMEQ(check_buffer, "abcdefghijklmnopqrstuvwxyz0123456789@@@@@@@@####", 48);
-	close(fd);
+	ASSERT_SUCCESS(close(fd));
+
+	ASSERT_SUCCESS(unlink(filename));
+
+	return 0;
 }
 
-void test_getc()
+int test_getc()
 {
-	FILE *f = fopen("t-fileio-getc", "r");
-	int result = setvbuf(f, NULL, _IOFBF, 4);
-	ASSERT_EQ(result, 0);
+	FILE *f;
+	int result;
 	char ch;
+	const char *filename = "t-fileio-getc";
+
+	ASSERT_SUCCESS(prepare(filename));
+
+	f = fopen(filename, "r");
+	ASSERT_EQ(fileno(f), 3);
+	result = setvbuf(f, NULL, _IOFBF, 4);
+	ASSERT_EQ(result, 0);
 
 	// read 7 times -> refill buffer once
 	ch = fgetc(f);
@@ -645,15 +719,25 @@ void test_getc()
 	ASSERT_EQ(ftell(f), 36);
 	ASSERT_EQ(feof(f), 1);
 
-	fclose(f);
+	ASSERT_SUCCESS(fclose(f));
+	ASSERT_SUCCESS(unlink(filename));
+
+	return 0;
 }
 
-void test_putc()
+int test_putc()
 {
-	FILE *f = fopen("t-fileio-putc", "w");
-	int result = setvbuf(f, NULL, _IOFBF, 4);
-	ASSERT_EQ(result, 0);
 	char ch;
+	int fd, result;
+	ssize_t read_result;
+	FILE *f;
+	char check_buffer[16];
+	const char *filename = "t-fileio-putc";
+
+	f = fopen(filename, "w");
+	ASSERT_EQ(fileno(f), 3);
+	result = setvbuf(f, NULL, _IOFBF, 4);
+	ASSERT_EQ(result, 0);
 
 	// read 7 times -> refill buffer once
 	ch = fputc('a', f);
@@ -678,24 +762,35 @@ void test_putc()
 	ASSERT_EQ(ch, 'g');
 	ASSERT_EQ(ftell(f), 7);
 
-	fclose(f);
+	ASSERT_SUCCESS(fclose(f));
 
-	int fd = open("t-fileio-putc", O_RDONLY);
-	char check_buffer[16];
-	ssize_t read_result = read(fd, check_buffer, 16);
+	fd = open(filename, O_RDONLY);
+	ASSERT_EQ(fd, 3);
+	read_result = read(fd, check_buffer, 16);
 	ASSERT_EQ(read_result, 7);
 	ASSERT_MEMEQ(check_buffer, "abcdefg", 7);
-	close(fd);
+	ASSERT_SUCCESS(close(fd));
 
-	unlink("t-fileio-putc");
+	ASSERT_SUCCESS(unlink(filename));
+
+	return 0;
 }
 
-void test_getc_putc()
+int test_getc_putc()
 {
-	FILE *f = fopen("t-fileio-getc-putc", "r+");
-	int result = setvbuf(f, NULL, _IOFBF, 4);
-	ASSERT_EQ(result, 0);
 	char ch;
+	int fd, result;
+	ssize_t read_result;
+	FILE *f;
+	char check_buffer[16];
+	const char *filename = "t-fileio-getc-putc";
+
+	ASSERT_SUCCESS(prepare(filename));
+
+	f = fopen(filename, "r+");
+	ASSERT_EQ(fileno(f), 3);
+	result = setvbuf(f, NULL, _IOFBF, 4);
+	ASSERT_EQ(result, 0);
 
 	ch = fgetc(f);
 	ASSERT_EQ(ch, 'a');
@@ -716,24 +811,36 @@ void test_getc_putc()
 	ASSERT_EQ(ch, 'F');
 	ASSERT_EQ(ftell(f), 6);
 
-	fclose(f);
+	ASSERT_SUCCESS(fclose(f));
 
-	int fd = open("t-fileio-getc-putc", O_RDONLY);
-	char check_buffer[16];
-	ssize_t read_result = read(fd, check_buffer, 16);
+	fd = open(filename, O_RDONLY);
+	ASSERT_EQ(fd, 3);
+	read_result = read(fd, check_buffer, 16);
 	ASSERT_EQ(read_result, 16);
 	ASSERT_MEMEQ(check_buffer, "aBcDeFgh", 8);
-	close(fd);
+	ASSERT_SUCCESS(close(fd));
+
+	ASSERT_SUCCESS(unlink(filename));
+
+	return 0;
 }
 
-void test_gets()
+int test_gets()
 {
-	int fd = open("t-fileio-gets", O_CREAT | O_WRONLY | O_TRUNC, 0777);
-	write(fd, "abcdefg\nhijk", 12);
-	close(fd);
-
-	FILE *f = fopen("t-fileio-gets", "r");
+	int fd;
+	FILE *f;
 	char buf[16];
+	ssize_t result;
+	const char *filename = "t-fileio-gets";
+
+	fd = open(filename, O_CREAT | O_WRONLY | O_TRUNC, 0700);
+	ASSERT_EQ(fd, 3);
+	result = write(fd, "abcdefg\nhijk", 12);
+	ASSERT_EQ(result, 12);
+	ASSERT_SUCCESS(close(fd));
+
+	f = fopen(filename, "r");
+	ASSERT_EQ(fileno(f), 3);
 
 	fgets(buf, 16, f);
 	ASSERT_STREQ(buf, "abcdefg\n");
@@ -744,52 +851,61 @@ void test_gets()
 	ASSERT_EQ(ftell(f), 12);
 	ASSERT_EQ(feof(f), 1);
 
-	fclose(f);
+	ASSERT_SUCCESS(fclose(f));
+	ASSERT_SUCCESS(unlink(filename));
 
-	unlink("t-fileio-gets");
+	return 0;
+}
+
+void cleanup()
+{
+	remove("t-fileio-basic");
+
+	remove("t-fileio-read-internal-buffer");
+	remove("t-fileio-read-external-buffer");
+	remove("t-fileio-read-varying-buffer");
+
+	remove("t-fileio-write-internal-buffer");
+	remove("t-fileio-write-external-buffer");
+	remove("t-fileio-write-varying-buffer");
+
+	remove("t-fileio-read-write");
+	remove("t-fileio-read-write-seek");
+	remove("t-fileio-read-append");
+
+	remove("t-fileio-getc");
+	remove("t-fileio-putc");
+	remove("t-fileio-getc-putc");
+	remove("t-fileio-gets");
 }
 
 int main()
 {
-	test_read_write_basic();
+	INITIAILIZE_TESTS();
+	CLEANUP(cleanup);
+
+	TEST(test_read_write_basic());
 
 	// read tests
-	prepare("t-fileio-read");
-	test_read_small_buffer_internal();
-	test_read_small_buffer_external();
-	test_read_buffer_change();
-	cleanup("t-fileio-read");
+	TEST(test_read_small_buffer_internal());
+	TEST(test_read_small_buffer_external());
+	TEST(test_read_buffer_change());
 
 	// write tests
-	test_write_small_buffer_internal();
-	test_write_small_buffer_external();
-	test_write_buffer_change();
+	TEST(test_write_small_buffer_internal());
+	TEST(test_write_small_buffer_external());
+	TEST(test_write_buffer_change());
 
 	// read and write tests
-	prepare("t-fileio-read-write");
-	test_read_write();
-	cleanup("t-fileio-read-write");
+	TEST(test_read_write());
+	TEST(test_read_write_seek());
+	TEST(test_read_append());
 
-	// // read and write with seek
-	prepare("t-fileio-read-write-seek");
-	test_read_write_seek();
-	cleanup("t-fileio-read-write-seek");
+	TEST(test_getc());
+	TEST(test_putc());
+	TEST(test_getc_putc());
 
-	prepare("t-fileio-read-append");
-	test_read_append();
-	cleanup("t-fileio-read-append");
+	TEST(test_gets());
 
-	prepare("t-fileio-getc");
-	test_getc();
-	cleanup("t-fileio-getc");
-
-	test_putc();
-
-	prepare("t-fileio-getc-putc");
-	test_getc_putc();
-	cleanup("t-fileio-getc-putc");
-
-	test_gets();
-
-	return 0;
+	VERIFY_RESULT_AND_EXIT();
 }

@@ -10,7 +10,7 @@
 #include <locale.h>
 #include <internal/langinfo.h>
 
-void test_langinfo()
+int test_langinfo()
 {
 	// Check whether subsequent calls to nl_langinfo does not corrupt previous results
 	char *results[16];
@@ -53,16 +53,20 @@ void test_langinfo()
 	ASSERT_STREQ(results[12], "Jan");
 	ASSERT_STREQ(results[13], "Feb");
 	ASSERT_STREQ(results[14], "Mar");
+
+	return 0;
 }
 
-void test_CODESET_UTF8()
+int test_CODESET_UTF8()
 {
 	setlocale(LC_ALL, ".utf8");
 	char *result = nl_langinfo(CODESET);
 	ASSERT_STREQ(result, "UTF-8");
+
+	return 0;
 }
 
-void test_cycle()
+int test_cycle()
 {
 	// NOTE: If MAX_LANGINFO_INVOKE_COUNT is changed this function needs to be modified
 	char *results[2 * MAX_LANGINFO_INVOKE_COUNT];
@@ -79,12 +83,17 @@ void test_cycle()
 	// Test edge cases
 	ASSERT_STREQ(results[MAX_LANGINFO_INVOKE_COUNT - 1], "Mar");                                   // ABMON_3
 	ASSERT_STREQ(results[MAX_LANGINFO_INVOKE_COUNT + MAX_LANGINFO_INVOKE_COUNT / 2 - 1], "^[yY]"); // YESEXPR
+
+	return 0;
 }
 
 int main()
 {
-	test_langinfo();
-	test_CODESET_UTF8();
-	test_cycle();
-	return 0;
+	INITIAILIZE_TESTS();
+
+	TEST(test_langinfo());
+	TEST(test_CODESET_UTF8());
+	TEST(test_cycle());
+
+	VERIFY_RESULT_AND_EXIT();
 }

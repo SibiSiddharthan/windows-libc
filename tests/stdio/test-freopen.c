@@ -11,28 +11,40 @@
 #include <test-macros.h>
 #include <errno.h>
 
-void test_redirect_stdout()
+int test_redirect_stdout()
 {
-	FILE *f = freopen("t-freopen1", "w", stdout);
-	printf("hello");
-	ASSERT_EQ(fileno(f),1);
-	fclose(f);
-
-	int fd = open("t-freopen1", O_RDONLY | O_EXCL);
-	ASSERT_EQ(fd, 1);
+	FILE *f;
+	int fd;
 	char rbuf[16];
-	ssize_t llength = read(fd, rbuf, 16);
-	ASSERT_EQ(llength, 5);
-	rbuf[llength] = '\0';
-	ASSERT_STREQ(rbuf, "hello");
-	close(fd);
+	ssize_t llength;
+	const char *filename = "t-freopen-stdout";
 
-	unlink("t-freopen1");
+	f = freopen(filename, "w", stdout);
+	printf("hello");
+	ASSERT_EQ(fileno(f), 1);
+	ASSERT_SUCCESS(fclose(f));
+
+	fd = open(filename, O_RDONLY | O_EXCL);
+	ASSERT_EQ(fd, 1);
+	llength = read(fd, rbuf, 16);
+	ASSERT_EQ(llength, 5);
+	ASSERT_MEMEQ(rbuf, "hello", (int)llength);
+	ASSERT_SUCCESS(close(fd));
+
+	ASSERT_SUCCESS(unlink(filename));
+	return 0;
+}
+
+void cleanup()
+{
+	remove("t-freopen-stdout");
 }
 
 int main()
 {
-	test_redirect_stdout();
-	//test_reopen_same_file();
-	return 0;
+	INITIAILIZE_TESTS();
+	CLEANUP(cleanup);
+	TEST(test_redirect_stdout());
+	// test_reopen_same_file();
+	VERIFY_RESULT_AND_EXIT();
 }

@@ -13,59 +13,69 @@
 #include <sys/stat.h>
 #include <wchar.h>
 
-void setup()
+int setup()
 {
-	mkdir("t", 0700);
-
 	int fd;
+
+	ASSERT_SUCCESS(mkdir("t", 0700));
+
 	fd = creat("t/a1", 0700);
-	close(fd);
+	ASSERT_SUCCESS(close(fd));
 	fd = creat("t/a2", 0700);
-	close(fd);
+	ASSERT_SUCCESS(close(fd));
 	fd = creat("t/a3", 0700);
-	close(fd);
+	ASSERT_SUCCESS(close(fd));
 	fd = creat("t/a4", 0700);
-	close(fd);
+	ASSERT_SUCCESS(close(fd));
 	fd = creat("t/a5", 0700);
-	close(fd);
+	ASSERT_SUCCESS(close(fd));
 	fd = creat("t/a6", 0700);
-	close(fd);
+	ASSERT_SUCCESS(close(fd));
 
-	mkdir("t/d", 0);
+	ASSERT_SUCCESS(mkdir("t/d", 0));
 
-	symlink("a1", "t/s1");
-	symlink("a2", "t/s2");
-	symlink("d", "t/sd");
+	ASSERT_SUCCESS(symlink("a1", "t/s1"));
+	ASSERT_SUCCESS(symlink("a2", "t/s2"));
+	ASSERT_SUCCESS(symlink("d", "t/sd"));
+
+	return 0;
 }
 
-void cleanup()
+int cleanup()
 {
-	unlink("t/sd");
-	rmdir("t/d");
-	unlink("t/s1");
-	unlink("t/s2");
-	unlink("t/a1");
-	unlink("t/a2");
-	unlink("t/a3");
-	unlink("t/a4");
-	unlink("t/a5");
-	unlink("t/a6");
-	rmdir("t");
+	ASSERT_SUCCESS(unlink("t/sd"));
+	ASSERT_SUCCESS(rmdir("t/d"));
+	ASSERT_SUCCESS(unlink("t/s1"));
+	ASSERT_SUCCESS(unlink("t/s2"));
+	ASSERT_SUCCESS(unlink("t/a1"));
+	ASSERT_SUCCESS(unlink("t/a2"));
+	ASSERT_SUCCESS(unlink("t/a3"));
+	ASSERT_SUCCESS(unlink("t/a4"));
+	ASSERT_SUCCESS(unlink("t/a5"));
+	ASSERT_SUCCESS(unlink("t/a6"));
+	ASSERT_SUCCESS(rmdir("t"));
+
+	return 0;
 }
 
-void test_EBADF()
+int test_EBADF()
 {
 	struct dirent *d = readdir(NULL);
 	ASSERT_NULL(d);
+	ASSERT_ERRNO(EBADF);
+
+	return 0;
 }
 
-void test_readdir() // telldir is also tested
+int test_readdir() // telldir is also tested
 {
 	/* We step through the directory and check whether the order of files
 	   listed is correct (alphabetical), it's deduced type is correct.
 	*/
-	DIR *D = opendir("t");
 	struct dirent *d = NULL;
+	DIR *D = opendir("t");
+	ASSERT_NOTNULL(D);
+
 	d = readdir(D);
 	ASSERT_STREQ(d->d_name, ".");
 	ASSERT_EQ(d->d_type, DT_DIR);
@@ -104,20 +114,27 @@ void test_readdir() // telldir is also tested
 	ASSERT_EQ(d->d_type, DT_LNK);
 	d = readdir(D);
 	ASSERT_NULL(d);
-	closedir(D);
+
+	ASSERT_SUCCESS(closedir(D));
+
+	return 0;
 }
 
-void test_seekdir() // rewinddir is also tested here
+int test_seekdir() // rewinddir is also tested here
 {
-	DIR *D = opendir("t");
 	struct dirent *d = NULL;
+	off_t offset;
+
+	DIR *D = opendir("t");
+	ASSERT_NOTNULL(D);
+
 	d = readdir(D);
 	d = readdir(D);
 	d = readdir(D);
 	ASSERT_STREQ(d->d_name, "a1");
 	ASSERT_EQ(d->d_type, DT_REG);
 
-	off_t offset = telldir(D);
+	offset = telldir(D);
 	d = readdir(D);
 	d = readdir(D);
 	d = readdir(D);
@@ -134,15 +151,33 @@ void test_seekdir() // rewinddir is also tested here
 	ASSERT_STREQ(d->d_name, ".");
 	ASSERT_EQ(d->d_type, DT_DIR);
 
-	closedir(D);
+	ASSERT_SUCCESS(closedir(D));
+
+	return 0;
 }
 
 int main()
 {
-	setup();
-	test_EBADF();
-	test_readdir();
-	test_seekdir();
-	cleanup();
-	return 0;
+	INITIAILIZE_TESTS();
+
+	TEST(test_EBADF());
+
+	// If the setup or cleanup fails exit the program
+	if (setup() == 0)
+	{
+		TEST(test_readdir());
+		TEST(test_seekdir());
+		if (cleanup() == 1)
+		{
+			printf("Cleanup failed\n");
+			exit(1);
+		}
+	}
+	else
+	{
+		printf("Setup failed\n");
+		exit(1);
+	}
+
+	VERIFY_RESULT_AND_EXIT();
 }

@@ -7,26 +7,37 @@
 
 #include <stdio.h>
 #include <fcntl.h>
-#include <internal/fcntl.h>
 #include <unistd.h>
 #include <test-macros.h>
 #include <errno.h>
 
-void test_EISDIR()
+int test_EISDIR()
 {
 	errno = 0;
-	int fd = open("CMakeFiles", O_RDONLY);
-	FILE *f = fdopen(fd, "r");
+	int fd;
+	FILE *f;
+
+	fd = open(".", O_RDONLY);
+	ASSERT_EQ(fd, 3);
+
+	f = fdopen(fd, "r");
 	ASSERT_NULL(f);
 	ASSERT_ERRNO(EISDIR);
-	close(fd);
+
+	ASSERT_SUCCESS(close(fd));
+	return 0;
 }
 
-void test_wrong_access()
+int test_wrong_access()
 {
 	errno = 0;
-	int fd = open("t-fdopen", O_RDONLY | O_CREAT, 0700);
-	FILE *f = fdopen(fd, "w");
+	int fd;
+	FILE *f;
+	const char *filename = "t-fdopen-wrong-access";
+
+	fd = open(filename, O_RDONLY | O_CREAT, 0700);
+	ASSERT_EQ(fd, 3);
+	f = fdopen(fd, "w");
 	ASSERT_NULL(f);
 	ASSERT_ERRNO(EINVAL);
 
@@ -37,40 +48,62 @@ void test_wrong_access()
 	fclose(f);
 	//ASSERT_EQ(validate_fd(fd), 0);
 
-	fd = open("t-fdopen", O_RDONLY | O_EXCL);
+	fd = open(filename, O_RDONLY | O_EXCL);
 	char rbuf[16];
 	ssize_t llength = read(fd, rbuf, 16);
 	ASSERT_EQ(llength, 0);
 #endif
 
-	close(fd);
-	unlink("t-fdopen");
+	ASSERT_SUCCESS(close(fd));
+	ASSERT_SUCCESS(unlink(filename));
+
+	return 0;
 }
 
-void test_correct_access()
+int test_correct_access()
 {
 	errno = 0;
-	int fd = open("t-fdopen", O_RDWR | O_CREAT, 0700);
-	FILE *f = fdopen(fd, "w");
-	size_t flength = fwrite((void *)"hello", 1, 5, f);
-	fclose(f);
-	ASSERT_EQ(validate_fd(fd), 0);
-
-	fd = open("t-fdopen", O_RDONLY | O_EXCL);
+	int fd;
+	size_t flength;
+	ssize_t llength;
 	char rbuf[16];
-	ssize_t llength = read(fd, rbuf, 16);
-	ASSERT_EQ(llength, 5);
-	rbuf[llength] = '\0';
-	ASSERT_STREQ(rbuf, "hello");
-	close(fd);
+	FILE *f;
+	const char *filename = "t-fdopen-correct-access";
 
-	unlink("t-fdopen");
+	fd = open(filename, O_RDWR | O_CREAT, 0700);
+	ASSERT_EQ(fd, 3);
+
+	f = fdopen(fd, "w");
+	ASSERT_EQ(fileno(f), 3);
+	flength = fwrite((void *)"hello", 1, 5, f);
+	ASSERT_SUCCESS(fclose(f));
+	ASSERT_FAIL(close(fd));
+	ASSERT_ERRNO(EBADF);
+
+	fd = open(filename, O_RDONLY | O_EXCL);
+	llength = read(fd, rbuf, 16);
+	ASSERT_EQ(llength, 5);
+	ASSERT_MEMEQ(rbuf, "hello", (int)llength);
+	ASSERT_SUCCESS(close(fd));
+
+	ASSERT_SUCCESS(unlink(filename));
+	return 0;
+}
+
+void cleanup()
+{
+	remove("t-fdopen-wrong-access");
+	remove("t-fdopen-correct-access");
 }
 
 int main()
 {
-	test_EISDIR();
-	test_wrong_access();
-	test_correct_access();
-	return 0;
+	INITIAILIZE_TESTS();
+	CLEANUP(cleanup);
+
+	TEST(test_EISDIR());
+	TEST(test_wrong_access());
+	TEST(test_correct_access());
+
+	VERIFY_RESULT_AND_EXIT();
 }

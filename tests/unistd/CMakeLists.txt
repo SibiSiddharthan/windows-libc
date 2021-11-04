@@ -14,15 +14,15 @@ getcwd
 isatty
 kill
 link
-linkat
+#linkat
 sym_read_link
-sym_read_linkat
+#sym_read_linkat
 read_write
-rmdir
+#rmdir
 truncate
 ttyname
-unlink
-unlinkat)
+unlink) # change this to remove
+#unlinkat
 
 foreach(t ${tests})
 	add_executable(test-${t} test-${t}.c)

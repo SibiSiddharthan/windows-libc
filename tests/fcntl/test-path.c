@@ -17,7 +17,7 @@ wchar_t *get_absolute_ntpath(int dirfd, const char *path);
 static wchar_t cwd[32768]; // MAX_PATH for windows
 static int length;
 
-void test_null()
+int test_null()
 {
 	wchar_t *path = NULL;
 
@@ -28,9 +28,11 @@ void test_null()
 	path = get_absolute_ntpath(AT_FDCWD, "/dev/null");
 	ASSERT_WSTREQ(path, L"\\??\\NUL");
 	free(path);
+
+	return 0;
 }
 
-void test_con()
+int test_con()
 {
 	wchar_t *path = NULL;
 
@@ -41,9 +43,11 @@ void test_con()
 	path = get_absolute_ntpath(AT_FDCWD, "/dev/tty");
 	ASSERT_WSTREQ(path, L"\\??\\CON");
 	free(path);
+
+	return 0;
 }
 
-void test_relative()
+int test_relative()
 {
 	wchar_t *path;
 
@@ -122,12 +126,18 @@ void test_relative()
 	free(path);
 
 	cwd[length] = L'\0';
+
+	return 0;
 }
 
-void test_at()
+int test_at()
 {
-	int fd = open("t-path", O_RDONLY);
+	int fd;
 	wchar_t *path;
+
+	fd = open("t-path", O_RDONLY);
+	ASSERT_EQ(fd, 3);
+
 	wcscat(cwd, L"\\t-path");
 
 	path = get_absolute_ntpath(fd, ".");
@@ -139,12 +149,15 @@ void test_at()
 	ASSERT_WSTREQ(path, cwd);
 	free(path);
 
-	close(fd);
+	ASSERT_SUCCESS(close(fd));
+
+	return 0;
 }
 
-void test_absolute()
+int test_absolute()
 {
 
+	int fd;
 	wchar_t *path;
 
 	path = get_absolute_ntpath(AT_FDCWD, "C:/abc");
@@ -183,12 +196,16 @@ void test_absolute()
 	path = get_absolute_ntpath(AT_FDCWD, "C:/..");
 	ASSERT_NULL(path);
 
-	int fd = open("t-path", O_RDONLY);
+	fd = open("t-path", O_RDONLY);
+	ASSERT_EQ(fd, 3);
 	// fd should be ignored
 	path = get_absolute_ntpath(fd, "C:/abc/");
 	ASSERT_WSTREQ(path, L"\\??\\C:\\abc\\");
 	free(path);
-	close(fd);
+
+	ASSERT_SUCCESS(close(fd));
+
+	return 0;
 }
 
 int main()
@@ -205,13 +222,17 @@ int main()
 	}
 	length = wcslen(cwd);
 
-	test_null();
-	test_con();
+	INITIAILIZE_TESTS();
 
-	test_relative();
+	TEST(test_null());
+	TEST(test_con());
 
-	mkdir("t-path", 0777);
-	test_at();
-	test_absolute();
+	TEST(test_relative());
+
+	mkdir("t-path", 0700);
+	TEST(test_at());
+	TEST(test_absolute());
 	rmdir("t-path");
+
+	VERIFY_RESULT_AND_EXIT();
 }

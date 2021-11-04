@@ -15,7 +15,7 @@ freopen
 internal
 pipe
 rename
-renameat
+#renameat
 ungetc)
 
 foreach(t ${tests})

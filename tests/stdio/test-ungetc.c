@@ -11,16 +11,23 @@
 #include <test-macros.h>
 #include <errno.h>
 
-void test_ungetc()
+int test_ungetc()
 {
-	FILE *f = fopen("t-ungetc", "w+");
 	int result;
+	char buffer[16];
+	size_t count;
+	FILE *f;
+	const char *filename = "t-ungetc";
+
+	f = fopen(filename, "w+");
+	ASSERT_NOTNULL(f);
 
 	// nothing has been read in yet, ungetc should return EOF
 	result = ungetc('a', f);
 	ASSERT_EQ(result, EOF);
 
-	fwrite("hello world!", 1, 12, f);
+	count = fwrite("hello world!", 1, 12, f);
+	ASSERT_EQ(count, 12);
 
 	// Something has been written, ungetc only operates on input stream so EOF again.
 	result = ungetc('a', f);
@@ -28,8 +35,8 @@ void test_ungetc()
 
 	rewind(f);
 
-	char buffer[16];
-	fread(buffer, 1, 16, f);
+	count = fread(buffer, 1, 16, f);
+	ASSERT_EQ(count, 12);
 	ASSERT_MEMEQ(buffer, "hello world!", 12);
 	ASSERT_EQ(ftell(f), 12);
 	ASSERT_EQ(feof(f), 1);
@@ -44,16 +51,25 @@ void test_ungetc()
 	ASSERT_EQ(ftell(f), 10);
 	ASSERT_EQ(feof(f), 0);
 
-	fread(buffer, 1, 16, f);
+	count = fread(buffer, 1, 16, f);
+	ASSERT_EQ(count, 2);
 	ASSERT_MEMEQ(buffer, "ba", 2);
 
-	fclose(f);
+	ASSERT_SUCCESS(fclose(f));
+	ASSERT_SUCCESS(unlink(filename));
 
-	unlink("t-ungetc");
+	return 0;
+}
+
+void cleanup()
+{
+	remove("t-ungetc");
 }
 
 int main()
 {
-	test_ungetc();
-	return 0;
+	INITIAILIZE_TESTS();
+	CLEANUP(cleanup);
+	TEST(test_ungetc());
+	VERIFY_RESULT_AND_EXIT();
 }

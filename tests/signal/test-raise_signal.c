@@ -21,25 +21,38 @@ void handler_2(int sig)
 	--global_variable;
 }
 
-void test_SIGKILL()
+int test_SIGKILL()
 {
-	_crt_signal_t result = signal(SIGKILL, handler_1);
+	// signal handler for SIGKILL can't be overridden
+	_crt_signal_t old_handler = signal(SIGKILL, handler_1);
 	ASSERT_ERRNO(EINVAL);
-	ASSERT_EQ(result, SIG_ERR);
+	ASSERT_EQ(old_handler, SIG_ERR);
+	return 0;
 }
 
-void test_our_signals()
+int test_custom_signals()
 {
-	signal(SIGHUP, handler_1);
+	_crt_signal_t old_handler;
+
+	old_handler = signal(SIGHUP, handler_1);
+	ASSERT_EQ(old_handler, SIG_DFL);
 	raise(SIGHUP);
 	ASSERT_EQ(global_variable, 1);
-	signal(SIGPIPE, handler_2);
+
+	old_handler = signal(SIGPIPE, handler_2);
+	ASSERT_EQ(old_handler, SIG_DFL);
 	raise(SIGPIPE);
 	ASSERT_EQ(global_variable, 0);
+
+	return 0;
 }
 
 int main()
 {
-	test_our_signals();
-	test_SIGKILL();
+	INITIAILIZE_TESTS();
+
+	TEST(test_SIGKILL());
+	TEST(test_custom_signals());
+
+	VERIFY_RESULT_AND_EXIT();
 }

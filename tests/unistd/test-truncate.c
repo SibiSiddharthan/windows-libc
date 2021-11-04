@@ -11,77 +11,130 @@
 #include <errno.h>
 #include <sys/stat.h>
 
-void test_lesser_length()
+int test_lesser_length()
 {
-	char *write_buffer = "hello";
-	int fd = creat("t-truncate", 0700);
-	write(fd, write_buffer, 5);
-	close(fd);
-
-	int result = truncate("t-truncate", 3);
-	ASSERT_EQ(result, 0);
-
-	fd = open("t-truncate", O_RDONLY);
+	int status;
+	int fd;
+	ssize_t length;
 	char read_buffer[16];
-	ASSERT_EQ(read(fd, read_buffer, 16), 3);
-	ASSERT_EQ(memcmp(read_buffer, "hel", 3), 0)
+	const char *filename = "t-truncate-lesser";
+	const char *write_buffer = "hello";
 
-	close(fd);
-	unlink("t-truncate");
+	fd = creat(filename, 0700);
+	ASSERT_EQ(fd, 3);
+	length = write(fd, write_buffer, 5);
+	ASSERT_EQ(length, 5);
+	ASSERT_SUCCESS(close(fd));
+
+	status = truncate(filename, 3);
+	ASSERT_EQ(status, 0);
+
+	fd = open(filename, O_RDONLY);
+	ASSERT_EQ(fd, 3);
+	length = read(fd, read_buffer, 16);
+	ASSERT_EQ(length, 3);
+	ASSERT_MEMEQ(read_buffer, "hel", 3);
+	ASSERT_SUCCESS(close(fd));
+
+	ASSERT_SUCCESS(unlink(filename));
+
+	return 0;
 }
 
-void test_greater_length()
+int test_greater_length()
 {
-	char *write_buffer = "hello";
-	int fd = creat("t-truncate", 0700);
-	write(fd, write_buffer, 5);
-	close(fd);
-
-	int result = truncate("t-truncate", 10);
-	ASSERT_EQ(result, 0);
-
-	fd = open("t-truncate", O_RDONLY);
+	int status;
+	int fd;
+	ssize_t length;
 	char read_buffer[16];
-	ASSERT_EQ(read(fd, read_buffer, 16), 10);
-	ASSERT_EQ(memcmp(read_buffer, "hello\0\0\0\0\0", 10), 0)
+	const char *filename = "t-truncate-greater";
+	const char *write_buffer = "hello";
 
-	close(fd);
-	unlink("t-truncate");
+	fd = creat(filename, 0700);
+	ASSERT_EQ(fd, 3);
+	length = write(fd, write_buffer, 5);
+	ASSERT_EQ(length, 5);
+	ASSERT_SUCCESS(close(fd));
+
+	status = truncate(filename, 10);
+	ASSERT_EQ(status, 0);
+
+	fd = open(filename, O_RDONLY);
+	ASSERT_EQ(fd, 3);
+	length = read(fd, read_buffer, 16);
+	ASSERT_EQ(length, 10);
+	ASSERT_MEMEQ(read_buffer, "hello\0\0\0\0\0", 10);
+	ASSERT_SUCCESS(close(fd));
+
+	ASSERT_SUCCESS(unlink(filename));
+
+	return 0;
 }
 
-void test_ftruncate()
+int test_ftruncate()
 {
-	int fd = open("t-truncate", O_CREAT | O_RDWR, 0700);
-	char *write_buffer = "hello";
-	write(fd, write_buffer, 5);
-
-	int result = ftruncate(fd, 10);
-	ASSERT_EQ(result, 0);
-
-	lseek(fd, 0, SEEK_SET);
+	int status;
+	int fd;
+	ssize_t length;
 	char read_buffer[16];
-	ASSERT_EQ(read(fd, read_buffer, 16), 10);
-	ASSERT_EQ(memcmp(read_buffer, "hello\0\0\0\0\0", 10), 0)
+	const char *filename = "t-ftruncate";
+	const char *write_buffer = "hello";
 
-	close(fd);
-	unlink("t-truncate");
+	fd = open(filename, O_CREAT | O_RDWR, 0700);
+	ASSERT_EQ(fd, 3);
+	length = write(fd, write_buffer, 5);
+	ASSERT_EQ(length, 5);
+
+	status = ftruncate(fd, 10);
+	ASSERT_EQ(status, 0);
+
+	lseek(fd, 0, SEEK_SET); // TODO fix bug here
+	length = read(fd, read_buffer, 16);
+	ASSERT_EQ(length, 10);
+	ASSERT_MEMEQ(read_buffer, "hello\0\0\0\0\0", 10);
+
+	ASSERT_SUCCESS(close(fd));
+	ASSERT_SUCCESS(unlink(filename));
+
+	return 0;
 }
 
-void test_readonly()
+int test_readonly()
 {
-	int fd = creat("t-truncate", S_IREAD);
-	close(fd);
-	int result = truncate("t-truncate", 10);
-	ASSERT_EQ(result, -1);
+	int status;
+	int fd;
+	const char *filename = "t-truncate-readonly";
+
+	fd = creat(filename, S_IREAD);
+	ASSERT_EQ(fd, 3);
+	ASSERT_SUCCESS(close(fd));
+
+	status = truncate(filename, 10);
+	ASSERT_EQ(status, -1);
 	ASSERT_ERRNO(EACCES);
-	unlink("t-truncate");
+
+	ASSERT_SUCCESS(unlink(filename));
+
+	return 0;
+}
+
+void cleanup()
+{
+	remove("t-truncate-lesser");
+	remove("t-truncate-greater");
+	remove("t-ftruncate");
+	remove("t-truncate-readonly");
 }
 
 int main()
 {
-	test_lesser_length();
-	test_greater_length();
-	test_ftruncate();
-	test_readonly();
-	return 0;
+	INITIAILIZE_TESTS();
+	CLEANUP(cleanup);
+
+	TEST(test_lesser_length());
+	TEST(test_greater_length());
+	TEST(test_ftruncate());
+	TEST(test_readonly());
+
+	VERIFY_RESULT_AND_EXIT();
 }

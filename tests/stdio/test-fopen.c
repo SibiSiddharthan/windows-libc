@@ -11,12 +11,13 @@
 #include <test-macros.h>
 #include <errno.h>
 
-void test_EISDIR()
+int test_EISDIR()
 {
 	errno = 0;
-	FILE *f = fopen("CMakeFiles", "r");
+	FILE *f = fopen(".", "r");
 	ASSERT_NULL(f);
 	ASSERT_ERRNO(EISDIR);
+	return 0;
 }
 
 /*
@@ -25,14 +26,22 @@ void test_EISDIR()
   These were originally written for testing the hooks to msvcrt.
   NOTE: stdio is not meant to be used in this way.
 */
-void test_wplus()
+int test_wplus()
 {
-	FILE *f = fopen("t-fopen", "w+");
+	FILE *f;
+	size_t flength;
+	ssize_t llength;
+	char rbuf[16];
+	int fd;
+	const char *filename = "t-fopen-w+";
 
-	size_t flength = fwrite((void *)"hello1", 1, 6, f);
+	f = fopen(filename, "w+");
+	ASSERT_NOTNULL(f);
+
+	flength = fwrite((void *)"hello1", 1, 6, f);
 	ASSERT_EQ(flength, 6);
 
-	int fd = fileno(f);
+	fd = fileno(f);
 	ASSERT_EQ(fd, 3);
 
 	flength = fwrite((void *)"hello2", 1, 6, f);
@@ -40,27 +49,36 @@ void test_wplus()
 
 	fseek(f, 0, SEEK_SET);
 
-	char rbuf[16];
-	ssize_t llength = read(fd, rbuf, 16);
+	llength = read(fd, rbuf, 16);
 	ASSERT_EQ(llength, 12);
-	rbuf[llength] = '\0';
-	ASSERT_STREQ(rbuf, "hello1hello2");
+	ASSERT_MEMEQ(rbuf, "hello1hello2", (int)llength);
 
-	fclose(f);
-	unlink("t-fopen");
+	ASSERT_SUCCESS(fclose(f));
+	ASSERT_SUCCESS(unlink(filename));
+
+	return 0;
 }
 
-void test_aplus()
+int test_aplus()
 {
-	FILE *f = fopen("t-fopen", "a+");
+	FILE *f;
+	size_t flength;
+	ssize_t llength;
+	off_t offset;
+	char rbuf[16];
+	int fd;
+	const char *filename = "t-fopen-a+";
 
-	size_t flength = fwrite((void *)"hello1", 1, 6, f);
+	f = fopen(filename, "a+");
+	ASSERT_NOTNULL(f);
+
+	flength = fwrite((void *)"hello1", 1, 6, f);
 	ASSERT_EQ(flength, 6);
 
-	int fd = fileno(f);
+	fd = fileno(f);
 	ASSERT_EQ(fd, 3);
 
-	off_t offset = lseek(fd, 0, SEEK_SET);
+	offset = lseek(fd, 0, SEEK_SET);
 	ASSERT_EQ(offset, 0);
 
 	flength = fwrite((void *)"hello2", 1, 6, f);
@@ -68,49 +86,72 @@ void test_aplus()
 
 	fseek(f, 0, SEEK_SET);
 
-	char rbuf[16];
-	ssize_t llength = read(fd, rbuf, 16);
+	llength = read(fd, rbuf, 16);
 	ASSERT_EQ(llength, 12);
-	rbuf[llength] = '\0';
-	ASSERT_STREQ(rbuf, "hello1hello2");
+	ASSERT_MEMEQ(rbuf, "hello1hello2", (int)llength);
 
-	fclose(f);
-	unlink("t-fopen");
+	ASSERT_SUCCESS(fclose(f));
+	ASSERT_SUCCESS(unlink(filename));
+
+	return 0;
 }
 
-void test_rplus()
+int test_rplus()
 {
-	int fd = creat("t-fopen", 0700);
-	close(fd);
-	FILE *f = fopen("t-fopen", "r+");
+	FILE *f;
+	size_t flength;
+	ssize_t llength;
+	off_t offset;
+	char rbuf[16];
+	int fd;
+	int pos;
+	const char *filename = "t-fopen-r+";
+
+	fd = creat(filename, 0700);
+	ASSERT_EQ(fd, 3);
+	ASSERT_SUCCESS(close(fd));
+
+	f = fopen(filename, "r+");
+	ASSERT_NOTNULL(f);
 
 	fd = fileno(f);
 	ASSERT_EQ(fd, 3);
 
-	ssize_t llength = write(fd, (void *)"hello1", 6);
+	llength = write(fd, (void *)"hello1", 6);
 	ASSERT_EQ(llength, 6);
 
 	llength = write(fd, (void *)"hello2", 6);
 	ASSERT_EQ(llength, 6);
 
-	int pos = fseek(f, 0, SEEK_SET);
+	pos = fseek(f, 0, SEEK_SET);
 	ASSERT_EQ(pos, 0);
 
-	char rbuf[16];
-	size_t flength = fread(rbuf, 1, 16, f);
+	flength = fread(rbuf, 1, 16, f);
 	ASSERT_EQ(flength, 12);
-	rbuf[flength] = '\0';
-	ASSERT_STREQ(rbuf, "hello1hello2");
+	ASSERT_MEMEQ(rbuf, "hello1hello2", (int)flength);
 
-	fclose(f);
-	unlink("t-fopen");
+	ASSERT_SUCCESS(fclose(f));
+	ASSERT_SUCCESS(unlink(filename));
+
+	return 0;
+}
+
+void cleanup()
+{
+	remove("t-fopen-w+");
+	remove("t-fopen-a+");
+	remove("t-fopen-r+");
 }
 
 int main()
 {
-	test_EISDIR();
-	test_wplus();
-	test_aplus();
-	test_rplus();
-	return 0;
+	INITIAILIZE_TESTS();
+	CLEANUP(cleanup);
+
+	TEST(test_EISDIR());
+	TEST(test_wplus());
+	TEST(test_aplus());
+	TEST(test_rplus());
+
+	VERIFY_RESULT_AND_EXIT();
 }

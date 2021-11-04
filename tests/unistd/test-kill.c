@@ -14,35 +14,46 @@
 #include <internal/process.h>
 #include <Windows.h>
 
-void test_EINVAL()
+int test_EINVAL()
 {
 	errno = 0;
 	int status = kill(getpid(), 64);
 	ASSERT_ERRNO(EINVAL);
 	ASSERT_EQ(status, -1);
+	return 0;
 }
 
-void test_okay()
+int test_okay()
 {
 	STARTUPINFOA si;
 	PROCESS_INFORMATION pi;
+	BOOL result;
+	int status, wait_status;
+	pid_t child_pid;
 
 	memset(&si, 0, sizeof(si));
 	si.cb = sizeof(si);
 	memset(&pi, 0, sizeof(pi));
 
-	BOOL result = CreateProcessA(NULL, "kill-helper", NULL, NULL, TRUE, 0, NULL, NULL, &si, &pi);
+	result = CreateProcessA(NULL, "kill-helper", NULL, NULL, TRUE, 0, NULL, NULL, &si, &pi);
 	add_child(pi.dwProcessId, pi.hProcess);
 
-	kill(pi.dwProcessId, SIGTERM);
-	int wstatus;
-	waitpid(pi.dwProcessId, &wstatus, 0);
-	ASSERT_EQ(wstatus, 3);
+	status = kill(pi.dwProcessId, SIGTERM);
+	ASSERT_EQ(status, 0);
+
+	child_pid = waitpid(pi.dwProcessId, &wait_status, 0);
+	ASSERT_EQ(child_pid, pi.dwProcessId);
+	ASSERT_EQ(wait_status, 3);
+
+	return 0;
 }
 
 int main()
 {
-	test_EINVAL();
-	test_okay();
-	return 0;
+	INITIAILIZE_TESTS();
+
+	TEST(test_EINVAL());
+	TEST(test_okay());
+
+	VERIFY_RESULT_AND_EXIT();
 }

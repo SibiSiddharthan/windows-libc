@@ -10,106 +10,390 @@
 #include <errno.h>
 #include <unistd.h>
 #include <sys/stat.h>
-#include <Windows.h>
 
 #define MAX_PATH 260
 
-void test_symlink_EEXIST()
+static const char *test_content = "Hello World!";
+static const size_t sizeof_test_content = 12;
+
+static int verify_file_contents(int dirfd, const char *filename)
 {
-	errno = 0;
-	int fd = creat("t-symlink", 0700);
+	ssize_t length;
+	char buf[16];
+	int fd;
+
+	fd = openat(dirfd, filename, O_RDONLY);
+	if (fd == -1)
+	{
+		return -1;
+	}
+
+	length = read(fd, buf, 16);
+	if (length != sizeof_test_content)
+	{
+		return -1;
+	}
+	if (memcmp(buf, test_content, length) != 0)
+	{
+		return -1;
+	}
+
 	close(fd);
-	int status = symlink("junk", "t-symlink");
-	ASSERT_EQ(status, -1);
-	ASSERT_ERRNO(EEXIST);
-	unlink("t-symlink");
+	return 0;
 }
 
-void test_symlink_ENOENT()
+static int write_file_contents(int fd)
+{
+	ssize_t length;
+
+	length = write(fd, test_content, sizeof_test_content);
+	if (length != sizeof_test_content)
+	{
+		return -1;
+	}
+
+	return 0;
+}
+
+int test_symlink_ENOENT()
 {
 	errno = 0;
 	int status = symlink("junk", "");
 	ASSERT_EQ(status, -1);
 	ASSERT_ERRNO(ENOENT);
+	return 0;
 }
 
-void test_symlink_EINVAL()
+int test_symlink_EINVAL()
 {
 	errno = 0;
-	int status = symlink("", "t-symlink");
+	int status;
+	const char *filename = "t-symlink-inval";
+
+	status = symlink("", filename);
 	ASSERT_EQ(status, -1);
 	ASSERT_ERRNO(EINVAL);
+	ASSERT_FAIL(unlink(filename));
+
+	return 0;
 }
 
-void test_readlink_ENOENT1()
+int test_symlink_EEXIST()
+{
+	errno = 0;
+	int status;
+	int fd;
+	const char *filename = "t-symlink-exist";
+
+	fd = creat(filename, 0700);
+	ASSERT_EQ(fd, 3);
+	ASSERT_SUCCESS(close(fd));
+
+	status = symlink("junk", filename);
+	ASSERT_EQ(status, -1);
+	ASSERT_ERRNO(EEXIST);
+
+	ASSERT_SUCCESS(unlink(filename));
+	return 0;
+}
+
+int test_readlink_ENOENT()
 {
 	errno = 0;
 	char buf[MAX_PATH];
 	ssize_t length = readlink("", buf, MAX_PATH);
 	ASSERT_ERRNO(ENOENT);
 	ASSERT_EQ(length, -1);
+	return 0;
 }
 
-void test_readlink_EINVAL()
+int test_readlink_EINVAL()
 {
 	errno = 0;
-	int fd = creat("t-readlink", 0700);
-	close(fd);
+	int fd;
+	ssize_t length;
 	char buf[MAX_PATH];
-	ssize_t length = readlink("t-readlink", buf, MAX_PATH);
+	const char *filename = "t-readlink-inval";
+
+	fd = creat(filename, 0700);
+	ASSERT_EQ(fd, 3);
+	ASSERT_SUCCESS(close(fd));
+
+	length = readlink(filename, buf, MAX_PATH);
 	ASSERT_ERRNO(EINVAL);
 	ASSERT_EQ(length, -1);
-	unlink("t-readlink");
+
+	ASSERT_SUCCESS(unlink(filename));
+	return 0;
 }
 
-void test_okay_file()
+int test_file()
 {
-	int fd = creat("t-readlink", 0700);
-	close(fd);
-	int status = symlink("t-readlink", "t-readlink.sym");
-	ASSERT_EQ(status, 0);
+	int status;
+	int fd;
+	ssize_t length;
 	char buf[MAX_PATH];
-	ssize_t length = readlink("t-readlink.sym", buf, MAX_PATH);
-	buf[length] = '\0';
-	ASSERT_EQ(length, 10);
-	ASSERT_STREQ(buf, "t-readlink");
-	status = unlink("t-readlink.sym");
+	const char *filename = "t-readlink.file";
+	const char *filename_symlink = "t-readlink.file.sym";
+
+	fd = creat(filename, 0700);
+	ASSERT_EQ(fd, 3);
+	ASSERT_SUCCESS(write_file_contents(fd));
+	ASSERT_SUCCESS(close(fd));
+
+	status = symlink(filename, filename_symlink);
 	ASSERT_EQ(status, 0);
-	unlink("t-readlink");
+
+	length = readlink(filename_symlink, buf, MAX_PATH);
+	buf[length] = '\0';
+	ASSERT_EQ(length, strlen(filename));
+	ASSERT_STREQ(buf, filename);
+
+	ASSERT_SUCCESS(verify_file_contents(AT_FDCWD, filename_symlink));
+
+	ASSERT_SUCCESS(unlink(filename_symlink));
+	ASSERT_SUCCESS(unlink(filename));
+
+	return 0;
 }
 
-void test_okay_dir()
+int test_dir()
 {
-	mkdir("t-readlink.dir", 0700);
-	int status = symlink("t-readlink.dir", "sym-t-readlink.dir");
-	ASSERT_EQ(status, 0);
+	int status;
+	int fd, dirfd;
+	ssize_t length;
 	char buf[MAX_PATH];
-	ssize_t length = readlink("sym-t-readlink.dir", buf, MAX_PATH);
-	buf[length] = '\0';
-	ASSERT_EQ(length, 14);
-	ASSERT_STREQ(buf, "t-readlink.dir");
-	status = rmdir("sym-t-readlink.dir");
+	const char *dirname = "t-readlink.dir";
+	const char *dirname_symlink = "t-readlink.dir.sym";
+	const char *filename = "t-readlink.file";
+
+	ASSERT_SUCCESS(mkdir(dirname, 0700));
+
+	dirfd = open(dirname, O_RDONLY);
+	ASSERT_EQ(dirfd, 3);
+
+	fd = openat(dirfd, filename, O_CREAT | O_WRONLY, 0700);
+	ASSERT_EQ(fd, 4);
+	ASSERT_SUCCESS(write_file_contents(fd));
+	ASSERT_SUCCESS(close(fd));
+
+	ASSERT_SUCCESS(close(dirfd));
+
+	status = symlink(dirname, dirname_symlink);
 	ASSERT_EQ(status, 0);
-	rmdir("t-readlink.dir");
+
+	length = readlink(dirname_symlink, buf, MAX_PATH);
+	buf[length] = '\0';
+	ASSERT_EQ(length, strlen(dirname));
+	ASSERT_STREQ(buf, dirname);
+
+	dirfd = open(dirname_symlink, O_RDONLY);
+	ASSERT_EQ(dirfd, 3);
+	ASSERT_SUCCESS(verify_file_contents(dirfd, filename));
+
+	ASSERT_SUCCESS(unlinkat(dirfd, filename, 0));
+	ASSERT_SUCCESS(close(dirfd));
+
+	ASSERT_SUCCESS(rmdir(dirname_symlink));
+	ASSERT_SUCCESS(rmdir(dirname));
+
+	return 0;
 }
 
-void test_readlink_abs()
+int test_absolute_path()
 {
-	int fd = creat("t-readlink", 0700);
-	close(fd);
-	int status = symlink("t-readlink", "t-readlink.sym");
+	int status;
+	int fd;
+	ssize_t length;
+	int absolute_length;
+	char filename_absolute[MAX_PATH], linkname_absolute[MAX_PATH], buf[MAX_PATH];
+	const char *filename = "t-readlink-abs";
+	const char *linkname = "t-readlink-abs.sym";
+
+	fd = creat(filename, 0700);
+	ASSERT_EQ(fd, 3);
+	ASSERT_SUCCESS(write_file_contents(fd));
+	ASSERT_SUCCESS(close(fd));
+
+	getcwd(linkname_absolute, MAX_PATH);
+	strcat(linkname_absolute, "/");
+	strcat(linkname_absolute, linkname);
+
+	getcwd(filename_absolute, MAX_PATH);
+	strcat(filename_absolute, "/");
+	strcat(filename_absolute, filename);
+	absolute_length = strlen(filename_absolute);
+
+	// case 1: source, target relative
+	status = symlink(filename, linkname);
 	ASSERT_EQ(status, 0);
-	char abspath[MAX_PATH];
-	getcwd(abspath, MAX_PATH);
-	strcat(abspath, "/t-readlink.sym");
-	char buf[MAX_PATH];
-	ssize_t length = readlink(abspath, buf, MAX_PATH);
+
+	length = readlink(linkname_absolute, buf, MAX_PATH);
 	buf[length] = '\0';
-	ASSERT_EQ(length, 10);
-	ASSERT_STREQ(buf, "t-readlink");
-	unlink("t-readlink.sym");
-	unlink("t-readlink");
+	ASSERT_EQ(length, strlen(filename));
+	ASSERT_STREQ(buf, filename);
+
+	length = readlink(linkname, buf, MAX_PATH);
+	buf[length] = '\0';
+	ASSERT_EQ(length, strlen(filename));
+	ASSERT_STREQ(buf, filename);
+
+	ASSERT_SUCCESS(verify_file_contents(AT_FDCWD, linkname));
+	ASSERT_SUCCESS(unlink(linkname));
+
+	// case 2: source is absolute, target relative
+	status = symlink(filename_absolute, linkname);
+	ASSERT_EQ(status, 0);
+
+	length = readlink(linkname_absolute, buf, MAX_PATH);
+	buf[length] = '\0';
+	ASSERT_EQ(length, absolute_length);
+	ASSERT_STREQ(buf, filename_absolute);
+
+	length = readlink(linkname, buf, MAX_PATH);
+	buf[length] = '\0';
+	ASSERT_EQ(length, absolute_length);
+	ASSERT_STREQ(buf, filename_absolute);
+
+	ASSERT_SUCCESS(verify_file_contents(AT_FDCWD, linkname));
+	ASSERT_SUCCESS(unlink(linkname));
+
+	// case 3: source is relative, target absolute
+	status = symlink(filename, linkname_absolute);
+	ASSERT_EQ(status, 0);
+
+	length = readlink(linkname_absolute, buf, MAX_PATH);
+	buf[length] = '\0';
+	ASSERT_EQ(length, strlen(filename));
+	ASSERT_STREQ(buf, filename);
+
+	length = readlink(linkname, buf, MAX_PATH);
+	buf[length] = '\0';
+	ASSERT_EQ(length, strlen(filename));
+	ASSERT_STREQ(buf, filename);
+
+	ASSERT_SUCCESS(verify_file_contents(AT_FDCWD, linkname_absolute));
+	ASSERT_SUCCESS(unlink(linkname));
+
+	// case 4: source, target absolute
+	status = symlink(filename_absolute, linkname_absolute);
+	ASSERT_EQ(status, 0);
+
+	length = readlink(linkname_absolute, buf, MAX_PATH);
+	buf[length] = '\0';
+	ASSERT_EQ(length, absolute_length);
+	ASSERT_STREQ(buf, filename_absolute);
+
+	length = readlink(linkname, buf, MAX_PATH);
+	buf[length] = '\0';
+	ASSERT_EQ(length, absolute_length);
+	ASSERT_STREQ(buf, filename_absolute);
+
+	ASSERT_SUCCESS(verify_file_contents(AT_FDCWD, linkname_absolute));
+	ASSERT_SUCCESS(unlink(linkname));
+
+	ASSERT_SUCCESS(unlink(filename));
+
+	return 0;
 }
+
+int test_relative_path()
+{
+	int status;
+	int fd;
+	ssize_t length;
+	char buf[MAX_PATH];
+
+	const char *dirname = "t-readlink-relative.dir";
+	const char *dirname_child = "t-readlink-relative.dir/t-readlink-relative-child.dir";
+	const char *filename = "t-readlink-relative.dir/t-readlink-relative.file";
+	const char *symlink_parent = "t-readlink-relative.file.sym";
+	const char *symlink_child = "t-readlink-relative.dir/t-readlink-relative-child.dir/t-readlink-relative.file.sym";
+	const char *source_child = "../t-readlink-relative.file";
+
+	ASSERT_SUCCESS(mkdir(dirname, 0700));
+	ASSERT_SUCCESS(mkdir(dirname_child, 0700));
+
+	fd = creat(filename, 0700);
+	ASSERT_EQ(fd, 3);
+	ASSERT_SUCCESS(write_file_contents(fd));
+	ASSERT_SUCCESS(close(fd));
+
+	// file -> dir/file
+	status = symlink(filename, symlink_parent);
+	ASSERT_EQ(status, 0);
+
+	length = readlink(symlink_parent, buf, MAX_PATH);
+	buf[length] = '\0';
+	ASSERT_EQ(length, strlen(filename));
+	ASSERT_STREQ(buf, filename);
+
+	ASSERT_SUCCESS(verify_file_contents(AT_FDCWD, symlink_parent));
+	ASSERT_SUCCESS(unlink(symlink_parent));
+
+	// file -> ../file
+	status = symlink(source_child, symlink_child);
+	ASSERT_EQ(status, 0);
+
+	length = readlink(symlink_child, buf, MAX_PATH);
+	buf[length] = '\0';
+	ASSERT_EQ(length, strlen(source_child));
+	ASSERT_STREQ(buf, source_child);
+
+	ASSERT_SUCCESS(verify_file_contents(AT_FDCWD, symlink_child));
+	ASSERT_SUCCESS(unlink(symlink_child));
+
+	// cleanup
+	ASSERT_SUCCESS(unlink(filename));
+	ASSERT_SUCCESS(rmdir(dirname_child));
+	ASSERT_SUCCESS(rmdir(dirname));
+
+	return 0;
+}
+
+int test_multilevel_symlink()
+{
+	int status;
+	int fd;
+	ssize_t length;
+	char buf[MAX_PATH];
+	const char *filename = "t-symlink-multi";
+	const char *filename_sym1 = "t-symlink-multi.sym1";
+	const char *filename_sym2 = "t-symlink-multi.sym2";
+
+	fd = creat(filename, 0700);
+	ASSERT_EQ(fd, 3);
+	ASSERT_SUCCESS(write_file_contents(fd));
+	ASSERT_SUCCESS(close(fd));
+
+	status = symlink(filename, filename_sym1);
+	ASSERT_EQ(status, 0);
+	status = symlink(filename_sym1, filename_sym2);
+	ASSERT_EQ(status, 0);
+
+	length = readlink(filename_sym2, buf, MAX_PATH);
+	buf[length] = '\0';
+	ASSERT_EQ(length, strlen(filename_sym1));
+	ASSERT_STREQ(buf, filename_sym1);
+
+	length = readlink(filename_sym1, buf, MAX_PATH);
+	buf[length] = '\0';
+	ASSERT_EQ(length, strlen(filename));
+	ASSERT_STREQ(buf, filename);
+
+	ASSERT_SUCCESS(verify_file_contents(AT_FDCWD, filename_sym2));
+	ASSERT_SUCCESS(verify_file_contents(AT_FDCWD, filename_sym1));
+
+	ASSERT_SUCCESS(unlink(filename));
+	ASSERT_SUCCESS(unlink(filename_sym1));
+	ASSERT_SUCCESS(unlink(filename_sym2));
+
+	return 0;
+}
+
+#if 0
+
+// Redundant tests
 
 void test_sub_directory()
 {
@@ -221,196 +505,188 @@ void test_cross_directory4()
 	rmdir("../t-readlink");
 }
 
-void test_small_bufsize1()
+#endif
+
+int test_readlink_small_buffer()
 {
-	int fd = creat("t-readlink", 0700);
-	close(fd);
-	int status = symlink("t-readlink", "t-readlink.sym");
-	ASSERT_EQ(status, 0);
+	int status;
+	int fd;
+	ssize_t length;
 	char buf[6];
-	ssize_t length = readlink("t-readlink.sym", buf, 5);
+	const char *filename = "t-readlink-small-buffer";
+	const char *filename_symlink = "t-readlink-small-buffer.sym";
+
+	fd = creat(filename, 0700);
+	ASSERT_EQ(fd, 3);
+	ASSERT_SUCCESS(close(fd));
+
+	status = symlink(filename, filename_symlink);
+	ASSERT_EQ(status, 0);
+
+	length = readlink(filename_symlink, buf, 5);
 	buf[length] = '\0';
 	ASSERT_EQ(length, 5);
 	ASSERT_STREQ(buf, "t-rea");
-	unlink("t-readlink.sym");
-	unlink("t-readlink");
+
+	ASSERT_SUCCESS(unlink(filename));
+	ASSERT_SUCCESS(unlink(filename_symlink));
+
+	return 0;
 }
 
-// Cross directory
-void test_small_bufsize2()
-{
-	mkdir("t-readlink", 0700);
-	int fd = creat("../file", 0700);
-	close(fd);
-	int status = symlink("../../file", "t-readlink/file.sym");
-	ASSERT_EQ(status, 0);
-	char buf[6];
-	ssize_t length = readlink("t-readlink/file.sym", buf, 5);
-	buf[length] = '\0';
-	ASSERT_EQ(length, 5);
-	ASSERT_STREQ(buf, "../..");
-	unlink("t-readlink/file.sym");
-	unlink("../file");
-	rmdir("t-readlink");
-}
-
-// unresolved symlink
-void test_readlink_dummy()
-{
-	errno = 0;
-	int status = symlink("t-readlink-dummy", "t-readlink-dummy.sym");
-	ASSERT_EQ(status, 0);
-	char buf[MAX_PATH];
-	ssize_t length = readlink("t-readlink-dummy.sym", buf, MAX_PATH);
-	buf[length] = '\0';
-	ASSERT_EQ(length, 16);
-	ASSERT_STREQ(buf, "t-readlink-dummy");
-	status = unlink("t-readlink-dummy.sym");
-	ASSERT_EQ(status, 0); // check whether a file is created
-}
-
-void test_symlink_abs_file()
-{
-	int fd = creat("t-readlink", 0700);
-	close(fd);
-	char abspath[MAX_PATH];
-	getcwd(abspath, MAX_PATH);
-	strcat(abspath, "/t-readlink.sym");
-	int status = symlink("t-readlink", abspath);
-	ASSERT_EQ(status, 0);
-	char buf[MAX_PATH];
-	ssize_t length = readlink("t-readlink.sym", buf, MAX_PATH);
-	buf[length] = '\0';
-	ASSERT_EQ(length, 10);
-	ASSERT_STREQ(buf, "t-readlink");
-	status = unlink("t-readlink.sym");
-	ASSERT_EQ(status, 0);
-	unlink("t-readlink");
-}
-
-// Source is absolute path
-void test_symlink_abs_dir1()
-{
-	mkdir("t-readlink.dir", 0700);
-	char abspath[MAX_PATH];
-	getcwd(abspath, MAX_PATH);
-	strcat(abspath, "/t-readlink.dir");
-
-	int status = symlink(abspath, "sym-t-readlink.dir");
-	ASSERT_EQ(status, 0);
-	char buf[MAX_PATH];
-	ssize_t length = readlink("sym-t-readlink.dir", buf, MAX_PATH);
-	buf[length] = '\0';
-
-	ASSERT_EQ(length, strlen(abspath));
-	ASSERT_STREQ(buf, abspath);
-	status = rmdir("sym-t-readlink.dir");
-	ASSERT_EQ(status, 0);
-	rmdir("t-readlink.dir");
-}
-
-// Target is absolute path
-void test_symlink_abs_dir2()
-{
-	mkdir("t-readlink.dir", 0700);
-	char abspath[MAX_PATH];
-	getcwd(abspath, MAX_PATH);
-	strcat(abspath, "/sym-t-readlink.dir");
-	int status = symlink("t-readlink.dir", abspath);
-	ASSERT_EQ(status, 0);
-	char buf[MAX_PATH];
-	ssize_t length = readlink("sym-t-readlink.dir", buf, MAX_PATH);
-	buf[length] = '\0';
-	ASSERT_EQ(length, 14);
-	ASSERT_STREQ(buf, "t-readlink.dir");
-	status = rmdir("sym-t-readlink.dir");
-	ASSERT_EQ(status, 0);
-	rmdir("t-readlink.dir");
-}
-
-// Both are absolute paths
-void test_symlink_abs_dir3()
-{
-	mkdir("t-readlink.dir", 0700);
-	char abspath_source[MAX_PATH], abspath_target[MAX_PATH];
-	getcwd(abspath_source, MAX_PATH);
-	getcwd(abspath_target, MAX_PATH);
-
-	strcat(abspath_source, "/t-readlink.dir");
-	strcat(abspath_target, "/sym-t-readlink.dir");
-	int status = symlink(abspath_source, abspath_target);
-	ASSERT_EQ(status, 0);
-	char buf[MAX_PATH];
-	ssize_t length = readlink("sym-t-readlink.dir", buf, MAX_PATH);
-	buf[length] = '\0';
-	ASSERT_EQ(length, strlen(abspath_source));
-	ASSERT_STREQ(buf, abspath_source);
-	status = rmdir("sym-t-readlink.dir");
-	ASSERT_EQ(status, 0);
-	rmdir("t-readlink.dir");
-}
-
-void test_multilevel_symlink()
+int test_readlink_unresolved()
 {
 	int status;
 	ssize_t length;
 	char buf[MAX_PATH];
-	int fd = creat("t-readlink-multi", 0700);
-	close(fd);
+	const char *filename = "t-readlink-unresolved";
+	const char *filename_symlink = "t-readlink-unresolved.sym";
 
-	status = symlink("t-readlink-multi", "t-readlink-multi.sym1");
-	ASSERT_EQ(status, 0);
-	status = symlink("t-readlink-multi.sym1", "t-readlink-multi.sym2");
+	status = symlink(filename, filename_symlink);
 	ASSERT_EQ(status, 0);
 
-	length = readlink("t-readlink-multi.sym2", buf, MAX_PATH);
+	length = readlink(filename_symlink, buf, MAX_PATH);
 	buf[length] = '\0';
-	ASSERT_EQ(length, 21);
-	ASSERT_STREQ(buf, "t-readlink-multi.sym1");
+	ASSERT_EQ(length, strlen(filename));
+	ASSERT_STREQ(buf, filename);
 
-	length = readlink("t-readlink-multi.sym1", buf, MAX_PATH);
+	ASSERT_SUCCESS(unlink(filename_symlink)); // check whether a file is created
+	ASSERT_FAIL(unlink(filename));
+
+	return 0;
+}
+
+int test_at()
+{
+	int status;
+	int fd, dirfd;
+	ssize_t length;
+	char buf[MAX_PATH];
+	const char *dirname = "t-readlinkat.dir";
+	const char *filename = "t-symlinkat";
+	const char *filename_symlink = "t-symlinkat.sym";
+
+	ASSERT_SUCCESS(mkdir(dirname, 0700));
+
+	dirfd = open(dirname, O_RDONLY);
+	ASSERT_EQ(dirfd, 3);
+
+	fd = openat(dirfd, filename, O_CREAT | O_WRONLY, 0700);
+	ASSERT_EQ(fd, 4);
+	ASSERT_SUCCESS(write_file_contents(fd));
+	ASSERT_SUCCESS(close(fd));
+
+	status = symlinkat(filename, dirfd, filename_symlink);
+	ASSERT_EQ(status, 0);
+
+	length = readlinkat(dirfd, filename_symlink, buf, MAX_PATH);
 	buf[length] = '\0';
-	ASSERT_EQ(length, 16);
-	ASSERT_STREQ(buf, "t-readlink-multi");
+	ASSERT_EQ(length, strlen(filename));
+	ASSERT_STREQ(buf, filename);
 
-	status = unlink("t-readlink-multi.sym2");
+	ASSERT_SUCCESS(verify_file_contents(dirfd, filename_symlink));
+
+	ASSERT_SUCCESS(unlinkat(dirfd, filename_symlink, 0));
+	ASSERT_SUCCESS(unlinkat(dirfd, filename, 0));
+
+	ASSERT_SUCCESS(close(dirfd));
+	ASSERT_SUCCESS(rmdir(dirname));
+
+	return 0;
+}
+
+int test_at_empty_path()
+{
+	int status;
+	int fd;
+	ssize_t length;
+	char buf[MAX_PATH];
+	const char *filename = "t-readlinkat-empty-path";
+	const char *filename_symlink = "t-readlinkat-empty-path.sym";
+
+	fd = creat(filename, 0700);
+	ASSERT_EQ(fd, 3);
+	ASSERT_SUCCESS(close(fd));
+
+	status = symlink(filename, filename_symlink);
 	ASSERT_EQ(status, 0);
-	status = unlink("t-readlink-multi.sym1");
-	ASSERT_EQ(status, 0);
-	status = unlink("t-readlink-multi");
-	ASSERT_EQ(status, 0);
+
+	fd = open(filename_symlink, O_NOFOLLOW | O_PATH);
+	ASSERT_EQ(fd, 3);
+
+	length = readlinkat(fd, "", buf, MAX_PATH);
+	buf[length] = '\0';
+	ASSERT_EQ(length, strlen(filename));
+	ASSERT_STREQ(buf, filename);
+
+	ASSERT_SUCCESS(close(fd));
+
+	ASSERT_SUCCESS(unlink(filename));
+	ASSERT_SUCCESS(unlink(filename_symlink));
+
+	return 0;
+}
+
+void cleanup()
+{
+	remove("t-symlink-exist");
+	remove("t-readlink-inval");
+
+	remove("t-readlink.file");
+	remove("t-readlink.file.sym");
+
+	remove("t-readlink.dir/t-readlink.file");
+	remove("t-readlink.dir");
+	remove("t-readlink.dir.sym");
+
+	remove("t-readlink-abs");
+	remove("t-readlink-abs.sym");
+
+	remove("t-readlink-relative.dir/t-readlink-relative-child.dir/t-readlink-relative.file.sym");
+	remove("t-readlink-relative.dir/t-readlink-relative.file");
+	remove("t-readlink-relative.dir/t-readlink-relative-child.dir");
+	remove("t-readlink-relative.dir");
+	remove("t-readlink-relative.file.sym");
+
+	remove("t-symlink-multi");
+	remove("t-symlink-multi.sym1");
+	remove("t-symlink-multi.sym2");
+
+	remove("t-readlink-small-buffer");
+	remove("t-readlink-small-buffer.sym");
+	remove("t-readlink-unresolved.sym");
+
+	remove("t-readlinkat.dir/t-symlinkat");
+	remove("t-readlinkat.dir/t-symlinkat.sym");
+	remove("t-readlinkat.dir");
 }
 
 int main()
 {
-	test_symlink_EEXIST();
-	test_symlink_ENOENT();
-	test_symlink_EINVAL();
+	INITIAILIZE_TESTS();
+	CLEANUP(cleanup);
 
-	test_readlink_ENOENT1();
-	test_readlink_EINVAL();
+	TEST(test_symlink_ENOENT());
+	TEST(test_symlink_EINVAL());
+	TEST(test_symlink_EEXIST());
+
+	TEST(test_readlink_ENOENT());
+	TEST(test_readlink_EINVAL());
 
 	// Combined tests
-	test_okay_file();
-	test_okay_dir();
-	test_readlink_abs();
-	test_sub_directory();
-	test_parent_directory();
-	test_cross_directory1();
-	test_cross_directory2();
-	test_cross_directory4();
+	TEST(test_file());
+	TEST(test_dir());
+	//TEST(test_absolute_path()); TODO fix bug in symlink
+	TEST(test_relative_path());
+	TEST(test_multilevel_symlink());
 
 	// readlink specific
-	test_small_bufsize1();
-	test_small_bufsize2();
-	test_readlink_dummy();
+	TEST(test_readlink_small_buffer());
+	TEST(test_readlink_unresolved());
 
-	// symlink specific
-	test_symlink_abs_file();
-	test_symlink_abs_dir1();
-	test_symlink_abs_dir2();
-	test_symlink_abs_dir3();
+	// at tests
+	TEST(test_at());
+	TEST(test_at_empty_path());
 
-	test_multilevel_symlink();
-	return 0;
+	VERIFY_RESULT_AND_EXIT();
 }

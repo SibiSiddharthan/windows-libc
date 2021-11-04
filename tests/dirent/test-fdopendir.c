@@ -11,28 +11,58 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-void test_ENOTDIR()
+int test_ENOTDIR()
 {
 	errno = 0;
-	int fd = open("CMakeCache.txt", O_RDONLY);
-	DIR *D = fdopendir(fd);
+	DIR *D = NULL;
+	const char *filename = "t-fdopendir.file";
+
+	int fd = open(filename, O_WRONLY | O_CREAT, 0700);
+	ASSERT_NOTEQ(fd, -1);
+
+	D = fdopendir(fd);
 	ASSERT_ERRNO(ENOTDIR);
 	ASSERT_NULL(D);
-	close(fd);
+
+	ASSERT_SUCCESS(close(fd));
+	ASSERT_SUCCESS(unlink(filename));
+
+	return 0;
 }
 
-void test_okay()
+int test_okay()
 {
 	errno = 0;
-	int fd = open(".", O_RDONLY);
-	DIR *D = fdopendir(fd);
+	int fd;
+	DIR *D = NULL;
+
+	fd = open(".", O_RDONLY);
+	ASSERT_NOTEQ(fd, -1);
+
+	D = fdopendir(fd);
 	ASSERT_ERRNO(0);
-	closedir(D);
+	ASSERT_NOTNULL(D);
+	ASSERT_SUCCESS(closedir(D));
+
+	// closedir should have closed the underlying file descriptor.
+	ASSERT_FAIL(close(fd));
+	ASSERT_ERRNO(EBADF);
+
+	return 0;
+}
+
+void cleanup()
+{
+	remove("t-fdopendir.file");
 }
 
 int main()
 {
-	test_ENOTDIR();
-	test_okay();
-	return 0;
+	INITIAILIZE_TESTS();
+	CLEANUP(cleanup);
+
+	TEST(test_ENOTDIR());
+	TEST(test_okay());
+
+	VERIFY_RESULT_AND_EXIT();
 }

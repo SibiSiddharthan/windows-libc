@@ -12,22 +12,32 @@
 
 const char *content = "hello1\nhello2\n";
 
-void test_EISDIR()
+int test_EISDIR()
 {
 	errno = 0;
-	int fd = open("CMakefiles", O_RDONLY);
+	int fd;
+	ssize_t length;
 	char rbuf[16];
-	ssize_t length = read(fd, rbuf, 16);
+
+	fd = open(".", O_RDONLY);
+	length = read(fd, rbuf, 16);
 	ASSERT_EQ(length, -1);
 	ASSERT_ERRNO(EISDIR);
-	close(fd);
+	ASSERT_SUCCESS(close(fd));
+
+	return 0;
 }
 
-void test_read_write()
+int test_read_write()
 {
 	errno = 0;
-	int fd = open("t-read-write", O_RDWR | O_CREAT, 0700);
+	int fd;
 	ssize_t length;
+	char rbuf[16];
+	const char *filename = "t-read-write";
+
+	fd = open(filename, O_RDWR | O_CREAT, 0700);
+	ASSERT_EQ(fd, 3);
 
 	length = write(fd, (void *)content, 7);
 	ASSERT_EQ(length, 7);
@@ -36,21 +46,27 @@ void test_read_write()
 	ASSERT_EQ(length, 7);
 
 	lseek(fd, 0, SEEK_SET);
-	char rbuf[16];
 	length = read(fd, rbuf, 16);
 	ASSERT_EQ(length, 14);
 	rbuf[length] = '\0';
 	ASSERT_STREQ(rbuf, content);
 
-	close(fd);
-	unlink("t-read-write");
+	ASSERT_SUCCESS(close(fd));
+	ASSERT_SUCCESS(unlink(filename));
+
+	return 0;
 }
 
-void test_O_APPEND()
+int test_O_APPEND()
 {
 	errno = 0;
-	int fd = open("t-read-write", O_RDWR | O_CREAT | O_APPEND, 0700);
+	int fd;
 	ssize_t length;
+	char rbuf[16];
+	const char *filename = "t-read-append";
+
+	fd = open(filename, O_RDWR | O_CREAT | O_APPEND, 0700);
+	ASSERT_EQ(fd, 3);
 
 	length = write(fd, (void *)content, 7);
 	ASSERT_EQ(length, 7);
@@ -60,21 +76,27 @@ void test_O_APPEND()
 	ASSERT_EQ(length, 7);
 	lseek(fd, 0, SEEK_SET);
 
-	char rbuf[16];
 	length = read(fd, rbuf, 16);
 	ASSERT_EQ(length, 14);
 	rbuf[length] = '\0';
 	ASSERT_STREQ(rbuf, content);
 
-	close(fd);
-	unlink("t-read-write");
+	ASSERT_SUCCESS(close(fd));
+	ASSERT_SUCCESS(unlink(filename));
+
+	return 0;
 }
 
-void test_no_O_APPEND()
+int test_no_O_APPEND()
 {
 	errno = 0;
-	int fd = open("t-read-write", O_RDWR | O_CREAT, 0700);
+	int fd;
 	ssize_t length;
+	char rbuf[16];
+	const char *filename = "t-read-write-seek";
+
+	fd = open(filename, O_RDWR | O_CREAT, 0700);
+	ASSERT_EQ(fd, 3);
 
 	length = write(fd, (void *)content, 7);
 	ASSERT_EQ(length, 7);
@@ -84,24 +106,29 @@ void test_no_O_APPEND()
 	ASSERT_EQ(length, 7);
 	lseek(fd, 0, SEEK_SET);
 
-	char rbuf[16];
 	length = read(fd, rbuf, 16);
 	ASSERT_EQ(length, 7);
 	rbuf[length] = '\0';
 	ASSERT_STREQ(rbuf, "hello2\n");
 
-	close(fd);
-	unlink("t-read-write");
+	ASSERT_SUCCESS(close(fd));
+	ASSERT_SUCCESS(unlink(filename));
+
+	return 0;
 }
 
 // Only for files
-void test_lseek()
+int test_lseek()
 {
 	errno = 0;
-	int fd = open("t-lseek", O_RDWR | O_CREAT | O_TRUNC, 0700);
+	int fd;
 	ssize_t length;
 	off_t offset;
 	char rbuf[16];
+	const char *filename = "t-lseek";
+
+	fd = open("t-lseek", O_RDWR | O_CREAT | O_TRUNC, 0700);
+	ASSERT_EQ(fd, 3);
 
 	length = write(fd, (void *)content, 7);
 	ASSERT_EQ(length, 7);
@@ -130,25 +157,39 @@ void test_lseek()
 	ASSERT_EQ(offset, 14);
 	length = read(fd, rbuf, 16);
 	ASSERT_EQ(length, 0); // end of file
-	length = write(fd,"\n",1);
+	length = write(fd, "\n", 1);
 	ASSERT_EQ(length, 1);
 
 	offset = lseek(fd, 0, SEEK_SET);
 	ASSERT_EQ(offset, 0)
 	length = read(fd, rbuf, 16);
 	ASSERT_EQ(length, 15);
-	ASSERT_MEMEQ(rbuf, "hellohello2\n\0\0\n",15);
+	ASSERT_MEMEQ(rbuf, "hellohello2\n\0\0\n", 15);
 
-	close(fd);
-	unlink("t-lseek");
+	ASSERT_SUCCESS(close(fd));
+	ASSERT_SUCCESS(unlink(filename));
+
+	return 0;
+}
+
+void cleanup()
+{
+	remove("t-read-write");
+	remove("t-read-append");
+	remove("t-read-write-seek");
+	remove("t-lseek");
 }
 
 int main()
 {
-	test_EISDIR();
-	test_read_write();
-	test_O_APPEND();
-	test_no_O_APPEND();
-	test_lseek();
-	return 0;
+	INITIAILIZE_TESTS();
+	CLEANUP(cleanup);
+
+	TEST(test_EISDIR());
+	TEST(test_read_write());
+	TEST(test_O_APPEND());
+	TEST(test_no_O_APPEND());
+	TEST(test_lseek());
+
+	VERIFY_RESULT_AND_EXIT();
 }

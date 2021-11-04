@@ -10,45 +10,67 @@
 #include <fcntl.h>
 #include <test-macros.h>
 
-void test_fflush()
+int test_fflush()
 {
-	FILE *f = fopen("t-fflush", "w");
-	fwrite("hello", 1, 5, f);
-	size_t pos = lseek(fileno(f), 0, SEEK_CUR);
+	FILE *f;
+	size_t pos, count;
+	int result;
+	int fd;
+	char buffer[16];
+	ssize_t read_result;
+	const char *filename = "t-fflush";
+
+	f = fopen(filename, "w");
+	ASSERT_EQ(fileno(f), 3);
+
+	count = fwrite("hello", 1, 5, f);
+	ASSERT_EQ(count, 5);
+
+	pos = lseek(fileno(f), 0, SEEK_CUR);
 	ASSERT_EQ(pos, 0);
 
-	int result = fflush(f);
+	result = fflush(f);
 	ASSERT_EQ(result, 0);
 	pos = lseek(fileno(f), 0, SEEK_CUR);
 	ASSERT_EQ(pos, 5);
 
-	fclose(f);
+	ASSERT_SUCCESS(fclose(f));
 
 	// check contents
-	int fd = open("t-fflush", O_RDONLY);
-	char buffer[16];
-	ssize_t read_result = read(fd, buffer, 16);
+	fd = open(filename, O_RDONLY);
+	ASSERT_EQ(fd, 3);
+	read_result = read(fd, buffer, 16);
 	ASSERT_EQ(read_result, 5);
 	ASSERT_MEMEQ(buffer, "hello", 5);
-	close(fd);
-	unlink("t-fflush");
+	ASSERT_SUCCESS(close(fd));
+
+	ASSERT_SUCCESS(unlink(filename));
+	return 0;
 }
 
-void test_fflushall()
+int test_fflushall()
 {
-	size_t pos;
+	FILE *f1, *f2;
+	size_t pos, count;
+	int result;
+	const char *filename1 = "t-fflushall1";
+	const char *filename2 = "t-fflushall2";
 
-	FILE *f1 = fopen("t-fflushall1", "w");
-	fwrite("hello", 1, 5, f1);
+	f1 = fopen(filename1, "w");
+	ASSERT_EQ(fileno(f1), 3);
+	count = fwrite("hello", 1, 5, f1);
+	ASSERT_EQ(count, 5);
 	pos = lseek(fileno(f1), 0, SEEK_CUR);
 	ASSERT_EQ(pos, 0);
 
-	FILE *f2 = fopen("t-fflushall2", "w");
-	fwrite("world!", 1, 6, f2);
+	f2 = fopen(filename2, "w");
+	ASSERT_EQ(fileno(f2), 4);
+	count = fwrite("world!", 1, 6, f2);
+	ASSERT_EQ(count, 6);
 	pos = lseek(fileno(f2), 0, SEEK_CUR);
 	ASSERT_EQ(pos, 0);
-	
-	int result = fflush(NULL);
+
+	result = fflush(NULL);
 	ASSERT_EQ(result, 0);
 
 	pos = lseek(fileno(f1), 0, SEEK_CUR);
@@ -57,16 +79,29 @@ void test_fflushall()
 	pos = lseek(fileno(f2), 0, SEEK_CUR);
 	ASSERT_EQ(pos, 6);
 
-	fclose(f1);
-	fclose(f2);
+	ASSERT_SUCCESS(fclose(f1));
+	ASSERT_SUCCESS(fclose(f2));
 
-	unlink("t-fflushall1");
-	unlink("t-fflushall2");
+	ASSERT_SUCCESS(unlink(filename1));
+	ASSERT_SUCCESS(unlink(filename2));
+
+	return 0;
+}
+
+void cleanup()
+{
+	remove("t-fflush");
+	remove("t-fflushall1");
+	remove("t-fflushall2");
 }
 
 int main()
 {
-	test_fflush();
-	test_fflushall();
-	return 0;
+	INITIAILIZE_TESTS();
+	CLEANUP(cleanup);
+
+	TEST(test_fflush());
+	TEST(test_fflushall());
+
+	VERIFY_RESULT_AND_EXIT();
 }

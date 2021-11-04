@@ -54,7 +54,7 @@ pid_t create_process(int arg1, int arg2) // mode, argument
 	return pi.dwProcessId;
 }
 
-void test_internal()
+int test_internal()
 {
 	create_process_simple();
 	ASSERT_EQ(_wlibc_child_process_count, 1);
@@ -107,63 +107,81 @@ void test_internal()
 	ASSERT_EQ(_wlibc_child_process_count, 1);
 	waitpid(0, NULL, 0);
 	ASSERT_EQ(_wlibc_child_process_count, 0);
+
+	return 0;
 }
 
-void test_ECHILD()
+int test_ECHILD()
 {
 	pid_t pid = waitpid(1, NULL, 0);
 	ASSERT_EQ(pid, -1);
 	ASSERT_ERRNO(ECHILD);
+	return 0;
 }
 
-void test_waitpid()
+int test_waitpid()
 {
-	pid_t pid = create_process(1, 200); // child will sleep for 200ms
 	int wstatus;
-	pid_t result = waitpid(pid, &wstatus, 0);
-	ASSERT_EQ(result, pid);
+	pid_t child, result;
+
+	child = create_process(1, 200); // child will sleep for 200ms
+	result = waitpid(child, &wstatus, 0);
+	ASSERT_EQ(result, child);
 	ASSERT_EQ(wstatus, 0); // child will exit normally
+
+	return 0;
 }
 
-void test_waitpid_WNOHANG()
+int test_waitpid_WNOHANG()
 {
-	pid_t pid = create_process(1, 200);
 	int wstatus;
-	pid_t result = waitpid(pid, &wstatus, WNOHANG);
+	pid_t child, result;
+
+	child = create_process(1, 200);
+	result = waitpid(child, &wstatus, WNOHANG);
 	ASSERT_EQ(result, 0);
 
-	result = waitpid(pid, &wstatus, 0);
-	ASSERT_EQ(result, pid);
+	result = waitpid(child, &wstatus, 0);
+	ASSERT_EQ(result, child);
 	ASSERT_EQ(wstatus, 0);
+
+	return 0;
 }
 
-void test_signal_exit()
+int test_signal_exit()
 {
-	pid_t pid;
+	pid_t child, result;
 	int wstatus;
 
-	pid = create_process(2, SIGHUP); // child will raise SIGHUP
-	waitpid(pid, &wstatus, 0);
+	child = create_process(2, SIGHUP); // child will raise SIGHUP
+	result = waitpid(child, &wstatus, 0);
+	ASSERT_EQ(result, child);
 	ASSERT_EQ(WIFSIGNALED(wstatus), 1);
 	ASSERT_EQ(WIFEXITED(wstatus), 0);
 
-	pid = create_process(2, SIGABRT);
-	waitpid(pid, &wstatus, 0);
+	child = create_process(2, SIGABRT);
+	result = waitpid(child, &wstatus, 0);
+	ASSERT_EQ(result, child);
 	ASSERT_EQ(WIFSIGNALED(wstatus), 1);
 	ASSERT_EQ(WIFEXITED(wstatus), 0);
 
-	pid = create_process(2, SIGCONT);
-	waitpid(pid, &wstatus, 0);
+	child = create_process(2, SIGCONT);
+	result = waitpid(child, &wstatus, 0);
+	ASSERT_EQ(result, child);
 	ASSERT_EQ(WIFSIGNALED(wstatus), 0);
 	ASSERT_EQ(WIFEXITED(wstatus), 1);
 
+	return 0;
 }
 
 int main()
 {
-	test_internal();
-	test_ECHILD();
-	test_waitpid();
-	test_waitpid_WNOHANG();
-	return 0;
+	INITIAILIZE_TESTS();
+
+	TEST(test_internal());
+	TEST(test_ECHILD());
+	TEST(test_waitpid());
+	TEST(test_waitpid_WNOHANG());
+
+	VERIFY_RESULT_AND_EXIT();
 }

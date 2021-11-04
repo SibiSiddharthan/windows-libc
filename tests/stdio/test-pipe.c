@@ -9,61 +9,92 @@
 #include <test-macros.h>
 #include <unistd.h>
 
-void test_read()
+int test_read()
 {
-	FILE *f = popen("pipe-helper 1", "r");
-
+	int status;
 	char buf[16];
-	ssize_t length = fread(buf, 1, 16, f);
-	ASSERT_EQ(length, 5);
-	buf[5] = '\0';
-	ASSERT_STREQ(buf, "hello");
+	size_t length;
+	FILE *f;
 
-	int status = pclose(f);
+	f = popen("pipe-helper 1", "r");
+	ASSERT_EQ(fileno(f), 3);
+
+	length = fread(buf, 1, 16, f);
+	ASSERT_EQ(length, 5);
+	ASSERT_MEMEQ(buf, "hello", (int)length);
+
+	status = pclose(f);
 	ASSERT_EQ(status, 0);
+
+	return 0;
 }
 
-void test_write()
+int test_write()
 {
-	FILE *f = popen("pipe-helper 2", "w");
-
-	ssize_t length = fwrite("hello", 1, 5, f);
-	ASSERT_EQ(length, 5);
-
-	int status = pclose(f);
-	ASSERT_EQ(status, 0);
-}
-
-void test_read_cr()
-{
-	FILE *f = popen("pipe-helper 3", "r");
-
+	int status;
 	char buf[16];
-	ssize_t length = fread(buf, 1, 16, f);
-	ASSERT_EQ(length, 12);
-	buf[12] = '\0';
-	ASSERT_STREQ(buf, "hello\r\nworld");
+	size_t length;
+	FILE *f;
 
-	int status = pclose(f);
+	f = popen("pipe-helper 2", "w");
+	ASSERT_EQ(fileno(f), 3);
+
+	length = fwrite("hello", 1, 5, f);
+	ASSERT_EQ(length, 5);
+
+	status = pclose(f);
 	ASSERT_EQ(status, 0);
+
+	return 0;
 }
 
-void test_write_cr()
+int test_read_cr()
 {
-	FILE *f = popen("pipe-helper 4", "w");
+	int status;
+	char buf[16];
+	size_t length;
+	FILE *f;
 
-	ssize_t length = fwrite("hello\r\nworld", 1, 12, f);
+	f = popen("pipe-helper 3", "r");
+	ASSERT_EQ(fileno(f), 3);
+
+	length = fread(buf, 1, 16, f);
+	ASSERT_EQ(length, 12);
+	ASSERT_MEMEQ(buf, "hello\r\nworld", (int)length);
+
+	status = pclose(f);
+	ASSERT_EQ(status, 0);
+
+	return 0;
+}
+
+int test_write_cr()
+{
+	int status;
+	char buf[16];
+	size_t length;
+	FILE *f;
+
+	f = popen("pipe-helper 4", "w");
+	ASSERT_EQ(fileno(f), 3);
+
+	length = fwrite("hello\r\nworld", 1, 12, f);
 	ASSERT_EQ(length, 12);
 
-	int status = pclose(f);
+	status = pclose(f);
 	ASSERT_EQ(status, 0);
+
+	return 0;
 }
 
 int main()
 {
-	test_read();
-	test_write();
-	test_read_cr();
-	test_write_cr();
-	return 0;
+	INITIAILIZE_TESTS();
+
+	TEST(test_read());
+	TEST(test_write());
+	TEST(test_read_cr());
+	TEST(test_write_cr());
+
+	VERIFY_RESULT_AND_EXIT();
 }

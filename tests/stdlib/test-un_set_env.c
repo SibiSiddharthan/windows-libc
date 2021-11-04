@@ -9,7 +9,7 @@
 #include <stdlib-ext.h>
 #include <test-macros.h>
 
-void test_okay()
+int test_okay()
 {
 	setenv("t-env", "good", 0);
 	char *env = getenv("t-env");
@@ -26,10 +26,13 @@ void test_okay()
 	unsetenv("t-env");
 	env = getenv("t-env");
 	ASSERT_NULL(env);
+
+	return 0;
 }
 
 int main()
 {
-	test_okay();
-	return 0;
+	INITIAILIZE_TESTS();
+	TEST(test_okay());
+	VERIFY_RESULT_AND_EXIT();
 }

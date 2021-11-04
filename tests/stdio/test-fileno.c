@@ -8,20 +8,22 @@
 #include <stdio.h>
 #include <test-macros.h>
 
-void test_std_streams()
+int test_std_streams()
 {
 	int fd;
 	fd = fileno(stdin);
-	ASSERT_EQ(fd,0);
+	ASSERT_EQ(fd, 0);
 	fd = fileno(stdout);
-	ASSERT_EQ(fd,1);
+	ASSERT_EQ(fd, 1);
 	fd = fileno(stderr);
-	ASSERT_EQ(fd,2);
+	ASSERT_EQ(fd, 2);
+	return 0;
 }
 
 int main()
 {
 	// For files opened by fopen, we test fileno in test-fopen.c
-	test_std_streams();
-	return 0;
+	INITIAILIZE_TESTS();
+	TEST(test_std_streams());
+	VERIFY_RESULT_AND_EXIT();
 }

@@ -6,7 +6,7 @@
 ]]
 
 set(tests
-closedir
+#closedir
 dirent
 fdopendir
 opendir)

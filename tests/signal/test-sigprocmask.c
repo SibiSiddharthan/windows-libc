@@ -21,9 +21,10 @@ void my_sighandler_2(int sig)
 	global_variable -= sig;
 }
 
-void test_EFAULT()
+int test_EFAULT()
 {
 	int result;
+
 	result = sigemptyset(NULL);
 	ASSERT_EQ(result, -1);
 	ASSERT_ERRNO(EFAULT);
@@ -45,9 +46,11 @@ void test_EFAULT()
 	result = sigprocmask(SIG_SETMASK, NULL, NULL);
 	ASSERT_EQ(result, -1);
 	ASSERT_ERRNO(EFAULT);
+
+	return 0;
 }
 
-void test_EINVAL()
+int test_EINVAL()
 {
 	errno = 0;
 	int result;
@@ -67,16 +70,20 @@ void test_EINVAL()
 	result = sigprocmask(3, &s, NULL);
 	ASSERT_EQ(result, -1);
 	ASSERT_ERRNO(EINVAL);
+
+	return 0;
 }
 
-void test_sigprocmask_1()
+int test_sigprocmask_1()
 {
 	global_variable = 0;
 	int result;
-	signal(SIGABRT, my_sighandler_1);
 	sigset_t new, old, pending;
+
 	result = sigemptyset(&new);
 	ASSERT_EQ(result, 0);
+
+	signal(SIGABRT, my_sighandler_1);
 
 	// Add signal mask
 	result = sigaddset(&new, SIGABRT);
@@ -93,45 +100,68 @@ void test_sigprocmask_1()
 	ASSERT_EQ(result, 0);
 	ASSERT_EQ(old, 1u << SIGABRT);
 	ASSERT_EQ(global_variable, SIGABRT);
+
+	return 0;
 }
 
-void test_sigprocmask_2()
+int test_sigprocmask_2()
 {
 	global_variable = 0;
+	int result;
+	sigset_t new, old, pending;
+
+	result = sigemptyset(&new);
+	ASSERT_EQ(result, 0);
+
 	signal(SIGUSR1, my_sighandler_1);
 	signal(SIGUSR2, my_sighandler_2);
-	sigset_t new, old, pending;
-	sigemptyset(&new);
 
 	// Add signal mask
-	sigaddset(&new, SIGUSR1);
-	sigprocmask(SIG_BLOCK, &new, NULL);
+	result = sigaddset(&new, SIGUSR1);
+	ASSERT_EQ(result, 0);
+	result = sigprocmask(SIG_BLOCK, &new, NULL);
+	ASSERT_EQ(result, 0);
+
 	raise(SIGUSR1);
 	ASSERT_EQ(global_variable, 0);
-	sigpending(&pending);
+
+	result = sigpending(&pending);
+	ASSERT_EQ(result, 0);
 	ASSERT_EQ(pending, 1u << SIGUSR1);
 
-	sigaddset(&new, SIGUSR2);
-	sigprocmask(SIG_BLOCK, &new, NULL);
+	result = sigaddset(&new, SIGUSR2);
+	ASSERT_EQ(result, 0);
+	result = sigprocmask(SIG_BLOCK, &new, NULL);
+	ASSERT_EQ(result, 0);
+
 	raise(SIGUSR2);
 	ASSERT_EQ(global_variable, 0);
-	sigpending(&pending);
+
+	result = sigpending(&pending);
+	ASSERT_EQ(result, 0);
 	ASSERT_EQ(pending, ((1u << SIGUSR1) | (1u << SIGUSR2)));
 
 	// Remove signal mask
 	new = 0;
-	sigprocmask(SIG_SETMASK, &new, &old);
+	result = sigprocmask(SIG_SETMASK, &new, &old);
+	ASSERT_EQ(result, 0);
 	ASSERT_EQ(old, ((1u << SIGUSR1) | (1u << SIGUSR2)));
 	ASSERT_EQ(global_variable, SIGUSR1 - SIGUSR2);
-	sigpending(&pending);
+	result = sigpending(&pending);
+	ASSERT_EQ(result, 0);
 	ASSERT_EQ(pending, 0);
+
+	return 0;
 }
 
 int main()
 {
-	test_EFAULT();
-	test_EINVAL();
-	test_sigprocmask_1();
-	test_sigprocmask_2();
-	return 0;
+	INITIAILIZE_TESTS();
+
+	TEST(test_EFAULT());
+	TEST(test_EINVAL());
+	TEST(test_sigprocmask_1());
+	TEST(test_sigprocmask_2());
+
+	VERIFY_RESULT_AND_EXIT();
 }

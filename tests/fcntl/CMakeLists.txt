@@ -6,8 +6,9 @@
 ]]
 
 set(tests
+at
 open
-openat
+#openat
 path
 fcntl
 sanity)

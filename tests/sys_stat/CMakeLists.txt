@@ -8,7 +8,7 @@
 set(tests
 chmod
 mkdir
-mkdirat
+#mkdirat
 stat
 utimens)
 

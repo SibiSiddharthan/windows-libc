@@ -11,225 +11,359 @@
 #include <test-macros.h>
 #include <errno.h>
 
-void test_ENOENT()
+int test_ENOENT()
 {
 	errno = 0;
 	int fd = open("", O_RDONLY | O_EXCL);
 	ASSERT_EQ(fd, -1);
 	ASSERT_ERRNO(ENOENT);
+	ASSERT_FAIL(close(fd));
+
+	return 0;
 }
 
-void test_create()
+int test_create()
 {
 	errno = 0;
-	int fd = open("t-open", O_RDONLY | O_CREAT, 0700);
+	const char *filename = "t-create";
+	int fd = open(filename, O_RDONLY | O_CREAT, 0700);
 	ASSERT_EQ(fd, 3);
-	close(fd);
-	int status = unlink("t-open");
-	ASSERT_EQ(status, 0);
+	ASSERT_SUCCESS(close(fd));
+	ASSERT_SUCCESS(unlink(filename));
+
+	return 0;
 }
 
-void test_create_directory()
+int test_create_directory()
 {
 	errno = 0;
-	int fd = open("t-open-dir/", O_RDONLY | O_CREAT, 0700);
+	const char *filename = "t-open.dir/";
+	int fd = open(filename, O_RDONLY | O_CREAT, 0700);
 	ASSERT_EQ(fd, -1);
 	ASSERT_ERRNO(EISDIR);
+	ASSERT_FAIL(close(fd));
+	ASSERT_FAIL(remove(filename));
+
+	return 0;
 }
 
-void test_bad_path()
+int test_bad_path()
 {
 	errno = 0;
 	int fd = open("t-bad*|/", O_RDONLY | O_CREAT, 0700);
 	ASSERT_EQ(fd, -1);
 	ASSERT_ERRNO(EINVAL);
+
+	return 0;
 }
 
-void test_EEXIST()
+int test_EEXIST()
 {
 	errno = 0;
-	int fd = open("t-open", O_RDONLY | O_CREAT, 0700);
-	close(fd);
-	fd = open("t-open", O_RDONLY | O_CREAT | O_EXCL, 0700);
+	int fd;
+	const char *filename = "t-open-exist";
+
+	fd = open(filename, O_RDONLY | O_CREAT, 0700);
+	ASSERT_SUCCESS(close(fd));
+	fd = open(filename, O_RDONLY | O_CREAT | O_EXCL, 0700);
 	ASSERT_EQ(fd, -1);
 	ASSERT_ERRNO(EEXIST)
-	int status = unlink("t-open");
-	ASSERT_EQ(status, 0);
+	ASSERT_SUCCESS(unlink(filename));
+
+	return 0;
 }
 
-void test_ENOTDIR()
+int test_ENOTDIR()
 {
 	errno = 0;
-	int fd = open("t-open", O_RDONLY | O_CREAT, 0700);
-	close(fd);
-	fd = open("t-open", O_RDONLY | O_DIRECTORY);
+	int fd;
+	const char *filename = "t-open-notdir";
+
+	fd = open(filename, O_RDONLY | O_CREAT, 0700);
+	ASSERT_SUCCESS(close(fd));
+	fd = open(filename, O_RDONLY | O_DIRECTORY);
 	ASSERT_EQ(fd, -1);
 	ASSERT_ERRNO(ENOTDIR);
-	int status = unlink("t-open");
-	ASSERT_EQ(status, 0);
+	ASSERT_SUCCESS(unlink(filename));
+
+	return 0;
 }
 
-void test_EISDIR()
+int test_EISDIR()
 {
 	errno = 0;
+	// open with O_RDONLY for this call to succeed
 	int fd = open(".", O_RDWR | O_DIRECTORY);
 	ASSERT_EQ(fd, -1);
 	ASSERT_ERRNO(EISDIR);
+
+	return 0;
 }
 
-void test_ELOOP()
+int test_ELOOP()
 {
 	errno = 0;
-	int fd = open("t-open", O_RDONLY | O_CREAT, 0700);
-	close(fd);
-	symlink("t-open", "t-open.sym");
-	fd = open("t-open.sym", O_RDONLY | O_NOFOLLOW);
+	int fd;
+	const char *filename = "t-open-loop";
+	const char *filename_symlink = "t-open-loop.sym";
+
+	fd = open(filename, O_RDONLY | O_CREAT, 0700);
+	ASSERT_SUCCESS(close(fd));
+
+	ASSERT_SUCCESS(symlink(filename, filename_symlink));
+
+	fd = open(filename_symlink, O_RDONLY | O_NOFOLLOW);
 	ASSERT_EQ(fd, -1);
 	ASSERT_ERRNO(ELOOP);
-	unlink("t-open.sym");
-	unlink("t-open");
+
+	// try again with O_PATH, this time it should succeed
+	fd = open(filename_symlink, O_NOFOLLOW | O_PATH);
+	ASSERT_EQ(fd, 3);
+	ASSERT_SUCCESS(close(fd));
+
+	ASSERT_SUCCESS(unlink(filename_symlink));
+	ASSERT_SUCCESS(unlink(filename));
+
+	return 0;
 }
 
-void test_dir_without_slashes()
+int test_dir()
 {
 	errno = 0;
-	int fd = open("CMakeFiles", O_RDONLY);
+	int fd;
+	const char *dirname = "t-open.dir";
+	const char *dirname_with_slashes = "t-open.dir/";
+
+	ASSERT_SUCCESS(mkdir(dirname, 0700));
+
+	fd = open(dirname, O_RDONLY);
 	ASSERT_EQ(fd, 3);
-	close(fd);
+	ASSERT_SUCCESS(close(fd));
+
+	// Do it again with slashes
+	fd = open(dirname_with_slashes, O_RDONLY);
+	ASSERT_EQ(fd, 3);
+	ASSERT_SUCCESS(close(fd));
+
+	ASSERT_SUCCESS(rmdir(dirname));
+
+	return 0;
 }
 
-void test_dir_with_slashes()
+int test_O_RDONLY()
 {
 	errno = 0;
-	int fd = open("CMakeFiles/", O_RDONLY);
-	ASSERT_EQ(fd, 3);
-	close(fd);
-}
+	int fd;
+	ssize_t length;
+	const char *filename = "t-open-rdonly";
+	const char *buf = "hello";
 
-void test_O_RDONLY()
-{
-	errno = 0;
-	int fd = open("t-open", O_RDONLY | O_CREAT, 0700);
+	fd = open(filename, O_RDONLY | O_CREAT, 0700);
 	ASSERT_EQ(fd, 3);
-	char *buf = "hello";
-	ssize_t length = write(fd, buf, 5);
+	length = write(fd, buf, 5);
 	ASSERT_EQ(length, -1);
 	ASSERT_ERRNO(EACCES);
-	close(fd);
+	ASSERT_SUCCESS(close(fd));
+
+	ASSERT_SUCCESS(unlink(filename));
+
+	return 0;
 }
 
-void test_O_PATH()
+int test_O_PATH()
 {
 	errno = 0;
-	int fd = open("t-open", O_WRONLY | O_CREAT, 0700);
-	ASSERT_EQ(fd, 3);
-	char *buf = "hello";
-	ssize_t length = write(fd, buf, 5);
-	ASSERT_EQ(length, 5);
-	close(fd);
-	fd = open("t-open", O_PATH);
+	int fd;
+	ssize_t length;
+	const char *filename = "t-open-path";
+	const char *buf = "hello";
 	char rbuf[16];
+
+	fd = open(filename, O_WRONLY | O_CREAT, 0700);
+	ASSERT_EQ(fd, 3);
+	length = write(fd, buf, 5);
+	ASSERT_EQ(length, 5);
+	ASSERT_SUCCESS(close(fd));
+
+	// Opening with O_PATH means no read or write access to files
+	fd = open(filename, O_PATH);
 	length = read(fd, rbuf, 5);
 	ASSERT_EQ(length, -1);
 	ASSERT_ERRNO(EACCES);
-	close(fd);
+	ASSERT_SUCCESS(close(fd));
+
+	ASSERT_SUCCESS(unlink(filename));
+
+	return 0;
 }
 
-void test_O_TRUNC()
+int test_O_TRUNC()
 {
 	errno = 0;
-	int fd = open("t-open", O_RDWR | O_CREAT | O_TRUNC, 0700);
-	ASSERT_EQ(fd, 3);
+	int fd;
+	ssize_t length;
+	const char *filename = "t-open-trunc";
+	const char *buf = "hello";
 	char rbuf[16];
-	ssize_t length = read(fd, rbuf, 5);
+
+	fd = open(filename, O_WRONLY | O_CREAT, 0700);
+	ASSERT_EQ(fd, 3);
+	length = write(fd, buf, 5);
+	ASSERT_EQ(length, 5);
+	ASSERT_SUCCESS(close(fd));
+
+	// File should be truncated when opened
+	fd = open(filename, O_RDWR | O_CREAT | O_TRUNC, 0700);
+	ASSERT_EQ(fd, 3);
+	length = read(fd, rbuf, 5);
 	ASSERT_EQ(length, 0);
-	close(fd);
-	unlink("t-open");
+	ASSERT_SUCCESS(close(fd));
+
+	ASSERT_SUCCESS(unlink(filename));
+
+	return 0;
 }
 
-void test_O_TMPFILE()
+int test_O_TMPFILE()
 {
 	errno = 0;
 	int fd = open(".", O_WRONLY | O_CREAT | O_TMPFILE, 0700);
 	ASSERT_EQ(fd, 3);
-	close(fd);
+	ASSERT_SUCCESS(close(fd));
+
+	return 0;
 }
 
-void test_O_NOATIME()
+int test_O_NOATIME()
 {
 	errno = 0;
-	char buf[16];
 	int fd;
+	ssize_t length;
+	const char *filename = "t-open-noatime";
+	char buf[16];
 	struct stat before, after;
 
-	fd = creat("t-open-NOATIME", 0700);
-	write(fd, "hello", 5);
-	close(fd);
+	fd = creat(filename, 0700);
+	length = write(fd, "hello", 5);
+	ASSERT_EQ(length, 5);
+	ASSERT_SUCCESS(close(fd));
 
-	fd = open("t-open-NOATIME", O_RDONLY);
-	fstat(fd, &before);
+	fd = open(filename, O_RDONLY);
+	ASSERT_SUCCESS(fstat(fd, &before));
 	usleep(100); // sleep for 0.1 ms
-	read(fd, buf, 16);
+	length = read(fd, buf, 16);
+	ASSERT_EQ(length, 5);
 	ASSERT_MEMEQ(buf, "hello", 5);
-	fstat(fd, &after);
-	close(fd);
+	ASSERT_SUCCESS(fstat(fd, &after));
+	ASSERT_SUCCESS(close(fd));
 	// check tv_nsec only as tv_sec might be equal
-	// This test seems to be failing in the CI, simple workaround to avoid that
+	// This test seems to be failing in the CI, simple workaround to aint that
 	if (before.st_atim.tv_nsec != after.st_atim.tv_nsec)
 	{
 		memset(buf, 0, 16);
 
-		fd = open("t-open-NOATIME", O_RDONLY | O_NOATIME);
-		fstat(fd, &before);
+		fd = open(filename, O_RDONLY | O_NOATIME);
+		ASSERT_SUCCESS(fstat(fd, &before));
 		usleep(100); // sleep for 0.1 ms
-		read(fd, buf, 16);
+		length = read(fd, buf, 16);
+		ASSERT_EQ(length, 5);
 		ASSERT_MEMEQ(buf, "hello", 5);
-		fstat(fd, &after);
-		close(fd);
+		ASSERT_SUCCESS(fstat(fd, &after));
+		ASSERT_SUCCESS(close(fd));
+
 		ASSERT_EQ(before.st_atim.tv_sec, after.st_atim.tv_sec);
 		ASSERT_EQ(before.st_atim.tv_nsec, after.st_atim.tv_nsec);
 	}
 
-	unlink("t-open-NOATIME");
+	ASSERT_SUCCESS(unlink(filename));
+
+	return 0;
 }
 
-void test_null()
+int test_null()
 {
 	errno = 0;
+	int fd;
+	ssize_t length;
 	char buf[16];
-	ssize_t result;
 
-	int fd = open("/dev/null", O_RDWR);
+	fd = open("/dev/null", O_RDWR);
 	ASSERT_EQ(fd, 3);
 
-	result = read(fd, buf, 16);
-	ASSERT_EQ(result, 0);
+	length = read(fd, buf, 16);
+	ASSERT_EQ(length, 0);
 	ASSERT_ERRNO(0);
 
-	result = write(fd, "abc", 3);
-	ASSERT_EQ(result, 3);
+	length = write(fd, "abc", 3);
+	ASSERT_EQ(length, 3);
 	ASSERT_ERRNO(0);
 
-	close(fd);
+	ASSERT_SUCCESS(close(fd));
+
+	return 0;
+}
+
+int test_openat()
+{
+	errno = 0;
+	int dirfd, fd;
+	const char *dirname = "t-openat.dir";
+	const char *filename = "t-openat";
+
+	ASSERT_SUCCESS(mkdir(dirname, 0700));
+
+	dirfd = open(dirname, O_RDONLY);
+	ASSERT_EQ(dirfd,3)
+	fd = openat(dirfd, filename, O_CREAT | O_RDONLY, 0700);
+	ASSERT_EQ(fd, 4);
+
+	ASSERT_SUCCESS(close(fd));
+	ASSERT_SUCCESS(close(dirfd));
+
+	ASSERT_SUCCESS(unlink("t-openat.dir/t-openat"));
+	ASSERT_SUCCESS(rmdir(dirname));
+
+	return 0;
+}
+
+void cleanup()
+{
+	remove("t-create");
+	remove("t-open");
+	remove("t-open-exist");
+	remove("t-open-notdir");
+	remove("t-open-loop");
+	remove("t-open-loop.sym");
+	remove("t-open.dir");
+	remove("t-open-rdonly");
+	remove("t-open-path");
+	remove("t-open-trunc");
+	remove("t-open-noatime");
+	remove("t-openat.dir/t-openat");
+	remove("t-openat.dir");
 }
 
 int main()
 {
-	test_ENOENT();
-	test_create();
-	test_create_directory();
-	test_bad_path();
-	test_EEXIST();
-	test_ENOTDIR();
-	test_EISDIR();
-	test_ELOOP();
-	test_dir_with_slashes();
-	test_dir_without_slashes();
-	test_O_RDONLY();
-	test_O_PATH();
-	test_O_TRUNC();
-	test_O_TMPFILE();
-	test_O_NOATIME();
-	test_null();
-	return 0;
+	INITIAILIZE_TESTS();
+	CLEANUP(cleanup);
+
+	TEST(test_ENOENT());
+	TEST(test_create());
+	TEST(test_create_directory());
+	TEST(test_bad_path());
+	TEST(test_EEXIST());
+	TEST(test_ENOTDIR());
+	TEST(test_EISDIR());
+	TEST(test_ELOOP());
+	TEST(test_dir());
+	TEST(test_O_RDONLY());
+	TEST(test_O_PATH());
+	TEST(test_O_TRUNC());
+	TEST(test_O_TMPFILE());
+	TEST(test_O_NOATIME());
+	TEST(test_null());
+	TEST(test_openat());
+
+	VERIFY_RESULT_AND_EXIT();
 }
