@@ -52,7 +52,6 @@ int test_FILE()
 	const char *filename = "t-access.file";
 
 	fd = creat(filename, 0700);
-	ASSERT_EQ(fd, 3);
 	ASSERT_SUCCESS(close(fd));
 
 	status = access(filename, F_OK | R_OK | W_OK | X_OK);
@@ -87,7 +86,6 @@ int test_symlink()
 	const char *filename_symlink = "t-access.sym";
 
 	fd = creat(filename, 0700);
-	ASSERT_EQ(fd, 3);
 	ASSERT_SUCCESS(close(fd));
 
 	ASSERT_SUCCESS(symlink(filename, filename_symlink));
@@ -114,9 +112,7 @@ int test_faccessat()
 	ASSERT_SUCCESS(mkdir(dirname, 0700));
 
 	dirfd = open(dirname, O_RDONLY | O_EXCL);
-	ASSERT_EQ(dirfd, 3);
 	fd = openat(dirfd, filename, O_CREAT | O_WRONLY, 0700);
-	ASSERT_EQ(fd, 4);
 	ASSERT_SUCCESS(close(fd));
 
 	ASSERT_SUCCESS(symlinkat(filename, dirfd, filename_symlink));

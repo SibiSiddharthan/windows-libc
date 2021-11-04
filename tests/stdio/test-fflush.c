@@ -21,8 +21,6 @@ int test_fflush()
 	const char *filename = "t-fflush";
 
 	f = fopen(filename, "w");
-	ASSERT_EQ(fileno(f), 3);
-
 	count = fwrite("hello", 1, 5, f);
 	ASSERT_EQ(count, 5);
 
@@ -38,7 +36,6 @@ int test_fflush()
 
 	// check contents
 	fd = open(filename, O_RDONLY);
-	ASSERT_EQ(fd, 3);
 	read_result = read(fd, buffer, 16);
 	ASSERT_EQ(read_result, 5);
 	ASSERT_MEMEQ(buffer, "hello", 5);
@@ -57,14 +54,12 @@ int test_fflushall()
 	const char *filename2 = "t-fflushall2";
 
 	f1 = fopen(filename1, "w");
-	ASSERT_EQ(fileno(f1), 3);
 	count = fwrite("hello", 1, 5, f1);
 	ASSERT_EQ(count, 5);
 	pos = lseek(fileno(f1), 0, SEEK_CUR);
 	ASSERT_EQ(pos, 0);
 
 	f2 = fopen(filename2, "w");
-	ASSERT_EQ(fileno(f2), 4);
 	count = fwrite("world!", 1, 6, f2);
 	ASSERT_EQ(count, 6);
 	pos = lseek(fileno(f2), 0, SEEK_CUR);

@@ -28,7 +28,7 @@ int test_ENOTTY()
 	const char *filename = "t-isatty-notty";
 
 	fd = creat(filename, 0700);
-	ASSERT_EQ(fd, 3);
+	ASSERT_NOTEQ(fd, -1);
 
 	status = isatty(fd);
 	ASSERT_EQ(status, 0);
@@ -47,7 +47,7 @@ int test_null()
 	int fd;
 
 	fd = open("/dev/null", O_WRONLY);
-	ASSERT_EQ(fd, 3);
+	ASSERT_NOTEQ(fd, -1);
 
 	status = isatty(fd);
 	ASSERT_EQ(status, 0);

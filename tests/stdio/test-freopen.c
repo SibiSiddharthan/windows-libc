@@ -11,21 +11,21 @@
 #include <test-macros.h>
 #include <errno.h>
 
-int test_redirect_stdout()
+int test_redirect_stderr()
 {
 	FILE *f;
 	int fd;
 	char rbuf[16];
 	ssize_t llength;
-	const char *filename = "t-freopen-stdout";
+	const char *filename = "t-freopen-stderr";
 
-	f = freopen(filename, "w", stdout);
-	printf("hello");
-	ASSERT_EQ(fileno(f), 1);
+	f = freopen(filename, "w", stderr);
+	fprintf(stderr, "hello");
+	ASSERT_EQ(fileno(f), 2);
 	ASSERT_SUCCESS(fclose(f));
 
 	fd = open(filename, O_RDONLY | O_EXCL);
-	ASSERT_EQ(fd, 1);
+	ASSERT_EQ(fd, 2);
 	llength = read(fd, rbuf, 16);
 	ASSERT_EQ(llength, 5);
 	ASSERT_MEMEQ(rbuf, "hello", (int)llength);
@@ -37,14 +37,14 @@ int test_redirect_stdout()
 
 void cleanup()
 {
-	remove("t-freopen-stdout");
+	remove("t-freopen-stderr");
 }
 
 int main()
 {
 	INITIAILIZE_TESTS();
 	CLEANUP(cleanup);
-	TEST(test_redirect_stdout());
+	TEST(test_redirect_stderr());
 	// test_reopen_same_file();
 	VERIFY_RESULT_AND_EXIT();
 }

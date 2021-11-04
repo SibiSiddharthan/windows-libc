@@ -37,7 +37,7 @@ int test_read_write()
 	const char *filename = "t-read-write";
 
 	fd = open(filename, O_RDWR | O_CREAT, 0700);
-	ASSERT_EQ(fd, 3);
+	ASSERT_NOTEQ(fd, -1);
 
 	length = write(fd, (void *)content, 7);
 	ASSERT_EQ(length, 7);
@@ -66,7 +66,7 @@ int test_O_APPEND()
 	const char *filename = "t-read-append";
 
 	fd = open(filename, O_RDWR | O_CREAT | O_APPEND, 0700);
-	ASSERT_EQ(fd, 3);
+	ASSERT_NOTEQ(fd, -1);
 
 	length = write(fd, (void *)content, 7);
 	ASSERT_EQ(length, 7);
@@ -96,7 +96,7 @@ int test_no_O_APPEND()
 	const char *filename = "t-read-write-seek";
 
 	fd = open(filename, O_RDWR | O_CREAT, 0700);
-	ASSERT_EQ(fd, 3);
+	ASSERT_NOTEQ(fd, -1);
 
 	length = write(fd, (void *)content, 7);
 	ASSERT_EQ(length, 7);
@@ -128,7 +128,7 @@ int test_lseek()
 	const char *filename = "t-lseek";
 
 	fd = open("t-lseek", O_RDWR | O_CREAT | O_TRUNC, 0700);
-	ASSERT_EQ(fd, 3);
+	ASSERT_NOTEQ(fd, -1);
 
 	length = write(fd, (void *)content, 7);
 	ASSERT_EQ(length, 7);

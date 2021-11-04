@@ -56,7 +56,6 @@ int test_unlink()
 	const char *filename = "t-unlink";
 
 	fd = creat(filename, 0700);
-	ASSERT_EQ(fd, 3);
 	ASSERT_SUCCESS(close(fd));
 
 	status = unlink(filename);
@@ -77,7 +76,6 @@ int test_unlink_readonly()
 	const char *filename = "t-unlink-readonly";
 
 	fd = creat(filename, S_IREAD);
-	ASSERT_EQ(fd, 3);
 	ASSERT_SUCCESS(close(fd));
 
 	status = unlink(filename);
@@ -98,7 +96,6 @@ int test_unlink_symlink()
 	const char *filename_symlink = "t-unlink.sym";
 
 	fd = creat(filename, 0700);
-	ASSERT_EQ(fd, 3);
 	ASSERT_SUCCESS(close(fd));
 
 	ASSERT_SUCCESS(symlink(filename, filename_symlink));
@@ -133,10 +130,7 @@ int test_unlinkat()
 	ASSERT_SUCCESS(mkdir(dirname, 0700));
 
 	dirfd = open(dirname, O_RDONLY);
-	ASSERT_EQ(dirfd, 3);
-
 	fd = openat(dirfd, filename, O_CREAT | O_WRONLY, 0700);
-	ASSERT_EQ(fd, 4);
 	ASSERT_SUCCESS(close(fd));
 
 	status = unlinkat(dirfd, filename, 0);
@@ -163,7 +157,6 @@ int test_rmdir_ENOTDIR()
 	const char *filename = "t-rmdir.file";
 
 	fd = creat(filename, 0700);
-	ASSERT_EQ(fd, 3);
 	ASSERT_SUCCESS(close(fd));
 
 	status = rmdir(filename);
@@ -187,10 +180,7 @@ int test_rmdir_ENOTEMPTY()
 	ASSERT_SUCCESS(mkdir(dirname, 0700));
 
 	dirfd = open(dirname, O_RDONLY);
-	ASSERT_EQ(dirfd, 3);
-
 	fd = openat(dirfd, filename, O_CREAT | O_WRONLY, 0700);
-	ASSERT_EQ(fd, 4);
 	ASSERT_SUCCESS(close(fd));
 
 	status = rmdir(dirname);
@@ -274,7 +264,6 @@ int test_remove()
 	ASSERT_SUCCESS(symlink(dirname, dirname_symlink));
 
 	fd = creat(filename, 0700);
-	ASSERT_EQ(fd, 3);
 	ASSERT_SUCCESS(close(fd));
 	ASSERT_SUCCESS(symlink(filename, filename_symlink));
 

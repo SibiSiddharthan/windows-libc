@@ -86,7 +86,6 @@ int test_symlink_EEXIST()
 	const char *filename = "t-symlink-exist";
 
 	fd = creat(filename, 0700);
-	ASSERT_EQ(fd, 3);
 	ASSERT_SUCCESS(close(fd));
 
 	status = symlink("junk", filename);
@@ -116,7 +115,6 @@ int test_readlink_EINVAL()
 	const char *filename = "t-readlink-inval";
 
 	fd = creat(filename, 0700);
-	ASSERT_EQ(fd, 3);
 	ASSERT_SUCCESS(close(fd));
 
 	length = readlink(filename, buf, MAX_PATH);
@@ -137,7 +135,6 @@ int test_file()
 	const char *filename_symlink = "t-readlink.file.sym";
 
 	fd = creat(filename, 0700);
-	ASSERT_EQ(fd, 3);
 	ASSERT_SUCCESS(write_file_contents(fd));
 	ASSERT_SUCCESS(close(fd));
 
@@ -170,8 +167,6 @@ int test_dir()
 	ASSERT_SUCCESS(mkdir(dirname, 0700));
 
 	dirfd = open(dirname, O_RDONLY);
-	ASSERT_EQ(dirfd, 3);
-
 	fd = openat(dirfd, filename, O_CREAT | O_WRONLY, 0700);
 	ASSERT_EQ(fd, 4);
 	ASSERT_SUCCESS(write_file_contents(fd));
@@ -188,7 +183,6 @@ int test_dir()
 	ASSERT_STREQ(buf, dirname);
 
 	dirfd = open(dirname_symlink, O_RDONLY);
-	ASSERT_EQ(dirfd, 3);
 	ASSERT_SUCCESS(verify_file_contents(dirfd, filename));
 
 	ASSERT_SUCCESS(unlinkat(dirfd, filename, 0));
@@ -211,7 +205,6 @@ int test_absolute_path()
 	const char *linkname = "t-readlink-abs.sym";
 
 	fd = creat(filename, 0700);
-	ASSERT_EQ(fd, 3);
 	ASSERT_SUCCESS(write_file_contents(fd));
 	ASSERT_SUCCESS(close(fd));
 
@@ -315,7 +308,6 @@ int test_relative_path()
 	ASSERT_SUCCESS(mkdir(dirname_child, 0700));
 
 	fd = creat(filename, 0700);
-	ASSERT_EQ(fd, 3);
 	ASSERT_SUCCESS(write_file_contents(fd));
 	ASSERT_SUCCESS(close(fd));
 
@@ -362,7 +354,6 @@ int test_multilevel_symlink()
 	const char *filename_sym2 = "t-symlink-multi.sym2";
 
 	fd = creat(filename, 0700);
-	ASSERT_EQ(fd, 3);
 	ASSERT_SUCCESS(write_file_contents(fd));
 	ASSERT_SUCCESS(close(fd));
 
@@ -517,7 +508,6 @@ int test_readlink_small_buffer()
 	const char *filename_symlink = "t-readlink-small-buffer.sym";
 
 	fd = creat(filename, 0700);
-	ASSERT_EQ(fd, 3);
 	ASSERT_SUCCESS(close(fd));
 
 	status = symlink(filename, filename_symlink);
@@ -569,10 +559,7 @@ int test_at()
 	ASSERT_SUCCESS(mkdir(dirname, 0700));
 
 	dirfd = open(dirname, O_RDONLY);
-	ASSERT_EQ(dirfd, 3);
-
 	fd = openat(dirfd, filename, O_CREAT | O_WRONLY, 0700);
-	ASSERT_EQ(fd, 4);
 	ASSERT_SUCCESS(write_file_contents(fd));
 	ASSERT_SUCCESS(close(fd));
 
@@ -605,14 +592,12 @@ int test_at_empty_path()
 	const char *filename_symlink = "t-readlinkat-empty-path.sym";
 
 	fd = creat(filename, 0700);
-	ASSERT_EQ(fd, 3);
 	ASSERT_SUCCESS(close(fd));
 
 	status = symlink(filename, filename_symlink);
 	ASSERT_EQ(status, 0);
 
 	fd = open(filename_symlink, O_NOFOLLOW | O_PATH);
-	ASSERT_EQ(fd, 3);
 
 	length = readlinkat(fd, "", buf, MAX_PATH);
 	buf[length] = '\0';

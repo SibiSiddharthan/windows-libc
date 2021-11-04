@@ -21,7 +21,6 @@ int test_lesser_length()
 	const char *write_buffer = "hello";
 
 	fd = creat(filename, 0700);
-	ASSERT_EQ(fd, 3);
 	length = write(fd, write_buffer, 5);
 	ASSERT_EQ(length, 5);
 	ASSERT_SUCCESS(close(fd));
@@ -30,7 +29,6 @@ int test_lesser_length()
 	ASSERT_EQ(status, 0);
 
 	fd = open(filename, O_RDONLY);
-	ASSERT_EQ(fd, 3);
 	length = read(fd, read_buffer, 16);
 	ASSERT_EQ(length, 3);
 	ASSERT_MEMEQ(read_buffer, "hel", 3);
@@ -51,7 +49,6 @@ int test_greater_length()
 	const char *write_buffer = "hello";
 
 	fd = creat(filename, 0700);
-	ASSERT_EQ(fd, 3);
 	length = write(fd, write_buffer, 5);
 	ASSERT_EQ(length, 5);
 	ASSERT_SUCCESS(close(fd));
@@ -60,7 +57,6 @@ int test_greater_length()
 	ASSERT_EQ(status, 0);
 
 	fd = open(filename, O_RDONLY);
-	ASSERT_EQ(fd, 3);
 	length = read(fd, read_buffer, 16);
 	ASSERT_EQ(length, 10);
 	ASSERT_MEMEQ(read_buffer, "hello\0\0\0\0\0", 10);
@@ -82,7 +78,6 @@ int test_ftruncate()
 	const char *write_buffer = "hello";
 
 	fd = open(filename, O_CREAT | O_RDWR, 0700);
-	ASSERT_EQ(fd, 3);
 	length = write(fd, write_buffer, 5);
 	ASSERT_EQ(length, 5);
 
@@ -109,7 +104,6 @@ int test_readonly()
 	const char *filename = "t-truncate-readonly";
 
 	fd = creat(filename, S_IREAD);
-	ASSERT_EQ(fd, 3);
 	ASSERT_SUCCESS(close(fd));
 
 	status = truncate(filename, 10);

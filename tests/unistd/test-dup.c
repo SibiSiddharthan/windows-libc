@@ -47,7 +47,7 @@ int test_dup2()
 	const char *filename = "t-dup2";
 
 	fd = creat(filename, 0700);
-	ASSERT_EQ(fd, 3);
+	ASSERT_NOTEQ(fd, -1); // valid fd
 	nfd1 = dup2(fd, 9);
 	ASSERT_EQ(nfd1, 9);
 	nfd2 = dup2(nfd1, 11);

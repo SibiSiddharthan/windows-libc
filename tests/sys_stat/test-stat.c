@@ -173,7 +173,6 @@ int test_fstatat()
 	dirfd = open(dirname, O_RDONLY | O_EXCL);
 	ASSERT_NOTEQ(dirfd, -1);
 	fd = openat(dirfd, filename, O_CREAT | O_WRONLY, S_IREAD);
-	ASSERT_NOTEQ(fd, -1);
 	ASSERT_SUCCESS(close(fd));
 
 	ASSERT_SUCCESS(symlinkat(filename, dirfd, filename_symlink));

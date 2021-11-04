@@ -42,8 +42,6 @@ int test_wplus()
 	ASSERT_EQ(flength, 6);
 
 	fd = fileno(f);
-	ASSERT_EQ(fd, 3);
-
 	flength = fwrite((void *)"hello2", 1, 6, f);
 	ASSERT_EQ(flength, 6);
 
@@ -76,8 +74,6 @@ int test_aplus()
 	ASSERT_EQ(flength, 6);
 
 	fd = fileno(f);
-	ASSERT_EQ(fd, 3);
-
 	offset = lseek(fd, 0, SEEK_SET);
 	ASSERT_EQ(offset, 0);
 
@@ -108,15 +104,12 @@ int test_rplus()
 	const char *filename = "t-fopen-r+";
 
 	fd = creat(filename, 0700);
-	ASSERT_EQ(fd, 3);
 	ASSERT_SUCCESS(close(fd));
 
 	f = fopen(filename, "r+");
 	ASSERT_NOTNULL(f);
 
 	fd = fileno(f);
-	ASSERT_EQ(fd, 3);
-
 	llength = write(fd, (void *)"hello1", 6);
 	ASSERT_EQ(llength, 6);
 

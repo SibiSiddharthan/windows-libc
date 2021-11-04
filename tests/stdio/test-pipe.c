@@ -17,8 +17,6 @@ int test_read()
 	FILE *f;
 
 	f = popen("pipe-helper 1", "r");
-	ASSERT_EQ(fileno(f), 3);
-
 	length = fread(buf, 1, 16, f);
 	ASSERT_EQ(length, 5);
 	ASSERT_MEMEQ(buf, "hello", (int)length);
@@ -37,8 +35,6 @@ int test_write()
 	FILE *f;
 
 	f = popen("pipe-helper 2", "w");
-	ASSERT_EQ(fileno(f), 3);
-
 	length = fwrite("hello", 1, 5, f);
 	ASSERT_EQ(length, 5);
 
@@ -56,8 +52,6 @@ int test_read_cr()
 	FILE *f;
 
 	f = popen("pipe-helper 3", "r");
-	ASSERT_EQ(fileno(f), 3);
-
 	length = fread(buf, 1, 16, f);
 	ASSERT_EQ(length, 12);
 	ASSERT_MEMEQ(buf, "hello\r\nworld", (int)length);
@@ -76,8 +70,6 @@ int test_write_cr()
 	FILE *f;
 
 	f = popen("pipe-helper 4", "w");
-	ASSERT_EQ(fileno(f), 3);
-
 	length = fwrite("hello\r\nworld", 1, 12, f);
 	ASSERT_EQ(length, 12);
 

@@ -34,7 +34,6 @@ int test_current_timestamp()
 	const char *filename = "t-utimensat";
 
 	int fd = creat(filename, 0700);
-	ASSERT_EQ(fd, 3);
 	ASSERT_SUCCESS(close(fd));
 
 	// get current time
@@ -68,7 +67,6 @@ int test_current_timestamp_with_futimens()
 	const char *filename = "t-futimens";
 
 	int fd = creat(filename, 0700);
-	ASSERT_EQ(fd, 3);
 
 	// get current time
 	GetSystemTime(&systemtime);
@@ -102,7 +100,6 @@ int test_UTIME_OMIT()
 	const char *filename = "t-utimensat-omit";
 
 	int fd = creat(filename, 0700);
-	ASSERT_EQ(fd, 3);
 	ASSERT_SUCCESS(close(fd));
 
 	// get current time

@@ -27,7 +27,6 @@ int test_READONLY()
 	const char *filename = "t-chmod";
 
 	fd = creat(filename, 0700);
-	ASSERT_EQ(fd, 3);
 	ASSERT_SUCCESS(close(fd));
 
 	status = chmod(filename, S_IREAD);

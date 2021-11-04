@@ -27,7 +27,7 @@ int test_create()
 	errno = 0;
 	const char *filename = "t-create";
 	int fd = open(filename, O_RDONLY | O_CREAT, 0700);
-	ASSERT_EQ(fd, 3);
+	ASSERT_NOTEQ(fd, -1);
 	ASSERT_SUCCESS(close(fd));
 	ASSERT_SUCCESS(unlink(filename));
 
@@ -137,12 +137,10 @@ int test_dir()
 	ASSERT_SUCCESS(mkdir(dirname, 0700));
 
 	fd = open(dirname, O_RDONLY);
-	ASSERT_EQ(fd, 3);
 	ASSERT_SUCCESS(close(fd));
 
 	// Do it again with slashes
 	fd = open(dirname_with_slashes, O_RDONLY);
-	ASSERT_EQ(fd, 3);
 	ASSERT_SUCCESS(close(fd));
 
 	ASSERT_SUCCESS(rmdir(dirname));
@@ -159,7 +157,6 @@ int test_O_RDONLY()
 	const char *buf = "hello";
 
 	fd = open(filename, O_RDONLY | O_CREAT, 0700);
-	ASSERT_EQ(fd, 3);
 	length = write(fd, buf, 5);
 	ASSERT_EQ(length, -1);
 	ASSERT_ERRNO(EACCES);
@@ -180,7 +177,6 @@ int test_O_PATH()
 	char rbuf[16];
 
 	fd = open(filename, O_WRONLY | O_CREAT, 0700);
-	ASSERT_EQ(fd, 3);
 	length = write(fd, buf, 5);
 	ASSERT_EQ(length, 5);
 	ASSERT_SUCCESS(close(fd));
@@ -207,14 +203,12 @@ int test_O_TRUNC()
 	char rbuf[16];
 
 	fd = open(filename, O_WRONLY | O_CREAT, 0700);
-	ASSERT_EQ(fd, 3);
 	length = write(fd, buf, 5);
 	ASSERT_EQ(length, 5);
 	ASSERT_SUCCESS(close(fd));
 
 	// File should be truncated when opened
 	fd = open(filename, O_RDWR | O_CREAT | O_TRUNC, 0700);
-	ASSERT_EQ(fd, 3);
 	length = read(fd, rbuf, 5);
 	ASSERT_EQ(length, 0);
 	ASSERT_SUCCESS(close(fd));
@@ -288,7 +282,7 @@ int test_null()
 	char buf[16];
 
 	fd = open("/dev/null", O_RDWR);
-	ASSERT_EQ(fd, 3);
+	ASSERT_NOTEQ(fd, -1);
 
 	length = read(fd, buf, 16);
 	ASSERT_EQ(length, 0);
@@ -313,9 +307,7 @@ int test_openat()
 	ASSERT_SUCCESS(mkdir(dirname, 0700));
 
 	dirfd = open(dirname, O_RDONLY);
-	ASSERT_EQ(dirfd,3)
 	fd = openat(dirfd, filename, O_CREAT | O_RDONLY, 0700);
-	ASSERT_EQ(fd, 4);
 
 	ASSERT_SUCCESS(close(fd));
 	ASSERT_SUCCESS(close(dirfd));

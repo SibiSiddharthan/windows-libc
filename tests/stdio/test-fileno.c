@@ -20,10 +20,30 @@ int test_std_streams()
 	return 0;
 }
 
+int test_fopens()
+{
+	FILE *f1, *f2, *f3;
+
+	f1 = fopen("t-fopens1", "wD");
+	ASSERT_EQ(fileno(f1), 3);
+	f2 = fopen("t-fopens2", "wD");
+	ASSERT_EQ(fileno(f2), 4);
+
+	ASSERT_SUCCESS(fclose(f1));
+
+	f3 = fopen("t-fopens2", "wD");
+	ASSERT_EQ(fileno(f3), 3);
+
+	ASSERT_SUCCESS(fclose(f2));
+	ASSERT_SUCCESS(fclose(f3));
+
+	return 0;
+}
+
 int main()
 {
-	// For files opened by fopen, we test fileno in test-fopen.c
 	INITIAILIZE_TESTS();
 	TEST(test_std_streams());
+	TEST(test_fopens());
 	VERIFY_RESULT_AND_EXIT();
 }

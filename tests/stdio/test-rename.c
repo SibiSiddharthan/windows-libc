@@ -88,7 +88,6 @@ int test_file()
 	const char *new_filename = "t-rename-new.file";
 
 	fd = creat(old_filename, 0700);
-	ASSERT_EQ(fd, 3);
 	ASSERT_SUCCESS(write_file_contents(fd));
 	ASSERT_SUCCESS(close(fd));
 
@@ -115,10 +114,7 @@ int test_dir()
 	ASSERT_SUCCESS(mkdir(old_dirname, 0700));
 
 	dirfd = open(old_dirname, O_RDONLY);
-	ASSERT_EQ(dirfd, 3);
-
 	fd = openat(dirfd, filename, O_CREAT | O_WRONLY, 0700);
-	ASSERT_EQ(fd, 4);
 	ASSERT_SUCCESS(write_file_contents(fd));
 	ASSERT_SUCCESS(close(fd));
 
@@ -128,8 +124,6 @@ int test_dir()
 	ASSERT_EQ(status, 0);
 
 	dirfd = open(new_dirname, O_RDONLY);
-	ASSERT_EQ(dirfd, 3);
-
 	ASSERT_SUCCESS(verify_file_contents(dirfd, filename));
 
 	ASSERT_SUCCESS(unlinkat(dirfd, filename, 0));
@@ -149,13 +143,11 @@ int test_overwrite_file()
 	const char *new_filename = "t-rename-overwrite-new.file";
 
 	fd = creat(old_filename, 0700);
-	ASSERT_EQ(fd, 3);
 	ASSERT_SUCCESS(write_file_contents(fd));
 	ASSERT_SUCCESS(close(fd));
 
 	// empty file
 	fd = creat(new_filename, 0700);
-	ASSERT_EQ(fd, 3);
 	ASSERT_SUCCESS(close(fd));
 
 	status = rename(old_filename, new_filename);
@@ -182,10 +174,7 @@ int test_overwrite_dir()
 	ASSERT_SUCCESS(mkdir(new_dirname, 0700));
 
 	dirfd = open(old_dirname, O_RDONLY);
-	ASSERT_EQ(dirfd, 3);
-
 	fd = openat(dirfd, filename, O_CREAT | O_WRONLY, 0700);
-	ASSERT_EQ(fd, 4);
 	ASSERT_SUCCESS(write_file_contents(fd));
 	ASSERT_SUCCESS(close(fd));
 
@@ -195,8 +184,6 @@ int test_overwrite_dir()
 	ASSERT_EQ(status, 0);
 
 	dirfd = open(new_dirname, O_RDONLY);
-	ASSERT_EQ(dirfd, 3);
-
 	ASSERT_SUCCESS(verify_file_contents(dirfd, filename));
 	ASSERT_SUCCESS(close(dirfd));
 
@@ -205,10 +192,8 @@ int test_overwrite_dir()
 	// create the old directory again with a empty file
 	ASSERT_SUCCESS(mkdir(old_dirname, 0700));
 	dirfd = open(old_dirname, O_RDONLY);
-	ASSERT_EQ(dirfd, 3);
 
 	fd = openat(dirfd, filename, O_CREAT | O_WRONLY, 0700);
-	ASSERT_EQ(fd, 4);
 	ASSERT_SUCCESS(close(fd));
 	ASSERT_SUCCESS(close(dirfd));
 
@@ -218,14 +203,12 @@ int test_overwrite_dir()
 
 	// check whether the file in new directory is untouched
 	dirfd = open(new_dirname, O_RDONLY);
-	ASSERT_EQ(dirfd, 3);
 	ASSERT_SUCCESS(verify_file_contents(dirfd, filename));
 
 	ASSERT_SUCCESS(unlinkat(dirfd, filename, 0));
 	ASSERT_SUCCESS(close(dirfd));
 
 	dirfd = open(old_dirname, O_RDONLY);
-	ASSERT_EQ(dirfd, 3);
 	ASSERT_SUCCESS(unlinkat(dirfd, filename, 0));
 	ASSERT_SUCCESS(close(dirfd));
 
@@ -246,7 +229,6 @@ int test_symlink()
 	const char *new_symlink = "t-rename-symlink-new.sym";
 
 	fd = creat(filename, 0700);
-	ASSERT_EQ(fd, 3);
 	ASSERT_SUCCESS(write_file_contents(fd));
 	ASSERT_SUCCESS(close(fd));
 
@@ -278,7 +260,6 @@ int test_hardlink()
 	const char *linkname = "t-rename-hardlink.lnk";
 
 	fd = creat(filename, 0700);
-	ASSERT_EQ(fd, 3);
 	ASSERT_SUCCESS(write_file_contents(fd));
 	ASSERT_SUCCESS(close(fd));
 
@@ -313,15 +294,11 @@ int test_renameat()
 	ASSERT_SUCCESS(mkdir(dirname, 0700));
 
 	fd = creat(old_filename, 0700);
-	ASSERT_EQ(fd, 3);
 	ASSERT_SUCCESS(write_file_contents(fd));
 	ASSERT_SUCCESS(close(fd));
 
 	olddirfd = open(".", O_RDONLY);
-	ASSERT_EQ(olddirfd, 3);
-
 	newdirfd = open(dirname, O_RDONLY);
-	ASSERT_EQ(newdirfd, 4);
 
 	status = renameat(olddirfd, old_filename, newdirfd, new_filename);
 	ASSERT_EQ(status, 0);
@@ -348,13 +325,11 @@ int test_renameat_noreplace()
 	const char *new_filename = "t-renameat-noreplace-new.file";
 
 	fd = creat(old_filename, 0700);
-	ASSERT_EQ(fd, 3);
 	length = write(fd, "Hello", 5);
 	ASSERT_EQ(length, 5);
 	ASSERT_SUCCESS(close(fd));
 
 	fd = creat(new_filename, 0700);
-	ASSERT_EQ(fd, 3);
 	length = write(fd, "World", 5);
 	ASSERT_EQ(length, 5);
 	ASSERT_SUCCESS(close(fd));
@@ -382,13 +357,11 @@ int test_renameat_exchange_file()
 	const char *new_filename = "t-renameat-exchange-new.file";
 
 	fd = creat(old_filename, 0700);
-	ASSERT_EQ(fd, 3);
 	length = write(fd, "Hello", 5);
 	ASSERT_EQ(length, 5);
 	ASSERT_SUCCESS(close(fd));
 
 	fd = creat(new_filename, 0700);
-	ASSERT_EQ(fd, 3);
 	length = write(fd, "World", 5);
 	ASSERT_EQ(length, 5);
 	ASSERT_SUCCESS(close(fd));
@@ -420,19 +393,14 @@ int test_renameat_exchange_dir()
 	ASSERT_SUCCESS(mkdir(new_dirname, 0700));
 
 	olddirfd = open(old_dirname, O_RDONLY);
-	ASSERT_EQ(olddirfd, 3);
-
 	newdirfd = open(new_dirname, O_RDONLY);
-	ASSERT_EQ(newdirfd, 4);
 
 	fd = openat(olddirfd, old_filename, O_CREAT | O_WRONLY, 0700);
-	ASSERT_EQ(fd, 5);
 	length = write(fd, "Hello", 5);
 	ASSERT_EQ(length, 5);
 	ASSERT_SUCCESS(close(fd));
 
 	fd = openat(newdirfd, new_filename, O_CREAT | O_WRONLY, 0700);
-	ASSERT_EQ(fd, 5);
 	length = write(fd, "World", 5);
 	ASSERT_EQ(length, 5);
 	ASSERT_SUCCESS(close(fd));
@@ -444,10 +412,7 @@ int test_renameat_exchange_dir()
 	ASSERT_EQ(status, 0);
 
 	olddirfd = open(old_dirname, O_RDONLY);
-	ASSERT_EQ(olddirfd, 3);
-
 	newdirfd = open(new_dirname, O_RDONLY);
-	ASSERT_EQ(newdirfd, 4);
 
 	ASSERT_SUCCESS(verify_file_contents_given(olddirfd, new_filename, "World"));
 	ASSERT_SUCCESS(verify_file_contents_given(newdirfd, old_filename, "Hello"));

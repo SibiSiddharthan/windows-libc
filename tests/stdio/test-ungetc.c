@@ -20,7 +20,6 @@ int test_ungetc()
 	const char *filename = "t-ungetc";
 
 	f = fopen(filename, "w+");
-	ASSERT_NOTNULL(f);
 
 	// nothing has been read in yet, ungetc should return EOF
 	result = ungetc('a', f);

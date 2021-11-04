@@ -18,7 +18,7 @@ int test_EISDIR()
 	FILE *f;
 
 	fd = open(".", O_RDONLY);
-	ASSERT_EQ(fd, 3);
+	ASSERT_NOTEQ(fd, -1);
 
 	f = fdopen(fd, "r");
 	ASSERT_NULL(f);
@@ -36,7 +36,7 @@ int test_wrong_access()
 	const char *filename = "t-fdopen-wrong-access";
 
 	fd = open(filename, O_RDONLY | O_CREAT, 0700);
-	ASSERT_EQ(fd, 3);
+	ASSERT_NOTEQ(fd, -1);
 	f = fdopen(fd, "w");
 	ASSERT_NULL(f);
 	ASSERT_ERRNO(EINVAL);
@@ -71,7 +71,7 @@ int test_correct_access()
 	const char *filename = "t-fdopen-correct-access";
 
 	fd = open(filename, O_RDWR | O_CREAT, 0700);
-	ASSERT_EQ(fd, 3);
+	ASSERT_NOTEQ(fd, -1);
 
 	f = fdopen(fd, "w");
 	ASSERT_EQ(fileno(f), 3);

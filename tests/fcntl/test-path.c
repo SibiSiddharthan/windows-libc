@@ -197,7 +197,7 @@ int test_absolute()
 	ASSERT_NULL(path);
 
 	fd = open("t-path", O_RDONLY);
-	ASSERT_EQ(fd, 3);
+	ASSERT_NOTEQ(fd, -1);
 	// fd should be ignored
 	path = get_absolute_ntpath(fd, "C:/abc/");
 	ASSERT_WSTREQ(path, L"\\??\\C:\\abc\\");

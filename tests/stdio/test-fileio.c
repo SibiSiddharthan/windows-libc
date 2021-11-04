@@ -42,7 +42,6 @@ int test_read_write_basic()
 	const char *filename = "t-fileio-basic";
 
 	f = fopen(filename, "w");
-	ASSERT_EQ(fileno(f), 3);
 	memset(write_buffer, '@', 256);
 	elements_written = fwrite(write_buffer, 1, 256, f);
 	ASSERT_EQ(elements_written, 256);
@@ -81,7 +80,6 @@ int test_read_small_buffer_internal()
 	ASSERT_SUCCESS(prepare(filename));
 
 	f = fopen(filename, "r");
-	ASSERT_EQ(fileno(f), 3);
 	result = setvbuf(f, NULL, _IOFBF, 16);
 	ASSERT_EQ(result, 0);
 
@@ -153,7 +151,6 @@ int test_read_small_buffer_external()
 	ASSERT_SUCCESS(prepare(filename));
 
 	f = fopen(filename, "r");
-	ASSERT_EQ(fileno(f), 3);
 	result = setvbuf(f, file_buffer, _IOFBF, 16);
 	ASSERT_EQ(result, 0);
 
@@ -231,7 +228,6 @@ int test_read_buffer_change()
 	ASSERT_SUCCESS(prepare(filename));
 
 	f = fopen(filename, "r");
-	ASSERT_EQ(fileno(f), 3);
 
 	// 1st read
 	elements_read = fread(buffer, 1, 8, f);
@@ -296,7 +292,6 @@ int test_write_small_buffer_internal()
 	const char *filename = "t-fileio-write-internal-buffer";
 
 	f = fopen(filename, "w");
-	ASSERT_EQ(fileno(f), 3);
 	result = setvbuf(f, NULL, _IOFBF, 16);
 	ASSERT_EQ(result, 0);
 
@@ -320,7 +315,6 @@ int test_write_small_buffer_internal()
 	ASSERT_SUCCESS(unlink(filename));
 
 	f = fopen(filename, "w");
-	ASSERT_EQ(fileno(f), 3);
 	result = setvbuf(f, NULL, _IOFBF, 16);
 	ASSERT_EQ(result, 0);
 
@@ -345,7 +339,6 @@ int test_write_small_buffer_external()
 	const char *filename = "t-fileio-write-external-buffer";
 
 	f = fopen(filename, "w");
-	ASSERT_EQ(fileno(f), 3);
 	result = setvbuf(f, file_buffer, _IOFBF, 16);
 	ASSERT_EQ(result, 0);
 
@@ -372,7 +365,6 @@ int test_write_small_buffer_external()
 	ASSERT_SUCCESS(unlink(filename));
 
 	f = fopen(filename, "w");
-	ASSERT_EQ(fileno(f), 3);
 	result = setvbuf(f, file_buffer, _IOFBF, 16);
 	ASSERT_EQ(result, 0);
 
@@ -398,7 +390,6 @@ int test_write_buffer_change()
 	const char *filename = "t-fileio-write-varying-buffer";
 
 	f = fopen(filename, "w");
-	ASSERT_EQ(fileno(f), 3);
 
 	// 1st write
 	elements_written = fwrite("abcdefgh", 1, 8, f);
@@ -462,7 +453,6 @@ int test_read_write()
 	ASSERT_SUCCESS(prepare(filename));
 
 	f = fopen(filename, "r+");
-	ASSERT_EQ(fileno(f), 3);
 	result = setvbuf(f, file_buffer, _IOFBF, 16);
 	ASSERT_EQ(result, 0);
 
@@ -525,7 +515,6 @@ int test_read_write_seek()
 	ASSERT_SUCCESS(prepare(filename));
 
 	f = fopen(filename, "r+");
-	ASSERT_EQ(fileno(f), 3);
 	result = setvbuf(f, file_buffer, _IOFBF, 16);
 	ASSERT_EQ(result, 0);
 
@@ -611,7 +600,6 @@ int test_read_append()
 	ASSERT_SUCCESS(prepare(filename));
 
 	f = fopen(filename, "a+");
-	ASSERT_EQ(fileno(f), 3);
 	result = setvbuf(f, file_buffer, _IOFBF, 16);
 	ASSERT_EQ(result, 0);
 
@@ -670,7 +658,6 @@ int test_getc()
 	ASSERT_SUCCESS(prepare(filename));
 
 	f = fopen(filename, "r");
-	ASSERT_EQ(fileno(f), 3);
 	result = setvbuf(f, NULL, _IOFBF, 4);
 	ASSERT_EQ(result, 0);
 
@@ -735,7 +722,6 @@ int test_putc()
 	const char *filename = "t-fileio-putc";
 
 	f = fopen(filename, "w");
-	ASSERT_EQ(fileno(f), 3);
 	result = setvbuf(f, NULL, _IOFBF, 4);
 	ASSERT_EQ(result, 0);
 
@@ -788,7 +774,6 @@ int test_getc_putc()
 	ASSERT_SUCCESS(prepare(filename));
 
 	f = fopen(filename, "r+");
-	ASSERT_EQ(fileno(f), 3);
 	result = setvbuf(f, NULL, _IOFBF, 4);
 	ASSERT_EQ(result, 0);
 
@@ -840,7 +825,6 @@ int test_gets()
 	ASSERT_SUCCESS(close(fd));
 
 	f = fopen(filename, "r");
-	ASSERT_EQ(fileno(f), 3);
 
 	fgets(buf, 16, f);
 	ASSERT_STREQ(buf, "abcdefg\n");

@@ -32,7 +32,6 @@ int test_okay()
 	ASSERT_EQ(status, 0);
 
 	fd = creat(filename, 0700);
-	ASSERT_EQ(fd, 3);
 	ASSERT_SUCCESS(close(fd));
 
 	status = chdir("..");
@@ -55,7 +54,6 @@ int test_okay_with_slashes()
 	ASSERT_EQ(status, 0);
 
 	fd = creat(filename, 0700);
-	ASSERT_EQ(fd, 3);
 	ASSERT_SUCCESS(close(fd));
 
 	status = chdir("../");
@@ -74,10 +72,10 @@ int test_fchdir()
 	const char *filename = "t-fchdir.file";
 
 	dirfd_old = open(".", O_RDONLY | O_EXCL);
-	ASSERT_EQ(dirfd_old, 3);
+	ASSERT_NOTEQ(dirfd_old, -1);
 
 	dirfd_new = open(dirname, O_RDONLY | O_EXCL);
-	ASSERT_EQ(dirfd_new, 4);
+	ASSERT_NOTEQ(dirfd_new, -1);
 
 	status = fchdir(dirfd_new);
 	ASSERT_EQ(status, 0);
@@ -107,7 +105,6 @@ int test_dot()
 	ASSERT_EQ(status, 0);
 
 	fd = creat(filename, 0700);
-	ASSERT_EQ(fd, 3);
 	ASSERT_SUCCESS(close(fd))
 
 	status = unlink(filename);

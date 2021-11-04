@@ -27,7 +27,7 @@ int test_ENOTDIR()
 	const char *filename = "not-a-directory";
 
 	fd = creat(filename, 0700);
-	ASSERT_EQ(fd, 3);
+	ASSERT_NOTEQ(fd, -1);
 	status = mkdirat(fd, "dummy", 0700);
 	ASSERT_EQ(status, -1);
 	ASSERT_ERRNO(ENOTDIR);

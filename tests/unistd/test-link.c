@@ -71,11 +71,9 @@ int test_EEXIST()
 	const char *target = "t-link2";
 
 	fd = creat(source, 0700);
-	ASSERT_EQ(fd, 3);
 	ASSERT_SUCCESS(close(fd));
 
 	fd = creat(target, 0700);
-	ASSERT_EQ(fd, 3);
 	ASSERT_SUCCESS(close(fd));
 
 	status = link(source, target);
@@ -96,7 +94,6 @@ int test_file()
 	const char *target = "t-link.lnk";
 
 	fd = creat(source, 0700);
-	ASSERT_EQ(fd, 3);
 	ASSERT_SUCCESS(write_file_contents(fd));
 	ASSERT_SUCCESS(close(fd));
 
@@ -121,7 +118,6 @@ int test_symlink()
 	const char *target = "t-link.sym.lnk";
 
 	fd = creat(source, 0700);
-	ASSERT_EQ(fd, 3);
 	ASSERT_SUCCESS(write_file_contents(fd));
 	ASSERT_SUCCESS(close(fd));
 
@@ -154,13 +150,9 @@ int test_linkat()
 	ASSERT_SUCCESS(mkdir(dirname, 0700));
 
 	dirfd1 = open(".", O_RDONLY);
-	ASSERT_EQ(dirfd1, 3);
-
 	dirfd2 = open(dirname, O_RDONLY);
-	ASSERT_EQ(dirfd2, 4);
 
 	fd = openat(dirfd2, source, O_CREAT | O_WRONLY, 0700);
-	ASSERT_EQ(fd, 5);
 	ASSERT_SUCCESS(write_file_contents(fd));
 	ASSERT_SUCCESS(close(fd));
 
@@ -201,10 +193,7 @@ int test_linkat_AT_SYMLINK_FOLLOW()
 	ASSERT_SUCCESS(mkdir(dirname, 0700));
 
 	dirfd = open(dirname, O_RDONLY);
-	ASSERT_EQ(dirfd, 3);
-
 	fd = openat(dirfd, source, O_CREAT | O_WRONLY, 0700);
-	ASSERT_EQ(fd, 4);
 	ASSERT_SUCCESS(write_file_contents(fd));
 	ASSERT_SUCCESS(close(fd));
 
@@ -239,7 +228,7 @@ int test_linkat_AT_EMPTY_PATH()
 	const char *filename = "t-linkat-empty-path";
 
 	fd = open(".", O_WRONLY | O_TMPFILE | O_EXCL, 0700);
-	ASSERT_EQ(fd, 3);
+	ASSERT_NOTEQ(fd, -1);
 	ASSERT_SUCCESS(write_file_contents(fd));
 
 	// trying link tmpfile opened with O_EXCL should error with EBADF
@@ -251,7 +240,7 @@ int test_linkat_AT_EMPTY_PATH()
 
 	// try again, this time with no O_EXCL, should succeed
 	fd = open(".", O_WRONLY | O_TMPFILE, 0700);
-	ASSERT_EQ(fd, 3);
+	ASSERT_NOTEQ(fd, -1);
 	ASSERT_SUCCESS(write_file_contents(fd));
 
 	status = linkat(fd, NULL, AT_FDCWD, filename, AT_EMPTY_PATH);
