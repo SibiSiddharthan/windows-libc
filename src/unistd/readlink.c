@@ -213,24 +213,7 @@ ssize_t do_readlink(HANDLE handle, char *restrict buf, size_t bufsiz)
 
 	if (reparse_buffer->ReparseTag == IO_REPARSE_TAG_SYMLINK)
 	{
-		if (reparse_buffer->SymbolicLinkReparseBuffer.SubstituteNameLength != 0)
-		{
-			wchar_t *data = (wchar_t *)malloc(reparse_buffer->SymbolicLinkReparseBuffer.SubstituteNameLength + 2);
-			UNICODE_STRING u16_data;
-			UTF8_STRING u8_data;
-			memcpy(data,
-				   reparse_buffer->SymbolicLinkReparseBuffer.PathBuffer +
-					   reparse_buffer->SymbolicLinkReparseBuffer.SubstituteNameOffset / sizeof(WCHAR),
-				   reparse_buffer->SymbolicLinkReparseBuffer.SubstituteNameLength);
-			data[reparse_buffer->SymbolicLinkReparseBuffer.SubstituteNameLength / sizeof(WCHAR)] = L'\0';
-			RtlInitUnicodeString(&u16_data, data);
-			RtlUnicodeStringToUTF8String(&u8_data, &u16_data, TRUE);
-			free(data);
-			memcpy(buf, u8_data.Buffer, u8_data.Length <= bufsiz ? u8_data.Length : bufsiz);
-			result = u8_data.Length <= bufsiz ? u8_data.Length : bufsiz;
-			RtlFreeUTF8String(&u8_data);
-		}
-		else if (reparse_buffer->SymbolicLinkReparseBuffer.PrintNameLength != 0)
+		if (reparse_buffer->SymbolicLinkReparseBuffer.PrintNameLength != 0)
 		{
 			wchar_t *data = (wchar_t *)malloc(reparse_buffer->SymbolicLinkReparseBuffer.PrintNameLength + 2);
 			UNICODE_STRING u16_data;
@@ -247,6 +230,23 @@ ssize_t do_readlink(HANDLE handle, char *restrict buf, size_t bufsiz)
 			result = u8_data.Length <= bufsiz ? u8_data.Length : bufsiz;
 			RtlFreeUTF8String(&u8_data);
 		}
+		else if (reparse_buffer->SymbolicLinkReparseBuffer.SubstituteNameLength != 0)
+		{
+			wchar_t *data = (wchar_t *)malloc(reparse_buffer->SymbolicLinkReparseBuffer.SubstituteNameLength + 2);
+			UNICODE_STRING u16_data;
+			UTF8_STRING u8_data;
+			memcpy(data,
+				   reparse_buffer->SymbolicLinkReparseBuffer.PathBuffer +
+					   reparse_buffer->SymbolicLinkReparseBuffer.SubstituteNameOffset / sizeof(WCHAR),
+				   reparse_buffer->SymbolicLinkReparseBuffer.SubstituteNameLength);
+			data[reparse_buffer->SymbolicLinkReparseBuffer.SubstituteNameLength / sizeof(WCHAR)] = L'\0';
+			RtlInitUnicodeString(&u16_data, data);
+			RtlUnicodeStringToUTF8String(&u8_data, &u16_data, TRUE);
+			free(data);
+			memcpy(buf, u8_data.Buffer, u8_data.Length <= bufsiz ? u8_data.Length : bufsiz);
+			result = u8_data.Length <= bufsiz ? u8_data.Length : bufsiz;
+			RtlFreeUTF8String(&u8_data);
+		}
 		else
 		{
 			// This should not happen
@@ -256,7 +256,7 @@ ssize_t do_readlink(HANDLE handle, char *restrict buf, size_t bufsiz)
 
 	if (reparse_buffer->ReparseTag == IO_REPARSE_TAG_MOUNT_POINT)
 	{
-		if (reparse_buffer->MountPointReparseBuffer.SubstituteNameLength != 0)
+		if (reparse_buffer->MountPointReparseBuffer.PrintNameLength != 0)
 		{
 			wchar_t *data = (wchar_t *)malloc(reparse_buffer->MountPointReparseBuffer.SubstituteNameLength + 2);
 			UNICODE_STRING u16_data;
@@ -273,7 +273,7 @@ ssize_t do_readlink(HANDLE handle, char *restrict buf, size_t bufsiz)
 			result = u8_data.Length <= bufsiz ? u8_data.Length : bufsiz;
 			RtlFreeUTF8String(&u8_data);
 		}
-		else if (reparse_buffer->MountPointReparseBuffer.PrintNameLength != 0)
+		else if (reparse_buffer->MountPointReparseBuffer.SubstituteNameLength != 0)
 		{
 			wchar_t *data = (wchar_t *)malloc(reparse_buffer->MountPointReparseBuffer.SubstituteNameLength + 2);
 			UNICODE_STRING u16_data;
@@ -290,6 +290,7 @@ ssize_t do_readlink(HANDLE handle, char *restrict buf, size_t bufsiz)
 			result = u8_data.Length <= bufsiz ? u8_data.Length : bufsiz;
 			RtlFreeUTF8String(&u8_data);
 		}
+
 		else
 		{
 			// This should not happen

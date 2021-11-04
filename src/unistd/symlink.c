@@ -155,20 +155,29 @@ int common_symlink(const char *restrict source, int dirfd, const char *restrict 
 		}
 	}
 
-	size_t total_reparse_data_length = REPARSE_DATA_BUFFER_HEADER_SIZE + 12 + 2 * u16_source.Length; // For SubstituteName, PrintName
+	size_t total_reparse_data_length =
+		REPARSE_DATA_BUFFER_HEADER_SIZE + 12 + 2 * u16_source.Length + (is_absolute ? 8 : 0); // For SubstituteName, PrintName
 	IO_STATUS_BLOCK I;
 	PREPARSE_DATA_BUFFER reparse_data = (PREPARSE_DATA_BUFFER)malloc(total_reparse_data_length);
 	memset(reparse_data, 0, total_reparse_data_length);
 
 	reparse_data->ReparseTag = IO_REPARSE_TAG_SYMLINK;
-	reparse_data->ReparseDataLength = 12 + 2 * u16_source.Length;
+	reparse_data->ReparseDataLength = total_reparse_data_length - REPARSE_DATA_BUFFER_HEADER_SIZE;
 	reparse_data->SymbolicLinkReparseBuffer.Flags = is_absolute ? 0 : SYMLINK_FLAG_RELATIVE;
-	reparse_data->SymbolicLinkReparseBuffer.SubstituteNameOffset = 0;
-	reparse_data->SymbolicLinkReparseBuffer.SubstituteNameLength = u16_source.Length;
-	reparse_data->SymbolicLinkReparseBuffer.PrintNameOffset = u16_source.Length;
+	reparse_data->SymbolicLinkReparseBuffer.PrintNameOffset = 0;
 	reparse_data->SymbolicLinkReparseBuffer.PrintNameLength = u16_source.Length;
+	reparse_data->SymbolicLinkReparseBuffer.SubstituteNameOffset = u16_source.Length;
+	reparse_data->SymbolicLinkReparseBuffer.SubstituteNameLength = u16_source.Length + (is_absolute ? 8 : 0); // '\??\'
+
+	// copy PrintName
 	memcpy(reparse_data->SymbolicLinkReparseBuffer.PathBuffer, u16_source.Buffer, u16_source.Length);
-	memcpy(reparse_data->SymbolicLinkReparseBuffer.PathBuffer + u16_source.Length / sizeof(WCHAR), u16_source.Buffer, u16_source.Length);
+	// copy SubstituteName
+	if (is_absolute)
+	{
+		memcpy(reparse_data->SymbolicLinkReparseBuffer.PathBuffer + u16_source.Length / sizeof(WCHAR), L"\\??\\", 4 * sizeof(WCHAR));
+	}
+	memcpy(reparse_data->SymbolicLinkReparseBuffer.PathBuffer + (u16_source.Length + (is_absolute ? 8 : 0)) / sizeof(WCHAR),
+		   u16_source.Buffer, u16_source.Length);
 	RtlFreeUnicodeString(&u16_source);
 
 	NTSTATUS status =

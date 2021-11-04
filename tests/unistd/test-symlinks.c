@@ -676,7 +676,7 @@ int main()
 	// Combined tests
 	TEST(test_file());
 	TEST(test_dir());
-	//TEST(test_absolute_path()); TODO fix bug in symlink
+	TEST(test_absolute_path());
 	TEST(test_relative_path());
 	TEST(test_multilevel_symlink());
 

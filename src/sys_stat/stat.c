@@ -426,25 +426,25 @@ int do_stat(HANDLE handle, struct stat *restrict statbuf)
 
 			if (reparse_buffer->ReparseTag == IO_REPARSE_TAG_SYMLINK)
 			{
-				if (reparse_buffer->SymbolicLinkReparseBuffer.SubstituteNameLength != 0)
-				{
-					statbuf->st_size = reparse_buffer->SymbolicLinkReparseBuffer.SubstituteNameLength / sizeof(WCHAR);
-				}
-				else if (reparse_buffer->SymbolicLinkReparseBuffer.PrintNameLength != 0)
+				if (reparse_buffer->SymbolicLinkReparseBuffer.PrintNameLength != 0)
 				{
 					statbuf->st_size = reparse_buffer->SymbolicLinkReparseBuffer.PrintNameLength / sizeof(WCHAR);
+				}
+				else if (reparse_buffer->SymbolicLinkReparseBuffer.SubstituteNameLength != 0)
+				{
+					statbuf->st_size = reparse_buffer->SymbolicLinkReparseBuffer.SubstituteNameLength / sizeof(WCHAR);
 				}
 			}
 
 			if (reparse_buffer->ReparseTag == IO_REPARSE_TAG_MOUNT_POINT)
 			{
-				if (reparse_buffer->MountPointReparseBuffer.SubstituteNameLength != 0)
-				{
-					statbuf->st_size = reparse_buffer->MountPointReparseBuffer.SubstituteNameLength / sizeof(WCHAR);
-				}
-				else if (reparse_buffer->MountPointReparseBuffer.PrintNameLength != 0)
+				if (reparse_buffer->MountPointReparseBuffer.PrintNameLength != 0)
 				{
 					statbuf->st_size = reparse_buffer->MountPointReparseBuffer.PrintNameLength / sizeof(WCHAR);
+				}
+				else if (reparse_buffer->MountPointReparseBuffer.SubstituteNameLength != 0)
+				{
+					statbuf->st_size = reparse_buffer->MountPointReparseBuffer.SubstituteNameLength / sizeof(WCHAR);
 				}
 			}
 			free(reparse_buffer);
