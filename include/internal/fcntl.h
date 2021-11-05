@@ -85,11 +85,11 @@ bool validate_fd(int _fd);
 wchar_t *get_absolute_ntpath(int dirfd, const char *path);
 HANDLE just_open(const wchar_t *u16_ntpath, ACCESS_MASK access, ULONG attributes, ULONG disposition, ULONG options);
 
-#define VALIDATE_PATH(path, error)       \
+#define VALIDATE_PATH(path, error, ret)  \
 	if (path == NULL || path[0] == '\0') \
 	{                                    \
 		errno = error;                   \
-		return -1;                       \
+		return ret;                      \
 	}
 
 #define IS_ABSOLUTE_PATH(path) (((isalpha(path[0])) && (path[1] == ':')))
@@ -112,7 +112,7 @@ HANDLE just_open(const wchar_t *u16_ntpath, ACCESS_MASK access, ULONG attributes
 	}
 
 #define VALIDATE_PATH_AND_DIRFD(path, dirfd) \
-	VALIDATE_PATH(path, ENOENT);             \
+	VALIDATE_PATH(path, ENOENT, -1);         \
 	if (!IS_ABSOLUTE_PATH(path))             \
 	{                                        \
 		VALIDATE_DIRFD(dirfd)                \

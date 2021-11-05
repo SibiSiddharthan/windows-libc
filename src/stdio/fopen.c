@@ -12,6 +12,7 @@
 #include <internal/stdio.h>
 #include <wchar.h>
 #include <fcntl.h>
+#include <internal/fcntl.h>
 
 int parse_mode(const char *mode);
 int get_buf_mode(int flags);
@@ -19,11 +20,7 @@ int do_open(int dirfd, const char *name, int oflags, mode_t perm);
 
 FILE *wlibc_fopen(const char *restrict name, const char *restrict mode)
 {
-	if (name == NULL)
-	{
-		errno = ENOENT;
-		return NULL;
-	}
+	VALIDATE_PATH(name, ENOENT, NULL);
 
 	if (mode == NULL)
 	{
@@ -52,7 +49,7 @@ FILE *wlibc_fopen(const char *restrict name, const char *restrict mode)
 		free(wname);
 	}
 #endif
-	int fd = do_open(AT_FDCWD, name, flags | O_NOTDIR , 0700);
+	int fd = do_open(AT_FDCWD, name, flags | O_NOTDIR, 0700);
 
 	if (fd == -1)
 	{

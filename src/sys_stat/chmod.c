@@ -43,7 +43,7 @@ int common_chmod(const wchar_t *wname, mode_t mode)
 
 int wlibc_chmod(const char *name, mode_t mode)
 {
-	VALIDATE_PATH(name, ENOENT);
+	VALIDATE_PATH(name, ENOENT, -1);
 
 	wchar_t *wname = mb_to_wc(name);
 	int status = common_chmod(wname, mode);
@@ -54,7 +54,7 @@ int wlibc_chmod(const char *name, mode_t mode)
 
 int wlibc_wchmod(const wchar_t *wname, mode_t mode)
 {
-	VALIDATE_PATH(wname, ENOENT);
+	VALIDATE_PATH(wname, ENOENT, -1);
 
 	return common_chmod(wname, mode);
 }

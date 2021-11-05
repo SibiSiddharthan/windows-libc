@@ -15,19 +15,13 @@ void common_clearerr(FILE *stream)
 
 void wlibc_clearerr_unlocked(FILE *stream)
 {
-	if (stream == NULL || stream->magic != FILE_STREAM_MAGIC)
-	{
-		errno = EINVAL;
-	}
+	VALIDATE_FILE_STREAM(stream, );
 	common_clearerr(stream);
 }
 
 void wlibc_clearerr(FILE *stream)
 {
-	if (stream == NULL || stream->magic != FILE_STREAM_MAGIC)
-	{
-		errno = EINVAL;
-	}
+	VALIDATE_FILE_STREAM(stream, );
 
 	LOCK_FILE_STREAM(stream);
 	common_clearerr(stream);

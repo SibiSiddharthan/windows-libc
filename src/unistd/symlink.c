@@ -197,7 +197,7 @@ int common_symlink(const char *restrict source, int dirfd, const char *restrict 
 
 int wlibc_common_symlink(const char *restrict source, int dirfd, const char *restrict target)
 {
-	VALIDATE_PATH(source, EINVAL);
+	VALIDATE_PATH(source, EINVAL, -1);
 	VALIDATE_PATH_AND_DIRFD(target, dirfd);
 
 	return common_symlink(source, dirfd, target);

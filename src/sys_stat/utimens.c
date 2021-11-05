@@ -145,7 +145,7 @@ int common_utimensat(int dirfd, const wchar_t *wname, const struct timespec time
 
 int wlibc_utimensat(int dirfd, const char *name, const struct timespec times[2], int flags)
 {
-	VALIDATE_PATH(name, ENOENT);
+	VALIDATE_PATH(name, ENOENT, -1);
 
 	wchar_t *wname = mb_to_wc(name);
 	int status = common_utimensat(dirfd, wname, times, flags);
@@ -156,7 +156,7 @@ int wlibc_utimensat(int dirfd, const char *name, const struct timespec times[2],
 
 int wlibc_wutimensat(int dirfd, const wchar_t *wname, const struct timespec times[2], int flags)
 {
-	VALIDATE_PATH(wname, ENOENT);
+	VALIDATE_PATH(wname, ENOENT, -1);
 
 	return common_utimensat(dirfd, wname, times, flags);
 }

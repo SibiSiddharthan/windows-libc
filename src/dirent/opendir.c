@@ -101,11 +101,7 @@ DIR *wlibc_wopendir(const wchar_t *wname)
 
 DIR *wlibc_opendir(const char *path)
 {
-	if (path == NULL || path[0] == '\0')
-	{
-		errno = ENOENT;
-		return NULL;
-	}
+	VALIDATE_PATH(path, ENOENT, NULL);
 
 	wchar_t *u16_ntpath = get_absolute_ntpath(AT_FDCWD, path);
 	if (u16_ntpath == NULL)

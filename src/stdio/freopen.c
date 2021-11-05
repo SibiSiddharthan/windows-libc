@@ -23,11 +23,8 @@ FILE *wlibc_freopen(const char *restrict name, const char *restrict mode, FILE *
 	VALIDATE_FILE_STREAM(stream, NULL);
 
 	// Treat name = NULL as an error for now
-	if(name == NULL)
-	{
-		errno = EINVAL;
-		return NULL;
-	}
+	VALIDATE_PATH(name, EINVAL, NULL);
+
 	// const wchar_t *oldname = get_fd_path(stream->fd);
 	int new_fd;
 

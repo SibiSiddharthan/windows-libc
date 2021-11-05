@@ -107,7 +107,7 @@ static int do_ftruncate(HANDLE handle, off_t length)
 
 int wlibc_truncate(const char *path, off_t length)
 {
-	VALIDATE_PATH(path, ENOENT);
+	VALIDATE_PATH(path, ENOENT, -1);
 
 	wchar_t *u16_ntpath = get_absolute_ntpath(AT_FDCWD, path);
 	if (u16_ntpath == NULL)

@@ -25,7 +25,7 @@ int common_chdir(const wchar_t *wname)
 
 int wlibc_chdir(const char *name)
 {
-	VALIDATE_PATH(name, ENOENT);
+	VALIDATE_PATH(name, ENOENT, -1);
 
 	wchar_t *wname = mb_to_wc(name);
 	int status = common_chdir(wname);
@@ -36,7 +36,7 @@ int wlibc_chdir(const char *name)
 
 int wlibc_wchdir(const wchar_t *wname)
 {
-	VALIDATE_PATH(wname, ENOENT);
+	VALIDATE_PATH(wname, ENOENT, -1);
 
 	return common_chdir(wname);
 }
