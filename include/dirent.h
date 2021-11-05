@@ -10,7 +10,7 @@
 
 #include <wlibc-macros.h>
 #include <sys/types.h>
-#include <wchar.h>
+#include <fcntl.h>
 
 _WLIBC_BEGIN_DECLS
 
@@ -33,126 +33,71 @@ struct dirent
 	char d_name[260];
 };
 
-struct wdirent
-{
-	ino_t d_ino;
-	off_t d_off;
-	unsigned short int d_reclen;
-	unsigned char d_type;
-	wchar_t d_name[260];
-};
+typedef struct WLIBC_DIR DIR;
 
-#define DIRENT_DIR_BUFFER_SIZE 131072 // 128 KB. This allows a minimum of 250 entries.
-typedef struct
+WLIBC_API DIR *wlibc_opendir(const char *path);
+WLIBC_INLINE DIR *opendir(const char *path)
 {
-	int fd;
-	void *d_handle;
-	void *buffer;
-	size_t offset;
-	int called_rewinddir;
-	struct dirent *_dirent;
-	struct wdirent *_wdirent;
-} DIR;
-
-WLIBC_API DIR *wlibc_opendir(const char *name);
-WLIBC_API DIR *wlibc_wopendir(const wchar_t *name);
-
-WLIBC_INLINE DIR *opendir(const char *name)
-{
-	return wlibc_opendir(name);
-}
-
-WLIBC_INLINE DIR *wopendir(const wchar_t *wname)
-{
-	return wlibc_wopendir(wname);
+	return wlibc_opendir(path);
 }
 
 WLIBC_API DIR *wlibc_fdopendir(int fd);
-
 WLIBC_INLINE DIR *fdopendir(int fd)
 {
 	return wlibc_fdopendir(fd);
 }
 
-WLIBC_API int wlibc_closedir(DIR *dirp);
-
-WLIBC_INLINE int closedir(DIR *dirp)
+WLIBC_API int wlibc_closedir(DIR *dirstream);
+WLIBC_INLINE int closedir(DIR *dirstream)
 {
-	return wlibc_closedir(dirp);
+	return wlibc_closedir(dirstream);
 }
 
-WLIBC_API struct dirent *wlibc_readdir(DIR *dirp);
-WLIBC_API struct wdirent *wlibc_wreaddir(DIR *dirp);
-
-WLIBC_INLINE struct dirent *readdir(DIR *dirp)
+WLIBC_API struct dirent *wlibc_readdir(DIR *dirstream);
+WLIBC_INLINE struct dirent *readdir(DIR *dirstream)
 {
-	return wlibc_readdir(dirp);
+	return wlibc_readdir(dirstream);
 }
 
-WLIBC_INLINE struct wdirent *wreaddir(DIR *dirp)
+WLIBC_API void wlibc_rewinddir(DIR *dirstream);
+WLIBC_INLINE void rewinddir(DIR *dirstream)
 {
-	return wlibc_wreaddir(dirp);
+	return wlibc_rewinddir(dirstream);
 }
 
-WLIBC_API void wlibc_rewinddir(DIR *dirp);
-
-WLIBC_INLINE void rewinddir(DIR *dirp)
+WLIBC_API void wlibc_seekdir(DIR *dirstream, long long int pos);
+WLIBC_INLINE void seekdir(DIR *dirstream, long long int pos)
 {
-	return wlibc_rewinddir(dirp);
+	return wlibc_seekdir(dirstream, pos);
 }
 
-WLIBC_API void wlibc_seekdir(DIR *dirp, long long int pos);
-
-WLIBC_INLINE void seekdir(DIR *dirp, long long int pos)
+WLIBC_API off_t wlibc_telldir(DIR *dirstream);
+WLIBC_INLINE off_t telldir(DIR *dirstream)
 {
-	return wlibc_seekdir(dirp, pos);
+	return wlibc_telldir(dirstream);
 }
 
-WLIBC_API off_t wlibc_telldir(DIR *dirp);
-
-WLIBC_INLINE off_t telldir(DIR *dirp)
+WLIBC_API int wlibc_dirfd(DIR *dirstream);
+WLIBC_INLINE int dirfd(DIR *dirstream)
 {
-	return wlibc_telldir(dirp);
-}
-
-WLIBC_API int wlibc_dirfd(DIR *dirp);
-
-WLIBC_INLINE int dirfd(DIR *dirp)
-{
-	return wlibc_dirfd(dirp);
+	return wlibc_dirfd(dirstream);
 }
 
 WLIBC_API int wlibc_scandir(const char *name, struct dirent ***namelist, int (*selector)(const struct dirent *),
 							int (*cmp)(const struct dirent **, const struct dirent **));
-WLIBC_API int wlibc_wscandir(const wchar_t *wname, struct wdirent ***wnamelist, int (*selector)(const struct wdirent *),
-							 int (*cmp)(const struct wdirent **, const struct wdirent **));
-
 WLIBC_INLINE int scandir(const char *name, struct dirent ***namelist, int (*selector)(const struct dirent *),
 						 int (*cmp)(const struct dirent **, const struct dirent **))
 {
 	return wlibc_scandir(name, namelist, selector, cmp);
 }
 
-WLIBC_INLINE int wscandir(const wchar_t *wname, struct wdirent ***wnamelist, int (*selector)(const struct wdirent *),
-						  int (*cmp)(const struct wdirent **, const struct wdirent **))
-{
-	return wlibc_wscandir(wname, wnamelist, selector, cmp);
-}
-
 WLIBC_API int scandirat(int dfd, const char *name, struct dirent ***namelist, int (*selector)(const struct dirent *),
 						int (*cmp)(const struct dirent **, const struct dirent **));
 
 WLIBC_API int wlibc_alphasort(const struct dirent **e1, const struct dirent **e2);
-WLIBC_API int wlibc_walphasort(const struct wdirent **e1, const struct wdirent **e2);
-
 WLIBC_INLINE int alphasort(const struct dirent **e1, const struct dirent **e2)
 {
 	return wlibc_alphasort(e1, e2);
-}
-
-WLIBC_INLINE int walphasort(const struct wdirent **e1, const struct wdirent **e2)
-{
-	return wlibc_walphasort(e1, e2);
 }
 
 _WLIBC_END_DECLS

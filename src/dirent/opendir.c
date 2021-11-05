@@ -5,8 +5,9 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
+#include <internal/nt.h>
+#include <internal/dirent.h>
 #include <dirent.h>
-#include <windows.h>
 #include <wchar.h>
 #include <stdlib.h>
 #include <string.h>
@@ -14,7 +15,22 @@
 #include <errno.h>
 #include <internal/fcntl.h>
 #include <internal/misc.h>
+#include <fcntl.h>
 
+static void initialize_dirstream(DIR **dirstream, int fd)
+{
+	*dirstream = (DIR *)malloc(sizeof(DIR));
+	(*dirstream)->magic = DIR_STREAM_MAGIC;
+	(*dirstream)->fd = fd;
+	(*dirstream)->buffer = malloc(DIRENT_DIR_BUFFER_SIZE);
+	(*dirstream)->offset = 0;
+	(*dirstream)->read_data = 0;
+	(*dirstream)->received_data = 0;
+	(*dirstream)->info = (struct dirent *)malloc(sizeof(struct dirent));
+	InitializeCriticalSection(&((*dirstream)->critical));
+}
+
+#if 0
 static void initialize_dirp(DIR **dirp, HANDLE directory_handle)
 {
 	*dirp = (DIR *)malloc(sizeof(DIR));
@@ -22,9 +38,10 @@ static void initialize_dirp(DIR **dirp, HANDLE directory_handle)
 	(*dirp)->buffer = malloc(DIRENT_DIR_BUFFER_SIZE);
 	(*dirp)->offset = 0;
 	(*dirp)->called_rewinddir = 0;
-	(*dirp)->_dirent = (struct dirent *)malloc(sizeof(struct dirent));
-	(*dirp)->_wdirent = (struct wdirent *)malloc(sizeof(struct wdirent));
+	//(*dirp)->_dirent = (struct dirent *)malloc(sizeof(struct dirent));
+	//(*dirp)->_wdirent = (struct wdirent *)malloc(sizeof(struct wdirent));
 }
+
 
 static DIR *common_opendir(const wchar_t *wname, int fd)
 {
@@ -80,6 +97,41 @@ DIR *wlibc_wopendir(const wchar_t *wname)
 	return common_opendir(wname, -1);
 }
 
+#endif
+
+DIR *wlibc_opendir(const char *path)
+{
+	if (path == NULL || path[0] == '\0')
+	{
+		errno = ENOENT;
+		return NULL;
+	}
+
+	wchar_t *u16_ntpath = get_absolute_ntpath(AT_FDCWD, path);
+	if (u16_ntpath == NULL)
+	{
+		errno = ENOENT;
+		return NULL;
+	}
+
+	HANDLE handle = just_open(u16_ntpath, FILE_READ_ATTRIBUTES | FILE_TRAVERSE | FILE_LIST_DIRECTORY | SYNCHRONIZE, 0, FILE_OPEN,
+							  FILE_DIRECTORY_FILE | FILE_SYNCHRONOUS_IO_NONALERT);
+	if (handle == INVALID_HANDLE_VALUE)
+	{
+		// errno wil be set by just_open
+		free(u16_ntpath);
+		return NULL;
+	}
+
+	int fd = register_to_fd_table(handle, u16_ntpath + 4, DIRECTORY_HANDLE, O_RDONLY | O_CLOEXEC | O_DIRECTORY);
+	free(u16_ntpath);
+
+	DIR *dirstream = NULL;
+	initialize_dirstream(&dirstream, fd);
+
+	return dirstream;
+}
+
 DIR *wlibc_fdopendir(int fd)
 {
 	enum handle_type _type = get_fd_type(fd);
@@ -89,9 +141,8 @@ DIR *wlibc_fdopendir(int fd)
 		return NULL;
 	}
 
-	HANDLE directory_handle = get_fd_handle(fd);
-	DIR *dirp = NULL;
-	initialize_dirp(&dirp, directory_handle);
-	dirp->fd = fd;
-	return dirp;
+	DIR *dirstream = NULL;
+	initialize_dirstream(&dirstream, fd);
+
+	return dirstream;
 }

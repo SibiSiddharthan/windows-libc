@@ -5,18 +5,33 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
+#include <internal/nt.h>
+#include <internal/dirent.h>
 #include <dirent.h>
+#include <internal/error.h>
 #include <errno.h>
 #include <internal/fcntl.h>
 
-void wlibc_rewinddir(DIR *dirp)
+void wlibc_rewinddir(DIR *dirstream)
 {
-	if (dirp == NULL || get_fd_type(dirp->fd) != DIRECTORY_HANDLE)
+	VALIDATE_DIR_STREAM(dirstream, );
+
+	NTSTATUS status;
+	IO_STATUS_BLOCK io;
+
+	LOCK_DIR_STREAM(dirstream);
+
+	memset(dirstream->buffer, 0, DIRENT_DIR_BUFFER_SIZE);
+	status = NtQueryDirectoryFileEx(get_fd_handle(dirstream->fd), NULL, NULL, NULL, &io, dirstream->buffer, DIRENT_DIR_BUFFER_SIZE,
+									FileIdExtdBothDirectoryInformation, FILE_QUERY_RESTART_SCAN, NULL);
+	if (status != STATUS_SUCCESS)
 	{
-		errno = EBADF;
-		return;
+		map_ntstatus_to_errno(status);
 	}
 
-	dirp->offset = 0;
-	dirp->called_rewinddir = 1;
+	dirstream->received_data = io.Information;
+	dirstream->read_data = 0;
+	dirstream->offset = 0;
+
+	UNLOCK_DIR_STREAM(dirstream);
 }

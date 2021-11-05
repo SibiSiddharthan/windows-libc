@@ -5,20 +5,19 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
+#include <internal/dirent.h>
 #include <dirent.h>
 #include <windows.h>
 #include <stdlib.h>
 #include <internal/fcntl.h>
 
-void fill_dir_buffer(DIR *dirp);
+void fill_dir_buffer(DIR *dirstream);
 
-void wlibc_seekdir(DIR *dirp, long long int pos)
+void wlibc_seekdir(DIR *dirstream, long long int pos)
 {
-	if (dirp == NULL || get_fd_type(dirp->fd) != DIRECTORY_HANDLE)
-	{
-		errno = EBADF;
-		return;
-	}
+	VALIDATE_DIR_STREAM(dirstream, );
+	LOCK_DIR_STREAM(dirstream);
 	// This value should be given by telldir
-	dirp->offset = pos;
+	dirstream->offset = pos;
+	UNLOCK_DIR_STREAM(dirstream);
 }

@@ -116,7 +116,7 @@
 		printf("%d tests failed, cleaning up byproducts of tests\n", __wlibc_test_result);                                              \
 		__wlibc_cleanup_on_failure();                                                                                                   \
 	}                                                                                                                                   \
-	else                                                                                                                                \
+	else if (__wlibc_test_result == 0)                                                                                                  \
 	{                                                                                                                                   \
 		printf("All tests passed\n");                                                                                                   \
 	}                                                                                                                                   \
