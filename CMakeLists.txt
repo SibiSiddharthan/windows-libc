@@ -36,6 +36,7 @@ option(ENABLE_LANGINFO "Enable langinfo.h" ON)
 option(ENABLE_SIGNALS "Enable POSIX like signals" ON)
 option(ENABLE_PROCESS "Enable POSIX process management" ON)
 option(ENABLE_BINARY_STD_STREAMS "Enable binary(instead of text) std streams" ON)
+option(ENABLE_RANDOM "Enable random functions" ON)
 #option(ENABLE_STRINGS_GNU "Enable various GNU string extensions" ON)
 #option(ENABLE_SOCKETS "Enable SOCKETS API" ON)
 

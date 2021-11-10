@@ -34,3 +34,7 @@ endif()
 if(ENABLE_PROCESS)
 	add_subdirectory(sys_wait)
 endif()
+
+if(ENABLE_RANDOM)
+	add_subdirectory(sys_random)
+endif()

@@ -60,6 +60,11 @@ endif()
 #	list(APPEND modules string)
 #endif()
 
+if(ENABLE_RANDOM)
+	add_subdirectory(sys_random)
+	list(APPEND modules sys_random)
+endif()
+
 add_subdirectory(internal)
 
 add_library(wlibc)
