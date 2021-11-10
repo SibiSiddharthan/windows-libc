@@ -6,6 +6,7 @@
 ]]
 
 set(stdlib_SOURCES
+mkstemp.c
 setenv.c
 unsetenv.c)
 

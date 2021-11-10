@@ -6,6 +6,7 @@
 ]]
 
 set(tests
+mkstemp
 un_set_env)
 
 foreach(t ${tests})
