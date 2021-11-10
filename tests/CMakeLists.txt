@@ -38,3 +38,7 @@ endif()
 if(ENABLE_RANDOM)
 	add_subdirectory(sys_random)
 endif()
+
+if(ENABLE_ERROR_LOGGING)
+	add_subdirectory(error)
+endif()

@@ -65,6 +65,11 @@ if(ENABLE_RANDOM)
 	list(APPEND modules sys_random)
 endif()
 
+if(ENABLE_ERROR_LOGGING)
+	add_subdirectory(error)
+	list(APPEND modules error)
+endif()
+
 add_subdirectory(internal)
 
 add_library(wlibc)

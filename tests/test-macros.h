@@ -77,7 +77,7 @@
 
 #define ASSERT_SUCCESS(op)                                                                                                          \
 	{                                                                                                                               \
-		if (op == -1)                                                                                                               \
+		if (op != 0)                                                                                                               \
 		{                                                                                                                           \
 			printf("Operation %s called at %s:%d in %s failed but should have succeeded\n", #op, __FILE__, __LINE__, __FUNCTION__); \
 			return 1;                                                                                                               \
