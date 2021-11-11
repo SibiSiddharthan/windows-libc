@@ -192,6 +192,16 @@ WLIBC_INLINE int futimens(int fd, const struct timespec times[2])
 	return wlibc_futimens(fd, times);
 }
 
+WLIBC_INLINE mode_t umask(mode_t mask /*unused*/)
+{
+	/*
+	  According to the POSIX documentation, the umask value is ignored if the parent directory has an ACL.
+	  In Windows all directories have ACLs and this function serves no meaningful purpose.
+	  Just return 0077 i.e ~0700 (owner has full control, rest have nothing)
+	*/
+	return 0077;
+}
+
 _WLIBC_END_DECLS
 
 #endif
