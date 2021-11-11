@@ -24,6 +24,11 @@ _WLIBC_BEGIN_DECLS
 #define DT_SOCK    12 // socket
 #define DT_WHT     14
 
+// available data in struct dirent
+#define _DIRENT_HAVE_D_OFF
+#define _DIRENT_HAVE_D_RECLEN
+#define _DIRENT_HAVE_D_TYPE
+
 struct dirent
 {
 	ino_t d_ino;
