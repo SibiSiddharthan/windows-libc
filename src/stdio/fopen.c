@@ -29,26 +29,6 @@ FILE *wlibc_fopen(const char *restrict name, const char *restrict mode)
 	}
 
 	int flags = parse_mode(mode);
-
-#if 0
-	wchar_t *wname = NULL;
-	// This conversion should be moved inside common_open itself. TODO/FIXME
-	if (strcmp(name, "/dev/null") == 0)
-	{
-		wname = L"NUL";
-	}
-	else
-	{
-		wname = mb_to_wc(name);
-	}
-
-	int fd = common_open(wname, flags, 0);
-
-	if (strcmp(name, "/dev/null") != 0)
-	{
-		free(wname);
-	}
-#endif
 	int fd = do_open(AT_FDCWD, name, flags | O_NOTDIR, 0700);
 
 	if (fd == -1)

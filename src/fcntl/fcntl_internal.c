@@ -88,9 +88,6 @@ HANDLE open_conout()
 void init_fd_table()
 {
 	InitializeCriticalSection(&_fd_critical);
-	// HANDLE hin = GetStdHandle(STD_INPUT_HANDLE);
-	// HANDLE hout = GetStdHandle(STD_OUTPUT_HANDLE);
-	// HANDLE herr = GetStdHandle(STD_ERROR_HANDLE);
 	bool console_subsystem = true;
 	if (NtCurrentPeb()->ProcessParameters->ConsoleHandle == 0 || NtCurrentPeb()->ProcessParameters->ConsoleHandle == (HANDLE)-1)
 	{
@@ -234,41 +231,6 @@ static int internal_insert_fd(int index, HANDLE _h, const wchar_t *_path, enum h
 		}
 	}
 
-#if 0
-	// We try to find the absolute path here
-	// We need this for *at functions to work properly
-	// This should not give an error
-	wchar_t temp_buf[MAX_PATH];
-	int length = GetFinalPathNameByHandle(_h, temp_buf, MAX_PATH, VOLUME_NAME_DOS);
-
-	if (length == 0) // This will be true for a character device
-	{
-		wcscpy(_fd_io[index]._path, _path);
-	}
-
-	else
-	{
-		for (int i = 6; i < length; i++) // \\?\C:
-		{
-			if (temp_buf[i] == L'\\')
-			{
-				temp_buf[i] = L'/';
-			}
-		}
-
-		wcscpy(_fd_io[index]._path, temp_buf + 4);
-
-		// Append a trailing backslash(if necessary) if we are opening a directory
-		if (_type == DIRECTORY_HANDLE)
-		{
-			length -= 4;
-			if (!(_fd_io[index]._path[length - 1] == L'/'))
-			{
-				wcscat(_fd_io[index]._path, L"/");
-			}
-		}
-	}
-#endif
 	return index;
 }
 
@@ -326,7 +288,23 @@ static void update_fd_table_internal(int _fd, HANDLE _h, const wchar_t *_path, e
 	_fd_io[_fd]._handle = _h;
 	_fd_io[_fd]._type = _type;
 	_fd_io[_fd]._flags = _flags;
-	set_fd_path_internal(_fd, _path);
+
+	// Empty _path for pipes
+	if (_type == PIPE_HANDLE)
+	{
+		_fd_io[_fd]._path[0] = L'\0';
+	}
+
+	wcscpy(_fd_io[_fd]._path, _path);
+	if (_type == DIRECTORY_HANDLE)
+	{
+		int length = wcslen(_path);
+		// Append trailing slash
+		if (_fd_io[_fd]._path[length - 1] != L'\\')
+		{
+			wcscat(_fd_io[_fd]._path, L"\\");
+		}
+	}
 }
 
 void update_fd_table(int _fd, HANDLE _h, const wchar_t *_path, enum handle_type _type, int _flags)

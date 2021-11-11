@@ -10,7 +10,6 @@
 
 #include <wlibc-macros.h>
 #include <sys/types.h>
-#include <wchar.h>
 #include <stdarg.h>
 
 _WLIBC_BEGIN_DECLS
@@ -82,67 +81,7 @@ _WLIBC_BEGIN_DECLS
 #define F_GETFL         5 // return the flags
 #define F_SETFL         6 // set the flags, only O_APPEND, O_DIRECT, O_NONBLOCK are supported
 
-#if 0
-WLIBC_API int wlibc_creat(const char *name, const mode_t perm);
-WLIBC_API int wlibc_wcreat(const wchar_t *wname, const mode_t perm);
-
-WLIBC_INLINE int creat(const char *name, const mode_t perm)
-{
-	return wlibc_creat(name, perm);
-}
-
-WLIBC_INLINE int wcreat(const wchar_t *wname, const mode_t perm)
-{
-	return wlibc_wcreat(wname, perm);
-}
-
-WLIBC_API int wlibc_open(const char *name, const int oflags, va_list perm_args);
-WLIBC_API int wlibc_wopen(const wchar_t *wname, const int oflags, va_list perm_args);
-
-WLIBC_INLINE int open(const char *name, const int oflags, ...)
-{
-	va_list perm_args;
-	va_start(perm_args, oflags);
-	int fd = wlibc_open(name, oflags, perm_args);
-	va_end(perm_args);
-	return fd;
-}
-
-WLIBC_INLINE int wopen(const wchar_t *wname, const int oflags, ...)
-{
-	va_list perm_args;
-	va_start(perm_args, oflags);
-	int fd = wlibc_wopen(wname, oflags, perm_args);
-	va_end(perm_args);
-	return fd;
-}
-
-WLIBC_API int wlibc_openat(int dirfd, const char *name, int oflags, va_list perm_args);
-WLIBC_API int wlibc_wopenat(int dirfd, const wchar_t *wname, int oflags, va_list perm_args);
-
-WLIBC_INLINE int openat(int dirfd, const char *name, int oflags, ...)
-{
-	va_list perm_args;
-	va_start(perm_args, oflags);
-	int fd = wlibc_openat(dirfd, name, oflags, perm_args);
-	va_end(perm_args);
-	return fd;
-}
-
-WLIBC_INLINE int wopenat(int dirfd, const wchar_t *wname, int oflags, ...)
-{
-	va_list perm_args;
-	va_start(perm_args, oflags);
-	int fd = wlibc_wopenat(dirfd, wname, oflags, perm_args);
-	va_end(perm_args);
-	return fd;
-}
-#endif
-
 WLIBC_API int wlibc_common_open(int dirfd, const char *name, int oflags, va_list perm_args);
-
-//WLIBC_API int wlibc_open2(const char *name, const int oflags, ...);
-//WLIBC_API int wlibc_openat2(int dirfd, const char *name, int oflags, ...);
 
 WLIBC_INLINE int open(const char *name, const int oflags, ...)
 {
@@ -166,23 +105,7 @@ WLIBC_INLINE int creat(const char *name, mode_t mode)
 {
 	return open(name, O_WRONLY | O_CREAT | O_TRUNC, mode);
 }
-//#define creat(name, perm) wlibc_open2(name, O_WRONLY | O_CREAT | O_TRUNC, perm)
-/* int open(const char *name, const int oflags, ...); */
-//#define open   wlibc_open2
-//#define openat wlibc_openat2
 
-#if 0
-WLIBC_API int wlibc_open(const char *name, const int oflags, va_list perm_args);
-WLIBC_API int wlibc_wopen(const wchar_t *wname, const int oflags, va_list perm_args);
-WLIBC_INLINE int wopen(const wchar_t *wname, const int oflags, ...)
-{
-	va_list perm_args;
-	va_start(perm_args, oflags);
-	int fd = wlibc_wopen(wname, oflags, perm_args);
-	va_end(perm_args);
-	return fd;
-}
-#endif
 WLIBC_API int wlibc_fcntl(int fd, int cmd, va_list args);
 
 WLIBC_INLINE int fcntl(int fd, int cmd, ...)

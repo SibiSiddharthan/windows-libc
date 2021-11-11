@@ -9,7 +9,7 @@
 #define FCNTL_INTERNAL_H
 
 #include <sys/types.h>
-#include <windows.h>
+#include <Windows.h>
 #include <wchar.h>
 #include <stdbool.h>
 

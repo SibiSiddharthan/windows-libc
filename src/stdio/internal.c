@@ -27,15 +27,6 @@ void initialize_stdio()
 	_wlibc_stdin = create_stream(0, _IOFBF | _IOBUFFER_INTERNAL | _IOBUFFER_RDONLY, 512);
 	_wlibc_stdout = create_stream(1, _IOFBF | _IOBUFFER_INTERNAL | _IOBUFFER_WRONLY, 512);
 	_wlibc_stderr = create_stream(2, _IONBF | _IOBUFFER_WRONLY, 0);
-
-	// Initialize the linked list
-	//_wlibc_stdin->prev = NULL;
-	//_wlibc_stdin->next = _wlibc_stdout;
-	//_wlibc_stdout->prev = _wlibc_stdin;
-	//_wlibc_stdout->next = _wlibc_stderr;
-	//_wlibc_stderr->prev = _wlibc_stdout;
-	//_wlibc_stderr->next = NULL;
-	//_wlibc_stdio_head = _wlibc_stderr;
 }
 
 int common_fflush(FILE *stream);

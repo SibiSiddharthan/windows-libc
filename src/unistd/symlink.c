@@ -9,84 +9,10 @@
 #include <wchar.h>
 #include <internal/misc.h>
 #include <errno.h>
-#include <Windows.h>
+#include <internal/nt.h>
 #include <internal/error.h>
 #include <internal/fcntl.h>
-#include <internal/nt.h>
 #include <stdlib.h>
-
-#if 0
-int common_symlink(const wchar_t *restrict wsource, const wchar_t *restrict wtarget)
-{
-	DWORD attributes;
-	DWORD flags = SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE;
-
-	attributes = GetFileAttributes(wtarget);
-	if (attributes != INVALID_FILE_ATTRIBUTES)
-	{
-		errno = EEXIST;
-		return -1;
-	}
-
-	int wtarget_length = wcslen(wtarget);
-	int last_slash_pos = 0;
-	for (int i = wtarget_length - 1; i > 0; i--)
-	{
-		if (wtarget[i] == L'/' || wtarget[i] == L'\\')
-		{
-			last_slash_pos = i;
-			break;
-		}
-	}
-
-	// Symlink is created across directories in a relative manner
-	// We find the type of file here
-	int wsource_length = wcslen(wsource);
-	if (last_slash_pos != 0 && !is_absolute_pathw(wsource))
-	{
-		wchar_t *wsource_final = (wchar_t *)malloc(sizeof(wchar_t) * (wsource_length + last_slash_pos + 2)); // '\0','/'
-		wcsncpy(wsource_final, wtarget, last_slash_pos + 1);
-		wsource_final[last_slash_pos + 1] = L'\0';
-		wcscat(wsource_final, wsource);
-		attributes = GetFileAttributes(wsource_final);
-		if (attributes != INVALID_FILE_ATTRIBUTES && (attributes & FILE_ATTRIBUTE_DIRECTORY))
-		{
-			flags |= SYMBOLIC_LINK_FLAG_DIRECTORY;
-		}
-		free(wsource_final);
-	}
-	else
-	{
-		attributes = GetFileAttributes(wsource);
-		if (attributes != INVALID_FILE_ATTRIBUTES && (attributes & FILE_ATTRIBUTE_DIRECTORY))
-		{
-			flags |= SYMBOLIC_LINK_FLAG_DIRECTORY;
-		}
-	}
-
-	// wsource needs to have backslashes only
-	wchar_t *wsource_bs = (wchar_t *)malloc(sizeof(wchar_t) * (wsource_length + 1));
-	wcscpy(wsource_bs, wsource);
-
-	wchar_t *temp = wsource_bs;
-	while (*wsource_bs != L'\0')
-	{
-		if (*wsource_bs == L'/')
-			*wsource_bs = L'\\';
-		++wsource_bs;
-	}
-	wsource_bs = temp;
-
-	if (!CreateSymbolicLink(wtarget, wsource_bs, flags))
-	{
-		map_win32_error_to_wlibc(GetLastError());
-		return -1;
-	}
-	free(wsource_bs);
-
-	return 0;
-}
-#endif
 
 int common_symlink(const char *restrict source, int dirfd, const char *restrict target)
 {

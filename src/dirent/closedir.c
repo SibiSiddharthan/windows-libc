@@ -7,7 +7,7 @@
 
 #include <internal/dirent.h>
 #include <dirent.h>
-#include <windows.h>
+#include <Windows.h>
 #include <internal/error.h>
 #include <stdlib.h>
 #include <internal/fcntl.h>
@@ -19,7 +19,6 @@ int wlibc_closedir(DIR *dirstream)
 	if (!close_fd(dirstream->fd))
 	{
 		// Free the memory of DIR and it's components
-		// free(dirstream->_wdirent);
 		free(dirstream->info);
 		free(dirstream->buffer);
 		DeleteCriticalSection(&(dirstream->critical));

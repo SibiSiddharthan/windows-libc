@@ -31,7 +31,7 @@ int wmain(int argc, wchar_t **wargv)
 	}
 
 #ifdef WLIBC_POSIX_IO
-	// DONT change the order of this. 
+	// DO NOT change the order of this.
 	init_fd_table();
 	initialize_stdio();
 	atexit(cleanup_fd_table);
@@ -55,24 +55,7 @@ int wmain(int argc, wchar_t **wargv)
 #endif
 
 	int exit_status = main(argc, argv);
-#if 0
-#ifdef WLIBC_POSIX_IO
-	cleanup_stdio();
-	cleanup_fd_table();
-#endif
-#ifdef WLIBC_DLFCN
-	dlfcn_cleanup();
-#endif
-#ifdef WLIBC_LANGINFO
-	langinfo_cleanup();
-#endif
-#ifdef WLIBC_PROCESS
-	process_cleanup();
-#endif
-#ifdef WLIBC_SIGNALS
-	signal_cleanup();
-#endif
-#endif
+
 	if (argc)
 	{
 		for (int i = 0; i < argc; i++)

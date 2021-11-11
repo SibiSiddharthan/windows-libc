@@ -6,25 +6,11 @@
 */
 
 #include <sys/stat.h>
-#include <Windows.h>
+#include <internal/nt.h>
 #include <internal/error.h>
 #include <internal/misc.h>
 #include <internal/fcntl.h>
-#include <internal/nt.h>
 #include <errno.h>
-
-#if 0
-int common_mkdir(const wchar_t *wpath, mode_t mode)
-{
-	if (!CreateDirectory(wpath, NULL))
-	{
-		map_win32_error_to_wlibc(GetLastError());
-		return -1;
-	}
-
-	return 0;
-}
-#endif
 
 int wlibc_common_mkdir(int dirfd, const char *path, mode_t mode)
 {

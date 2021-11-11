@@ -12,4 +12,5 @@
 
 void map_win32_error_to_wlibc(unsigned long error);
 void map_ntstatus_to_errno(NTSTATUS status);
+
 #endif

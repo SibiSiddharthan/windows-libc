@@ -6,10 +6,9 @@
 */
 
 #include <unistd.h>
-#include <internal/misc.h>
-#include <Windows.h>
-#include <internal/error.h>
 #include <internal/nt.h>
+#include <internal/misc.h>
+#include <internal/error.h>
 #include <fcntl.h>
 #include <internal/fcntl.h>
 

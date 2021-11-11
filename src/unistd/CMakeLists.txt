@@ -23,20 +23,15 @@ getpagesize.c
 isatty.c
 kill.c
 link.c
-#linkat.c
 lseek.c
 pipe.c
 readlink.c
-#readlinkat.c
 read.c
-#rmdir.c
+remove.c
 sleep.c
 symlink.c
-#symlinkat.c
 truncate.c
 ttyname.c
-unlink.c
-#unlinkat.c
 write.c)
 
 add_library(unistd OBJECT ${unistd_SOURCES})

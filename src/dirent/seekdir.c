@@ -7,7 +7,7 @@
 
 #include <internal/dirent.h>
 #include <dirent.h>
-#include <windows.h>
+#include <Windows.h>
 #include <stdlib.h>
 #include <internal/fcntl.h>
 
