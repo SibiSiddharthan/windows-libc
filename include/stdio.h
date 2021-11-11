@@ -157,7 +157,7 @@ WLIBC_INLINE size_t fwrite(const void *restrict buffer, size_t size, size_t coun
 }
 
 #define fputs(buffer, stream) wlibc_fputs(buffer, stream)
-#define puts(buffer)         wlibc_fputs(buffer, stdout)
+#define puts(buffer)          wlibc_fputs(buffer, stdout)
 #define fputc(ch, stream)     wlibc_fputc(ch, stream)
 #define putc(ch, stream)      wlibc_fputc(ch, stream)
 #define putchar(ch)           wlibc_fputc(ch, stdout)
@@ -260,23 +260,24 @@ WLIBC_INLINE void perror(char const *message)
 }
 #endif
 
-// file locking
-//#define LOCK    0
-//#define UNLOCK  1
-//#define TRYLOCK 2
+/*
+#define LOCK    0
+#define UNLOCK  1
+#define TRYLOCK 2
+*/
 WLIBC_API int wlibc_lockfile_op(FILE *stream, int op);
 
-WLIBC_INLINE void wlibc_flockfile(FILE *stream)
+WLIBC_INLINE void flockfile(FILE *stream)
 {
 	wlibc_lockfile_op(stream, 0);
 }
 
-WLIBC_INLINE void wlibc_funlockfile(FILE *stream)
+WLIBC_INLINE void funlockfile(FILE *stream)
 {
 	wlibc_lockfile_op(stream, 1);
 }
 
-WLIBC_INLINE int wlibc_ftrylockfile(FILE *stream)
+WLIBC_INLINE int ftrylockfile(FILE *stream)
 {
 	return wlibc_lockfile_op(stream, 2);
 }
@@ -484,10 +485,10 @@ WLIBC_INLINE size_t fread_unlocked(void *restrict buffer, size_t size, size_t co
 	return wlibc_fread_unlocked(buffer, size, count, stream);
 }
 
-#define fgets_unlocked(buffer,count,stream)  wlibc_fgets_unlocked(buffer, count, stream)
-#define fgetc_unlocked(stream)  wlibc_fgetc_unlocked(stream)
-#define getc_unlocked(stream)  wlibc_fgetc_unlocked(stream)
-#define getchar_unlocked()  wlibc_fgetc_unlocked(stdin)
+#define fgets_unlocked(buffer, count, stream) wlibc_fgets_unlocked(buffer, count, stream)
+#define fgetc_unlocked(stream)                wlibc_fgetc_unlocked(stream)
+#define getc_unlocked(stream)                 wlibc_fgetc_unlocked(stream)
+#define getchar_unlocked()                    wlibc_fgetc_unlocked(stdin)
 
 // output
 WLIBC_API size_t wlibc_fwrite_unlocked(const void *restrict buffer, size_t size, size_t count, FILE *restrict stream);
