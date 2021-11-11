@@ -16,13 +16,13 @@
 
 _WLIBC_BEGIN_DECLS
 
-#define S_IFMT  0xF000 // File type mask
-#define S_IFBLK 0x0100 // Block special
-#define S_IFLNK 0x0200 // Symbolic Link
-#define S_IFIFO 0x1000 // Pipe or FIFO (FIFO is unsupported)
-#define S_IFCHR 0x2000 // Character special
-#define S_IFDIR 0x4000 // Directory
-#define S_IFREG 0x8000 // Regular
+#define S_IFMT  0xFF000 // File type mask
+#define S_IFBLK 0x20000 // Block special
+#define S_IFIFO 0x10000 // Pipe or FIFO (FIFO is unsupported)
+#define S_IFLNK 0x01000 // Symbolic Link
+#define S_IFCHR 0x02000 // Character special
+#define S_IFDIR 0x04000 // Directory
+#define S_IFREG 0x08000 // Regular
 
 #define S_IREAD  0x0100 // Read permission, owner
 #define S_IWRITE 0x0080 // Write permission, owner
@@ -45,6 +45,34 @@ _WLIBC_BEGIN_DECLS
 #define S_IRWXG   S_IRWXU
 #define S_IRWXO   S_IRWXU
 #define S_IRWXUGO (S_IRWXU | S_IRWXG | S_IRWXO)
+
+// Actual permission values, to be enabled after acls are implemented
+#if 0
+// User permissions
+#	define S_IRUSR 0400
+#	define S_IWUSR 0200
+#	define S_IXUSR 0100
+
+// Group permissions
+#	define S_IRGRP 0040
+#	define S_IWGRP 0020
+#	define S_IXGRP 0010
+
+// Other permissions
+#	define S_IROTH 0004
+#	define S_IWOTH 0002
+#	define S_IXOTH 0001
+
+#	define S_IRWXU   (S_IRUSR | S_IWUSR | S_IXUSR)
+#	define S_IRWXG   (S_IRGRP | S_IWGRP | S_IXGRP)
+#	define S_IRWXO   (S_IROTH | S_IWOTH | S_IXOTH)
+#	define S_IRWXUGO (S_IRWXU | S_IRWXG | S_IRWXO)
+
+// Owner permissions, same as user
+#	define S_IREAD   S_IRUSR
+#	define S_IWRITE  S_IWUSR
+#	define S_IEXEC   S_IXUSR
+#endif
 
 struct stat
 {
