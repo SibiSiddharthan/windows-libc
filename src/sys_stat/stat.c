@@ -484,14 +484,26 @@ int do_stat(HANDLE handle, struct stat *restrict statbuf)
 	else if (type == FILE_DEVICE_NULL || type == FILE_DEVICE_CONSOLE)
 	{
 		statbuf->st_mode = S_IFCHR;
-		statbuf->st_rdev = 1;
 		statbuf->st_nlink = 1;
+		// To differentiate between NUL and CON use st_dev and st_rdev.
+		// We don't use st_ino because they have no meaning as these files are devices in the object manager.
+		if (type == FILE_DEVICE_NULL)
+		{
+			statbuf->st_rdev = 1;
+			statbuf->st_dev = 1;
+		}
+		else // (type == FILE_DEVICE_CONSOLE)
+		{
+			statbuf->st_rdev = 2;
+			statbuf->st_dev = 2;
+		}
 	}
 	else if (type == FILE_DEVICE_NAMED_PIPE)
 	{
 		statbuf->st_mode = S_IFIFO;
 		statbuf->st_rdev = 0;
 		statbuf->st_nlink = 1;
+		statbuf->st_dev = 3;
 	}
 
 	return 0;
