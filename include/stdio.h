@@ -114,6 +114,12 @@ WLIBC_INLINE int fileno(FILE *stream)
 }
 
 // file input
+
+/*
+  Compilers like clang and gcc do library procedure optimizations. Eg puts -> fwrite
+  To prevent this these functions need to be declared as macros
+*/
+
 WLIBC_API size_t wlibc_fread(void *restrict buffer, size_t size, size_t count, FILE *restrict stream);
 WLIBC_API char *wlibc_fgets(char *restrict buffer, size_t count, FILE *restrict stream);
 WLIBC_API int wlibc_fgetc(FILE *stream);
@@ -123,25 +129,10 @@ WLIBC_INLINE size_t fread(void *restrict buffer, size_t size, size_t count, FILE
 	return wlibc_fread(buffer, size, count, stream);
 }
 
-WLIBC_INLINE char *fgets(char *restrict buffer, size_t count, FILE *restrict stream)
-{
-	return wlibc_fgets(buffer, count, stream);
-}
-
-WLIBC_INLINE int fgetc(FILE *stream)
-{
-	return wlibc_fgetc(stream);
-}
-
-WLIBC_INLINE int getc(FILE *stream)
-{
-	return wlibc_fgetc(stream);
-}
-
-WLIBC_INLINE int getchar(void)
-{
-	return wlibc_fgetc(stdin);
-}
+#define fgets(buffer, count, stream) wlibc_fgets(buffer, count, stream)
+#define fgetc(stream)                wlibc_fgetc(stream)
+#define getc(stream)                 wlibc_fgetc(stream)
+#define getchar()                    wlibc_fgetc(stdin)
 
 WLIBC_API ssize_t wlibc_getdelim(char **restrict buffer, size_t *restrict size, int delimiter, FILE *restrict stream);
 
@@ -165,30 +156,11 @@ WLIBC_INLINE size_t fwrite(const void *restrict buffer, size_t size, size_t coun
 	return wlibc_fwrite(buffer, size, count, stream);
 }
 
-WLIBC_INLINE int fputs(const char *restrict buffer, FILE *restrict stream)
-{
-	return wlibc_fputs(buffer, stream);
-}
-
-WLIBC_INLINE int fputc(int ch, FILE *stream)
-{
-	return wlibc_fputc(ch, stream);
-}
-
-WLIBC_INLINE int puts(const char *buffer)
-{
-	return wlibc_fputs(buffer, stdout);
-}
-
-WLIBC_INLINE int putc(int ch, FILE *stream)
-{
-	return wlibc_fputc(ch, stream);
-}
-
-WLIBC_INLINE int putchar(int ch)
-{
-	return wlibc_fputc(ch, stdout);
-}
+#define fputs(buffer, stream) wlibc_fputs(buffer, stream)
+#define puts(buffer)         wlibc_fputs(buffer, stdout)
+#define fputc(ch, stream)     wlibc_fputc(ch, stream)
+#define putc(ch, stream)      wlibc_fputc(ch, stream)
+#define putchar(ch)           wlibc_fputc(ch, stdout)
 
 // file positioning
 WLIBC_API int wlibc_fseek(FILE *stream, ssize_t offset, int whence);
@@ -474,7 +446,6 @@ WLIBC_INLINE int fcloseall()
 	return wlibc_fcloseall();
 }
 
-
 // Available flags
 #define RENAME_WHITEOUT  0x0 // Unsupported
 #define RENAME_NOREPLACE 0x1 // Don't overwrite
@@ -513,25 +484,10 @@ WLIBC_INLINE size_t fread_unlocked(void *restrict buffer, size_t size, size_t co
 	return wlibc_fread_unlocked(buffer, size, count, stream);
 }
 
-WLIBC_INLINE char *fgets_unlocked(char *restrict buffer, size_t count, FILE *restrict stream)
-{
-	return wlibc_fgets_unlocked(buffer, count, stream);
-}
-
-WLIBC_INLINE int fgetc_unlocked(FILE *stream)
-{
-	return wlibc_fgetc_unlocked(stream);
-}
-
-WLIBC_INLINE int getc_unlocked(FILE *stream)
-{
-	return wlibc_fgetc_unlocked(stream);
-}
-
-WLIBC_INLINE int getchar_unlocked(void)
-{
-	return wlibc_fgetc_unlocked(stdin);
-}
+#define fgets_unlocked(buffer,count,stream)  wlibc_fgets_unlocked(buffer, count, stream)
+#define fgetc_unlocked(stream)  wlibc_fgetc_unlocked(stream)
+#define getc_unlocked(stream)  wlibc_fgetc_unlocked(stream)
+#define getchar_unlocked()  wlibc_fgetc_unlocked(stdin)
 
 // output
 WLIBC_API size_t wlibc_fwrite_unlocked(const void *restrict buffer, size_t size, size_t count, FILE *restrict stream);
@@ -543,25 +499,10 @@ WLIBC_INLINE size_t fwrite_unlocked(const void *restrict buffer, size_t size, si
 	return wlibc_fwrite_unlocked(buffer, size, count, stream);
 }
 
-WLIBC_INLINE int fputs_unlocked(const char *restrict buffer, FILE *restrict stream)
-{
-	return wlibc_fputs_unlocked(buffer, stream);
-}
-
-WLIBC_INLINE int fputc_unlocked(int ch, FILE *stream)
-{
-	return wlibc_fputc_unlocked(ch, stream);
-}
-
-WLIBC_INLINE int putc_unlocked(int ch, FILE *stream)
-{
-	return wlibc_fputc_unlocked(ch, stream);
-}
-
-WLIBC_INLINE int putchar_unlocked(int ch)
-{
-	return wlibc_fputc_unlocked(ch, stdout);
-}
+#define fputs_unlocked(buffer, stream) wlibc_fputs_unlocked(buffer, stream)
+#define fputc_unlocked(ch, stream)     wlibc_fputc_unlocked(ch, stream)
+#define putc_unlocked(ch, stream)      wlibc_fputc_unlocked(ch, stream)
+#define putchar_unlocked(ch)           wlibc_fputc_unlocked(ch, stdout)
 
 // misc
 WLIBC_API int wlibc_feof_unlocked(FILE *stream);
