@@ -5,25 +5,16 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
+#include <internal/nt.h>
 #include <sys/stat.h>
+#include <internal/fcntl.h>
+#include <wchar.h>
 #include <fcntl.h>
-#include <internal/misc.h>
 #include <errno.h>
 #include <internal/error.h>
-#include <Windows.h>
 #include <time.h>
-#include <internal/fcntl.h>
 
-FILETIME get_current_filetime()
-{
-	SYSTEMTIME systemtime;
-	FILETIME filetime;
-	GetSystemTime(&systemtime);
-	SystemTimeToFileTime(&systemtime, &filetime);
-	return filetime;
-}
-
-LARGE_INTEGER timespec_to_FILETIME(const struct timespec time)
+LARGE_INTEGER timespec_to_LARGE_INTEGER(const struct timespec time)
 {
 	LARGE_INTEGER L;
 	L.QuadPart = time.tv_sec * 10000000 + time.tv_nsec / 100;
@@ -31,143 +22,108 @@ LARGE_INTEGER timespec_to_FILETIME(const struct timespec time)
 	return L;
 }
 
-int common_utimens(HANDLE file, const struct timespec times[2])
+int do_utimens(HANDLE handle, const struct timespec times[2])
 {
-	FILE_BASIC_INFO BASIC_INFO;
-	if (!GetFileInformationByHandleEx(file, FileBasicInfo, &BASIC_INFO, sizeof(FILE_BASIC_INFO)))
+	NTSTATUS status;
+	IO_STATUS_BLOCK io;
+	FILE_BASIC_INFORMATION info;
+	LARGE_INTEGER current_time;
+
+	status = NtQueryInformationFile(handle, &io, &info, sizeof(FILE_BASIC_INFORMATION), FileBasicInformation);
+	if (status != STATUS_SUCCESS)
 	{
-		map_win32_error_to_wlibc(GetLastError());
+		map_ntstatus_to_errno(status);
 		return -1;
 	}
 
-	FILETIME current_filetime = get_current_filetime();
-	if (times == NULL)
+	if (times == NULL || times[0].tv_nsec == UTIME_NOW || times[1].tv_nsec == UTIME_NOW)
 	{
-		BASIC_INFO.LastAccessTime.HighPart = current_filetime.dwHighDateTime;
-		BASIC_INFO.LastAccessTime.LowPart = current_filetime.dwLowDateTime;
-		BASIC_INFO.LastWriteTime.HighPart = current_filetime.dwHighDateTime;
-		BASIC_INFO.LastWriteTime.LowPart = current_filetime.dwLowDateTime;
+		// Only fetch the current time if this condition is satisfied.
+		// This functions operates in user space only (i.e no syscall)
+		GetSystemTimeAsFileTime((FILETIME *)&current_time);
 	}
 
+	if (times == NULL)
+	{
+		info.LastAccessTime.QuadPart = current_time.QuadPart;
+		info.LastWriteTime.QuadPart = current_time.QuadPart;
+	}
 	else
 	{
 		if (times[0].tv_nsec == UTIME_NOW)
 		{
-			BASIC_INFO.LastAccessTime.HighPart = current_filetime.dwHighDateTime;
-			BASIC_INFO.LastAccessTime.LowPart = current_filetime.dwLowDateTime;
+			info.LastAccessTime.QuadPart = current_time.QuadPart;
 		}
 		else if (times[0].tv_nsec != UTIME_OMIT)
 		{
-			BASIC_INFO.LastAccessTime.QuadPart = timespec_to_FILETIME(times[0]).QuadPart;
+			info.LastAccessTime.QuadPart = timespec_to_LARGE_INTEGER(times[0]).QuadPart;
 		}
 
 		if (times[1].tv_nsec == UTIME_NOW)
 		{
-			BASIC_INFO.LastWriteTime.HighPart = current_filetime.dwHighDateTime;
-			BASIC_INFO.LastWriteTime.LowPart = current_filetime.dwLowDateTime;
+			info.LastWriteTime.QuadPart = current_time.QuadPart;
 		}
 		else if (times[1].tv_nsec != UTIME_OMIT)
 		{
-			BASIC_INFO.LastWriteTime.QuadPart = timespec_to_FILETIME(times[0]).QuadPart;
+			info.LastWriteTime.QuadPart = timespec_to_LARGE_INTEGER(times[1]).QuadPart;
 		}
 	}
 
-	if (!SetFileInformationByHandle(file, FileBasicInfo, &BASIC_INFO, sizeof(FILE_BASIC_INFO)))
+	status = NtSetInformationFile(handle, &io, &info, sizeof(FILE_BASIC_INFORMATION), FileBasicInformation);
+	if (status != STATUS_SUCCESS)
 	{
-		map_win32_error_to_wlibc(GetLastError());
+		map_ntstatus_to_errno(status);
 		return -1;
 	}
 
 	return 0;
 }
 
-int common_utimensat(int dirfd, const wchar_t *wname, const struct timespec times[2], int flags)
+int common_utimens(int dirfd, const char *path, const struct timespec times[2], int flags)
 {
-	wchar_t *newname = NULL;
-	int symfile_flags = 0;
-	int use_dirfd = 1;
+	wchar_t *u16_ntpath = get_absolute_ntpath(dirfd, path);
+	if (u16_ntpath == NULL)
+	{
+		errno = ENOENT;
+		return -1;
+	}
 
-	if (flags != 0 && flags != AT_SYMLINK_NOFOLLOW)
+	HANDLE handle = just_open(u16_ntpath, FILE_READ_ATTRIBUTES | FILE_WRITE_ATTRIBUTES, 0, FILE_OPEN,
+							  flags == AT_SYMLINK_NOFOLLOW ? FILE_OPEN_REPARSE_POINT : 0);
+
+	if (handle == INVALID_HANDLE_VALUE)
+	{
+		// errno wil be set by just_open
+		return -1;
+	}
+
+	int result = do_utimens(handle, times);
+	NtClose(handle);
+
+	return result;
+}
+
+int wlibc_common_utimens(int dirfd, const char *path, const struct timespec times[2], int flags)
+{
+	if (flags != 0 && flags != AT_EMPTY_PATH && flags != AT_SYMLINK_NOFOLLOW)
 	{
 		errno = EINVAL;
 		return -1;
 	}
 
-	int derefernce_symlinks = 1;
-	if (flags == AT_SYMLINK_NOFOLLOW)
+	if (flags != AT_EMPTY_PATH)
 	{
-		derefernce_symlinks = 0;
+		VALIDATE_PATH_AND_DIRFD(path, dirfd);
+		return common_utimens(dirfd, path, times, flags);
 	}
-
-	if (derefernce_symlinks == 0)
+	else
 	{
-		symfile_flags = FILE_FLAG_OPEN_REPARSE_POINT;
-	}
-
-	if (dirfd == AT_FDCWD || is_absolute_pathw(wname))
-	{
-		use_dirfd = 0;
-		newname = (wchar_t *)wname;
-	}
-
-	if (use_dirfd)
-	{
-		enum handle_type _type = get_fd_type(dirfd);
-		if (_type != DIRECTORY_HANDLE || _type == INVALID_HANDLE)
+		if (!validate_fd(dirfd))
 		{
-			errno = (_type == INVALID_HANDLE ? EBADF : ENOTDIR);
+			errno = EBADF;
 			return -1;
 		}
 
-		const wchar_t *dirpath = get_fd_path(dirfd);
-		newname = wcstrcat(dirpath, wname);
+		return do_utimens(get_fd_handle(dirfd), times);
 	}
-
-	HANDLE file = CreateFile(newname, FILE_READ_ATTRIBUTES | FILE_WRITE_ATTRIBUTES, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
-							 NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS | symfile_flags, NULL);
-	if (file == INVALID_HANDLE_VALUE)
-	{
-		map_win32_error_to_wlibc(GetLastError());
-		free(newname);
-		return -1;
-	}
-
-	int status = common_utimens(file, times);
-
-	if (use_dirfd)
-	{
-		free(newname);
-	}
-
-	CloseHandle(file);
-	return status;
-}
-
-int wlibc_utimensat(int dirfd, const char *name, const struct timespec times[2], int flags)
-{
-	VALIDATE_PATH(name, ENOENT, -1);
-
-	wchar_t *wname = mb_to_wc(name);
-	int status = common_utimensat(dirfd, wname, times, flags);
-	free(wname);
-
-	return status;
-}
-
-int wlibc_wutimensat(int dirfd, const wchar_t *wname, const struct timespec times[2], int flags)
-{
-	VALIDATE_PATH(wname, ENOENT, -1);
-
-	return common_utimensat(dirfd, wname, times, flags);
-}
-
-int wlibc_futimens(int fd, const struct timespec times[2])
-{
-	if (!validate_fd(fd))
-	{
-		return -1;
-	}
-
-	HANDLE file = get_fd_handle(fd);
-	return common_utimens(file, times);
 }

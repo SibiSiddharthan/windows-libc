@@ -693,6 +693,16 @@ VOID NTAPI RtlFreeUnicodeString(_Inout_ _At_(UnicodeString->Buffer, _Frees_ptr_o
 
 #define MAXIMUM_FILENAME_LENGTH 256 // really?
 
+//================ FileBasicInformation ====================================
+
+typedef struct _FILE_BASIC_INFORMATION {
+  LARGE_INTEGER CreationTime;
+  LARGE_INTEGER LastAccessTime;
+  LARGE_INTEGER LastWriteTime;
+  LARGE_INTEGER ChangeTime;
+  ULONG         FileAttributes;
+} FILE_BASIC_INFORMATION, *PFILE_BASIC_INFORMATION;
+
 //================ FileInternalInformation ====================================
 
 typedef struct _FILE_INTERNAL_INFORMATION

@@ -172,24 +172,40 @@ WLIBC_INLINE int mkdirat(int dirfd, const char *path, mode_t mode)
 	return wlibc_common_mkdir(dirfd, path, mode);
 }
 
-WLIBC_API int wlibc_utimensat(int dirfd, const char *name, const struct timespec times[2], int flags);
-WLIBC_API int wlibc_wutimensat(int dirfd, const wchar_t *wname, const struct timespec times[2], int flags);
+WLIBC_API int wlibc_common_utimens(int dirfd, const char *path, const struct timespec times[2], int flags);
 
-WLIBC_INLINE int utimensat(int dirfd, const char *name, const struct timespec times[2], int flags)
+WLIBC_INLINE int utimens(const char *path, const struct timespec times[2])
 {
-	return wlibc_utimensat(dirfd, name, times, flags);
+	return wlibc_common_utimens(AT_FDCWD, path, times, 0);
 }
 
-WLIBC_INLINE int wutimensat(int dirfd, const wchar_t *wname, const struct timespec times[2], int flags)
+WLIBC_INLINE int lutimens(const char *path, const struct timespec times[2])
 {
-	return wlibc_wutimensat(dirfd, wname, times, flags);
+	return wlibc_common_utimens(AT_FDCWD, path, times, AT_SYMLINK_NOFOLLOW);
 }
 
-WLIBC_API int wlibc_futimens(int fd, const struct timespec times[2]);
+WLIBC_INLINE int utimensat(int dirfd, const char *path, const struct timespec times[2], int flags)
+{
+	return wlibc_common_utimens(dirfd, path, times, flags);
+}
 
 WLIBC_INLINE int futimens(int fd, const struct timespec times[2])
 {
-	return wlibc_futimens(fd, times);
+	return wlibc_common_utimens(fd, NULL, times, AT_EMPTY_PATH);
+}
+
+WLIBC_INLINE int fdutimens(int fd, const char *path, const struct timespec times[2])
+{
+	if (fd >= 0 && fd != AT_FDCWD)
+	{
+		// ignore path
+		return wlibc_common_utimens(fd, NULL, times, AT_EMPTY_PATH);
+	}
+	else
+	{
+		// ignore fd
+		return wlibc_common_utimens(AT_FDCWD, path, times, 0);
+	}
 }
 
 WLIBC_INLINE mode_t umask(mode_t mask /*unused*/)
