@@ -6,8 +6,8 @@
 ]]
 
 set(tests
-mkstemp
-un_set_env)
+env
+mkstemp)
 
 foreach(t ${tests})
 	add_executable(test-${t} test-${t}.c)
