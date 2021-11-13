@@ -12,6 +12,7 @@ fileio
 fileno
 fopen
 freopen
+getdelim
 internal
 pipe
 rename

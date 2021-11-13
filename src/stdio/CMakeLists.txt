@@ -24,6 +24,7 @@ freopen.c
 fseek.c
 ftell.c
 fwrite.c
+getdelim.c
 internal.c
 parse_mode.c
 pclose.c
