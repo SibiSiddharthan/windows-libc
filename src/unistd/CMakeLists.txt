@@ -25,6 +25,8 @@ kill.c
 link.c
 lseek.c
 pipe.c
+pread.c
+pwrite.c
 readlink.c
 read.c
 remove.c

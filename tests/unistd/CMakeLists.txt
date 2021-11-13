@@ -11,11 +11,12 @@ close
 chdir
 dup
 getcwd
+io
 isatty
 kill
 link
+pio
 symlinks
-io
 remove
 truncate
 ttyname)

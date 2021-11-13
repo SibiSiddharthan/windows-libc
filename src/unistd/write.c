@@ -35,11 +35,6 @@ ssize_t wlibc_write(int fd, const void *buf, size_t count)
 
 	if (flags & O_APPEND)
 	{
-#if 0
-		LARGE_INTEGER L;
-		L.QuadPart = 0;
-		SetFilePointerEx(file, L, NULL, FILE_END);
-#endif
 		offset.LowPart = FILE_WRITE_TO_END_OF_FILE;
 	}
 	else
@@ -51,18 +46,11 @@ ssize_t wlibc_write(int fd, const void *buf, size_t count)
 	NTSTATUS status = NtWriteFile(file, NULL, NULL, NULL, &I, (PVOID)buf, count, &offset, NULL);
 	if (status != STATUS_SUCCESS && status != STATUS_PENDING)
 	{
+		// NOTE: According to POSIX when status is STATUS_PIPE_BROKEN the signal SIGPIPE should be raised.
+		// The default behaviour of SIGPIPE is 'abort'. We will just set errno to EPIPE and return -1.
 		map_ntstatus_to_errno(status);
 		return -1;
 	}
-#if 0
-	DWORD write_count;
-	BOOL status = WriteFile(file, buf, count, &write_count, NULL);
-	if (!status)
-	{
-		map_win32_error_to_wlibc(GetLastError());
-		return -1;
-	}
-#endif
 
 	return I.Information;
 }

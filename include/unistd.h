@@ -230,6 +230,18 @@ WLIBC_INLINE int pipe2(int pipefd[2], int flags)
 	return wlibc_pipe2(pipefd, flags);
 }
 
+WLIBC_API ssize_t wlibc_pread(int fd, void *buf, size_t count, off_t offset);
+WLIBC_API ssize_t wlibc_pwrite(int fd, const void *buf, size_t count, off_t offset);
+
+WLIBC_INLINE ssize_t pread(int fd, void *buf, size_t count, off_t offset)
+{
+	return wlibc_pread(fd, buf, count, offset);
+}
+WLIBC_INLINE ssize_t pwrite(int fd, const void *buf, size_t count, off_t offset)
+{
+	return wlibc_pwrite(fd, buf, count, offset);
+}
+
 WLIBC_API int wlibc_isatty(int fd);
 WLIBC_INLINE int isatty(int fd)
 {
