@@ -5,7 +5,7 @@
    Refer to the LICENSE file at the root directory for details.
 ]]
 
-set(tests
+wlibc_add_tests(
 fdopen
 fflush
 fileio
@@ -17,12 +17,6 @@ internal
 pipe
 rename
 ungetc)
-
-foreach(t ${tests})
-	add_executable(test-${t} test-${t}.c)
-	target_link_libraries(test-${t} wlibc)
-	add_test(NAME test-${t} COMMAND test-${t} WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-endforeach()
 
 add_executable(pipe-helper pipe-helper.c)
 target_link_libraries(pipe-helper wlibc)

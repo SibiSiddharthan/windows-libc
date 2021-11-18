@@ -5,13 +5,7 @@
    Refer to the LICENSE file at the root directory for details.
 ]]
 
-set(tests
+wlibc_add_tests(
 raise_signal
 sigaction
 sigprocmask)
-
-foreach(t ${tests})
-	add_executable(test-${t} test-${t}.c)
-	target_link_libraries(test-${t} wlibc)
-	add_test(NAME test-${t} COMMAND test-${t} WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-endforeach()

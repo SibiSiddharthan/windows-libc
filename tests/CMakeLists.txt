@@ -7,6 +7,16 @@
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
+# Function for adding tests
+function(wlibc_add_tests ...)
+	foreach(t ${ARGV})
+		add_executable(test-${t} test-${t}.c)
+		target_link_libraries(test-${t} wlibc)
+		add_test(NAME test-${t} COMMAND test-${t} WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+	endforeach()
+endfunction()
+
+
 if(ENABLE_DLFCN)
 	add_subdirectory(dlfcn)
 endif()
