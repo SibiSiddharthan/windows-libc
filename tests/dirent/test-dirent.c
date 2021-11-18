@@ -43,7 +43,7 @@ int setup()
 
 int cleanup()
 {
-	ASSERT_SUCCESS(unlink("t/sd"));
+	ASSERT_SUCCESS(rmdir("t/sd"));
 	ASSERT_SUCCESS(rmdir("t/d"));
 	ASSERT_SUCCESS(unlink("t/s1"));
 	ASSERT_SUCCESS(unlink("t/s2"));

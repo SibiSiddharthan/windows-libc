@@ -30,7 +30,20 @@ int common_symlink(const char *restrict source, int dirfd, const char *restrict 
 	}
 
 	// Try opening the source
-	wchar_t *u16_ntsource = get_absolute_ntpath(dirfd, source);
+	int target_length = strlen(target);
+	int source_length = strlen(source);
+	char *normalized_source = malloc(target_length + source_length + 5); // '/../' + NULL
+	// This is an easy way of checking whether the link text if it exists is a directory or a file.
+	strcpy(normalized_source, target);
+	if (target[target_length - 1] != '/' && target[target_length - 1] != '\\')
+	{
+		strcat(normalized_source, "/");
+	}
+	strcat(normalized_source, "../");
+	strcat(normalized_source, source);
+
+	wchar_t *u16_ntsource = get_absolute_ntpath(dirfd, normalized_source);
+	free(normalized_source);
 	if (u16_ntsource == NULL)
 	{
 		errno = ENOENT;
