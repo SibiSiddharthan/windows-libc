@@ -9,22 +9,24 @@
 #include <internal/stdio.h>
 #include <string.h>
 
-size_t common_fread(void *restrict buffer, size_t size, size_t count, FILE *restrict stream);
-int common_fseek(FILE *stream, ssize_t offset, int whence);
+int common_fgetc(FILE *stream);
 
 char *common_fgets(char *restrict buffer, size_t count, FILE *restrict stream)
 {
-	int result = common_fread(buffer, 1, count - 1, stream);
-	for (int i = 0; i < result; i++)
+	char ch = 0;
+	size_t read_count = 0;
+
+	while (ch != '\n' && read_count + 1 < count)
 	{
-		if (buffer[i] == '\n')
+		// TODO make this faster
+		ch = common_fgetc(stream);
+		if (ch == EOF)
 		{
-			buffer[i + 1] = '\0';                              // This will not cause a buffer overflow as i < count-1 always
-			common_fseek(stream, -(result - i - 1), SEEK_CUR); // set stream pos, and clear eof
-			return buffer;
+			break;
 		}
+		buffer[read_count++] = ch;
 	}
-	buffer[result] = '\0';
+	buffer[read_count] = '\0';
 	return buffer;
 }
 

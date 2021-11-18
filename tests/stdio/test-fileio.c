@@ -820,8 +820,8 @@ int test_gets()
 
 	fd = open(filename, O_CREAT | O_WRONLY | O_TRUNC, 0700);
 	ASSERT_EQ(fd, 3);
-	result = write(fd, "abcdefg\nhijk", 12);
-	ASSERT_EQ(result, 12);
+	result = write(fd, "abcdefg\nhijkop", 14);
+	ASSERT_EQ(result, 14);
 	ASSERT_SUCCESS(close(fd));
 
 	f = fopen(filename, "r");
@@ -830,9 +830,13 @@ int test_gets()
 	ASSERT_STREQ(buf, "abcdefg\n");
 	ASSERT_EQ(ftell(f), 8);
 
+	fgets(buf, 3, f);
+	ASSERT_STREQ(buf, "hi");
+	ASSERT_EQ(ftell(f), 10);
+
 	fgets(buf, 16, f);
-	ASSERT_STREQ(buf, "hijk");
-	ASSERT_EQ(ftell(f), 12);
+	ASSERT_STREQ(buf, "jkop");
+	ASSERT_EQ(ftell(f), 14);
 	ASSERT_EQ(feof(f), 1);
 
 	ASSERT_SUCCESS(fclose(f));
