@@ -71,6 +71,11 @@ if(ENABLE_ERROR_LOGGING)
 	list(APPEND modules error)
 endif()
 
+if(ENABLE_EXTENDED_ATTRIBUTES)
+	add_subdirectory(sys_xattr)
+	list(APPEND modules sys_xattr)
+endif()
+
 add_subdirectory(internal)
 
 add_library(wlibc)

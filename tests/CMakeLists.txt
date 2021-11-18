@@ -43,3 +43,7 @@ endif()
 if(ENABLE_ERROR_LOGGING)
 	add_subdirectory(error)
 endif()
+
+if(ENABLE_EXTENDED_ATTRIBUTES)
+	add_subdirectory(sys_xattr)
+endif()
