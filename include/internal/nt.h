@@ -480,6 +480,18 @@ NtQueryDirectoryFileEx(_In_ HANDLE FileHandle, _In_opt_ HANDLE Event, _In_opt_ P
 NTSYSCALLAPI
 NTSTATUS
 NTAPI
+NtQueryEaFile(_In_ HANDLE FileHandle, _Out_ PIO_STATUS_BLOCK IoStatusBlock, _Out_writes_bytes_(Length) PVOID Buffer, _In_ ULONG Length,
+			  _In_ BOOLEAN ReturnSingleEntry, _In_reads_bytes_opt_(EaListLength) PVOID EaList, _In_ ULONG EaListLength,
+			  _In_opt_ PULONG EaIndex, _In_ BOOLEAN RestartScan);
+
+NTSYSCALLAPI
+NTSTATUS
+NTAPI
+NtSetEaFile(_In_ HANDLE FileHandle, _Out_ PIO_STATUS_BLOCK IoStatusBlock, _In_reads_bytes_(Length) PVOID Buffer, _In_ ULONG Length);
+
+NTSYSCALLAPI
+NTSTATUS
+NTAPI
 NtFlushBuffersFileEx(_In_ HANDLE FileHandle, _In_ ULONG Flags, _In_reads_bytes_(ParametersSize) PVOID Parameters, _In_ ULONG ParametersSize,
 					 _Out_ PIO_STATUS_BLOCK IoStatusBlock);
 
@@ -695,12 +707,13 @@ VOID NTAPI RtlFreeUnicodeString(_Inout_ _At_(UnicodeString->Buffer, _Frees_ptr_o
 
 //================ FileBasicInformation ====================================
 
-typedef struct _FILE_BASIC_INFORMATION {
-  LARGE_INTEGER CreationTime;
-  LARGE_INTEGER LastAccessTime;
-  LARGE_INTEGER LastWriteTime;
-  LARGE_INTEGER ChangeTime;
-  ULONG         FileAttributes;
+typedef struct _FILE_BASIC_INFORMATION
+{
+	LARGE_INTEGER CreationTime;
+	LARGE_INTEGER LastAccessTime;
+	LARGE_INTEGER LastWriteTime;
+	LARGE_INTEGER ChangeTime;
+	ULONG FileAttributes;
 } FILE_BASIC_INFORMATION, *PFILE_BASIC_INFORMATION;
 
 //================ FileInternalInformation ====================================
@@ -1114,6 +1127,15 @@ typedef struct _FILE_STANDARD_INFORMATION
 //
 // The offset for the start of EaValue is EaName[EaNameLength + 1]
 //
+
+typedef struct _FILE_FULL_EA_INFORMATION
+{
+	ULONG NextEntryOffset;
+	UCHAR Flags;
+	UCHAR EaNameLength;
+	USHORT EaValueLength;
+	CHAR EaName[1];
+} FILE_FULL_EA_INFORMATION, *PFILE_FULL_EA_INFORMATION;
 
 typedef struct _FILE_GET_EA_INFORMATION
 {

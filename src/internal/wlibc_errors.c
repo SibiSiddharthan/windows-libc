@@ -99,25 +99,27 @@ void map_ntstatus_to_errno(NTSTATUS error)
 	case STATUS_INVALID_HANDLE:
 		errno = EBADF;
 		break;
-	//case ERROR_WRITE_FAULT:
-	//case ERROR_READ_FAULT:
+	// case ERROR_WRITE_FAULT:
+	// case ERROR_READ_FAULT:
 	case STATUS_IO_TIMEOUT:
 	case STATUS_IO_UNALIGNED_WRITE:
+	case STATUS_FILE_LOCK_CONFLICT:
 		errno = EIO;
 		break;
 	case STATUS_INVALID_PARAMETER:
 	case STATUS_ILLEGAL_FUNCTION:
-	//case ERROR_INVALID_REPARSE_DATA:
 	case STATUS_OBJECT_NAME_INVALID:
+	case STATUS_INVALID_EA_NAME:
+	case STATUS_EA_LIST_INCONSISTENT:
 		errno = EINVAL;
 		break;
 	case STATUS_FILE_IS_A_DIRECTORY:
 		errno = EISDIR;
 		break;
 	case STATUS_PIPE_BROKEN:
-	//case ERROR_BAD_PIPE:
+	// case ERROR_BAD_PIPE:
 	case STATUS_PIPE_BUSY:
-	//case ERROR_NO_DATA:
+	// case ERROR_NO_DATA:
 	case STATUS_PIPE_DISCONNECTED:
 	case STATUS_PIPE_NOT_AVAILABLE:
 		errno = EPIPE;
@@ -126,7 +128,19 @@ void map_ntstatus_to_errno(NTSTATUS error)
 		errno = EROFS;
 		break;
 	case STATUS_NOT_SUPPORTED:
+	case STATUS_EAS_NOT_SUPPORTED:
 		errno = ENOTSUP;
+		break;
+	case STATUS_INSUFFICIENT_RESOURCES:
+	case STATUS_LOCK_NOT_GRANTED:
+	case STATUS_RANGE_NOT_LOCKED: // CHECK
+		errno = ENOLCK;
+		break;
+	case STATUS_BUFFER_TOO_SMALL:
+		errno = ERANGE;
+		break;
+	case STATUS_EA_TOO_LARGE:
+		errno = E2BIG;
 		break;
 	default:
 		break;
