@@ -15,6 +15,7 @@ fflush.c
 fgetc.c
 fgets.c
 fileno.c
+fileops.c
 flock.c
 fopen.c
 fputc.c
@@ -40,7 +41,7 @@ ungetc.c
 )
 
 add_library(stdio OBJECT ${stdio_SOURCES})
-install(FILES ${CMAKE_SOURCE_DIR}/include/stdio-ext.h DESTINATION include)
+install(FILES ${CMAKE_SOURCE_DIR}/include/stdio_ext.h DESTINATION include)
 install(FILES ${CMAKE_SOURCE_DIR}/include/stdio.h DESTINATION include)
 install(FILES ${CMAKE_SOURCE_DIR}/include/io.h DESTINATION include)
 install(FILES ${CMAKE_SOURCE_DIR}/include/wchar.h DESTINATION include)
