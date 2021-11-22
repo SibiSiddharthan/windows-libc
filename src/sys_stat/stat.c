@@ -79,6 +79,7 @@ int do_stat(HANDLE handle, struct stat *restrict statbuf)
 								 FILE_ATTRIBUTE_NOT_CONTENT_INDEXED | FILE_ATTRIBUTE_ENCRYPTED)) == 0)
 		{
 			statbuf->st_mode = S_IFREG;
+#if 0
 			if (attributes & FILE_ATTRIBUTE_READONLY)
 			{
 				statbuf->st_mode |= S_IREAD;
@@ -87,6 +88,7 @@ int do_stat(HANDLE handle, struct stat *restrict statbuf)
 			{
 				statbuf->st_mode |= S_IREAD | S_IWRITE;
 			}
+#endif
 		}
 
 		//// Set the S_IEXEC bit here as it requires the name

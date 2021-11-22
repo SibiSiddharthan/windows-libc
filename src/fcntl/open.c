@@ -14,8 +14,8 @@
 #include <internal/nt.h>
 #include <internal/error.h>
 #include <stdlib.h>
-#include <sys/stat.h> // remove this
 #include <errno.h>
+#include <internal/security.h>
 
 static ACCESS_MASK determine_access_rights(int oflags)
 {
@@ -407,15 +407,19 @@ int do_open(int dirfd, const char *name, int oflags, mode_t perm)
 	ULONG attributes = determine_file_attributes(oflags);
 	ULONG disposition = determine_create_dispostion(oflags);
 	ULONG options = determine_create_options(oflags);
+	PSECURITY_DESCRIPTOR security_descriptor = NULL;
 	bool is_console = false;
 	bool is_null = false;
 
 	if (oflags & (O_CREAT | O_TMPFILE))
 	{
+#if 0
 		if ((perm & (S_IWRITE)) == 0)
 		{
 			attributes |= FILE_ATTRIBUTE_READONLY;
 		}
+#endif
+		security_descriptor = (PSECURITY_DESCRIPTOR)get_security_descriptor(perm & 0777, 0);
 	}
 
 	wchar_t *u16_ntpath = get_absolute_ntpath(dirfd, name);
@@ -448,7 +452,7 @@ int do_open(int dirfd, const char *name, int oflags, mode_t perm)
 	RtlInitUnicodeString(&u16_path, u16_ntpath);
 
 	OBJECT_ATTRIBUTES object;
-	InitializeObjectAttributes(&object, &u16_path, OBJ_CASE_INSENSITIVE | OBJ_INHERIT, NULL, NULL);
+	InitializeObjectAttributes(&object, &u16_path, OBJ_CASE_INSENSITIVE | OBJ_INHERIT, NULL, security_descriptor);
 	if (oflags & O_NOINHERIT)
 	{
 		object.Attributes &= ~OBJ_INHERIT;

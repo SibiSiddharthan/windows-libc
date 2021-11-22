@@ -10,6 +10,7 @@
 #include <internal/error.h>
 #include <internal/misc.h>
 #include <internal/fcntl.h>
+#include <internal/security.h>
 #include <errno.h>
 
 int wlibc_common_mkdir(int dirfd, const char *path, mode_t mode)
@@ -32,7 +33,8 @@ int wlibc_common_mkdir(int dirfd, const char *path, mode_t mode)
 	UNICODE_STRING u16_path;
 	RtlInitUnicodeString(&u16_path, u16_ntpath);
 	OBJECT_ATTRIBUTES object;
-	InitializeObjectAttributes(&object, &u16_path, OBJ_CASE_INSENSITIVE, NULL, NULL);
+	PSECURITY_DESCRIPTOR security_descriptor = (PSECURITY_DESCRIPTOR)get_security_descriptor(mode & 0777, 1);
+	InitializeObjectAttributes(&object, &u16_path, OBJ_CASE_INSENSITIVE, NULL, security_descriptor);
 	HANDLE handle;
 	NTSTATUS status = NtCreateFile(&handle, FILE_READ_ATTRIBUTES, &object, &I, NULL, 0, FILE_SHARE_READ | FILE_SHARE_WRITE, FILE_CREATE,
 								   FILE_DIRECTORY_FILE, NULL, 0);

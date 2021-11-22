@@ -1510,3 +1510,32 @@ typedef struct _REPARSE_DATA_BUFFER
 #define REPARSE_DATA_BUFFER_HEADER_SIZE UFIELD_OFFSET(REPARSE_DATA_BUFFER, GenericReparseBuffer)
 
 #endif
+
+NTSYSAPI
+NTSTATUS
+NTAPI
+RtlInitializeSidEx(_Out_writes_bytes_(SECURITY_SID_SIZE(SubAuthorityCount)) PSID Sid, _In_ PSID_IDENTIFIER_AUTHORITY IdentifierAuthority,
+				   _In_ UCHAR SubAuthorityCount, ...);
+
+NTSYSAPI
+NTSTATUS
+NTAPI RtlCreateAcl(PACL Acl, ULONG AclLength, ULONG AclRevision);
+
+NTSYSAPI
+NTSTATUS
+NTAPI
+RtlAddAccessAllowedAceEx(_Inout_ PACL Acl, _In_ ULONG AceRevision, _In_ ULONG AceFlags, _In_ ACCESS_MASK AccessMask, _In_ PSID Sid);
+
+NTSYSAPI
+NTSTATUS
+NTAPI
+RtlCopySid(_In_ ULONG DestinationSidLength, _Out_writes_bytes_(DestinationSidLength) PSID DestinationSid, _In_ PSID SourceSid);
+
+NTSYSAPI
+NTSTATUS
+NTAPI NtQuerySecurityObject(HANDLE Handle, SECURITY_INFORMATION SecurityInformation, PSECURITY_DESCRIPTOR SecurityDescriptor, ULONG Length,
+							PULONG LengthNeeded);
+
+NTSYSAPI
+NTSTATUS
+NTAPI NtSetSecurityObject(HANDLE Handle, SECURITY_INFORMATION SecurityInformation, PSECURITY_DESCRIPTOR SecurityDescriptor);

@@ -7,6 +7,7 @@
 
 set(internal_SOURCES
 misc.c
+security.c
 wlibc_errors.c
 wmain.c)
 
@@ -32,6 +33,6 @@ endif()
 if(ENABLE_SIGNALS)
 	target_compile_definitions(wlibc_internal PRIVATE WLIBC_SIGNALS)
 endif()
-if(ENABLE_BINARY_STD_STREAMS)
-	target_compile_definitions(wlibc_internal PRIVATE WLIBC_BINARY_STD_STREAMS)
+if(ENABLE_ACL_SUPPORT)
+	target_compile_definitions(wlibc_internal PRIVATE WLIBC_ACLS)
 endif()

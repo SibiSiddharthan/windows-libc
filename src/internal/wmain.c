@@ -14,6 +14,7 @@
 #include <internal/process.h>
 #include <internal/signal.h>
 #include <internal/stdio.h>
+#include <internal/security.h>
 
 extern int main(int argc, char **argv);
 
@@ -53,6 +54,10 @@ int wmain(int argc, wchar_t **wargv)
 	signal_init();
 	atexit(signal_cleanup);
 #endif
+#ifdef WLIBC_ACLS
+	initialize_sids();
+	atexit(cleanup_security_decsriptors);
+#endif 
 
 	int exit_status = main(argc, argv);
 

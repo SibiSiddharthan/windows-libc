@@ -39,6 +39,7 @@ option(ENABLE_BINARY_STD_STREAMS "Enable binary(instead of text) std streams" ON
 option(ENABLE_RANDOM "Enable random functions" ON)
 option(ENABLE_ERROR_LOGGING "Enable error logging functions" ON)
 option(ENABLE_EXTENDED_ATTRIBUTES "Enable NTFS extended attributes API" ON)
+option(ENABLE_ACL_SUPPORT "Use ACLs for controlling permissions of files" ON)
 #option(ENABLE_STRINGS_GNU "Enable various GNU string extensions" ON)
 #option(ENABLE_SOCKETS "Enable SOCKETS API" ON)
 
