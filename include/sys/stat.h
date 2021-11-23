@@ -16,63 +16,47 @@
 
 _WLIBC_BEGIN_DECLS
 
-#define S_IFMT  0xFF000 // File type mask
-#define S_IFBLK 0x20000 // Block special
-#define S_IFIFO 0x10000 // Pipe or FIFO (FIFO is unsupported)
-#define S_IFLNK 0x01000 // Symbolic Link
-#define S_IFCHR 0x02000 // Character special
-#define S_IFDIR 0x04000 // Directory
-#define S_IFREG 0x08000 // Regular
+#define S_IFMT   0xFF000 // File type mask
+#define S_IFSOCK 0x40000 // Socket
+#define S_IFBLK  0x20000 // Block special
+#define S_IFIFO  0x10000 // Pipe or FIFO (FIFO is unsupported)
+#define S_IFLNK  0x01000 // Symbolic Link
+#define S_IFCHR  0x02000 // Character special
+#define S_IFDIR  0x04000 // Directory
+#define S_IFREG  0x08000 // Regular
 
-#define S_IREAD  0x0100 // Read permission, owner
-#define S_IWRITE 0x0080 // Write permission, owner
-#define S_IEXEC  0x0040 // Execute/search permission, owner
+// User permissions
+#define S_IRUSR 0400
+#define S_IWUSR 0200
+#define S_IXUSR 0100
+
+// Group permissions
+#define S_IRGRP 0040
+#define S_IWGRP 0020
+#define S_IXGRP 0010
+
+// Other permissions
+#define S_IROTH 0004
+#define S_IWOTH 0002
+#define S_IXOTH 0001
+
+// Combination of permissions
+#define S_IRUGO   (S_IRUSR | S_IRGRP | S_IROTH) // Read everyone
+#define S_IWUGO   (S_IWUSR | S_IWGRP | S_IWOTH) // Write everyone
+#define S_IXUGO   (S_IXUSR | S_IXGRP | S_IXOTH) // Execute everyone
+#define S_IRWXU   (S_IRUSR | S_IWUSR | S_IXUSR) // All permissions user
+#define S_IRWXG   (S_IRGRP | S_IWGRP | S_IXGRP) // All permissions group
+#define S_IRWXO   (S_IROTH | S_IWOTH | S_IXOTH) // All permissions others
+#define S_IRWXUGO (S_IRWXU | S_IRWXG | S_IRWXO) // All permissions everyone
+
+// Owner permissions, same as user
+#define S_IREAD  S_IRUSR
+#define S_IWRITE S_IWUSR
+#define S_IEXEC  S_IXUSR
 
 #define S_ISUID S_IEXEC // Set user ID on execution
 #define S_ISGID S_IEXEC // Set group ID on execution
 #define S_ISVTX S_IEXEC // Obsolete
-
-#define S_IRUSR   S_IREAD
-#define S_IRGRP   S_IREAD
-#define S_IROTH   S_IREAD
-#define S_IWUSR   S_IWRITE
-#define S_IWGRP   S_IWRITE
-#define S_IWOTH   S_IWRITE
-#define S_IXUSR   S_IEXEC
-#define S_IXGRP   S_IEXEC
-#define S_IXOTH   S_IEXEC
-#define S_IRWXU   (S_IREAD | S_IWRITE | S_IEXEC)
-#define S_IRWXG   S_IRWXU
-#define S_IRWXO   S_IRWXU
-#define S_IRWXUGO (S_IRWXU | S_IRWXG | S_IRWXO)
-
-// Actual permission values, to be enabled after acls are implemented
-#if 0
-// User permissions
-#	define S_IRUSR 0400
-#	define S_IWUSR 0200
-#	define S_IXUSR 0100
-
-// Group permissions
-#	define S_IRGRP 0040
-#	define S_IWGRP 0020
-#	define S_IXGRP 0010
-
-// Other permissions
-#	define S_IROTH 0004
-#	define S_IWOTH 0002
-#	define S_IXOTH 0001
-
-#	define S_IRWXU   (S_IRUSR | S_IWUSR | S_IXUSR)
-#	define S_IRWXG   (S_IRGRP | S_IWGRP | S_IXGRP)
-#	define S_IRWXO   (S_IROTH | S_IWOTH | S_IXOTH)
-#	define S_IRWXUGO (S_IRWXU | S_IRWXG | S_IRWXO)
-
-// Owner permissions, same as user
-#	define S_IREAD   S_IRUSR
-#	define S_IWRITE  S_IWUSR
-#	define S_IEXEC   S_IXUSR
-#endif
 
 struct stat
 {
@@ -101,6 +85,7 @@ struct stat
 #define S_ISREG(m)  (m & S_IFREG)
 #define S_ISLNK(m)  (m & S_IFLNK)
 #define S_ISFIFO(m) (m & S_IFIFO)
+#define S_ISSOCK(m) (m & S_IFSOCK)
 
 #define UTIME_NOW  -1 // Change timestamp to current timestamp
 #define UTIME_OMIT -2 // Ignore timestamp

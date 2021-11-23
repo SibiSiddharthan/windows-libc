@@ -21,40 +21,56 @@ int test_ENOENT()
 	return 0;
 }
 
-#if 0
-void test_REGrw()
+int test_REGrw()
 {
-	int fd = creat("t-stat", S_IREAD | S_IWRITE);
-	close(fd);
+	int status;
 	struct stat statbuf;
-	int status = stat("t-stat", &statbuf);
+	const char *filename = "t-stat-rw";
+
+	int fd = creat(filename, S_IREAD | S_IWRITE);
+	ASSERT_SUCCESS(close(fd));
+
+	status = stat(filename, &statbuf);
 	ASSERT_EQ(status, 0);
 	ASSERT_EQ(statbuf.st_mode, (S_IFREG | S_IREAD | S_IWRITE));
-	unlink("t-stat");
+
+	ASSERT_SUCCESS(unlink(filename));
+	return 0;
 }
 
-void test_REGrx()
+int test_REGrx()
 {
-	int fd = creat("t-stat.exe", S_IREAD);
-	close(fd);
+	int status;
 	struct stat statbuf;
-	int status = stat("t-stat.exe", &statbuf);
+	const char *filename = "t-stat-rx";
+
+	int fd = creat(filename, S_IREAD | S_IEXEC);
+	ASSERT_SUCCESS(close(fd));
+
+	status = stat(filename, &statbuf);
 	ASSERT_EQ(status, 0);
 	ASSERT_EQ(statbuf.st_mode, (S_IFREG | S_IREAD | S_IEXEC));
-	unlink("t-stat.exe");
+
+	ASSERT_SUCCESS(unlink(filename));
+	return 0;
 }
 
-void test_REGrwx()
+int test_REGrwx()
 {
-	int fd = creat("t-stat.exe", S_IREAD | S_IWRITE);
-	close(fd);
+	int status;
 	struct stat statbuf;
-	int status = stat("t-stat.exe", &statbuf);
+	const char *filename = "t-stat-rwx";
+
+	int fd = creat(filename, S_IREAD | S_IWRITE | S_IEXEC);
+	ASSERT_SUCCESS(close(fd));
+
+	status = stat(filename, &statbuf);
 	ASSERT_EQ(status, 0);
 	ASSERT_EQ(statbuf.st_mode, (S_IFREG | S_IREAD | S_IWRITE | S_IEXEC));
-	unlink("t-stat.exe");
+
+	ASSERT_SUCCESS(unlink(filename));
+	return 0;
 }
-#endif
 
 int test_DIR()
 {
@@ -223,6 +239,9 @@ int test_fstatat()
 
 void cleanup()
 {
+	remove("t-stat-rw");
+	remove("t-stat-rx");
+	remove("t-stat-rwx");
 	remove("t-stat.dir");
 	remove("t-lstat");
 	remove("t-lstat.sym");
@@ -240,9 +259,9 @@ int main()
 	CLEANUP(cleanup);
 
 	TEST(test_ENOENT());
-	// test_REGrw(); Need to use ACCESS_MASK to determine this
-	// test_REGrx(); Need to use ACCESS_MASK to determine this
-	// test_REGrwx(); Need to use ACCESS_MASK to determine this
+	TEST(test_REGrw());
+	TEST(test_REGrx());
+	TEST(test_REGrwx());
 	TEST(test_DIR());
 	TEST(test_lstat());
 	TEST(test_hardlinks());

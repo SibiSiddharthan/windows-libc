@@ -26,6 +26,28 @@ struct timespec LARGE_INTEGER_to_timespec(LARGE_INTEGER LT)
 	return result;
 }
 
+#define WLIBC_ACCEPTABLE_READ_PERMISSIONS    (FILE_READ_DATA | FILE_READ_EA)
+#define WLIBC_ACCEPTABLE_WRITE_PERMISSIONS   (FILE_WRITE_DATA | FILE_APPEND_DATA | FILE_WRITE_EA)
+#define WLIBC_ACCEPTABLE_EXECUTE_PERMISSIONS (FILE_EXECUTE)
+
+mode_t get_permissions(ACCESS_MASK access)
+{
+	mode_t perms = 0;
+	if ((access & WLIBC_ACCEPTABLE_READ_PERMISSIONS) == WLIBC_ACCEPTABLE_READ_PERMISSIONS)
+	{
+		perms |= S_IREAD;
+	}
+	if ((access & WLIBC_ACCEPTABLE_WRITE_PERMISSIONS) == WLIBC_ACCEPTABLE_WRITE_PERMISSIONS)
+	{
+		perms |= S_IWRITE;
+	}
+	if ((access & WLIBC_ACCEPTABLE_EXECUTE_PERMISSIONS) == WLIBC_ACCEPTABLE_EXECUTE_PERMISSIONS)
+	{
+		perms |= S_IEXEC;
+	}
+	return perms;
+}
+
 int do_stat(HANDLE handle, struct stat *restrict statbuf)
 {
 	IO_STATUS_BLOCK I;
@@ -54,6 +76,8 @@ int do_stat(HANDLE handle, struct stat *restrict statbuf)
 		}
 
 		DWORD attributes = stat_info.FileAttributes;
+		mode_t access = get_permissions(stat_info.EffectiveAccess);
+
 		// From readdir.c
 		if (attributes & FILE_ATTRIBUTE_REPARSE_POINT)
 		{
@@ -63,22 +87,21 @@ int do_stat(HANDLE handle, struct stat *restrict statbuf)
 				statbuf->st_mode = S_IFLNK;
 				statbuf->st_mode |= S_IREAD | S_IWRITE | S_IEXEC;
 			}
-			// if(reparse_tag == IO_REPARSE_TAG_AF_UNIX)
-			//{
-			//	statbuf->st_mode = S_IFSOCK;
-			//	statbuf->st_mode |= S_IREAD | S_IWRITE | S_IEXEC;
-			//}
+			if (reparse_tag == IO_REPARSE_TAG_AF_UNIX)
+			{
+				statbuf->st_mode = S_IFSOCK;
+				statbuf->st_mode |= S_IREAD | S_IWRITE | S_IEXEC;
+			}
 		}
 		else if (attributes & FILE_ATTRIBUTE_DIRECTORY)
 		{
-			statbuf->st_mode = S_IFDIR;
-			statbuf->st_mode |= S_IREAD | S_IWRITE | S_IEXEC;
+			statbuf->st_mode = S_IFDIR | access;
 		}
 		else if ((attributes & ~(FILE_ATTRIBUTE_READONLY | FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_ARCHIVE |
 								 FILE_ATTRIBUTE_NORMAL | FILE_ATTRIBUTE_TEMPORARY | FILE_ATTRIBUTE_SPARSE_FILE | FILE_ATTRIBUTE_COMPRESSED |
 								 FILE_ATTRIBUTE_NOT_CONTENT_INDEXED | FILE_ATTRIBUTE_ENCRYPTED)) == 0)
 		{
-			statbuf->st_mode = S_IFREG;
+			statbuf->st_mode = S_IFREG | access;
 #if 0
 			if (attributes & FILE_ATTRIBUTE_READONLY)
 			{
@@ -177,7 +200,7 @@ int do_stat(HANDLE handle, struct stat *restrict statbuf)
 	}
 	else if (type == FILE_DEVICE_NULL || type == FILE_DEVICE_CONSOLE)
 	{
-		statbuf->st_mode = S_IFCHR;
+		statbuf->st_mode = S_IFCHR | 0666;
 		statbuf->st_nlink = 1;
 		// To differentiate between NUL and CON use st_dev and st_rdev.
 		// We don't use st_ino because they have no meaning as these files are devices in the object manager.
