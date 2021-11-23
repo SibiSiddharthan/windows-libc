@@ -11,6 +11,12 @@
 #include <winnt.h>
 #include <sys/types.h>
 
+extern PISID ntsystem_sid;      // Root (NT AUTHORITY\SYSTEM)
+extern PISID adminstrators_sid; // psuedo root (BUILTIN\Administrators)
+extern PISID users_sid;         // Users (BUILTIN\Users)
+extern PISID everyone_sid;      // Everyone
+extern PISID current_user_sid;  // Current User
+
 void initialize_sids();
 void cleanup_security_decsriptors();
 

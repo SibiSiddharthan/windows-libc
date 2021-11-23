@@ -18,11 +18,11 @@ static char users_sid_buffer[SECURITY_SID_SIZE(2)];
 static char everyone_sid_buffer[SECURITY_SID_SIZE(1)];
 static char current_user_sid_buffer[SECURITY_SID_SIZE(SID_MAX_SUB_AUTHORITIES)];
 
-static PISID ntsystem_sid = NULL;      // Root (NT AUTHORITY\SYSTEM)
-static PISID adminstrators_sid = NULL; // psuedo root (BUILTIN\Administrators)
-static PISID users_sid = NULL;         // Users (BUILTIN\Users)
-static PISID everyone_sid = NULL;      // Everyone
-static PISID current_user_sid = NULL;  // Current User
+PISID ntsystem_sid = NULL;      // Root (NT AUTHORITY\SYSTEM)
+PISID adminstrators_sid = NULL; // psuedo root (BUILTIN\Administrators)
+PISID users_sid = NULL;         // Users (BUILTIN\Users)
+PISID everyone_sid = NULL;      // Everyone
+PISID current_user_sid = NULL;  // Current User
 
 #define WLIBC_BASIC_PERMISSIONS   (FILE_READ_ATTRIBUTES | FILE_WRITE_ATTRIBUTES | READ_CONTROL | SYNCHRONIZE | DELETE)
 #define WLIBC_READ_PERMISSIONS    (FILE_READ_DATA | FILE_READ_EA | WLIBC_BASIC_PERMISSIONS)
@@ -133,12 +133,11 @@ static PISECURITY_DESCRIPTOR_RELATIVE create_security_descriptor(mode_t mode, in
 	RtlAddAccessAllowedAceEx(acl, ACL_REVISION, ace_flags, WLIBC_ALL_PERMISSIONS, (PSID)ntsystem_sid);
 	RtlAddAccessAllowedAceEx(acl, ACL_REVISION, ace_flags, WLIBC_ALL_PERMISSIONS, (PSID)adminstrators_sid);
 
-	if (mode & 0700)
-	{
-		// Give ability to change owner and dacl to the user.
-		RtlAddAccessAllowedAceEx(acl, ACL_REVISION, ace_flags, determine_access_mask((mode & 0700) >> 6) | WLIBC_EXTRA_PERMISSIONS,
-								 (PSID)current_user_sid);
-	}
+	// Always give basic permissions to the owner.
+	// Give ability to change owner and dacl to the user.
+	RtlAddAccessAllowedAceEx(acl, ACL_REVISION, ace_flags,
+							 determine_access_mask((mode & 0700) >> 6) | WLIBC_EXTRA_PERMISSIONS | WLIBC_BASIC_PERMISSIONS,
+							 (PSID)current_user_sid);
 	if (mode & 0070)
 	{
 		RtlAddAccessAllowedAceEx(acl, ACL_REVISION, ace_flags, determine_access_mask((mode & 0070) >> 3), (PSID)users_sid);

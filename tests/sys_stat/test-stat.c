@@ -237,6 +237,52 @@ int test_fstatat()
 	return 0;
 }
 
+int test_permissions_file()
+{
+	int fd;
+	int status;
+	struct stat statbuf;
+	char filename[32];
+
+	for (int i = 0; i < 512; ++i)
+	{
+		snprintf(filename, 32, "t-perms.file.%04o", i);
+
+		fd = creat(filename, i);
+		ASSERT_SUCCESS(close(fd));
+
+		status = stat(filename,&statbuf);
+		ASSERT_EQ(status, 0);
+		ASSERT_EQ(statbuf.st_mode, (S_IFREG | i));
+
+		ASSERT_SUCCESS(unlink(filename));
+	}
+
+	return 0;
+}
+
+int test_permissions_dir()
+{
+	int status;
+	struct stat statbuf;
+	char dirname[32];
+
+	for (int i = 0; i < 512; ++i)
+	{
+		snprintf(dirname, 32, "t-perms.dir.%04o", i);
+
+		ASSERT_SUCCESS(mkdir(dirname,i));
+
+		status = stat(dirname,&statbuf);
+		ASSERT_EQ(status, 0);
+		ASSERT_EQ(statbuf.st_mode, (S_IFDIR | i));
+
+		ASSERT_SUCCESS(rmdir(dirname));
+	}
+
+	return 0;
+}
+
 void cleanup()
 {
 	remove("t-stat-rw");
@@ -267,6 +313,8 @@ int main()
 	TEST(test_hardlinks());
 	TEST(test_fstat());
 	TEST(test_fstatat());
+	TEST(test_permissions_file());
+	TEST(test_permissions_dir());
 
 	VERIFY_RESULT_AND_EXIT();
 }

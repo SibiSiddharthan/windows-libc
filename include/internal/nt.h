@@ -1532,6 +1532,11 @@ NTAPI
 RtlCopySid(_In_ ULONG DestinationSidLength, _Out_writes_bytes_(DestinationSidLength) PSID DestinationSid, _In_ PSID SourceSid);
 
 NTSYSAPI
+BOOLEAN
+NTAPI
+RtlEqualSid(_In_ PSID Sid1, _In_ PSID Sid2);
+
+NTSYSAPI
 NTSTATUS
 NTAPI NtQuerySecurityObject(HANDLE Handle, SECURITY_INFORMATION SecurityInformation, PSECURITY_DESCRIPTOR SecurityDescriptor, ULONG Length,
 							PULONG LengthNeeded);

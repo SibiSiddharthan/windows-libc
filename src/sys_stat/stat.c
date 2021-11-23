@@ -5,14 +5,14 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <sys/stat.h>
-#include <Windows.h>
+#include <internal/nt.h>
 #include <internal/error.h>
-#include <internal/misc.h>
-#include <errno.h>
 #include <internal/fcntl.h>
+#include <internal/security.h>
+#include <sys/stat.h>
+#include <stdbool.h>
+#include <stdlib.h>
 #include <time.h>
-#include <unistd.h>
 
 /* 116444736000000000 is the number of 100 nanosecond intervals from
    January 1st 1601 to January 1st 1970 (UTC)
@@ -50,8 +50,8 @@ mode_t get_permissions(ACCESS_MASK access)
 
 int do_stat(HANDLE handle, struct stat *restrict statbuf)
 {
-	IO_STATUS_BLOCK I;
 	NTSTATUS status;
+	IO_STATUS_BLOCK I;
 
 	FILE_FS_DEVICE_INFORMATION device_info;
 	status = NtQueryVolumeInformationFile(handle, &I, &device_info, sizeof(FILE_FS_DEVICE_INFORMATION), FileFsDeviceInformation);
@@ -76,7 +76,90 @@ int do_stat(HANDLE handle, struct stat *restrict statbuf)
 		}
 
 		DWORD attributes = stat_info.FileAttributes;
-		mode_t access = get_permissions(stat_info.EffectiveAccess);
+		mode_t access = 0;
+
+		char security_buffer[512];
+		ULONG length;
+		status = NtQuerySecurityObject(handle, OWNER_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | DACL_SECURITY_INFORMATION,
+									   security_buffer, 512, &length);
+		if (status != STATUS_SUCCESS)
+		{
+			map_ntstatus_to_errno(status);
+			return -1;
+		}
+
+		PISECURITY_DESCRIPTOR_RELATIVE security_descriptor = (PISECURITY_DESCRIPTOR_RELATIVE)security_buffer;
+		PACL acl = (PACL)(security_buffer + security_descriptor->Dacl);
+		size_t acl_read = 0;
+		bool user_ace_present = false;
+		// Iterate through the ACLs
+		// Order should be (NT AUTHORITY\SYSTEM), (BUILTIN\Administrators), Current User ,(BUILTIN\Users), Everyone
+		for (int i = 0; i < acl->AceCount; ++i)
+		{
+			PISID sid = NULL;
+			PACE_HEADER ace_header = (PACE_HEADER)((char *)acl + sizeof(ACL) + acl_read);
+
+			// Only support allowed and denied ACEs
+			// Both ACCESS_ALLOWED_ACE and PACCESS_DENIED_ACE have ACE_HEADER at the start.
+			// Type casting of pointers here will work.
+			if (ace_header->AceType == ACCESS_ALLOWED_ACE_TYPE)
+			{
+				PACCESS_ALLOWED_ACE allowed_ace = (PACCESS_ALLOWED_ACE)ace_header;
+				sid = (PISID) & (allowed_ace->SidStart);
+				if (RtlEqualSid(sid, current_user_sid))
+				{
+					user_ace_present = true;
+					access |= get_permissions(allowed_ace->Mask);
+				}
+				else if (RtlEqualSid(sid, users_sid))
+				{
+					access |= get_permissions(allowed_ace->Mask) >> 3;
+				}
+				else if (RtlEqualSid(sid, everyone_sid))
+				{
+					access |= get_permissions(allowed_ace->Mask) >> 6;
+				}
+				else
+				{
+					// Unsupported SID or SYSTEM or Administrator, ignore
+				}
+			}
+			else if (ace_header->AceType == ACCESS_DENIED_ACE_TYPE)
+			{
+				PACCESS_DENIED_ACE denied_ace = (PACCESS_DENIED_ACE)ace_header;
+				sid = (PISID) & (denied_ace->SidStart);
+				if (RtlEqualSid(sid, current_user_sid))
+				{
+					user_ace_present = true;
+					access &= ~(get_permissions(denied_ace->Mask));
+				}
+				else if (RtlEqualSid(sid, users_sid))
+				{
+					access &= ~(get_permissions(denied_ace->Mask) >> 3);
+				}
+				else if (RtlEqualSid(sid, everyone_sid))
+				{
+					access &= ~(get_permissions(denied_ace->Mask) >> 6);
+				}
+				else
+				{
+					// Unsupported SID or SYSTEM or Administrator, ignore
+				}
+			}
+			else
+			{
+				continue;
+			}
+			acl_read += ace_header->AceSize;
+		}
+
+		if (!user_ace_present)
+		{
+			// For current user permissions use the 'EffectiveAccess' field of FILE_STAT_INFORMATION if the specific ACL is absent.
+			// The specific user ACL will be absent except on C:\Users\XXXXX
+			// NOTE: Despite it being name 'EffectiveAccess' it is actually just access.
+			access |= get_permissions(stat_info.EffectiveAccess);
+		}
 
 		// From readdir.c
 		if (attributes & FILE_ATTRIBUTE_REPARSE_POINT)
@@ -113,12 +196,6 @@ int do_stat(HANDLE handle, struct stat *restrict statbuf)
 			}
 #endif
 		}
-
-		//// Set the S_IEXEC bit here as it requires the name
-		// if (has_executable_extenstion(wbuf + 4))
-		//{
-		//	statbuf->st_mode |= S_IEXEC;
-		//}
 
 		statbuf->st_ino = stat_info.FileId.QuadPart;
 		statbuf->st_nlink = stat_info.NumberOfLinks;
@@ -184,7 +261,8 @@ int do_stat(HANDLE handle, struct stat *restrict statbuf)
 			map_ntstatus_to_errno(status);
 		}
 
-		PFILE_FS_VOLUME_INFORMATION volume_info = (PFILE_FS_VOLUME_INFORMATION)malloc(128); // Max label length is 32(WCHAR) or 64 bytes
+		char volume_info_buffer[128]; // Max label length is 32(WCHAR) or 64 bytes
+		PFILE_FS_VOLUME_INFORMATION volume_info = (PFILE_FS_VOLUME_INFORMATION)volume_info_buffer;
 		status = NtQueryVolumeInformationFile(handle, &I, volume_info, 1024, FileFsVolumeInformation);
 		if (status == STATUS_SUCCESS)
 		{
@@ -195,8 +273,6 @@ int do_stat(HANDLE handle, struct stat *restrict statbuf)
 			// just set errno
 			map_ntstatus_to_errno(status);
 		}
-
-		free(volume_info);
 	}
 	else if (type == FILE_DEVICE_NULL || type == FILE_DEVICE_CONSOLE)
 	{
