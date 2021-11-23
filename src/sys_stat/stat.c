@@ -148,7 +148,7 @@ int do_stat(HANDLE handle, struct stat *restrict statbuf)
 			}
 			else
 			{
-				continue;
+				// Unsupported ACE type
 			}
 			acl_read += ace_header->AceSize;
 		}
@@ -313,6 +313,7 @@ int common_stat(int dirfd, const char *restrict name, struct stat *restrict stat
 
 	HANDLE handle = just_open(u16_ntpath, FILE_READ_ATTRIBUTES | READ_CONTROL, 0, FILE_OPEN,
 							  flags == AT_SYMLINK_NOFOLLOW ? FILE_OPEN_REPARSE_POINT : 0);
+	free(u16_ntpath);
 	if (handle == INVALID_HANDLE_VALUE)
 	{
 		// errno will be set by just_open

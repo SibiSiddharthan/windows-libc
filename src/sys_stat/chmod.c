@@ -10,7 +10,7 @@
 #include <internal/fcntl.h>
 #include <internal/security.h>
 #include <sys/stat.h>
-#include <errno.h>
+#include <stdlib.h>
 
 int do_chmod(HANDLE handle, mode_t mode)
 {
@@ -57,6 +57,7 @@ int common_chmod(int dirfd, const char *path, mode_t mode, int flags)
 
 	HANDLE handle = just_open(u16_ntpath, FILE_READ_ATTRIBUTES | READ_CONTROL | WRITE_DAC, 0, FILE_OPEN,
 							  flags == AT_SYMLINK_NOFOLLOW ? FILE_OPEN_REPARSE_POINT : 0);
+	free(u16_ntpath);
 	if (handle == INVALID_HANDLE_VALUE)
 	{
 		// errno wil be set by just_open

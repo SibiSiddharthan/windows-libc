@@ -8,11 +8,11 @@
 #include <internal/nt.h>
 #include <sys/stat.h>
 #include <internal/fcntl.h>
-#include <wchar.h>
 #include <fcntl.h>
-#include <errno.h>
 #include <internal/error.h>
 #include <time.h>
+#include <stdlib.h>
+#include <wchar.h>
 
 LARGE_INTEGER timespec_to_LARGE_INTEGER(const struct timespec time)
 {
@@ -90,7 +90,7 @@ int common_utimens(int dirfd, const char *path, const struct timespec times[2], 
 
 	HANDLE handle = just_open(u16_ntpath, FILE_READ_ATTRIBUTES | FILE_WRITE_ATTRIBUTES, 0, FILE_OPEN,
 							  flags == AT_SYMLINK_NOFOLLOW ? FILE_OPEN_REPARSE_POINT : 0);
-
+	free(u16_ntpath);
 	if (handle == INVALID_HANDLE_VALUE)
 	{
 		// errno wil be set by just_open

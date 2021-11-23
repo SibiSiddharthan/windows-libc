@@ -118,6 +118,7 @@ int wlibc_truncate(const char *path, off_t length)
 
 	HANDLE handle = just_open(u16_ntpath, FILE_WRITE_DATA | FILE_APPEND_DATA | SYNCHRONIZE, 0, FILE_OPEN,
 							  FILE_NON_DIRECTORY_FILE | FILE_SYNCHRONOUS_IO_NONALERT);
+	free(u16_ntpath);
 	if (handle == INVALID_HANDLE_VALUE)
 	{
 		// errno wil be set by just_open
