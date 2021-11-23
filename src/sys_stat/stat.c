@@ -206,7 +206,7 @@ int do_stat(HANDLE handle, struct stat *restrict statbuf)
 		statbuf->st_mtim = LARGE_INTEGER_to_timespec(stat_info.LastWriteTime);
 		statbuf->st_ctim = LARGE_INTEGER_to_timespec(stat_info.CreationTime);
 
-		if (statbuf->st_mode & S_IFLNK)
+		if ((statbuf->st_mode & S_IFMT) == S_IFLNK)
 		{
 			statbuf->st_size = -1;
 			PREPARSE_DATA_BUFFER reparse_buffer = (PREPARSE_DATA_BUFFER)malloc(MAXIMUM_REPARSE_DATA_BUFFER_SIZE);

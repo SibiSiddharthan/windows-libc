@@ -15,14 +15,14 @@
 
 _WLIBC_BEGIN_DECLS
 
-#define S_IFMT   0xFF000 // File type mask
-#define S_IFSOCK 0x40000 // Socket
-#define S_IFBLK  0x20000 // Block special
-#define S_IFIFO  0x10000 // Pipe or FIFO (FIFO is unsupported)
-#define S_IFLNK  0x01000 // Symbolic Link
-#define S_IFCHR  0x02000 // Character special
-#define S_IFDIR  0x04000 // Directory
-#define S_IFREG  0x08000 // Regular
+#define S_IFMT   0xF000 // File type mask
+#define S_IFIFO  0x1000 // Pipe or FIFO (FIFO is unsupported)
+#define S_IFCHR  0x2000 // Character special
+#define S_IFDIR  0x4000 // Directory
+#define S_IFBLK  0x6000 // Block special
+#define S_IFREG  0x8000 // Regular
+#define S_IFLNK  0xA000 // Symbolic Link
+#define S_IFSOCK 0xC000 // Socket
 
 // User permissions
 #define S_IRUSR 0400
@@ -53,9 +53,9 @@ _WLIBC_BEGIN_DECLS
 #define S_IWRITE S_IWUSR
 #define S_IEXEC  S_IXUSR
 
-#define S_ISUID S_IEXEC // Set user ID on execution
-#define S_ISGID S_IEXEC // Set group ID on execution
-#define S_ISVTX S_IEXEC // Obsolete
+#define S_ISUID 0x800 // Set user ID on execution
+#define S_ISGID 0x400 // Set group ID on execution
+#define S_ISVTX 0x200 // Sticky bit (Obsolete)
 
 struct stat
 {
@@ -78,13 +78,15 @@ struct stat
 #define st_ctime st_ctim.tv_sec
 };
 
-#define S_ISBLK(m)  (m & S_IFBLK)
-#define S_ISCHR(m)  (m & S_IFCHR)
-#define S_ISDIR(m)  (m & S_IFDIR)
-#define S_ISREG(m)  (m & S_IFREG)
-#define S_ISLNK(m)  (m & S_IFLNK)
-#define S_ISFIFO(m) (m & S_IFIFO)
-#define S_ISSOCK(m) (m & S_IFSOCK)
+#define S_ISTYPE(mode, type) (((mode)&S_IFMT) == (type))
+
+#define S_ISFIFO(mode) S_ISTYPE((mode), S_IFIFO)
+#define S_ISCHR(mode)  S_ISTYPE((mode), S_IFCHR)
+#define S_ISDIR(mode)  S_ISTYPE((mode), S_IFDIR)
+#define S_ISBLK(mode)  S_ISTYPE((mode), S_IFBLK)
+#define S_ISREG(mode)  S_ISTYPE((mode), S_IFREG)
+#define S_ISLNK(mode)  S_ISTYPE((mode), S_IFLNK)
+#define S_ISSOCK(mode) S_ISTYPE((mode), S_IFSOCK)
 
 #define UTIME_NOW  -1 // Change timestamp to current timestamp
 #define UTIME_OMIT -2 // Ignore timestamp
