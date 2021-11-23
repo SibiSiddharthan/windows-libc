@@ -5,69 +5,92 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <sys/stat.h>
-#include <internal/misc.h>
-#include <errno.h>
+#include <internal/nt.h>
 #include <internal/error.h>
-#include <Windows.h>
 #include <internal/fcntl.h>
+#include <internal/security.h>
+#include <sys/stat.h>
+#include <errno.h>
 
-int common_chmod(const wchar_t *wname, mode_t mode)
+int do_chmod(HANDLE handle, mode_t mode)
 {
-	DWORD attributes = GetFileAttributes(wname);
-	if (attributes == INVALID_FILE_ATTRIBUTES)
-	{
-		errno = ENOENT;
-		return -1;
-	}
+	NTSTATUS status;
+	IO_STATUS_BLOCK io;
+	FILE_ATTRIBUTE_TAG_INFORMATION attr_info;
+	PSECURITY_DESCRIPTOR security_descriptor = NULL;
+	int is_directory = 0; // assume regular file
 
-	// If we don't have write permission, make the file READONLY. This is what MSVC does
-	// Maybe later we can use acls for this
-	if (mode & S_IWRITE)
+	status = NtQueryInformationFile(handle, &io, &attr_info, sizeof(FILE_ATTRIBUTE_TAG_INFORMATION), FileAttributeTagInformation);
+	if (status == STATUS_SUCCESS)
 	{
-		attributes &= ~FILE_ATTRIBUTE_READONLY;
+		if (attr_info.FileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+		{
+			is_directory = 1;
+		}
 	}
 	else
 	{
-		attributes |= FILE_ATTRIBUTE_READONLY;
+		map_ntstatus_to_errno(status);
+		// do not return yet
 	}
 
-	if (!SetFileAttributes(wname, attributes))
+	security_descriptor = get_security_descriptor(mode, is_directory);
+
+	status = NtSetSecurityObject(handle, DACL_SECURITY_INFORMATION, security_descriptor);
+	if (status != STATUS_SUCCESS)
 	{
-		map_win32_error_to_wlibc(GetLastError());
+		map_ntstatus_to_errno(status);
 		return -1;
 	}
 
 	return 0;
 }
 
-int wlibc_chmod(const char *name, mode_t mode)
+int common_chmod(int dirfd, const char *path, mode_t mode, int flags)
 {
-	VALIDATE_PATH(name, ENOENT, -1);
-
-	wchar_t *wname = mb_to_wc(name);
-	int status = common_chmod(wname, mode);
-	free(wname);
-
-	return status;
-}
-
-int wlibc_wchmod(const wchar_t *wname, mode_t mode)
-{
-	VALIDATE_PATH(wname, ENOENT, -1);
-
-	return common_chmod(wname, mode);
-}
-
-int wlibc_fchmod(int fd, mode_t mode)
-{
-
-	if (!validate_fd(fd))
+	wchar_t *u16_ntpath = get_absolute_ntpath(dirfd, path);
+	if (u16_ntpath == NULL)
 	{
-		errno = EBADF;
+		errno = ENOENT;
 		return -1;
 	}
 
-	const wchar_t *wname = get_fd_path(fd);
-	return common_chmod(wname, mode);
+	HANDLE handle = just_open(u16_ntpath, FILE_READ_ATTRIBUTES | READ_CONTROL | WRITE_DAC, 0, FILE_OPEN,
+							  flags == AT_SYMLINK_NOFOLLOW ? FILE_OPEN_REPARSE_POINT : 0);
+	if (handle == INVALID_HANDLE_VALUE)
+	{
+		// errno wil be set by just_open
+		return -1;
+	}
+
+	int result = do_chmod(handle, mode);
+	NtClose(handle);
+	return result;
+}
+
+int wlibc_common_chmod(int dirfd, const char *path, mode_t mode, int flags)
+{
+	if (flags != 0 && flags != AT_EMPTY_PATH && flags != AT_SYMLINK_NOFOLLOW)
+	{
+		errno = EINVAL;
+		return -1;
+	}
+
+	if (flags != AT_EMPTY_PATH)
+	{
+		VALIDATE_PATH_AND_DIRFD(path, dirfd);
+		return common_chmod(dirfd, path, mode, flags);
+	}
+	else
+	{
+		enum handle_type type = get_fd_type(dirfd);
+		if (type == PIPE_HANDLE || type == CONSOLE_HANDLE)
+		{
+			errno = EBADF;
+			return -1;
+		}
+
+		HANDLE handle = get_fd_handle(dirfd);
+		return do_chmod(handle, mode);
+	}
 }

@@ -9,7 +9,6 @@
 #define WLIBC_SYS_STAT_H
 
 #include <wlibc-macros.h>
-#include <wchar.h>
 #include <sys/types.h>
 #include <time.h>
 #include <fcntl.h>
@@ -90,49 +89,38 @@ struct stat
 #define UTIME_NOW  -1 // Change timestamp to current timestamp
 #define UTIME_OMIT -2 // Ignore timestamp
 
-WLIBC_API int wlibc_chmod(const char *name, mode_t mode);
-WLIBC_API int wlibc_wchmod(const wchar_t *wname, mode_t mode);
+WLIBC_API int wlibc_common_chmod(int dirfd, const char *path, mode_t mode, int flags);
 
-WLIBC_INLINE int chmod(const char *name, mode_t mode)
+WLIBC_INLINE int chmod(const char *path, mode_t mode)
 {
-	return wlibc_chmod(name, mode);
+	return wlibc_common_chmod(AT_FDCWD, path, mode, 0);
 }
 
-WLIBC_INLINE int wchmod(const wchar_t *wname, mode_t mode)
+WLIBC_INLINE int lchmod(const char *path, mode_t mode)
 {
-	return wlibc_wchmod(wname, mode);
+	return wlibc_common_chmod(AT_FDCWD, path, mode, AT_SYMLINK_NOFOLLOW);
 }
-
-WLIBC_API int wlibc_fchmod(int fd, mode_t mode);
 
 WLIBC_INLINE int fchmod(int fd, mode_t mode)
 {
-	return wlibc_fchmod(fd, mode);
+	return wlibc_common_chmod(fd, NULL, mode, AT_EMPTY_PATH);
 }
 
-WLIBC_API int wlibc_fchmodat(int dirfd, const char *name, mode_t mode, int flags /*unused*/);
-WLIBC_API int wlibc_wfchmodat(int dirfd, const wchar_t *name, mode_t mode, int flags /*unused*/);
-
-WLIBC_INLINE int fchmodat(int dirfd, const char *name, mode_t mode, int flags)
+WLIBC_INLINE int fchmodat(int dirfd, const char *path, mode_t mode, int flags)
 {
-	return wlibc_fchmodat(dirfd, name, mode, flags);
+	return wlibc_common_chmod(dirfd, path, mode, flags);
 }
 
-WLIBC_INLINE int wfchmodat(int dirfd, const wchar_t *wname, mode_t mode, int flags)
+WLIBC_API int wlibc_common_stat(int dirfd, const char *restrict path, struct stat *restrict statbuf, int flags);
+
+WLIBC_INLINE int stat(const char *restrict path, struct stat *restrict statbuf)
 {
-	return wlibc_wfchmodat(dirfd, wname, mode, flags);
+	return wlibc_common_stat(AT_FDCWD, path, statbuf, 0);
 }
 
-WLIBC_API int wlibc_common_stat(int dirfd, const char *restrict name, struct stat *restrict statbuf, int flags);
-
-WLIBC_INLINE int stat(const char *restrict name, struct stat *restrict statbuf)
+WLIBC_INLINE int lstat(const char *restrict path, struct stat *restrict statbuf)
 {
-	return wlibc_common_stat(AT_FDCWD, name, statbuf, 0);
-}
-
-WLIBC_INLINE int lstat(const char *restrict name, struct stat *restrict statbuf)
-{
-	return wlibc_common_stat(AT_FDCWD, name, statbuf, AT_SYMLINK_NOFOLLOW);
+	return wlibc_common_stat(AT_FDCWD, path, statbuf, AT_SYMLINK_NOFOLLOW);
 }
 
 WLIBC_INLINE int fstat(int fd, struct stat *statbuf)
@@ -140,9 +128,9 @@ WLIBC_INLINE int fstat(int fd, struct stat *statbuf)
 	return wlibc_common_stat(fd, NULL, statbuf, AT_EMPTY_PATH);
 }
 
-WLIBC_INLINE int fstatat(int dirfd, const char *restrict name, struct stat *restrict statbuf, int flags)
+WLIBC_INLINE int fstatat(int dirfd, const char *restrict path, struct stat *restrict statbuf, int flags)
 {
-	return wlibc_common_stat(dirfd, name, statbuf, flags);
+	return wlibc_common_stat(dirfd, path, statbuf, flags);
 }
 
 WLIBC_API int wlibc_common_mkdir(int dirfd, const char *path, mode_t mode);

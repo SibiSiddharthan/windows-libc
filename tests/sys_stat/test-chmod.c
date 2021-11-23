@@ -11,38 +11,92 @@
 #include <errno.h>
 #include <fcntl.h>
 
-int test_ENOENT()
+int test_chmod_file()
 {
-	int status = chmod("", S_IREAD);
-	ASSERT_ERRNO(ENOENT);
-	ASSERT_EQ(status, -1);
+	int fd;
+	int status;
+	struct stat statbuf;
+	const char *filename = "t-chmod.file";
+
+	// Start with no permissions
+	fd = creat(filename, 0);
+	ASSERT_SUCCESS(close(fd));
+
+	status = stat(filename, &statbuf);
+	ASSERT_EQ(status, 0);
+	ASSERT_EQ(statbuf.st_mode, S_IFREG);
+
+	for (int i = 0; i < 512; ++i)
+	{
+		status = chmod(filename, i);
+		ASSERT_EQ(status, 0);
+
+		status = stat(filename, &statbuf);
+		ASSERT_EQ(status, 0);
+		ASSERT_EQ(statbuf.st_mode, (S_IFREG | i));
+	}
+
+	ASSERT_SUCCESS(unlink(filename));
 	return 0;
 }
 
-int test_READONLY()
+int test_chmod_dir()
 {
 	int status;
+	struct stat statbuf;
+	const char *dirname = "t-chmod.file";
+
+	// Start with no permissions
+	ASSERT_SUCCESS(mkdir(dirname, 0));
+
+	status = stat(dirname, &statbuf);
+	ASSERT_EQ(status, 0);
+	ASSERT_EQ(statbuf.st_mode, S_IFDIR);
+
+	for (int i = 0; i < 512; ++i)
+	{
+		status = chmod(dirname, i);
+		ASSERT_EQ(status, 0);
+
+		status = stat(dirname, &statbuf);
+		ASSERT_EQ(status, 0);
+		ASSERT_EQ(statbuf.st_mode, (S_IFDIR | i));
+	}
+
+	ASSERT_SUCCESS(rmdir(dirname));
+	return 0;
+}
+
+int test_fchmod()
+{
 	int fd;
-	ssize_t length;
-	const char *filename = "t-chmod";
+	int status;
+	struct stat statbuf;
+	const char *filename = "t-fchmod";
 
 	fd = creat(filename, 0700);
-	ASSERT_SUCCESS(close(fd));
 
-	status = chmod(filename, S_IREAD);
+	status = stat(filename, &statbuf);
+	ASSERT_EQ(status, 0);
+	ASSERT_EQ(statbuf.st_mode, (S_IFREG | 0700));
+
+	status = fchmod(fd, 0777);
 	ASSERT_EQ(status, 0);
 
-	fd = open(filename, O_WRONLY | O_EXCL);
-	ASSERT_EQ(fd, -1);
+	status = stat(filename, &statbuf);
+	ASSERT_EQ(status, 0);
+	ASSERT_EQ(statbuf.st_mode, (S_IFREG | 0777));
 
+	ASSERT_SUCCESS(close(fd));
 	ASSERT_SUCCESS(unlink(filename));
-
 	return 0;
 }
 
 void cleanup()
 {
-	remove("t-chmod");
+	remove("t-chmod.file");
+	remove("t-chmod.dir");
+	remove("t-fchmod");
 }
 
 int main()
@@ -50,8 +104,9 @@ int main()
 	INITIAILIZE_TESTS();
 	CLEANUP(cleanup);
 
-	TEST(test_ENOENT());
-	TEST(test_READONLY());
+	TEST(test_chmod_file());
+	TEST(test_chmod_dir());
+	TEST(test_fchmod());
 
 	VERIFY_RESULT_AND_EXIT();
 }

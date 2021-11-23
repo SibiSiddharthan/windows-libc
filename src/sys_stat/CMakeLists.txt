@@ -7,7 +7,6 @@
 
 set(sys_stat_SOURCES
 chmod.c
-fchmodat.c
 mkdir.c
 stat.c
 utimens.c)
