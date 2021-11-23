@@ -21,16 +21,16 @@ static ACCESS_MASK determine_access_rights(int oflags)
 {
 	ACCESS_MASK access_rights = SYNCHRONIZE |                                        // always have this except for nonblocking handles
 								FILE_READ_ATTRIBUTES | FILE_READ_EA | READ_CONTROL | // read
-								FILE_WRITE_ATTRIBUTES | FILE_WRITE_EA | WRITE_DAC;   // write
+								FILE_WRITE_ATTRIBUTES | WRITE_DAC;   // write
 	// Check if need to give this much by default. also WRITE_OWNER?
 
 	if (oflags & O_WRONLY)
 	{
-		access_rights |= FILE_WRITE_DATA;
+		access_rights |= FILE_WRITE_DATA | FILE_WRITE_EA;
 	}
 	else if (oflags & O_RDWR)
 	{
-		access_rights |= FILE_READ_DATA | FILE_WRITE_DATA;
+		access_rights |= FILE_READ_DATA | FILE_WRITE_DATA | FILE_WRITE_EA;
 	}
 	else // nothing is given i.e O_RDONLY by default
 	{

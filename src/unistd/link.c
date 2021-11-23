@@ -30,6 +30,7 @@ int common_link(int olddirfd, const char *restrict source, int newdirfd, const c
 			options |= FILE_OPEN_REPARSE_POINT;
 		}
 
+		// If the file does not have FILE_WRITE_ATTRIBUTES, link creation fails.
 		handle = just_open(u16_ntsource, FILE_READ_ATTRIBUTES | FILE_WRITE_ATTRIBUTES | SYNCHRONIZE, 0, FILE_OPEN, options);
 		free(u16_ntsource);
 

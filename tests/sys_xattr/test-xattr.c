@@ -212,7 +212,7 @@ int test_fxattr()
 	ssize_t status;
 	int fd;
 	char buf[16];
-	const char *filename = "t-lxattr";
+	const char *filename = "t-fxattr";
 
 	fd = creat(filename, 0700);
 

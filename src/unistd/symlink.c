@@ -141,34 +141,3 @@ int wlibc_common_symlink(const char *restrict source, int dirfd, const char *res
 
 	return common_symlink(source, dirfd, target);
 }
-
-#if 0
-
-int wlibc_symlink(const char *restrict source, const char *restrict target)
-{
-	if (source == NULL || target == NULL)
-	{
-		errno = ENOENT;
-		return -1;
-	}
-	wchar_t *wsource = mb_to_wc(source);
-	wchar_t *wtarget = mb_to_wc(target);
-	int status = common_symlink(wsource, wtarget);
-	free(wsource);
-	free(wtarget);
-
-	return status;
-}
-
-int wlibc_wsymlink(const wchar_t *restrict wsource, const wchar_t *restrict wtarget)
-{
-	if (wsource == NULL || wtarget == NULL)
-	{
-		errno = ENOENT;
-		return -1;
-	}
-
-	return common_symlink(wsource, wtarget);
-}
-
-#endif
