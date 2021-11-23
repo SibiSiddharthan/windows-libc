@@ -51,7 +51,7 @@ int test_FILE()
 	int status;
 	const char *filename = "t-access.file";
 
-	fd = creat(filename, 0700);
+	fd = creat(filename, 0600);
 	ASSERT_SUCCESS(close(fd));
 
 	status = access(filename, F_OK | R_OK | W_OK | X_OK);
@@ -69,13 +69,6 @@ int test_FILE()
 	ASSERT_SUCCESS(unlink(filename));
 
 	return 0;
-
-	// fd = creat("t-access.exe", 0700);
-	// close(fd);
-	//
-	// status = access("t-access.exe", F_OK | R_OK | X_OK);
-	// ASSERT_EQ(status, 0);
-	// unlink("t-access.exe");
 }
 
 int test_symlink()
@@ -91,8 +84,6 @@ int test_symlink()
 	ASSERT_SUCCESS(symlink(filename, filename_symlink));
 
 	status = access(filename_symlink, F_OK | R_OK | W_OK | X_OK);
-	ASSERT_EQ(status, -1);
-	status = access(filename_symlink, F_OK | R_OK | W_OK);
 	ASSERT_EQ(status, 0);
 
 	ASSERT_SUCCESS(unlink(filename_symlink));
@@ -118,7 +109,7 @@ int test_faccessat()
 	ASSERT_SUCCESS(symlinkat(filename, dirfd, filename_symlink));
 
 	status = faccessat(dirfd, filename_symlink, F_OK | R_OK | W_OK | X_OK, 0);
-	ASSERT_EQ(status, -1);
+	ASSERT_EQ(status, 0);
 	status = faccessat(dirfd, filename_symlink, F_OK | R_OK | W_OK | X_OK, AT_SYMLINK_NOFOLLOW);
 	ASSERT_EQ(status, 0);
 

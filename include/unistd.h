@@ -30,30 +30,27 @@ _WLIBC_BEGIN_DECLS
 
 WLIBC_API int wlibc_common_remove(int dirfd, const char *path, int flags);
 
-WLIBC_API int wlibc_access(const char *name, int mode);
-WLIBC_API int wlibc_waccess(const wchar_t *wname, int mode);
+WLIBC_API int wlibc_common_access(int dirfd, const char *path, int mode, int flags);
 
-WLIBC_INLINE int access(const char *name, int mode)
+WLIBC_INLINE int access(const char *path, int mode)
 {
-	return wlibc_access(name, mode);
+	return wlibc_common_access(AT_FDCWD, path, mode, 0);
 }
 
-WLIBC_INLINE int waccess(const wchar_t *wname, int mode)
+WLIBC_INLINE int eaccess(const char *path, int mode)
 {
-	return wlibc_waccess(wname, mode);
+	return wlibc_common_access(AT_FDCWD, path, mode, AT_EACCESS);
 }
 
-WLIBC_API int wlibc_faccessat(int dirfd, const char *name, int mode, int flags);
-WLIBC_API int wlibc_wfaccessat(int dirfd, const wchar_t *wname, int mode, int flags);
-
-WLIBC_INLINE int faccessat(int dirfd, const char *name, int mode, int flags)
+WLIBC_INLINE int euidaccess(const char *path, int mode)
 {
-	return wlibc_faccessat(dirfd, name, mode, flags);
+	// Same as eaccess
+	return wlibc_common_access(AT_FDCWD, path, mode, AT_EACCESS);
 }
 
-WLIBC_INLINE int wfaccessat(int dirfd, const wchar_t *wname, int mode, int flags)
+WLIBC_INLINE int faccessat(int dirfd, const char *path, int mode, int flags)
 {
-	return wlibc_wfaccessat(dirfd, wname, mode, flags);
+	return wlibc_common_access(dirfd, path, mode, flags);
 }
 
 WLIBC_API int wlibc_close(int fd);
