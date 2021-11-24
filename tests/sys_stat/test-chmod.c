@@ -44,7 +44,7 @@ int test_chmod_dir()
 {
 	int status;
 	struct stat statbuf;
-	const char *dirname = "t-chmod.file";
+	const char *dirname = "t-chmod.dir";
 
 	// Start with no permissions
 	ASSERT_SUCCESS(mkdir(dirname, 0));

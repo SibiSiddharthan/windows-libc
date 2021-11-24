@@ -65,12 +65,12 @@ _WLIBC_BEGIN_DECLS
 // For *at functions
 #define AT_FDCWD            0x1000000
 #define AT_NO_AUTOMOUNT     0x00 // Unsupported
+#define AT_EACCESS          0x00 // Unsupported
 #define AT_SYMLINK_FOLLOW   0x01 // Dereference symlinks
 #define AT_SYMLINK_NOFOLLOW 0x02 // Don't dereference symlinks
 #define AT_REMOVEDIR        0x04 // Remove a directory
 #define AT_REMOVEANY        0x08 // Remove both directory as well as a file
-#define AT_EMPTY_PATH       0x10 // Link temporary file to file system
-#define AT_EACCESS          0x20 // Unsupported
+#define AT_EMPTY_PATH       0x10 // Operate on the file descriptor given
 
 // fcntl operations
 #define FD_CLOEXEC      O_CLOEXEC

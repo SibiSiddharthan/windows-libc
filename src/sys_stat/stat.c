@@ -76,6 +76,7 @@ int do_stat(HANDLE handle, struct stat *restrict statbuf)
 		}
 
 		DWORD attributes = stat_info.FileAttributes;
+		mode_t allowed_access = 0, denied_access = 0;
 		mode_t access = 0;
 
 		char security_buffer[512];
@@ -109,15 +110,15 @@ int do_stat(HANDLE handle, struct stat *restrict statbuf)
 				if (RtlEqualSid(sid, current_user_sid))
 				{
 					user_ace_present = true;
-					access |= get_permissions(allowed_ace->Mask);
+					allowed_access |= get_permissions(allowed_ace->Mask);
 				}
 				else if (RtlEqualSid(sid, users_sid))
 				{
-					access |= get_permissions(allowed_ace->Mask) >> 3;
+					allowed_access |= get_permissions(allowed_ace->Mask) >> 3;
 				}
 				else if (RtlEqualSid(sid, everyone_sid))
 				{
-					access |= get_permissions(allowed_ace->Mask) >> 6;
+					allowed_access |= get_permissions(allowed_ace->Mask) >> 6;
 				}
 				else
 				{
@@ -131,15 +132,15 @@ int do_stat(HANDLE handle, struct stat *restrict statbuf)
 				if (RtlEqualSid(sid, current_user_sid))
 				{
 					user_ace_present = true;
-					access &= ~(get_permissions(denied_ace->Mask));
+					denied_access |= get_permissions(denied_ace->Mask);
 				}
 				else if (RtlEqualSid(sid, users_sid))
 				{
-					access &= ~(get_permissions(denied_ace->Mask) >> 3);
+					denied_access |= get_permissions(denied_ace->Mask) >> 3;
 				}
 				else if (RtlEqualSid(sid, everyone_sid))
 				{
-					access &= ~(get_permissions(denied_ace->Mask) >> 6);
+					denied_access |= get_permissions(denied_ace->Mask) >> 6;
 				}
 				else
 				{
@@ -158,8 +159,10 @@ int do_stat(HANDLE handle, struct stat *restrict statbuf)
 			// For current user permissions use the 'EffectiveAccess' field of FILE_STAT_INFORMATION if the specific ACL is absent.
 			// The specific user ACL will be absent except on C:\Users\XXXXX
 			// NOTE: Despite it being name 'EffectiveAccess' it is actually just access.
-			access |= get_permissions(stat_info.EffectiveAccess);
+			allowed_access |= get_permissions(stat_info.EffectiveAccess);
 		}
+
+		access = allowed_access & ~denied_access;
 
 		// From readdir.c
 		if (attributes & FILE_ATTRIBUTE_REPARSE_POINT)
