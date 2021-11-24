@@ -28,6 +28,9 @@ _WLIBC_BEGIN_DECLS
 #define W_OK 0x2 // Write permission
 #define X_OK 0x1 // Execute/Search permission
 
+// True for (NT AUTHORITY\SYSTEM) and (BUILTIN\Administrators)
+#define ROOT_UID 0
+
 WLIBC_API int wlibc_common_remove(int dirfd, const char *path, int flags);
 
 WLIBC_API int wlibc_common_access(int dirfd, const char *path, int mode, int flags);
@@ -197,7 +200,6 @@ WLIBC_INLINE pid_t getppid()
 }
 
 WLIBC_API uid_t wlibc_getuid();
-WLIBC_API uid_t wlibc_geteuid();
 
 WLIBC_INLINE uid_t getuid()
 {
@@ -206,7 +208,8 @@ WLIBC_INLINE uid_t getuid()
 
 WLIBC_INLINE uid_t geteuid()
 {
-	return wlibc_geteuid();
+	// Same as getuid
+	return wlibc_getuid();
 }
 
 WLIBC_API int wlibc_getpagesize();

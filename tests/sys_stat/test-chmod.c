@@ -16,7 +16,14 @@ int test_chmod_file()
 	int fd;
 	int status;
 	struct stat statbuf;
+	mode_t base_perms = 0;
+	uid_t uid = getuid();
 	const char *filename = "t-chmod.file";
+
+	if (uid == ROOT_UID)
+	{
+		base_perms = S_IREAD | S_IWRITE | S_IEXEC;
+	}
 
 	// Start with no permissions
 	fd = creat(filename, 0);
@@ -24,7 +31,7 @@ int test_chmod_file()
 
 	status = stat(filename, &statbuf);
 	ASSERT_EQ(status, 0);
-	ASSERT_EQ(statbuf.st_mode, S_IFREG);
+	ASSERT_EQ(statbuf.st_mode, (S_IFREG | base_perms));
 
 	for (int i = 0; i < 512; ++i)
 	{
@@ -33,7 +40,7 @@ int test_chmod_file()
 
 		status = stat(filename, &statbuf);
 		ASSERT_EQ(status, 0);
-		ASSERT_EQ(statbuf.st_mode, (S_IFREG | i));
+		ASSERT_EQ(statbuf.st_mode, (S_IFREG | base_perms | i));
 	}
 
 	ASSERT_SUCCESS(unlink(filename));
@@ -44,14 +51,21 @@ int test_chmod_dir()
 {
 	int status;
 	struct stat statbuf;
+	mode_t base_perms = 0;
+	uid_t uid = getuid();
 	const char *dirname = "t-chmod.dir";
+
+	if (uid == ROOT_UID)
+	{
+		base_perms = S_IREAD | S_IWRITE | S_IEXEC;
+	}
 
 	// Start with no permissions
 	ASSERT_SUCCESS(mkdir(dirname, 0));
 
 	status = stat(dirname, &statbuf);
 	ASSERT_EQ(status, 0);
-	ASSERT_EQ(statbuf.st_mode, S_IFDIR);
+	ASSERT_EQ(statbuf.st_mode, (S_IFDIR | base_perms));
 
 	for (int i = 0; i < 512; ++i)
 	{
@@ -60,7 +74,7 @@ int test_chmod_dir()
 
 		status = stat(dirname, &statbuf);
 		ASSERT_EQ(status, 0);
-		ASSERT_EQ(statbuf.st_mode, (S_IFDIR | i));
+		ASSERT_EQ(statbuf.st_mode, (S_IFDIR | base_perms | i));
 	}
 
 	ASSERT_SUCCESS(rmdir(dirname));

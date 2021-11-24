@@ -49,20 +49,21 @@ int test_FILE()
 {
 	int fd;
 	int status;
+	uid_t uid = getuid();
 	const char *filename = "t-access.file";
 
 	fd = creat(filename, 0600);
 	ASSERT_SUCCESS(close(fd));
 
 	status = access(filename, F_OK | R_OK | W_OK | X_OK);
-	ASSERT_EQ(status, -1);
+	ASSERT_EQ(status, (uid == ROOT_UID ? 0 : -1));
 	status = access(filename, F_OK | R_OK | W_OK);
 	ASSERT_EQ(status, 0);
 
 	ASSERT_SUCCESS(chmod(filename, S_IREAD));
 
 	status = access(filename, F_OK | R_OK | W_OK);
-	ASSERT_EQ(status, -1);
+	ASSERT_EQ(status, (uid == ROOT_UID ? 0 : -1));
 	status = access(filename, F_OK | R_OK);
 	ASSERT_EQ(status, 0);
 

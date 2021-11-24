@@ -24,6 +24,8 @@ PISID users_sid = NULL;         // Users (BUILTIN\Users)
 PISID everyone_sid = NULL;      // Everyone
 PISID current_user_sid = NULL;  // Current User
 
+uid_t current_uid;
+
 #define WLIBC_BASIC_PERMISSIONS   (FILE_READ_ATTRIBUTES | FILE_WRITE_ATTRIBUTES | READ_CONTROL | SYNCHRONIZE | DELETE)
 #define WLIBC_READ_PERMISSIONS    (FILE_READ_DATA | FILE_READ_EA | WLIBC_BASIC_PERMISSIONS)
 #define WLIBC_WRITE_PERMISSIONS   (FILE_WRITE_DATA | FILE_APPEND_DATA | FILE_WRITE_EA | FILE_DELETE_CHILD | WLIBC_BASIC_PERMISSIONS)
@@ -62,6 +64,15 @@ void initialize_sids()
 	RtlCopySid(SECURITY_SID_SIZE(SID_MAX_SUB_AUTHORITIES), (PSID)current_user_sid_buffer,
 			   (PSID)(buffer + sizeof(SECURITY_DESCRIPTOR_RELATIVE)));
 	current_user_sid = (PISID)current_user_sid_buffer;
+
+	if (RtlEqualSid(current_user_sid, adminstrators_sid_buffer) || RtlEqualSid(current_user_sid, ntsystem_sid))
+	{
+		current_uid = 0; // ROOT_UID
+	}
+	else
+	{
+		current_uid = current_user_sid->SubAuthority[current_user_sid->SubAuthorityCount - 1]; // Use the last SubAuthority as uid.
+	}
 }
 
 void cleanup_security_decsriptors()
@@ -133,11 +144,15 @@ static PISECURITY_DESCRIPTOR_RELATIVE create_security_descriptor(mode_t mode, in
 	RtlAddAccessAllowedAceEx(acl, ACL_REVISION, ace_flags, WLIBC_ALL_PERMISSIONS, (PSID)ntsystem_sid);
 	RtlAddAccessAllowedAceEx(acl, ACL_REVISION, ace_flags, WLIBC_ALL_PERMISSIONS, (PSID)adminstrators_sid);
 
-	// Always give basic permissions to the owner.
-	// Give ability to change owner and dacl to the user.
-	RtlAddAccessAllowedAceEx(acl, ACL_REVISION, ace_flags,
-							 determine_access_mask((mode & 0700) >> 6) | WLIBC_EXTRA_PERMISSIONS | WLIBC_BASIC_PERMISSIONS,
-							 (PSID)current_user_sid);
+	// Don't add user permission if we are admin or system as we havve already added them.
+	if (current_uid != 0)
+	{
+		// Always give basic permissions to the owner.
+		// Give ability to change owner and dacl to the user.
+		RtlAddAccessAllowedAceEx(acl, ACL_REVISION, ace_flags,
+								 determine_access_mask((mode & 0700) >> 6) | WLIBC_EXTRA_PERMISSIONS | WLIBC_BASIC_PERMISSIONS,
+								 (PSID)current_user_sid);
+	}
 	if (mode & 0070)
 	{
 		RtlAddAccessAllowedAceEx(acl, ACL_REVISION, ace_flags, determine_access_mask((mode & 0070) >> 3), (PSID)users_sid);
