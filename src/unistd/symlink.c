@@ -5,16 +5,15 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <unistd.h>
-#include <wchar.h>
-#include <internal/misc.h>
-#include <errno.h>
 #include <internal/nt.h>
 #include <internal/error.h>
 #include <internal/fcntl.h>
+#include <internal/security.h>
+#include <unistd.h>
 #include <stdlib.h>
+#include <wchar.h>
 
-int common_symlink(const char *restrict source, int dirfd, const char *restrict target)
+int common_symlink(const char *restrict source, int dirfd, const char *restrict target, mode_t mode)
 {
 	wchar_t *u16_nttarget = get_absolute_ntpath(dirfd, target);
 	if (u16_nttarget == NULL)
@@ -72,14 +71,25 @@ int common_symlink(const char *restrict source, int dirfd, const char *restrict 
 		NtClose(source_handle);
 	}
 
-	HANDLE target_handle = just_open(u16_nttarget, FILE_READ_ATTRIBUTES | FILE_WRITE_ATTRIBUTES, 0, FILE_CREATE, options);
+	NTSTATUS status;
+	IO_STATUS_BLOCK I;
+	HANDLE target_handle;
+	UNICODE_STRING u16_path;
+	OBJECT_ATTRIBUTES object;
+	PSECURITY_DESCRIPTOR security_descriptor =
+		(PSECURITY_DESCRIPTOR)get_security_descriptor(mode & 0777, options == FILE_DIRECTORY_FILE ? 1 : 0);
+	RtlInitUnicodeString(&u16_path, u16_nttarget);
+	InitializeObjectAttributes(&object, &u16_path, OBJ_CASE_INSENSITIVE, NULL, security_descriptor);
+	status = NtCreateFile(&target_handle, FILE_READ_ATTRIBUTES | FILE_WRITE_ATTRIBUTES, &object, &I, NULL, 0,
+						  FILE_SHARE_READ | FILE_SHARE_WRITE, FILE_CREATE, options, NULL, 0);
 	free(u16_nttarget);
-	if (target_handle == INVALID_HANDLE_VALUE)
+	if (status != STATUS_SUCCESS)
 	{
-		// errno wil be set by just_open
+		map_ntstatus_to_errno(status);
 		return -1;
 	}
 
+	// Set the reparse data
 	UTF8_STRING u8_source;
 	UNICODE_STRING u16_source;
 	RtlInitUTF8String(&u8_source, source);
@@ -96,7 +106,6 @@ int common_symlink(const char *restrict source, int dirfd, const char *restrict 
 
 	size_t total_reparse_data_length =
 		REPARSE_DATA_BUFFER_HEADER_SIZE + 12 + 2 * u16_source.Length + (is_absolute ? 8 : 0); // For SubstituteName, PrintName
-	IO_STATUS_BLOCK I;
 	PREPARSE_DATA_BUFFER reparse_data = (PREPARSE_DATA_BUFFER)malloc(total_reparse_data_length);
 	memset(reparse_data, 0, total_reparse_data_length);
 
@@ -119,7 +128,7 @@ int common_symlink(const char *restrict source, int dirfd, const char *restrict 
 		   u16_source.Buffer, u16_source.Length);
 	RtlFreeUnicodeString(&u16_source);
 
-	NTSTATUS status =
+	status =
 		NtFsControlFile(target_handle, NULL, NULL, NULL, &I, FSCTL_SET_REPARSE_POINT, reparse_data, total_reparse_data_length, NULL, 0);
 
 	free(reparse_data);
@@ -134,10 +143,10 @@ int common_symlink(const char *restrict source, int dirfd, const char *restrict 
 	return 0;
 }
 
-int wlibc_common_symlink(const char *restrict source, int dirfd, const char *restrict target)
+int wlibc_common_symlink(const char *restrict source, int dirfd, const char *restrict target, mode_t mode)
 {
 	VALIDATE_PATH(source, EINVAL, -1);
 	VALIDATE_PATH_AND_DIRFD(target, dirfd);
 
-	return common_symlink(source, dirfd, target);
+	return common_symlink(source, dirfd, target, mode);
 }

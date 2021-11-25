@@ -134,19 +134,19 @@ int test_lstat()
 	const char *filename = "t-lstat";
 	const char *filename_symlink = "t-lstat.sym";
 
-	int fd = creat(filename, S_IREAD | S_IWRITE);
+	int fd = creat(filename, 0760);
 	ASSERT_SUCCESS(close(fd));
 	ASSERT_SUCCESS(symlink(filename, filename_symlink));
 
 	status = stat(filename_symlink, &statbuf);
 	ASSERT_EQ(status, 0);
-	ASSERT_EQ(statbuf.st_mode, (S_IFREG | S_IREAD | S_IWRITE));
+	ASSERT_EQ(statbuf.st_mode, (S_IFREG | 0760));
 	ASSERT_EQ(statbuf.st_size, 0);
 
 	status = lstat(filename_symlink, &statbuf);
 	ASSERT_EQ(status, 0);
-	ASSERT_EQ(statbuf.st_mode, (S_IFLNK | S_IREAD | S_IWRITE | S_IEXEC)); // symlinks have all permissions
-	ASSERT_EQ(statbuf.st_size, 7);                                        // Change this if the filename is changed
+	ASSERT_EQ(statbuf.st_mode, (S_IFLNK | 0700));
+	ASSERT_EQ(statbuf.st_size, 7); // Change this if the filename is changed
 
 	ASSERT_SUCCESS(unlink(filename_symlink));
 	ASSERT_SUCCESS(unlink(filename));
@@ -160,13 +160,13 @@ int test_fstat()
 	struct stat statbuf;
 	const char *filename = "t-fstat";
 
-	int fd = creat(filename, S_IREAD | S_IWRITE);
+	int fd = creat(filename, 0760);
 	ASSERT_NOTEQ(fd, -1);
 	write(fd, "hello", 5);
 
 	status = fstat(fd, &statbuf);
 	ASSERT_EQ(status, 0);
-	ASSERT_EQ(statbuf.st_mode, (S_IFREG | S_IREAD | S_IWRITE));
+	ASSERT_EQ(statbuf.st_mode, (S_IFREG | 0760));
 	ASSERT_EQ(statbuf.st_size, 5);
 
 	ASSERT_SUCCESS(close(fd));
@@ -188,7 +188,7 @@ int test_fstatat()
 
 	dirfd = open(dirname, O_RDONLY | O_EXCL);
 	ASSERT_NOTEQ(dirfd, -1);
-	fd = openat(dirfd, filename, O_CREAT | O_WRONLY, S_IREAD);
+	fd = openat(dirfd, filename, O_CREAT | O_WRONLY, 0766);
 	ASSERT_SUCCESS(close(fd));
 
 	ASSERT_SUCCESS(symlinkat(filename, dirfd, filename_symlink));
@@ -196,13 +196,13 @@ int test_fstatat()
 	// work like stat
 	status = fstatat(dirfd, filename_symlink, &statbuf, 0);
 	ASSERT_EQ(status, 0);
-	ASSERT_EQ(statbuf.st_mode, (S_IFREG | S_IREAD));
+	ASSERT_EQ(statbuf.st_mode, (S_IFREG | 0766));
 	ASSERT_EQ(statbuf.st_size, 0);
 
 	// work like lstat
 	status = fstatat(dirfd, filename_symlink, &statbuf, AT_SYMLINK_NOFOLLOW);
 	ASSERT_EQ(status, 0);
-	ASSERT_EQ(statbuf.st_mode, (S_IFLNK | S_IREAD | S_IWRITE | S_IEXEC));
+	ASSERT_EQ(statbuf.st_mode, (S_IFLNK | 0700));
 	ASSERT_EQ(statbuf.st_size, 9);
 
 	// AT_EMPTY_PATH tests
@@ -212,7 +212,7 @@ int test_fstatat()
 
 	status = fstatat(fd, NULL, &statbuf, AT_EMPTY_PATH);
 	ASSERT_EQ(status, 0);
-	ASSERT_EQ(statbuf.st_mode, (S_IFREG | S_IREAD));
+	ASSERT_EQ(statbuf.st_mode, (S_IFREG | 0766));
 	ASSERT_EQ(statbuf.st_size, 0);
 
 	ASSERT_SUCCESS(close(fd));
@@ -223,7 +223,7 @@ int test_fstatat()
 
 	status = fstatat(fd, NULL, &statbuf, AT_EMPTY_PATH);
 	ASSERT_EQ(status, 0);
-	ASSERT_EQ(statbuf.st_mode, (S_IFLNK | S_IREAD | S_IWRITE | S_IEXEC));
+	ASSERT_EQ(statbuf.st_mode, (S_IFLNK | 0700));
 	ASSERT_EQ(statbuf.st_size, 9);
 
 	ASSERT_SUCCESS(close(fd));
@@ -318,10 +318,8 @@ int main()
 	INITIAILIZE_TESTS();
 	CLEANUP(cleanup);
 
-	uid_t uid = getuid();
-
 	TEST(test_ENOENT());
-	if (uid != ROOT_UID)
+	if (getuid() != ROOT_UID)
 	{
 		// These tests fail when run under admin priveleges as by design admins have all access.
 		TEST(test_REGrw());
@@ -331,15 +329,10 @@ int main()
 	TEST(test_REGrwx());
 	TEST(test_DIR());
 	TEST(test_hardlinks());
+	TEST(test_lstat());
+	TEST(test_fstat());
+	TEST(test_fstatat());
 
-	if (uid != ROOT_UID)
-	{
-		// likewise
-		// TODO: Enable these tests for admins as well after implementing permissions for symlinks as well.
-		TEST(test_lstat());
-		TEST(test_fstat());
-		TEST(test_fstatat());
-	}
 	TEST(test_permissions_file());
 	TEST(test_permissions_dir());
 

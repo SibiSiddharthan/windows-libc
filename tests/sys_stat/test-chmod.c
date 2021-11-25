@@ -81,6 +81,79 @@ int test_chmod_dir()
 	return 0;
 }
 
+int test_lchmod_file()
+{
+	int fd;
+	int status;
+	struct stat statbuf;
+	const char *filename = "t-lchmod.file";
+	const char *filename_symlink = "t-lchmod.file.sym";
+
+	fd = creat(filename, 0770);
+	ASSERT_SUCCESS(close(fd));
+
+	ASSERT_SUCCESS(symlink(filename, filename_symlink));
+
+	status = stat(filename_symlink, &statbuf);
+	ASSERT_EQ(status, 0);
+	ASSERT_EQ(statbuf.st_mode, (S_IFREG | 0770));
+
+	status = lstat(filename_symlink, &statbuf);
+	ASSERT_EQ(status, 0);
+	ASSERT_EQ(statbuf.st_mode, (S_IFLNK | 0700));
+
+	status = lchmod(filename_symlink, 0777);
+	ASSERT_EQ(status, 0);
+
+	status = lstat(filename_symlink, &statbuf);
+	ASSERT_EQ(status, 0);
+	ASSERT_EQ(statbuf.st_mode, (S_IFLNK | 0777));
+
+	// The original file's permissions should not change.
+	status = stat(filename_symlink, &statbuf);
+	ASSERT_EQ(status, 0);
+	ASSERT_EQ(statbuf.st_mode, (S_IFREG | 0770));
+
+	ASSERT_SUCCESS(unlink(filename));
+	ASSERT_SUCCESS(unlink(filename_symlink));
+	return 0;
+}
+
+int test_lchmod_dir()
+{
+	int status;
+	struct stat statbuf;
+	const char *dirname = "t-lchmod.dir";
+	const char *dirname_symlink = "t-lchmod.dir.sym";
+
+	ASSERT_SUCCESS(mkdir(dirname,0770));
+	ASSERT_SUCCESS(symlink(dirname, dirname_symlink));
+
+	status = stat(dirname_symlink, &statbuf);
+	ASSERT_EQ(status, 0);
+	ASSERT_EQ(statbuf.st_mode, (S_IFDIR | 0770));
+
+	status = lstat(dirname_symlink, &statbuf);
+	ASSERT_EQ(status, 0);
+	ASSERT_EQ(statbuf.st_mode, (S_IFLNK | 0700));
+
+	status = lchmod(dirname_symlink, 0777);
+	ASSERT_EQ(status, 0);
+
+	status = lstat(dirname_symlink, &statbuf);
+	ASSERT_EQ(status, 0);
+	ASSERT_EQ(statbuf.st_mode, (S_IFLNK | 0777));
+
+	// The original file's permissions should not change.
+	status = stat(dirname_symlink, &statbuf);
+	ASSERT_EQ(status, 0);
+	ASSERT_EQ(statbuf.st_mode, (S_IFDIR | 0770));
+
+	ASSERT_SUCCESS(rmdir(dirname));
+	ASSERT_SUCCESS(rmdir(dirname_symlink));
+	return 0;
+}
+
 int test_fchmod()
 {
 	int fd;
@@ -110,6 +183,10 @@ void cleanup()
 {
 	remove("t-chmod.file");
 	remove("t-chmod.dir");
+	remove("t-lchmod.file");
+	remove("t-lchmod.file.sym");
+	remove("t-lchmod.dir");
+	remove("t-lchmod.dir.sym");
 	remove("t-fchmod");
 }
 
@@ -120,6 +197,8 @@ int main()
 
 	TEST(test_chmod_file());
 	TEST(test_chmod_dir());
+	TEST(test_lchmod_file());
+	TEST(test_lchmod_dir());
 	TEST(test_fchmod());
 
 	VERIFY_RESULT_AND_EXIT();

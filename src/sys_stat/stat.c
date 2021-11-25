@@ -163,6 +163,7 @@ int do_stat(HANDLE handle, struct stat *restrict statbuf)
 		}
 
 		access = allowed_access & ~denied_access;
+		statbuf->st_mode = access;
 
 		// From readdir.c
 		if (attributes & FILE_ATTRIBUTE_REPARSE_POINT)
@@ -170,24 +171,22 @@ int do_stat(HANDLE handle, struct stat *restrict statbuf)
 			ULONG reparse_tag = stat_info.ReparseTag;
 			if (reparse_tag == IO_REPARSE_TAG_SYMLINK || reparse_tag == IO_REPARSE_TAG_MOUNT_POINT)
 			{
-				statbuf->st_mode = S_IFLNK;
-				statbuf->st_mode |= S_IREAD | S_IWRITE | S_IEXEC;
+				statbuf->st_mode |= S_IFLNK;
 			}
 			if (reparse_tag == IO_REPARSE_TAG_AF_UNIX)
 			{
-				statbuf->st_mode = S_IFSOCK;
-				statbuf->st_mode |= S_IREAD | S_IWRITE | S_IEXEC;
+				statbuf->st_mode |= S_IFSOCK;
 			}
 		}
 		else if (attributes & FILE_ATTRIBUTE_DIRECTORY)
 		{
-			statbuf->st_mode = S_IFDIR | access;
+			statbuf->st_mode |= S_IFDIR;
 		}
 		else if ((attributes & ~(FILE_ATTRIBUTE_READONLY | FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_ARCHIVE |
 								 FILE_ATTRIBUTE_NORMAL | FILE_ATTRIBUTE_TEMPORARY | FILE_ATTRIBUTE_SPARSE_FILE | FILE_ATTRIBUTE_COMPRESSED |
 								 FILE_ATTRIBUTE_NOT_CONTENT_INDEXED | FILE_ATTRIBUTE_ENCRYPTED)) == 0)
 		{
-			statbuf->st_mode = S_IFREG | access;
+			statbuf->st_mode |= S_IFREG;
 #if 0
 			if (attributes & FILE_ATTRIBUTE_READONLY)
 			{

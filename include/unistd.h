@@ -298,15 +298,21 @@ WLIBC_INLINE ssize_t readlink(const char *restrict path, char *restrict buf, siz
 	return wlibc_common_readlink(AT_FDCWD, path, buf, bufsiz);
 }
 
-WLIBC_API int wlibc_common_symlink(const char *restrict source, int dirfd, const char *restrict target);
+WLIBC_API int wlibc_common_symlink(const char *restrict source, int dirfd, const char *restrict target, mode_t mode);
+
+WLIBC_INLINE int symlinkat2(const char *restrict source, int dirfd, const char *restrict target, mode_t mode)
+{
+	return wlibc_common_symlink(source, dirfd, target, mode);
+}
+
 WLIBC_INLINE int symlinkat(const char *restrict source, int dirfd, const char *restrict target)
 {
-	return wlibc_common_symlink(source, dirfd, target);
+	return wlibc_common_symlink(source, dirfd, target, 0700);
 }
 
 WLIBC_INLINE int symlink(const char *restrict source, const char *restrict target)
 {
-	return wlibc_common_symlink(source, AT_FDCWD, target);
+	return wlibc_common_symlink(source, AT_FDCWD, target, 0700);
 }
 
 WLIBC_API int wlibc_common_sleep(long long nanoseconds_100);
