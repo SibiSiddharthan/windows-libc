@@ -7,7 +7,7 @@
 
 #include <wchar.h>
 #include <stdlib.h>
-#include <internal/misc.h>
+#include <internal/nt.h>
 #include <internal/fcntl.h>
 #include <internal/dlfcn.h>
 #include <internal/langinfo.h>
@@ -21,12 +21,17 @@ extern int main(int argc, char **argv);
 int wmain(int argc, wchar_t **wargv)
 {
 	char **argv = NULL;
+	UTF8_STRING *u8_args = NULL;
 	if (argc)
 	{
 		argv = (char **)malloc(sizeof(char *) * (argc + 1)); // argv ends with NULL
+		u8_args = (UTF8_STRING *)malloc(sizeof(UTF8_STRING) * argc);
 		for (int i = 0; i < argc; i++)
 		{
-			argv[i] = wc_to_mb(wargv[i]);
+			UNICODE_STRING u16_arg;
+			RtlInitUnicodeString(&u16_arg, wargv[i]);
+			RtlUnicodeStringToUTF8String(&u8_args[i], &u16_arg, TRUE);
+			argv[i] = u8_args[i].Buffer;
 		}
 		argv[argc] = NULL;
 	}
@@ -57,7 +62,7 @@ int wmain(int argc, wchar_t **wargv)
 #ifdef WLIBC_ACLS
 	initialize_sids();
 	atexit(cleanup_security_decsriptors);
-#endif 
+#endif
 
 	int exit_status = main(argc, argv);
 
@@ -65,7 +70,7 @@ int wmain(int argc, wchar_t **wargv)
 	{
 		for (int i = 0; i < argc; i++)
 		{
-			free(argv[i]);
+			RtlFreeUTF8String(&u8_args[i]);
 		}
 		free(argv);
 	}
