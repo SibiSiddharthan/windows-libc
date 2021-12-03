@@ -10,6 +10,7 @@ access.c
 close.c
 chdir.c
 chown.c
+domainname.c
 dup.c
 exec.c
 fchownat.c
@@ -19,6 +20,7 @@ getgid.c
 getpid.c
 getuid.c
 getpagesize.c
+hostname.c
 isatty.c
 kill.c
 link.c

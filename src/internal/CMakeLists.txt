@@ -8,6 +8,7 @@
 set(internal_SOURCES
 error.c
 misc.c
+registry.c
 security.c
 wmain.c)
 

@@ -212,6 +212,19 @@ WLIBC_INLINE uid_t geteuid()
 	return wlibc_getuid();
 }
 
+WLIBC_API int wlibc_getdomainname(char *name, size_t length);
+WLIBC_API int wlibc_gethostname(char *name, size_t length);
+
+WLIBC_INLINE int getdomainname(char *name, size_t length)
+{
+	return wlibc_getdomainname(name, length);
+}
+
+WLIBC_INLINE int gethostname(char *name, size_t length)
+{
+	return wlibc_gethostname(name, length);
+}
+
 WLIBC_API int wlibc_getpagesize();
 WLIBC_INLINE int getpagesize()
 {
