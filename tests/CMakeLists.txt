@@ -57,3 +57,5 @@ endif()
 if(ENABLE_EXTENDED_ATTRIBUTES)
 	add_subdirectory(sys/xattr)
 endif()
+
+add_subdirectory(sys/utsname)

@@ -1509,8 +1509,6 @@ typedef struct _REPARSE_DATA_BUFFER
 
 #define REPARSE_DATA_BUFFER_HEADER_SIZE UFIELD_OFFSET(REPARSE_DATA_BUFFER, GenericReparseBuffer)
 
-#endif
-
 NTSYSAPI
 NTSTATUS
 NTAPI
@@ -1544,3 +1542,162 @@ NTAPI NtQuerySecurityObject(HANDLE Handle, SECURITY_INFORMATION SecurityInformat
 NTSYSAPI
 NTSTATUS
 NTAPI NtSetSecurityObject(HANDLE Handle, SECURITY_INFORMATION SecurityInformation, PSECURITY_DESCRIPTOR SecurityDescriptor);
+
+NTSYSAPI
+NTSTATUS
+NTAPI
+RtlGetVersion(PRTL_OSVERSIONINFOEXW VersionInformation);
+
+typedef enum _SYSTEM_INFORMATION_CLASS
+{
+	SystemBasicInformation,
+	SystemProcessorInformation,
+	MaxSystemInfoClass = 228
+} SYSTEM_INFORMATION_CLASS;
+
+typedef struct _SYSTEM_BASIC_INFORMATION
+{
+    ULONG Reserved;
+    ULONG TimerResolution;
+    ULONG PageSize;
+    ULONG NumberOfPhysicalPages;
+    ULONG LowestPhysicalPageNumber;
+    ULONG HighestPhysicalPageNumber;
+    ULONG AllocationGranularity;
+    ULONG_PTR MinimumUserModeAddress;
+    ULONG_PTR MaximumUserModeAddress;
+    ULONG_PTR ActiveProcessorsAffinityMask;
+    CCHAR NumberOfProcessors;
+} SYSTEM_BASIC_INFORMATION, *PSYSTEM_BASIC_INFORMATION;
+
+typedef struct _SYSTEM_PROCESSOR_INFORMATION
+{
+    USHORT ProcessorArchitecture;
+    USHORT ProcessorLevel;
+    USHORT ProcessorRevision;
+    USHORT MaximumProcessors;
+    ULONG ProcessorFeatureBits;
+} SYSTEM_PROCESSOR_INFORMATION, *PSYSTEM_PROCESSOR_INFORMATION;
+
+NTSYSAPI
+NTSTATUS
+NTAPI
+NtQuerySystemInformation(_In_ SYSTEM_INFORMATION_CLASS SystemInformationClass,
+						 _Out_writes_bytes_opt_(SystemInformationLength) PVOID SystemInformation, _In_ ULONG SystemInformationLength,
+						 _Out_opt_ PULONG ReturnLength);
+
+
+
+typedef enum _KEY_INFORMATION_CLASS
+{
+    KeyBasicInformation, // KEY_BASIC_INFORMATION
+    KeyNodeInformation, // KEY_NODE_INFORMATION
+    KeyFullInformation, // KEY_FULL_INFORMATION
+    KeyNameInformation, // KEY_NAME_INFORMATION
+    KeyCachedInformation, // KEY_CACHED_INFORMATION
+    KeyFlagsInformation, // KEY_FLAGS_INFORMATION
+    KeyVirtualizationInformation, // KEY_VIRTUALIZATION_INFORMATION
+    KeyHandleTagsInformation, // KEY_HANDLE_TAGS_INFORMATION
+    KeyTrustInformation, // KEY_TRUST_INFORMATION
+    KeyLayerInformation, // KEY_LAYER_INFORMATION
+    MaxKeyInfoClass
+} KEY_INFORMATION_CLASS;
+
+typedef struct _KEY_BASIC_INFORMATION
+{
+    LARGE_INTEGER LastWriteTime;
+    ULONG TitleIndex;
+    ULONG NameLength;
+    WCHAR Name[1];
+} KEY_BASIC_INFORMATION, *PKEY_BASIC_INFORMATION;
+
+typedef struct _KEY_NODE_INFORMATION
+{
+    LARGE_INTEGER LastWriteTime;
+    ULONG TitleIndex;
+    ULONG ClassOffset;
+    ULONG ClassLength;
+    ULONG NameLength;
+    WCHAR Name[1];
+    // ...
+    // WCHAR Class[1];
+} KEY_NODE_INFORMATION, *PKEY_NODE_INFORMATION;
+
+typedef struct _KEY_FULL_INFORMATION
+{
+    LARGE_INTEGER LastWriteTime;
+    ULONG TitleIndex;
+    ULONG ClassOffset;
+    ULONG ClassLength;
+    ULONG SubKeys;
+    ULONG MaxNameLen;
+    ULONG MaxClassLen;
+    ULONG Values;
+    ULONG MaxValueNameLen;
+    ULONG MaxValueDataLen;
+    WCHAR Class[1];
+} KEY_FULL_INFORMATION, *PKEY_FULL_INFORMATION;
+
+typedef struct _KEY_NAME_INFORMATION
+{
+    ULONG NameLength;
+    WCHAR Name[1];
+} KEY_NAME_INFORMATION, *PKEY_NAME_INFORMATION;
+
+typedef enum _KEY_VALUE_INFORMATION_CLASS
+{
+    KeyValueBasicInformation, // KEY_VALUE_BASIC_INFORMATION
+    KeyValueFullInformation, // KEY_VALUE_FULL_INFORMATION
+    KeyValuePartialInformation, // KEY_VALUE_PARTIAL_INFORMATION
+    KeyValueFullInformationAlign64,
+    KeyValuePartialInformationAlign64,  // KEY_VALUE_PARTIAL_INFORMATION_ALIGN64
+    KeyValueLayerInformation, // KEY_VALUE_LAYER_INFORMATION
+    MaxKeyValueInfoClass
+} KEY_VALUE_INFORMATION_CLASS;
+
+typedef struct _KEY_VALUE_BASIC_INFORMATION
+{
+    ULONG TitleIndex;
+    ULONG Type;
+    ULONG NameLength;
+    WCHAR Name[1];
+} KEY_VALUE_BASIC_INFORMATION, *PKEY_VALUE_BASIC_INFORMATION;
+
+typedef struct _KEY_VALUE_FULL_INFORMATION
+{
+    ULONG TitleIndex;
+    ULONG Type;
+    ULONG DataOffset;
+    ULONG DataLength;
+    ULONG NameLength;
+    WCHAR Name[1];
+    // ...
+    // UCHAR Data[1];
+} KEY_VALUE_FULL_INFORMATION, *PKEY_VALUE_FULL_INFORMATION;
+
+typedef struct _KEY_VALUE_PARTIAL_INFORMATION
+{
+    ULONG TitleIndex;
+    ULONG Type;
+    ULONG DataLength;
+    UCHAR Data[1];
+} KEY_VALUE_PARTIAL_INFORMATION, *PKEY_VALUE_PARTIAL_INFORMATION;
+
+NTSYSCALLAPI
+NTSTATUS
+NTAPI
+NtOpenKeyEx(_Out_ PHANDLE KeyHandle, _In_ ACCESS_MASK DesiredAccess, _In_ POBJECT_ATTRIBUTES ObjectAttributes, _In_ ULONG OpenOptions);
+
+NTSYSCALLAPI
+NTSTATUS
+NTAPI
+NtQueryKey(_In_ HANDLE KeyHandle, _In_ KEY_INFORMATION_CLASS KeyInformationClass, _Out_writes_bytes_opt_(Length) PVOID KeyInformation,
+		   _In_ ULONG Length, _Out_ PULONG ResultLength);
+
+NTSYSCALLAPI
+NTSTATUS
+NTAPI
+NtQueryValueKey(_In_ HANDLE KeyHandle, _In_ PUNICODE_STRING ValueName, _In_ KEY_VALUE_INFORMATION_CLASS KeyValueInformationClass,
+				_Out_writes_bytes_opt_(Length) PVOID KeyValueInformation, _In_ ULONG Length, _Out_ PULONG ResultLength);
+
+#endif

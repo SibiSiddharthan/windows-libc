@@ -76,6 +76,9 @@ if(ENABLE_EXTENDED_ATTRIBUTES)
 	list(APPEND modules sys_xattr)
 endif()
 
+add_subdirectory(sys/utsname)
+list(APPEND modules sys_utsname)
+
 add_subdirectory(internal)
 
 add_library(wlibc)
