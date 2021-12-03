@@ -6,9 +6,9 @@
 ]]
 
 set(internal_SOURCES
+error.c
 misc.c
 security.c
-wlibc_errors.c
 wmain.c)
 
 add_library(wlibc_internal OBJECT ${internal_SOURCES})
