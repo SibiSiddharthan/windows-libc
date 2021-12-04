@@ -10,6 +10,7 @@
 
 #include <wlibc-macros.h>
 #include <sys/types.h>
+#include <stdint.h>
 #include <fcntl.h>
 
 _WLIBC_BEGIN_DECLS
@@ -25,16 +26,23 @@ _WLIBC_BEGIN_DECLS
 #define DT_WHT     14
 
 // available data in struct dirent
+#define _DIRENT_HAVE_D_INO
 #define _DIRENT_HAVE_D_OFF
 #define _DIRENT_HAVE_D_RECLEN
 #define _DIRENT_HAVE_D_TYPE
+#define _DIRENT_HAVE_D_NAMLEN
+#define _DIRENT_HAVE_D_NAME
+
+#define _D_EXACT_NAMLEN(d) ((d)->d_namlen)
+#define _D_ALLOC_NAMLEN(d) ((d)->d_namlen + 1)
 
 struct dirent
 {
 	ino_t d_ino;
 	off_t d_off;
-	unsigned short int d_reclen;
-	unsigned char d_type;
+	uint16_t d_reclen;
+	uint8_t d_type;
+	uint8_t d_namlen;
 	char d_name[260];
 };
 

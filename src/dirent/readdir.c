@@ -76,8 +76,8 @@ struct dirent *do_readdir(DIR *dirstream)
 
 	RtlUnicodeStringToUTF8String(&u8_path, &u16_path, TRUE);
 	memcpy(dirstream->info->d_name, u8_path.Buffer, u8_path.MaximumLength);
+	dirstream->info->d_namlen = u8_path.Length; // This includes the NULL character.
 	RtlFreeUTF8String(&u8_path);
-	// dirstream->info->d_name[direntry->FileNameLength / sizeof(WCHAR)] = L'\0';
 
 	dirstream->offset += direntry->NextEntryOffset;
 	// each entry is aligned to a 8 byte boundary, except the last one
