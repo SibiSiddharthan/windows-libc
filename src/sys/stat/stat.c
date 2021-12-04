@@ -206,7 +206,8 @@ int do_stat(HANDLE handle, struct stat *restrict statbuf)
 		// st_[amc]tim
 		statbuf->st_atim = LARGE_INTEGER_to_timespec(stat_info.LastAccessTime);
 		statbuf->st_mtim = LARGE_INTEGER_to_timespec(stat_info.LastWriteTime);
-		statbuf->st_ctim = LARGE_INTEGER_to_timespec(stat_info.CreationTime);
+		statbuf->st_ctim = LARGE_INTEGER_to_timespec(stat_info.ChangeTime);
+		statbuf->st_birthtim = LARGE_INTEGER_to_timespec(stat_info.CreationTime);
 
 		if ((statbuf->st_mode & S_IFMT) == S_IFLNK)
 		{

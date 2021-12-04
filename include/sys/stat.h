@@ -59,23 +59,29 @@ _WLIBC_BEGIN_DECLS
 
 struct stat
 {
-	dev_t st_dev;            // ID of device containing file
-	ino_t st_ino;            // file serial number
-	mode_t st_mode;          // mode of file
-	nlink_t st_nlink;        // number of links to the file
-	uid_t st_uid;            // user ID of file
-	gid_t st_gid;            // group ID of file
-	dev_t st_rdev;           // device ID (if file is character or block special)
-	off_t st_size;           // file size in bytes (if file is a regular file)
-	struct timespec st_atim; // time of last access
-	struct timespec st_mtim; // time of last data modification
-	struct timespec st_ctim; // time of last status change
-	blksize_t st_blksize;    // block size of filesystem
-	blkcnt_t st_blocks;      // number of 512B blocks(sectors) allocated
+	dev_t st_dev;                // ID of device containing file
+	ino_t st_ino;                // file serial number
+	mode_t st_mode;              // mode of file
+	nlink_t st_nlink;            // number of links to the file
+	uid_t st_uid;                // user ID of file
+	gid_t st_gid;                // group ID of file
+	dev_t st_rdev;               // device ID (if file is character or block special)
+	off_t st_size;               // file size in bytes (if file is a regular file)
+	struct timespec st_atim;     // time of last access
+	struct timespec st_mtim;     // time of last data modification
+	struct timespec st_ctim;     // time of last status change
+	struct timespec st_birthtim; // time of birth
+	blksize_t st_blksize;        // block size of filesystem
+	blkcnt_t st_blocks;          // number of 512B blocks(sectors) allocated
 
-#define st_atime st_atim.tv_sec
-#define st_mtime st_mtim.tv_sec
-#define st_ctime st_ctim.tv_sec
+#define st_atime         st_atim.tv_sec
+#define st_atimensec     st_atim.tv_nsec
+#define st_mtime         st_mtim.tv_sec
+#define st_mtimensec     st_mtim.tv_nsec
+#define st_ctime         st_ctim.tv_sec
+#define st_ctimensec     st_ctim.tv_nsec
+#define st_birthtime     st_birthtim.tv_sec
+#define st_birthtimensec st_birthtim.tv_nsec
 };
 
 #define S_ISTYPE(mode, type) (((mode)&S_IFMT) == (type))
