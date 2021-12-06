@@ -5,12 +5,14 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <signal-ext.h>
+#include <signal.h>
 #include <internal/signal.h>
 #include <errno.h>
 #include <stdlib.h>
 
 #undef raise
+// MSVC raise
+extern int __cdecl raise(int sig);
 
 static void reset_handler(int sig)
 {

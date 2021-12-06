@@ -7,7 +7,7 @@
 
 #include <sys/random.h>
 #include <test-macros.h>
-#include <signal-ext.h>
+#include <signal.h>
 #include <stdlib.h>
 
 int test_getrandom()

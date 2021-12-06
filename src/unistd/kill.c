@@ -6,7 +6,7 @@
 */
 
 #include <unistd.h>
-#include <signal-ext.h>
+#include <signal.h>
 #include <Windows.h>
 #include <errno.h>
 #include <internal/error.h>

@@ -5,7 +5,7 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <signal-ext.h>
+#include <signal.h>
 #include <internal/signal.h>
 #include <errno.h>
 #include <stdbool.h>

@@ -9,13 +9,12 @@
 #define WLIBC_SIGNAL_H
 
 #include <wlibc-macros.h>
-#include <signal.h>
-
-// SIGABRT is 6 on POSIX platforms, but it is defined as 22
-#undef SIGABRT
+#include <corecrt.h>
 
 _WLIBC_BEGIN_DECLS
 
+typedef void(__cdecl *_crt_signal_t)(int);
+typedef int sig_atomic_t;
 typedef int sigset_t;
 
 struct sigaction
@@ -27,24 +26,40 @@ struct sigaction
 	void (*sa_restorer)(void); // Not intended for public use. See POSIX doc
 };
 
-// POSIX signals not supported by msvcrt
 #define SIGHUP    1
+#define SIGINT    2 // Interrupt
 #define SIGQUIT   3
+#define SIGILL    4 // Illegal instruction
 #define SIGTRAP   5
 #define SIGABRT   6
 #define SIGBUS    7  // Same action as SIGSEGV
+#define SIGFPE    8  // floating point exception
 #define SIGKILL   9  // Call abort always
 #define SIGUSR1   10 // User defined signal
+#define SIGSEGV   11 // Segment violation
 #define SIGUSR2   12 // User defined signal
 #define SIGPIPE   13
 #define SIGALRM   14
+#define SIGTERM   15 // Termination
 #define SIGSTKFLT 16 // Unused
 #define SIGCHLD   17
 #define SIGCLD    17 // Same as SIGCHLD
 #define SIGCONT   18
 #define SIGSTOP   19
 #define SIGTSTP   20 // Unsupported
-#define SIGTTIN   21 // Same as SIGBREAK
+#define SIGTTIN   21 // Ctrl-Break sequence
+#define SIGBREAK  SIGTTIN
+
+#define NSIG 22 // Biggest signal number + 1
+
+// Signal action codes
+#define SIG_ERR ((_crt_signal_t)-1) // Signal error value
+#define SIG_DFL ((_crt_signal_t)0)  // Default signal action
+#define SIG_IGN ((_crt_signal_t)1)  // Ignore signal
+#define SIG_GET ((_crt_signal_t)2)  // Return current value
+#define SIG_SGE ((_crt_signal_t)3)  // Signal error
+#define SIG_ACK ((_crt_signal_t)4)  // Acknowledge
+#define SIG_DIE ((_crt_signal_t)5)  // Terminate process
 
 // Values for the 'how' argument to sigprocmask.
 #define SIG_BLOCK   0 // Block signals

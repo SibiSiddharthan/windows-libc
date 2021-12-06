@@ -14,4 +14,4 @@ sigprocmask.c)
 
 add_library(signal OBJECT ${signal_SOURCES})
 
-install(FILES ${CMAKE_SOURCE_DIR}/include/signal-ext.h DESTINATION include)
+install(FILES ${CMAKE_SOURCE_DIR}/include/signal.h DESTINATION include)

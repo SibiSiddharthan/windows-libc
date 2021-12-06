@@ -8,7 +8,7 @@
 #include <unistd.h>
 #include <test-macros.h>
 #include <errno.h>
-#include <signal-ext.h>
+#include <signal.h>
 #include <sys/wait.h>
 
 #include <internal/process.h>

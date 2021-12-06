@@ -5,11 +5,14 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <signal-ext.h>
+#include <signal.h>
 #include <internal/signal.h>
 #include <errno.h>
 
 #undef signal
+// MSVC signal
+extern _crt_signal_t __cdecl signal(int sig, _crt_signal_t handler);
+
 _crt_signal_t wlibc_signal_internal(int sig, _crt_signal_t handler)
 {
 	if(handler == SIG_GET)

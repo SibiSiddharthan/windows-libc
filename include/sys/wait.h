@@ -10,7 +10,7 @@
 
 #include <wlibc-macros.h>
 #include <sys/types.h>
-#include <signal-ext.h>
+#include <signal.h>
 
 _WLIBC_BEGIN_DECLS
 

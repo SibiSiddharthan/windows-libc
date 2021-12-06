@@ -8,7 +8,7 @@
 #ifndef WLIBC_SIGNAL_INTERNAL_H
 #define WLIBC_SIGNAL_INTERNAL_H
 
-#include <signal-ext.h>
+#include <signal.h>
 #include <Windows.h>
 
 extern CRITICAL_SECTION _wlibc_signal_critical;
