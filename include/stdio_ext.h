@@ -46,7 +46,7 @@ WLIBC_INLINE size_t __fbufsize(FILE *stream)
 
 WLIBC_INLINE size_t __fbufmode(FILE *stream)
 {
-	return wlibc_fileops(stream, bufsize, NULL);
+	return wlibc_fileops(stream, bufmode, NULL);
 }
 
 WLIBC_INLINE int __freading(FILE *stream)

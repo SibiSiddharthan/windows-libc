@@ -16,6 +16,7 @@ getdelim
 internal
 pipe
 rename
+stream
 ungetc)
 
 add_executable(pipe-helper pipe-helper.c)

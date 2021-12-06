@@ -21,6 +21,7 @@ size_t common_fwrite(const void *restrict buffer, size_t size, size_t count, FIL
 	{
 
 		result = write(stream->fd, buffer, size * count);
+		stream->prev_op = OP_WRITE;
 
 		if (result != -1)
 		{
@@ -31,7 +32,7 @@ size_t common_fwrite(const void *restrict buffer, size_t size, size_t count, FIL
 	}
 	else
 	{
-		
+
 		if (stream->prev_op != OP_WRITE) // OP_READ or 'nothing'
 		{
 			// Seek to end of file if we are 'starting' to append.
@@ -40,7 +41,7 @@ size_t common_fwrite(const void *restrict buffer, size_t size, size_t count, FIL
 				stream->pos = lseek(stream->fd, 0, SEEK_END);
 			}
 			// If the previous operation was a read, seek to where the stream position actually is.
-			else if(stream->prev_op == OP_READ) // not appending
+			else if (stream->prev_op == OP_READ) // not appending
 			{
 				lseek(stream->fd, stream->pos, SEEK_SET);
 			}

@@ -37,6 +37,8 @@ size_t common_fread(void *restrict buffer, size_t size, size_t count, FILE *rest
 	{
 
 		result = read_wrapper(stream, buffer, size * count);
+		stream->prev_op = OP_READ;
+
 		if (result != 0)
 		{
 			stream->pos += result;

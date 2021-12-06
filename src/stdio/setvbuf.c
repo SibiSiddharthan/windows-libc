@@ -28,12 +28,13 @@ int common_setvbuf(FILE *restrict stream, char *restrict buffer, int mode, size_
 	if (mode == _IONBF) // no buffering
 	{
 		stream->buf_mode = _IONBF;
+		stream->buf_size = 0;
+		stream->buffer = NULL;
 
 		// free any internal buffer
 		if (stream->buffer != NULL && (stream->buf_mode & _IOBUFFER_INTERNAL))
 		{
 			free(stream->buffer);
-			stream->buffer = NULL;
 		}
 	}
 	else // buffering

@@ -31,7 +31,7 @@ size_t wlibc_fileops(FILE *stream, WLIBC_FILE_STREAM_OPERATIONS operation, void 
 	case bufmode: // __fbufmode
 		return stream->buf_mode & (_IONBF | _IOLBF | _IOFBF);
 	case reading: // __freading
-		if (stream->prev_op == OP_READ || ((flags & (O_WRONLY | O_APPEND | O_RDWR)) == 0))
+		if (stream->prev_op == OP_READ || ((flags & (O_WRONLY | O_RDWR | O_APPEND)) == 0))
 		{
 			return 1;
 		}
@@ -43,13 +43,13 @@ size_t wlibc_fileops(FILE *stream, WLIBC_FILE_STREAM_OPERATIONS operation, void 
 		}
 		return 0;
 	case readable: // __freadable
-		if (flags == O_RDONLY || flags & O_RDWR)
+		if ((flags & O_WRONLY) == 0 || flags & O_RDWR)
 		{
 			return 1;
 		}
 		return 0;
 	case writeable: // __fwritable
-		if (flags != 0)
+		if ((flags & (O_WRONLY | O_RDWR | O_APPEND)) != 0)
 		{
 			return 1;
 		}
