@@ -5,11 +5,10 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <stdio.h>
-#include <string.h>
-#include <unistd.h>
 #include <test-macros.h>
 #include <fcntl.h>
+#include <stdio.h>
+#include <string.h>
 #include <unistd.h>
 
 static int prepare(const char *filename)

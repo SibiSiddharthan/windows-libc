@@ -5,10 +5,9 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <stdio.h>
 #include <internal/stdio.h>
-#include <unistd.h>
 #include <test-macros.h>
+#include <stdio.h>
 
 // fclose is also tested here
 int test_list()
@@ -85,8 +84,8 @@ int test_list()
 	ASSERT_NULL(list);
 
 	// Check whether 'D' works
-	ASSERT_FAIL(unlink(filename1));
-	ASSERT_FAIL(unlink(filename2));
+	ASSERT_FAIL(remove(filename1));
+	ASSERT_FAIL(remove(filename2));
 
 	return 0;
 }

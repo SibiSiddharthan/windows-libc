@@ -5,10 +5,10 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <sys/random.h>
 #include <test-macros.h>
 #include <signal.h>
 #include <stdlib.h>
+#include <sys/random.h>
 
 int test_getrandom()
 {

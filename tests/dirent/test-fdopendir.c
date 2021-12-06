@@ -5,9 +5,8 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <dirent.h>
-#include <errno.h>
 #include <test-macros.h>
+#include <dirent.h>
 #include <fcntl.h>
 #include <unistd.h>
 

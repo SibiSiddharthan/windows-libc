@@ -5,11 +5,11 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <sys/stat.h>
 #include <test-macros.h>
-#include <errno.h>
-#include <Windows.h>
+#include <fcntl.h>
+#include <sys/stat.h>
 #include <unistd.h>
+#include <Windows.h>
 
 int test_ENOENT()
 {

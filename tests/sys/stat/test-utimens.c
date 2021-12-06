@@ -5,13 +5,12 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h>
 #include <test-macros.h>
-#include <errno.h>
-#include <Windows.h>
+#include <fcntl.h>
+#include <sys/stat.h>
 #include <time.h>
+#include <unistd.h>
+#include <Windows.h>
 
 // Same as LARGE_INTEGER_to_timespec from stat.c
 struct timespec get_current_timespec(LARGE_INTEGER LT)

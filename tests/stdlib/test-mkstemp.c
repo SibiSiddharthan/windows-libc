@@ -5,12 +5,11 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
+#include <test-macros.h>
 #include <stdlib.h>
 #include <stdlib-ext.h>
-#include <test-macros.h>
-#include <unistd.h>
 #include <string.h>
-#include <errno.h>
+#include <unistd.h>
 
 #define NUM_OF_RUNS 64
 

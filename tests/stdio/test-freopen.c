@@ -5,11 +5,10 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <stdio.h>
-#include <fcntl.h>
-#include <unistd.h>
 #include <test-macros.h>
-#include <errno.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <unistd.h>
 
 int test_redirect_stderr()
 {

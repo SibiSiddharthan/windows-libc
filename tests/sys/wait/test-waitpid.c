@@ -5,14 +5,12 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <unistd.h>
-#include <test-macros.h>
-#include <errno.h>
-#include <signal.h>
-#include <sys/wait.h>
-
 #include <internal/process.h>
-#include <Windows.h>
+#include <test-macros.h>
+#include <signal.h>
+#include <stdlib.h>
+#include <sys/wait.h>
+#include <unistd.h>
 
 pid_t create_process_simple()
 {

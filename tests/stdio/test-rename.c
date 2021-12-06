@@ -5,12 +5,11 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <stdio.h>
-#include <fcntl.h>
-#include <unistd.h>
 #include <test-macros.h>
-#include <errno.h>
+#include <fcntl.h>
+#include <stdio.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 static const char *test_content = "Hello World!";
 static const size_t sizeof_test_content = 12;

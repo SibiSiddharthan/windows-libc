@@ -5,8 +5,8 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <dlfcn.h>
 #include <test-macros.h>
+#include <dlfcn.h>
 
 // Definitions from Windows.h
 typedef unsigned long DWORD;

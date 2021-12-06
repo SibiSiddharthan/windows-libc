@@ -5,9 +5,8 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <signal.h>
 #include <test-macros.h>
-#include <errno.h>
+#include <signal.h>
 
 static int global_variable = 0;
 

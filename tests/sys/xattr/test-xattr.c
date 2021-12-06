@@ -6,11 +6,11 @@
 */
 
 #include <test-macros.h>
-#include <sys/xattr.h>
-#include <sys/stat.h>
 #include <fcntl.h>
+#include <stdlib.h>
+#include <sys/stat.h>
+#include <sys/xattr.h>
 #include <unistd.h>
-#include <errno.h>
 
 int test_xattr()
 {

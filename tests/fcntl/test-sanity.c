@@ -7,8 +7,8 @@
 
 #include <internal/nt.h>
 #include <stdio.h>
-#include <wchar.h>
 #include <string.h>
+#include <wchar.h>
 
 /*
  * These test the validity of the undocumented API we are using (structure of RTL_USER_PROCESS_PARAMETERS).

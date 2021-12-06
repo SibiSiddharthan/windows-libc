@@ -6,11 +6,9 @@
 */
 
 #include <test-macros.h>
+#include <fcntl.h>
 #include <stdio.h>
 #include <stdio_ext.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <errno.h>
 
 int test_buffer()
 {

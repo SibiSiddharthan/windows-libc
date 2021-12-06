@@ -5,8 +5,8 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <stdio.h>
 #include <test-macros.h>
+#include <stdio.h>
 
 int test_std_streams()
 {

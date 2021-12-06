@@ -5,12 +5,11 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
+#include <test-macros.h>
 #include <dirent.h>
-#include <errno.h>
-#include <unistd.h>
 #include <fcntl.h>
 #include <sys/stat.h>
-#include <test-macros.h>
+#include <unistd.h>
 
 int test_NULL()
 {

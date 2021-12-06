@@ -8,7 +8,7 @@
 #ifndef WLIBC_PROCESS_INTERNAL_H
 #define WLIBC_PROCESS_INTERNAL_H
 
-#include <windows.h>
+#include <Windows.h>
 #include <stdbool.h>
 #include <sys/types.h>
 

@@ -5,12 +5,10 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <unistd.h>
-#include <err.h>
-#include <stdio.h>
 #include <test-macros.h>
-#include <errno.h>
+#include <err.h>
 #include <string.h>
+#include <unistd.h>
 
 const char *filename = "t-err.log";
 

@@ -5,10 +5,10 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
+#include <test-macros.h>
+#include <fcntl.h>
 #include <stdio.h>
 #include <unistd.h>
-#include <fcntl.h>
-#include <test-macros.h>
 
 int test_fflush()
 {

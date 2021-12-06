@@ -5,10 +5,10 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <langinfo.h>
-#include <test-macros.h>
-#include <locale.h>
 #include <internal/langinfo.h>
+#include <test-macros.h>
+#include <langinfo.h>
+#include <locale.h>
 
 int test_langinfo()
 {

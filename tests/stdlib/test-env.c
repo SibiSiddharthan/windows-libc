@@ -5,9 +5,9 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
+#include <test-macros.h>
 #include <stdlib.h>
 #include <stdlib-ext.h>
-#include <test-macros.h>
 
 int test_okay()
 {

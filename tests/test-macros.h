@@ -8,9 +8,8 @@
 #ifndef WLIBC_TEST_MACROS_H
 #define WLIBC_TEST_MACROS_H
 
-#include <stdlib.h>
-#include <stdio.h>
 #include <errno.h>
+#include <stdio.h>
 #include <string.h>
 #include <wchar.h>
 

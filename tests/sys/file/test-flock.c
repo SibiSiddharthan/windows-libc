@@ -6,10 +6,9 @@
 */
 
 #include <test-macros.h>
-#include <sys/file.h>
 #include <fcntl.h>
+#include <sys/file.h>
 #include <unistd.h>
-#include <errno.h>
 
 int test_recursive_lock()
 {
