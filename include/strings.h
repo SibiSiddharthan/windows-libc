@@ -8,7 +8,7 @@
 #ifndef WLIBC_STRINGS_H
 #define WLIBC_STRINGS_H
 
-#include <wlibc-macros.h>
+#include <wlibc.h>
 #include <string.h>
 
 _WLIBC_BEGIN_DECLS

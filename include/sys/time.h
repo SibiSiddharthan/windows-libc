@@ -8,7 +8,7 @@
 #ifndef WLIBC_SYS_TIME_H
 #define WLIBC_SYS_TIME_H
 
-#include <wlibc-macros.h>
+#include <wlibc.h>
 #include <time.h>
 #include <sys/types.h>
 

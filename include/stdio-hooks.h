@@ -18,7 +18,7 @@
 #define popen   wlibc_popen
 #define pclose  wlibc_pclose
 
-#include <wlibc-macros.h>
+#include <wlibc.h>
 
 _WLIBC_BEGIN_DECLS
 

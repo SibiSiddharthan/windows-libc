@@ -8,7 +8,7 @@
 #ifndef WLIBC_UNISTD_H
 #define WLIBC_UNISTD_H
 
-#include <wlibc-macros.h>
+#include <wlibc.h>
 #include <sys/types.h>
 #include <fcntl.h>
 #include <wchar.h>

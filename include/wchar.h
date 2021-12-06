@@ -13,7 +13,7 @@
 #ifndef WLIBC_WCHAR_H
 #define WLIBC_WCHAR_H
 
-#include <wlibc-macros.h>
+#include <wlibc.h>
 #include <corecrt.h>
 #include <vcruntime_string.h>
 

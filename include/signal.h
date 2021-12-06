@@ -8,8 +8,7 @@
 #ifndef WLIBC_SIGNAL_H
 #define WLIBC_SIGNAL_H
 
-#include <wlibc-macros.h>
-#include <corecrt.h>
+#include <wlibc.h>
 
 _WLIBC_BEGIN_DECLS
 

@@ -8,7 +8,7 @@
 #ifndef WLIBC_SYS_RANDOM_H
 #define WLIBC_SYS_RANDOM_H
 
-#include <wlibc-macros.h>
+#include <wlibc.h>
 #include <sys/types.h>
 
 _WLIBC_BEGIN_DECLS

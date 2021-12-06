@@ -8,7 +8,7 @@
 #ifndef WLIBC_LANGINFO_H
 #define WLIBC_LANGINFO_H
 
-#include <wlibc-macros.h>
+#include <wlibc.h>
 
 _WLIBC_BEGIN_DECLS
 

@@ -8,7 +8,7 @@
 #ifndef WLIBC_SYS_XATTR_H
 #define WLIBC_SYS_XATTR_H
 
-#include <wlibc-macros.h>
+#include <wlibc.h>
 #include <sys/types.h>
 #include <fcntl.h>
 

@@ -8,7 +8,7 @@
 #ifndef WLIBC_STDLIB_EXT_H
 #define WLIBC_STDLIB_EXT_H
 
-#include <wlibc-macros.h>
+#include <wlibc.h>
 #include <wchar.h>
 
 _WLIBC_BEGIN_DECLS

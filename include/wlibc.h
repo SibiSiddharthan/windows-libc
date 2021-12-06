@@ -5,8 +5,11 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#ifndef WLIBC_MACROS_H
-#define WLIBC_MACROS_H
+#ifndef WLIBC_H
+#define WLIBC_H
+
+#include <corecrt.h>
+#include <stdint.h>
 
 #if BUILDING_WLIBC
 #	ifdef WLIBC_DLL

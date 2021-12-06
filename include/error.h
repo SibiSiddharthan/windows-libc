@@ -8,7 +8,7 @@
 #ifndef WLIBC_ERROR_H
 #define WLIBC_ERROR_H
 
-#include <wlibc-macros.h>
+#include <wlibc.h>
 #include <stdarg.h>
 
 _WLIBC_BEGIN_DECLS

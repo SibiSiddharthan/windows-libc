@@ -8,7 +8,7 @@
 #ifndef WLIBC_STDIO_EXT_H
 #define WLIBC_STDIO_EXT_H
 
-#include <wlibc-macros.h>
+#include <wlibc.h>
 #include <wchar.h>
 
 // Avoid C2375: 'rename': redefinition different linkage

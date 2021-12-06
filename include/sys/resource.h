@@ -8,7 +8,7 @@
 #ifndef WLIBC_SYS_RESOURCE_H
 #define WLIBC_SYS_RESOURCE_H
 
-#include <wlibc-macros.h>
+#include <wlibc.h>
 #include <sys/time.h>
 
 _WLIBC_BEGIN_DECLS

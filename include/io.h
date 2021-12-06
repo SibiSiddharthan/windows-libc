@@ -8,7 +8,7 @@
 #ifndef WLIBC_IO_H
 #define WLIBC_IO_H
 
-#include <wlibc-macros.h>
+#include <wlibc.h>
 
 _WLIBC_BEGIN_DECLS
 

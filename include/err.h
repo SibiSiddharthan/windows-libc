@@ -8,7 +8,7 @@
 #ifndef WLIBC_ERR_H
 #define WLIBC_ERR_H
 
-#include <wlibc-macros.h>
+#include <wlibc.h>
 #include <stdarg.h>
 #include <errno.h>
 

@@ -8,9 +8,8 @@
 #ifndef WLIBC_DIRENT_H
 #define WLIBC_DIRENT_H
 
-#include <wlibc-macros.h>
+#include <wlibc.h>
 #include <sys/types.h>
-#include <stdint.h>
 #include <fcntl.h>
 
 _WLIBC_BEGIN_DECLS

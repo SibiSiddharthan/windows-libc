@@ -8,7 +8,7 @@
 #ifndef WLIBC_FCNTL_H
 #define WLIBC_FCNTL_H
 
-#include <wlibc-macros.h>
+#include <wlibc.h>
 #include <sys/types.h>
 #include <stdarg.h>
 

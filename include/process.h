@@ -8,7 +8,7 @@
 #ifndef WLIBC_PROCESS_H
 #define WLIBC_PROCESS_H
 
-#include <wlibc-macros.h>
+#include <wlibc.h>
 #include <stdarg.h>
 #include <errno.h>
 #include <wchar.h>

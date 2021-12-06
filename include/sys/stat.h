@@ -8,7 +8,7 @@
 #ifndef WLIBC_SYS_STAT_H
 #define WLIBC_SYS_STAT_H
 
-#include <wlibc-macros.h>
+#include <wlibc.h>
 #include <sys/types.h>
 #include <time.h>
 #include <fcntl.h>

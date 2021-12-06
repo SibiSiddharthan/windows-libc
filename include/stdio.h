@@ -8,7 +8,7 @@
 #ifndef WLIBC_STDIO_H
 #define WLIBC_STDIO_H
 
-#include <wlibc-macros.h>
+#include <wlibc.h>
 #include <stdarg.h>
 #include <sys/types.h>
 #include <fcntl.h>
@@ -33,14 +33,6 @@ extern FILE *_wlibc_stderr;
 #define stdin  _wlibc_stdin
 #define stdout _wlibc_stdout
 #define stderr _wlibc_stderr
-
-#ifndef NULL
-#	ifdef __cplusplus
-#		define NULL 0
-#	else
-#		define NULL ((void *)0)
-#	endif
-#endif
 
 #define _NSTREAM_ 512
 
