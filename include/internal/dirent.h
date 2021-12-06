@@ -19,7 +19,6 @@ typedef struct WLIBC_DIR
 	size_t offset;
 	size_t read_data;
 	size_t received_data;
-	struct dirent *info;
 	CRITICAL_SECTION critical;
 } DIR;
 

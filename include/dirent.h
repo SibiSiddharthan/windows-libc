@@ -67,9 +67,15 @@ WLIBC_INLINE int closedir(DIR *dirstream)
 }
 
 WLIBC_API struct dirent *wlibc_readdir(DIR *dirstream);
+WLIBC_API int wlibc_readdir_r(DIR *restrict dirstream, struct dirent *restrict entry, struct dirent **restrict result);
 WLIBC_INLINE struct dirent *readdir(DIR *dirstream)
 {
 	return wlibc_readdir(dirstream);
+}
+
+WLIBC_INLINE int readdir_r(DIR *restrict dirstream, struct dirent *restrict entry, struct dirent **restrict result)
+{
+	return wlibc_readdir_r(dirstream, entry, result);
 }
 
 WLIBC_API void wlibc_rewinddir(DIR *dirstream);

@@ -15,7 +15,7 @@
 #include <internal/misc.h>
 #include <internal/error.h>
 
-struct dirent *do_readdir(DIR *dirstream)
+struct dirent *do_readdir(DIR *dirstream, struct dirent *entry)
 {
 	NTSTATUS status;
 	IO_STATUS_BLOCK io;
@@ -42,8 +42,8 @@ struct dirent *do_readdir(DIR *dirstream)
 	PFILE_ID_EXTD_BOTH_DIR_INFORMATION direntry = (PFILE_ID_EXTD_BOTH_DIR_INFORMATION)((char *)dirstream->buffer + dirstream->offset);
 
 	// copy only the lower 8 bytes, the upper 8 bytes will be zero on NTFS
-	dirstream->info->d_ino = *(ino_t *)(&direntry->FileId.Identifier);
-	dirstream->info->d_off = dirstream->offset;
+	entry->d_ino = *(ino_t *)(&direntry->FileId.Identifier);
+	entry->d_off = dirstream->offset;
 
 	DWORD attributes = direntry->FileAttributes;
 	/* For a junction both FILE_ATTRIBUTE_DIRECTORY and FILE_ATTRIBUTE_REPARSE_POINT is set.
@@ -51,55 +51,78 @@ struct dirent *do_readdir(DIR *dirstream)
 	*/
 	if (attributes & FILE_ATTRIBUTE_REPARSE_POINT)
 	{
-		dirstream->info->d_type = DT_LNK;
+		entry->d_type = DT_LNK;
 	}
 	else if (attributes & FILE_ATTRIBUTE_DIRECTORY)
 	{
-		dirstream->info->d_type = DT_DIR;
+		entry->d_type = DT_DIR;
 	}
 	else if ((attributes & ~(FILE_ATTRIBUTE_READONLY | FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_ARCHIVE |
 							 FILE_ATTRIBUTE_NORMAL | FILE_ATTRIBUTE_TEMPORARY | FILE_ATTRIBUTE_SPARSE_FILE | FILE_ATTRIBUTE_COMPRESSED |
 							 FILE_ATTRIBUTE_NOT_CONTENT_INDEXED | FILE_ATTRIBUTE_ENCRYPTED)) == 0)
 	{
-		dirstream->info->d_type = DT_REG;
+		entry->d_type = DT_REG;
 	}
 	else
 	{
-		dirstream->info->d_type = DT_UNKNOWN;
+		entry->d_type = DT_UNKNOWN;
 	}
 
-	dirstream->info->d_reclen = offsetof(FILE_ID_EXTD_BOTH_DIR_INFORMATION, FileName) + direntry->FileNameLength;
+	entry->d_reclen = offsetof(FILE_ID_EXTD_BOTH_DIR_INFORMATION, FileName) + direntry->FileNameLength;
 
 	u16_path.Length = direntry->FileNameLength;
 	u16_path.MaximumLength = direntry->FileNameLength;
 	u16_path.Buffer = direntry->FileName;
 
 	RtlUnicodeStringToUTF8String(&u8_path, &u16_path, TRUE);
-	memcpy(dirstream->info->d_name, u8_path.Buffer, u8_path.MaximumLength);
-	dirstream->info->d_namlen = u8_path.Length; // This includes the NULL character.
+	memcpy(entry->d_name, u8_path.Buffer, u8_path.MaximumLength);
+	entry->d_namlen = u8_path.Length; // This includes the NULL character.
 	RtlFreeUTF8String(&u8_path);
 
 	dirstream->offset += direntry->NextEntryOffset;
 	// each entry is aligned to a 8 byte boundary, except the last one
-	dirstream->read_data += dirstream->info->d_reclen;
+	dirstream->read_data += entry->d_reclen;
 	if (direntry->NextEntryOffset != 0)
 	{
-		dirstream->read_data +=
-			(dirstream->info->d_reclen % sizeof(LONGLONG) == 0 ? 0 : (sizeof(LONGLONG) - dirstream->info->d_reclen % sizeof(LONGLONG)));
+		dirstream->read_data += (entry->d_reclen % sizeof(LONGLONG) == 0 ? 0 : (sizeof(LONGLONG) - entry->d_reclen % sizeof(LONGLONG)));
 	}
 
-	return dirstream->info;
+	return entry;
 }
 
 struct dirent *wlibc_readdir(DIR *dirstream)
 {
 	VALIDATE_DIR_STREAM(dirstream, NULL);
 
-	struct dirent *info = NULL;
+	static struct dirent entry;
+	struct dirent *result;
 
 	LOCK_DIR_STREAM(dirstream);
-	info = do_readdir(dirstream);
+	result = do_readdir(dirstream, &entry);
 	UNLOCK_DIR_STREAM(dirstream);
 
-	return info;
+	return result;
+}
+
+int wlibc_readdir_r(DIR *restrict dirstream, struct dirent *restrict entry, struct dirent **restrict result)
+{
+	VALIDATE_DIR_STREAM(dirstream, errno);
+
+	// Save errno and restore it if no error has been encountered.
+	errno_t old_errno, new_errno;
+	old_errno = errno;
+	errno = 0;
+
+	*result = do_readdir(dirstream, entry);
+	if (*result == NULL)
+	{
+		new_errno = errno;
+		if (new_errno != 0)
+		{
+			return new_errno;
+		}
+	}
+
+	errno = old_errno;
+	return 0;
 }

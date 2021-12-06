@@ -78,40 +78,64 @@ int test_readdir() // telldir is also tested
 
 	d = readdir(D);
 	ASSERT_STREQ(d->d_name, ".");
+	ASSERT_EQ(d->d_namlen, 1);
 	ASSERT_EQ(d->d_type, DT_DIR);
+
 	d = readdir(D);
 	ASSERT_STREQ(d->d_name, "..");
+	ASSERT_EQ(d->d_namlen, 2);
 	ASSERT_EQ(d->d_type, DT_DIR);
+
 	d = readdir(D);
 	ASSERT_STREQ(d->d_name, "a1");
+	ASSERT_EQ(d->d_namlen, 2);
 	ASSERT_EQ(d->d_type, DT_REG);
+
 	d = readdir(D);
 	ASSERT_STREQ(d->d_name, "a2");
+	ASSERT_EQ(d->d_namlen, 2);
 	ASSERT_EQ(d->d_type, DT_REG);
+
 	d = readdir(D);
 	ASSERT_STREQ(d->d_name, "a3");
+	ASSERT_EQ(d->d_namlen, 2);
 	ASSERT_EQ(d->d_type, DT_REG);
+
 	d = readdir(D);
 	ASSERT_STREQ(d->d_name, "a4");
+	ASSERT_EQ(d->d_namlen, 2);
 	ASSERT_EQ(d->d_type, DT_REG);
+
 	d = readdir(D);
 	ASSERT_STREQ(d->d_name, "a5");
+	ASSERT_EQ(d->d_namlen, 2);
 	ASSERT_EQ(d->d_type, DT_REG);
+
 	d = readdir(D);
 	ASSERT_STREQ(d->d_name, "a6");
+	ASSERT_EQ(d->d_namlen, 2);
 	ASSERT_EQ(d->d_type, DT_REG);
+
 	d = readdir(D);
 	ASSERT_STREQ(d->d_name, "d");
+	ASSERT_EQ(d->d_namlen, 1);
 	ASSERT_EQ(d->d_type, DT_DIR);
+
 	d = readdir(D);
 	ASSERT_STREQ(d->d_name, "s1");
+	ASSERT_EQ(d->d_namlen, 2);
 	ASSERT_EQ(d->d_type, DT_LNK);
+
 	d = readdir(D);
 	ASSERT_STREQ(d->d_name, "s2");
+	ASSERT_EQ(d->d_namlen, 2);
 	ASSERT_EQ(d->d_type, DT_LNK);
+
 	d = readdir(D);
 	ASSERT_STREQ(d->d_name, "sd");
+	ASSERT_EQ(d->d_namlen, 2);
 	ASSERT_EQ(d->d_type, DT_LNK);
+
 	d = readdir(D);
 	ASSERT_NULL(d);
 
@@ -156,6 +180,108 @@ int test_seekdir() // rewinddir is also tested here
 	return 0;
 }
 
+int test_readdir_r() // telldir is also tested
+{
+	/* We step through the directory and check whether the order of files
+	   listed is correct (alphabetical), it's deduced type is correct.
+	*/
+	int status;
+	int fd;
+	struct dirent entry;
+	struct dirent *d;
+
+	fd = open("t", O_DIRECTORY);
+	ASSERT_NOTEQ(fd, -1);
+	DIR *D = fdopendir(fd);
+	ASSERT_NOTNULL(D);
+
+	status = readdir_r(NULL, &entry, &d);
+	ASSERT_EQ(status, EBADF);
+
+	status = readdir_r(D, &entry, &d);
+	ASSERT_EQ(status, 0);
+	ASSERT_STREQ(d->d_name, ".");
+	ASSERT_EQ(d->d_namlen, 1);
+	ASSERT_EQ(d->d_type, DT_DIR);
+
+	status = readdir_r(D, &entry, &d);
+	ASSERT_EQ(status, 0);
+	ASSERT_STREQ(d->d_name, "..");
+	ASSERT_EQ(d->d_namlen, 2);
+	ASSERT_EQ(d->d_type, DT_DIR);
+
+	status = readdir_r(D, &entry, &d);
+	ASSERT_EQ(status, 0);
+	ASSERT_STREQ(d->d_name, "a1");
+	ASSERT_EQ(d->d_namlen, 2);
+	ASSERT_EQ(d->d_type, DT_REG);
+
+	status = readdir_r(D, &entry, &d);
+	ASSERT_EQ(status, 0);
+	ASSERT_STREQ(d->d_name, "a2");
+	ASSERT_EQ(d->d_namlen, 2);
+	ASSERT_EQ(d->d_type, DT_REG);
+
+	status = readdir_r(D, &entry, &d);
+	ASSERT_EQ(status, 0);
+	ASSERT_STREQ(d->d_name, "a3");
+	ASSERT_EQ(d->d_namlen, 2);
+	ASSERT_EQ(d->d_type, DT_REG);
+
+	status = readdir_r(D, &entry, &d);
+	ASSERT_EQ(status, 0);
+	ASSERT_STREQ(d->d_name, "a4");
+	ASSERT_EQ(d->d_namlen, 2);
+	ASSERT_EQ(d->d_type, DT_REG);
+
+	status = readdir_r(D, &entry, &d);
+	ASSERT_EQ(status, 0);
+	ASSERT_STREQ(d->d_name, "a5");
+	ASSERT_EQ(d->d_namlen, 2);
+	ASSERT_EQ(d->d_type, DT_REG);
+
+	status = readdir_r(D, &entry, &d);
+	ASSERT_EQ(status, 0);
+	ASSERT_STREQ(d->d_name, "a6");
+	ASSERT_EQ(d->d_namlen, 2);
+	ASSERT_EQ(d->d_type, DT_REG);
+
+	status = readdir_r(D, &entry, &d);
+	ASSERT_EQ(status, 0);
+	ASSERT_STREQ(d->d_name, "d");
+	ASSERT_EQ(d->d_namlen, 1);
+	ASSERT_EQ(d->d_type, DT_DIR);
+
+	status = readdir_r(D, &entry, &d);
+	ASSERT_EQ(status, 0);
+	ASSERT_STREQ(d->d_name, "s1");
+	ASSERT_EQ(d->d_namlen, 2);
+	ASSERT_EQ(d->d_type, DT_LNK);
+
+	status = readdir_r(D, &entry, &d);
+	ASSERT_EQ(status, 0);
+	ASSERT_STREQ(d->d_name, "s2");
+	ASSERT_EQ(d->d_namlen, 2);
+	ASSERT_EQ(d->d_type, DT_LNK);
+
+	status = readdir_r(D, &entry, &d);
+	ASSERT_EQ(status, 0);
+	ASSERT_STREQ(d->d_name, "sd");
+	ASSERT_EQ(d->d_namlen, 2);
+	ASSERT_EQ(d->d_type, DT_LNK);
+
+	status = readdir_r(D, &entry, &d);
+	ASSERT_EQ(status, 0);
+	ASSERT_NULL(d);
+
+	ASSERT_SUCCESS(closedir(D));
+	errno = 0;
+	ASSERT_FAIL(close(fd));
+	ASSERT_ERRNO(EBADF);
+
+	return 0;
+}
+
 int main()
 {
 	INITIAILIZE_TESTS();
@@ -167,6 +293,7 @@ int main()
 	{
 		TEST(test_readdir());
 		TEST(test_seekdir());
+		TEST(test_readdir_r());
 		if (cleanup() == 1)
 		{
 			printf("Cleanup failed\n");

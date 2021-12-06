@@ -26,7 +26,6 @@ static void initialize_dirstream(DIR **dirstream, int fd)
 	(*dirstream)->offset = 0;
 	(*dirstream)->read_data = 0;
 	(*dirstream)->received_data = 0;
-	(*dirstream)->info = (struct dirent *)malloc(sizeof(struct dirent));
 	InitializeCriticalSection(&((*dirstream)->critical));
 }
 

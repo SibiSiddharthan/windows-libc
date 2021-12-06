@@ -19,7 +19,6 @@ int wlibc_closedir(DIR *dirstream)
 	if (!close_fd(dirstream->fd))
 	{
 		// Free the memory of DIR and it's components
-		free(dirstream->info);
 		free(dirstream->buffer);
 		DeleteCriticalSection(&(dirstream->critical));
 		free(dirstream);
