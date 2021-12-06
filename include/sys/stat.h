@@ -74,12 +74,16 @@ struct stat
 	blksize_t st_blksize;        // block size of filesystem
 	blkcnt_t st_blocks;          // number of 512B blocks(sectors) allocated
 
+#define st_atimespec     st_atim
 #define st_atime         st_atim.tv_sec
 #define st_atimensec     st_atim.tv_nsec
+#define st_mtimespec     st_mtim
 #define st_mtime         st_mtim.tv_sec
 #define st_mtimensec     st_mtim.tv_nsec
+#define st_ctimespec     st_ctim
 #define st_ctime         st_ctim.tv_sec
 #define st_ctimensec     st_ctim.tv_nsec
+#define st_birthtimespec st_birthtim
 #define st_birthtime     st_birthtim.tv_sec
 #define st_birthtimensec st_birthtim.tv_nsec
 };
