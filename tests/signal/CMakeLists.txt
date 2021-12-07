@@ -6,6 +6,6 @@
 ]]
 
 wlibc_add_tests(
-raise_signal
 sigaction
+signal
 sigprocmask)

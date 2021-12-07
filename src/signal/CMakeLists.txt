@@ -6,10 +6,10 @@
 ]]
 
 set(signal_SOURCES
+internal.c
 raise.c
 sigaction.c
 signal.c
-signal_internal.c
 sigprocmask.c)
 
 add_library(signal OBJECT ${signal_SOURCES})

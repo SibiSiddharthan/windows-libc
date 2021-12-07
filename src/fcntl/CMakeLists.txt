@@ -6,9 +6,9 @@
 ]]
 
 set(fcntl_SOURCES
-open.c
 fcntl.c
-fcntl_internal.c)
+internal.c
+open.c)
 
 add_library(fcntl OBJECT ${fcntl_SOURCES})
 

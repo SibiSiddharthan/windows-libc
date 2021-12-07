@@ -6,8 +6,8 @@
 ]]
 
 set(langinfo_SOURCES
-nl_langinfo.c
-langinfo_internal.c)
+internal.c
+langinfo.c)
 
 add_library(langinfo OBJECT ${langinfo_SOURCES})
 
