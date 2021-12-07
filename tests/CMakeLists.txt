@@ -50,3 +50,8 @@ if(ENABLE_EXTENDED_ATTRIBUTES)
 endif()
 
 add_subdirectory(sys/utsname)
+
+if(ENABLE_ACCOUNTS)
+	#add_subdirectory(grp)
+	add_subdirectory(pwd)
+endif()

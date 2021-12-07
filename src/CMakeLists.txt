@@ -60,6 +60,11 @@ if(ENABLE_EXTENDED_ATTRIBUTES)
 	wlibc_add_module(sys.xattr)
 endif()
 
+if(ENABLE_ACCOUNTS)
+	wlibc_add_module(grp pwd)
+endif()
+
+#wlibc_add_module(sys.acl)
 wlibc_add_module(sys.utsname)
 
 add_subdirectory(internal)

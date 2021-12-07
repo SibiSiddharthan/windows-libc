@@ -42,6 +42,7 @@ option(ENABLE_ERROR_LOGGING "Enable error logging functions" ON)
 option(ENABLE_EXTENDED_ATTRIBUTES "Enable NTFS extended attributes API" ON)
 option(ENABLE_ACL_SUPPORT "Use ACLs for controlling permissions of files" ON)
 option(ENABLE_STRINGS "Enable extra string functions" ON)
+option(ENABLE_ACCOUNTS "Enable user(pwd) and group(grp) functions" ON)
 #option(ENABLE_SOCKETS "Enable SOCKETS API" ON)
 
 add_subdirectory(src)
