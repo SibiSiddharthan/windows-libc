@@ -63,19 +63,12 @@ WLIBC_INLINE int close(int fd)
 }
 
 WLIBC_API int wlibc_chdir(const char *name);
-WLIBC_API int wlibc_wchdir(const wchar_t *wname);
+WLIBC_API int wlibc_fchdir(int fd);
 
 WLIBC_INLINE int chdir(const char *name)
 {
 	return wlibc_chdir(name);
 }
-
-WLIBC_INLINE int wchdir(const wchar_t *wname)
-{
-	return wlibc_wchdir(wname);
-}
-
-WLIBC_API int wlibc_fchdir(int fd);
 
 WLIBC_INLINE int fchdir(int fd)
 {
