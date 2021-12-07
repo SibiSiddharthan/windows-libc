@@ -24,6 +24,7 @@ if(CMAKE_C_COMPILER_ID STREQUAL "MSVC")
 	add_compile_options(/wd4098 /wd4477 /std:c11)
 endif()
 
+set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 include_directories(include)
 
 option(BUILD_SHARED_LIBS "Build Shared Libraries" OFF)
