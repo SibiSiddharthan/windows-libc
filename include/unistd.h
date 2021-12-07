@@ -357,29 +357,16 @@ WLIBC_INLINE int ftruncate(int fd, off_t length)
 }
 
 WLIBC_API char *wlibc_ttyname(int fd);
-WLIBC_API wchar_t *wlibc_wttyname(int fd);
+WLIBC_API int wlibc_ttyname_r(int fd, char *buf, size_t bufsiz);
 
 WLIBC_INLINE char *ttyname(int fd)
 {
 	return wlibc_ttyname(fd);
 }
 
-WLIBC_INLINE wchar_t *wttyname(int fd)
-{
-	return wlibc_wttyname(fd);
-}
-
-WLIBC_API int wlibc_ttyname_r(int fd, char *buf, size_t bufsiz);
-WLIBC_API int wlibc_wttyname_r(int fd, wchar_t *wbuf, size_t bufsiz);
-
 WLIBC_INLINE int ttyname_r(int fd, char *buf, size_t bufsiz)
 {
 	return wlibc_ttyname_r(fd, buf, bufsiz);
-}
-
-WLIBC_INLINE int wttyname_r(int fd, wchar_t *wbuf, size_t bufsiz)
-{
-	return wlibc_wttyname_r(fd, wbuf, bufsiz);
 }
 
 WLIBC_INLINE int unlink(const char *path)
