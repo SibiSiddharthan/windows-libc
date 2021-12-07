@@ -5,12 +5,13 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
+#include <internal/nt.h>
 #include <unistd.h>
-#include <Windows.h>
 
-pid_t wlibc_getpagesize()
+int wlibc_getpagesize()
 {
-	SYSTEM_INFO info;
-	GetSystemInfo(&info);
-	return info.dwPageSize;
+	// This will not fail.
+	SYSTEM_BASIC_INFORMATION basic_info;
+	NtQuerySystemInformation(SystemBasicInformation, &basic_info, sizeof(SYSTEM_BASIC_INFORMATION), NULL);
+	return basic_info.AllocationGranularity;
 }
