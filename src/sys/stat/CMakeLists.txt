@@ -5,12 +5,15 @@
    Refer to the LICENSE file at the root directory for details.
 ]]
 
-set(sys_stat_SOURCES
+wlibc_module(
+MODULE sys.stat
+
+SOURCES
 chmod.c
 mkdir.c
 stat.c
-utimens.c)
+utimens.c
 
-add_library(sys_stat OBJECT ${sys_stat_SOURCES})
-
-install(FILES ${CMAKE_SOURCE_DIR}/include/sys/stat.h DESTINATION include/sys)
+HEADERS
+sys/stat.h
+)

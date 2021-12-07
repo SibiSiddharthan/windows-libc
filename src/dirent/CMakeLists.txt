@@ -5,17 +5,20 @@
    Refer to the LICENSE file at the root directory for details.
 ]]
 
-set(dirent_SOURCES
+wlibc_module(
+MODULE dirent
+
+SOURCES
 alphasort.c
-opendir.c
 closedir.c
 dirfd.c
+opendir.c
 readdir.c
-telldir.c
 rewinddir.c
 #scandir.c
-seekdir.c)
+seekdir.c
+telldir.c
 
-add_library(dirent OBJECT ${dirent_SOURCES})
-
-install(FILES ${CMAKE_SOURCE_DIR}/include/dirent.h DESTINATION include)
+HEADERS
+dirent.h
+)

@@ -5,13 +5,16 @@
    Refer to the LICENSE file at the root directory for details.
 ]]
 
-set(dlfcn_SOURCES
+wlibc_module(
+MODULE dlfcn
+
+SOURCES
 dlclose.c
 dlerror.c
 dlopen.c
 dlsym.c
-internal.c)
+internal.c
 
-add_library(dlfcn OBJECT ${dlfcn_SOURCES})
-
-install(FILES ${CMAKE_SOURCE_DIR}/include/dlfcn.h DESTINATION include)
+HEADERS
+dlfcn.h
+)

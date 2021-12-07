@@ -5,11 +5,14 @@
    Refer to the LICENSE file at the root directory for details.
 ]]
 
-set(fcntl_SOURCES
+wlibc_module(
+MODULE fcntl
+
+SOURCES
 fcntl.c
 internal.c
-open.c)
+open.c
 
-add_library(fcntl OBJECT ${fcntl_SOURCES})
-
-install(FILES ${CMAKE_SOURCE_DIR}/include/fcntl.h DESTINATION include)
+HEADERS
+fcntl.h
+)

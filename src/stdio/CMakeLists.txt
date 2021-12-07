@@ -5,7 +5,10 @@
    Refer to the LICENSE file at the root directory for details.
 ]]
 
-set(stdio_SOURCES
+wlibc_module(
+MODULE stdio
+
+SOURCES
 clearerr.c
 fclose.c
 fdopen.c
@@ -38,9 +41,9 @@ setvbuf.c
 ungetc.c
 #pipe-hooks.c
 #stdio-hooks.c
-)
 
-add_library(stdio OBJECT ${stdio_SOURCES})
-install(FILES ${CMAKE_SOURCE_DIR}/include/stdio_ext.h DESTINATION include)
-install(FILES ${CMAKE_SOURCE_DIR}/include/stdio.h DESTINATION include)
-#install(FILES ${CMAKE_SOURCE_DIR}/include/stdio-hooks.h DESTINATION include)
+HEADERS
+stdio.h
+stdio_ext.h
+#stdio-hooks.h
+)

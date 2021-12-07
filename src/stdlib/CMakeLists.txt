@@ -5,10 +5,14 @@
    Refer to the LICENSE file at the root directory for details.
 ]]
 
-set(stdlib_SOURCES
+wlibc_module(
+MODULE stdlib
+
+SOURCES
 mkstemp.c
 setenv.c
-unsetenv.c)
+unsetenv.c
 
-add_library(stdlib OBJECT ${stdlib_SOURCES})
-install(FILES ${CMAKE_SOURCE_DIR}/include/stdlib-ext.h DESTINATION include)
+HEADERS
+stdlib-ext.h
+)

@@ -5,8 +5,12 @@
    Refer to the LICENSE file at the root directory for details.
 ]]
 
-set(sys_file_SOURCES
-flock.c)
+wlibc_module(
+MODULE sys.file
 
-add_library(sys_file OBJECT ${sys_file_SOURCES})
-install(FILES ${CMAKE_SOURCE_DIR}/include/sys/file.h DESTINATION include/sys)
+SOURCES
+flock.c
+
+HEADERS
+sys/file.h
+)

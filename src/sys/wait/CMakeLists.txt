@@ -5,11 +5,14 @@
    Refer to the LICENSE file at the root directory for details.
 ]]
 
-set(sys_wait_SOURCES
+wlibc_module(
+MODULE sys.wait
+
+SOURCES
 process_internal.c
 wait.c
-waitpid.c)
+waitpid.c
 
-add_library(sys_wait OBJECT ${sys_wait_SOURCES})
-
-install(FILES ${CMAKE_SOURCE_DIR}/include/sys/wait.h DESTINATION include/sys)
+HEADERS
+sys/wait.h
+)

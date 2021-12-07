@@ -5,11 +5,14 @@
    Refer to the LICENSE file at the root directory for details.
 ]]
 
-set(unistd_SOURCES
+wlibc_module(
+MODULE unistd
+
+SOURCES
 access.c
-close.c
 chdir.c
 chown.c
+close.c
 domainname.c
 dup.c
 exec.c
@@ -28,15 +31,15 @@ lseek.c
 pipe.c
 pread.c
 pwrite.c
-readlink.c
 read.c
+readlink.c
 remove.c
 sleep.c
 symlink.c
 truncate.c
 ttyname.c
-write.c)
+write.c
 
-add_library(unistd OBJECT ${unistd_SOURCES})
-
-install(FILES ${CMAKE_SOURCE_DIR}/include/unistd.h DESTINATION include)
+HEADERS
+unistd.h
+)

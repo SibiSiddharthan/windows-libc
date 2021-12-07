@@ -5,9 +5,12 @@
    Refer to the LICENSE file at the root directory for details.
 ]]
 
-set(sys_time_SOURCES
-gettimeofday.c)
+wlibc_module(
+MODULE sys.time
 
-add_library(sys_time OBJECT ${sys_time_SOURCES})
+SOURCES
+gettimeofday.c
 
-install(FILES ${CMAKE_SOURCE_DIR}/include/sys/time.h DESTINATION include/sys)
+HEADERS
+sys/time.h
+)

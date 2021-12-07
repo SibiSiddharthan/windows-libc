@@ -5,10 +5,14 @@
    Refer to the LICENSE file at the root directory for details.
 ]]
 
-set(sys_xattr_SOURCES
+wlibc_module(
+MODULE sys.xattr
+
+SOURCES
 getxattr.c
 listxattr.c
-setxattr.c)
+setxattr.c
 
-add_library(sys_xattr OBJECT ${sys_xattr_SOURCES})
-install(FILES ${CMAKE_SOURCE_DIR}/include/sys/xattr.h DESTINATION include/sys)
+HEADERS
+sys/xattr.h
+)

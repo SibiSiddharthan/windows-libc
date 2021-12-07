@@ -5,13 +5,16 @@
    Refer to the LICENSE file at the root directory for details.
 ]]
 
-set(signal_SOURCES
+wlibc_module(
+MODULE signal
+
+SOURCES
 internal.c
 raise.c
 sigaction.c
 signal.c
-sigprocmask.c)
+sigprocmask.c
 
-add_library(signal OBJECT ${signal_SOURCES})
-
-install(FILES ${CMAKE_SOURCE_DIR}/include/signal.h DESTINATION include)
+HEADERS
+signal.h
+)

@@ -5,8 +5,12 @@
    Refer to the LICENSE file at the root directory for details.
 ]]
 
-set(sys_resource_SOURCES
-rlimit.c)
+wlibc_module(
+MODULE sys.resource
 
-add_library(sys_resource OBJECT ${sys_resource_SOURCES})
-install(FILES ${CMAKE_SOURCE_DIR}/include/sys/resource.h DESTINATION include/sys)
+SOURCES
+rlimit.c
+
+HEADERS
+sys/resource.h
+)

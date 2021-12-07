@@ -5,8 +5,12 @@
    Refer to the LICENSE file at the root directory for details.
 ]]
 
-set(sys_utsname_SOURCES
-uname.c)
+wlibc_module(
+MODULE sys.utsname
 
-add_library(sys_utsname OBJECT ${sys_utsname_SOURCES})
-install(FILES ${CMAKE_SOURCE_DIR}/include/sys/utsname.h DESTINATION include/sys)
+SOURCES
+uname.c
+
+HEADERS
+sys/utsname.h
+)
