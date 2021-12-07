@@ -6,10 +6,10 @@
 */
 
 #include <internal/nt.h>
+#include <internal/error.h>
 #include <internal/registry.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <errno.h>
 
 int wlibc_getdomainname(char *name, size_t length)
 {
@@ -19,16 +19,17 @@ int wlibc_getdomainname(char *name, size_t length)
 		return -1;
 	}
 
+	NTSTATUS status;
+	UNICODE_STRING u16_domainname;
+	UTF8_STRING u8_domainname;
 	size_t size = 0;
 	void *data = NULL;
-	UNICODE_STRING u16_hostname;
-	UTF8_STRING u8_hostname;
 
 	data = get_registry_value(L"\\Registry\\Machine\\SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters", L"Domain", &size);
 	if (data == NULL)
 	{
 		// Fallback to 'localdomain'
-		if(length < 12)
+		if (length < 12)
 		{
 			errno = EINVAL;
 			return -1;
@@ -38,22 +39,20 @@ int wlibc_getdomainname(char *name, size_t length)
 		return 0;
 	}
 
-	u16_hostname.Length = size;
-	u16_hostname.MaximumLength = size;
-	u16_hostname.Buffer = data;
+	u16_domainname.Length = size;
+	u16_domainname.MaximumLength = size;
+	u16_domainname.Buffer = data;
 
-	RtlUnicodeStringToUTF8String(&u8_hostname, &u16_hostname, TRUE);
-	size = u8_hostname.MaximumLength;
+	u8_domainname.Buffer = name;
+	u8_domainname.MaximumLength = length;
+	status = RtlUnicodeStringToUTF8String(&u8_domainname, &u16_domainname, FALSE);
 	free(data);
 
-	if (length < size)
+	if (status != STATUS_SUCCESS)
 	{
-		errno = EINVAL;
-		RtlFreeUTF8String(&u8_hostname);
+		map_ntstatus_to_errno(status);
 		return -1;
 	}
 
-	memcpy(name, u8_hostname.Buffer, size);
-	RtlFreeUTF8String(&u8_hostname);
 	return 0;
 }

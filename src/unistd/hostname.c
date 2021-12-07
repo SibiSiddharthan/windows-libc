@@ -6,10 +6,10 @@
 */
 
 #include <internal/nt.h>
+#include <internal/error.h>
 #include <internal/registry.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <errno.h>
 
 int wlibc_gethostname(char *name, size_t length)
 {
@@ -19,10 +19,11 @@ int wlibc_gethostname(char *name, size_t length)
 		return -1;
 	}
 
-	size_t size = 0;
-	void *data = NULL;
+	NTSTATUS status;
 	UNICODE_STRING u16_hostname;
 	UTF8_STRING u8_hostname;
+	size_t size = 0;
+	void *data = NULL;
 
 	// Both of the queries should be the same, prefer 'Hostname' to 'ComputerName'
 	data = get_registry_value(L"\\Registry\\Machine\\SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters", L"HostName", &size);
@@ -41,18 +42,16 @@ int wlibc_gethostname(char *name, size_t length)
 	u16_hostname.MaximumLength = size;
 	u16_hostname.Buffer = data;
 
-	RtlUnicodeStringToUTF8String(&u8_hostname, &u16_hostname, TRUE);
-	size = u8_hostname.MaximumLength;
+	u8_hostname.Buffer = name;
+	u8_hostname.MaximumLength = length;
+	status = RtlUnicodeStringToUTF8String(&u8_hostname, &u16_hostname, FALSE);
 	free(data);
 
-	if (length < size)
+	if (status != STATUS_SUCCESS)
 	{
-		errno = EINVAL;
-		RtlFreeUTF8String(&u8_hostname);
+		map_ntstatus_to_errno(status);
 		return -1;
 	}
 
-	memcpy(name, u8_hostname.Buffer, size);
-	RtlFreeUTF8String(&u8_hostname);
 	return 0;
 }
