@@ -17,7 +17,7 @@ if(ENABLE_DLFCN)
 endif()
 
 if(ENABLE_POSIX_IO)
-	wlibc_add_module(fcntl dirent stdio sys.file sys.stat unistd)
+	wlibc_add_module(fcntl dirent stdio sys.file sys.ioctl sys.stat unistd)
 endif()
 
 if(ENABLE_SYS_TIME)
