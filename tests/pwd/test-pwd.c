@@ -136,6 +136,70 @@ int test_getpwnam()
 	return 0;
 }
 
+int test_getpwuid()
+{
+	int status;
+	struct passwd *entry, *pwuid_entry, *pwuid_r_result, pwuid_r_entry;
+	char buffer[512];
+	uid_t non_existent_uid = 1;
+
+	while (1)
+	{
+		entry = getpwent();
+		if (entry == NULL)
+		{
+			break;
+		}
+
+		// getpwnam
+		pwuid_entry = getpwuid(entry->pw_uid);
+		if (pwuid_entry == NULL)
+		{
+			printf("Search for user '%s' failed\n", entry->pw_name);
+			return -1;
+		}
+
+		ASSERT_STREQ(pwuid_entry->pw_name, entry->pw_name);
+		ASSERT_EQ(pwuid_entry->pw_uid, entry->pw_uid);
+		ASSERT_EQ(pwuid_entry->pw_gid, entry->pw_gid);
+		if (entry->pw_dir != NULL)
+		{
+			ASSERT_STREQ(pwuid_entry->pw_dir, entry->pw_dir);
+		}
+
+		// getpwnam_r
+		status = getpwuid_r(entry->pw_uid, &pwuid_r_entry, buffer, 512, &pwuid_r_result);
+		ASSERT_EQ(status, 0);
+		if (pwuid_r_result == NULL)
+		{
+			printf("Search for user '%s' failed\n", entry->pw_name);
+			return -1;
+		}
+
+		ASSERT_STREQ(pwuid_r_entry.pw_name, entry->pw_name);
+		ASSERT_EQ(pwuid_r_entry.pw_uid, entry->pw_uid);
+		ASSERT_EQ(pwuid_r_entry.pw_gid, entry->pw_gid);
+		if (entry->pw_dir != NULL)
+		{
+			ASSERT_STREQ(pwuid_r_entry.pw_dir, entry->pw_dir);
+		}
+	}
+
+	endpwent();
+
+	// Non existent users
+	errno = 0;
+	pwuid_entry = getpwuid(non_existent_uid);
+	ASSERT_NULL(pwuid_entry);
+	ASSERT_ERRNO(ENOENT);
+
+	status = getpwuid_r(non_existent_uid, &pwuid_r_entry, buffer, 512, &pwuid_r_result);
+	ASSERT_NULL(pwuid_r_result);
+	ASSERT_EQ(status, ENOENT);
+
+	return 0;
+}
+
 int main()
 {
 	INITIAILIZE_TESTS();
@@ -143,6 +207,7 @@ int main()
 	TEST(test_getpwent());
 	TEST(test_getpwent_r());
 	TEST(test_getpwnam())
+	TEST(test_getpwuid())
 
 	VERIFY_RESULT_AND_EXIT();
 }

@@ -195,7 +195,7 @@ int wlibc_getpwent_r(struct passwd *restrict pwd_entry, char *restrict buffer, s
 	if (pwd_entry == NULL || buffer == NULL || result == NULL || size < 0)
 	{
 		errno = EINVAL;
-		return -1;
+		return EINVAL;
 	}
 
 	// Save errno and restore it if no error has been encountered.

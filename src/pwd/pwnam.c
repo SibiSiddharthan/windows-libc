@@ -71,13 +71,13 @@ int wlibc_getpwnam_r(const char *restrict name, struct passwd *restrict pwd_entr
 	if (name == NULL || name[0] == '\0')
 	{
 		errno = EINVAL;
-		return -1;
+		return EINVAL;
 	}
 
 	if (pwd_entry == NULL || buffer == NULL || result == NULL || size < 0)
 	{
 		errno = EINVAL;
-		return -1;
+		return EINVAL;
 	}
 
 	// Save errno and restore it if no error has been encountered.

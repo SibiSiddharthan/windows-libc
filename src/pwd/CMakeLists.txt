@@ -11,7 +11,7 @@ MODULE pwd
 SOURCES
 pwent.c
 pwnam.c
-#pwuid.c
+pwuid.c
 
 HEADERS
 pwd.h
