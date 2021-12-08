@@ -33,7 +33,6 @@ int LOCALGROUP_INFO_0_to_group(PLOCALGROUP_INFO_0 group_info, struct group *grp_
 
 	// Default values
 	grp_entry->gr_gid = -1;
-	grp_entry->gr_mem = &grp_entry->gr_passwd;
 
 	// name
 	RtlInitUnicodeString(&u16_name, group_info->lgrpi0_name);
@@ -120,9 +119,6 @@ int GROUP_INFO_2_to_group(PGROUP_INFO_2 group_info, struct group *grp_entry, voi
 	BYTE *global_member_buffer;
 	PGROUP_USERS_INFO_0 member_info;
 	size_t buffer_used = 0;
-
-	// Default values
-	grp_entry->gr_mem = &grp_entry->gr_passwd;
 
 	// name
 	RtlInitUnicodeString(&u16_name, group_info->grpi2_name);
@@ -239,7 +235,7 @@ struct group *common_getgrent(struct group *restrict grp_entry, char *restrict b
 	switch (gr_index)
 	{
 	case 0:
-		grp_entry->gr_name = "DAILUP";
+		grp_entry->gr_name = "DIALUP";
 		grp_entry->gr_gid = 1;
 		break;
 	case 1:
