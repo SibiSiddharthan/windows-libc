@@ -204,6 +204,8 @@ int wlibc_getpwent_r(struct passwd *restrict pwd_entry, char *restrict buffer, s
 	errno = 0;
 
 	struct passwd *entry = common_getpwent(pwd_entry, buffer, size);
+	*result = entry;
+
 	if (entry == NULL)
 	{
 		new_errno = errno;
@@ -213,7 +215,6 @@ int wlibc_getpwent_r(struct passwd *restrict pwd_entry, char *restrict buffer, s
 		}
 	}
 
-	*result = entry;
 	errno = old_errno;
 	return 0;
 }

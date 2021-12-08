@@ -10,7 +10,7 @@ MODULE pwd
 
 SOURCES
 pwent.c
-#pwnam.c
+pwnam.c
 #pwuid.c
 
 HEADERS
