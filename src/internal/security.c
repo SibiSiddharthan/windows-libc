@@ -17,14 +17,19 @@ static char adminstrators_sid_buffer[SECURITY_SID_SIZE(2)];
 static char users_sid_buffer[SECURITY_SID_SIZE(2)];
 static char everyone_sid_buffer[SECURITY_SID_SIZE(1)];
 static char current_user_sid_buffer[SECURITY_SID_SIZE(SID_MAX_SUB_AUTHORITIES)];
+static char current_group_sid_buffer[SECURITY_SID_SIZE(SID_MAX_SUB_AUTHORITIES)];
+static char current_computer_sid_buffer[SECURITY_SID_SIZE(SID_MAX_SUB_AUTHORITIES)];
 
-PISID ntsystem_sid = NULL;      // Root (NT AUTHORITY\SYSTEM)
-PISID adminstrators_sid = NULL; // psuedo root (BUILTIN\Administrators)
-PISID users_sid = NULL;         // Users (BUILTIN\Users)
-PISID everyone_sid = NULL;      // Everyone
-PISID current_user_sid = NULL;  // Current User
+PISID ntsystem_sid = NULL;         // Root (NT AUTHORITY\SYSTEM)
+PISID adminstrators_sid = NULL;    // psuedo root (BUILTIN\Administrators)
+PISID users_sid = NULL;            // Users (BUILTIN\Users)
+PISID everyone_sid = NULL;         // Everyone
+PISID current_user_sid = NULL;     // Current User
+PISID current_group_sid = NULL;    // Current Group
+PISID current_computer_sid = NULL; // Current Computer
 
 uid_t current_uid;
+gid_t current_gid;
 
 #define WLIBC_BASIC_PERMISSIONS   (FILE_READ_ATTRIBUTES | FILE_WRITE_ATTRIBUTES | READ_CONTROL | SYNCHRONIZE | DELETE)
 #define WLIBC_READ_PERMISSIONS    (FILE_READ_DATA | FILE_READ_EA | WLIBC_BASIC_PERMISSIONS)
@@ -55,23 +60,41 @@ void initialize_sids()
 	RtlInitializeSidEx((PSID)everyone_sid_buffer, &world_authority, 1, SECURITY_WORLD_RID);
 	everyone_sid = (PISID)everyone_sid_buffer;
 
-	// Current User
+	// Current User/Group/Computer
 	char buffer[128];
 	ULONG length_needed;
-	// This call would not fail. No point in checking status
-	NtQuerySecurityObject(NtCurrentProcess(), OWNER_SECURITY_INFORMATION, buffer, 128, &length_needed);
-	// We are only querying the owner sid, the information will be at the end of the structure.
-	RtlCopySid(SECURITY_SID_SIZE(SID_MAX_SUB_AUTHORITIES), (PSID)current_user_sid_buffer,
-			   (PSID)(buffer + sizeof(SECURITY_DESCRIPTOR_RELATIVE)));
+	TOKEN_ELEVATION elevation;
+
+	// These calls will not fail. No point in checking status
+	// uid
+	NtQueryInformationToken(NtCurrentProcessToken(), TokenUser, buffer, 128, &length_needed);
+	RtlCopySid(SECURITY_SID_SIZE(SID_MAX_SUB_AUTHORITIES), (PSID)current_user_sid_buffer, ((PTOKEN_USER)buffer)->User.Sid);
 	current_user_sid = (PISID)current_user_sid_buffer;
 
-	if (RtlEqualSid(current_user_sid, adminstrators_sid_buffer) || RtlEqualSid(current_user_sid, ntsystem_sid))
+	// computer
+	// USER_SID -> COMPUTER_SID-USER_ID
+	RtlCopySid(SECURITY_SID_SIZE(SID_MAX_SUB_AUTHORITIES), (PSID)current_computer_sid_buffer, ((PTOKEN_USER)buffer)->User.Sid);
+	current_computer_sid = (PISID)current_computer_sid_buffer;
+	current_computer_sid->SubAuthorityCount--;
+
+	// gid
+	NtQueryInformationToken(NtCurrentProcessToken(), TokenPrimaryGroup, buffer, 128, &length_needed);
+	RtlCopySid(SECURITY_SID_SIZE(SID_MAX_SUB_AUTHORITIES), (PSID)current_group_sid_buffer, ((PTOKEN_PRIMARY_GROUP)buffer)->PrimaryGroup);
+	current_group_sid = (PISID)current_group_sid_buffer;
+
+	// elevation
+	NtQueryInformationToken(NtCurrentProcessToken(), TokenElevation, &elevation, sizeof(TOKEN_ELEVATION), &length_needed);
+
+	if (elevation.TokenIsElevated)
 	{
 		current_uid = 0; // ROOT_UID
+		current_gid = 0; // ROOT_GID
 	}
 	else
 	{
-		current_uid = current_user_sid->SubAuthority[current_user_sid->SubAuthorityCount - 1]; // Use the last SubAuthority as uid.
+		// Use the last SubAuthority.
+		current_uid = current_user_sid->SubAuthority[current_user_sid->SubAuthorityCount - 1];
+		current_gid = current_group_sid->SubAuthority[current_group_sid->SubAuthorityCount - 1];
 	}
 }
 
@@ -144,7 +167,7 @@ static PISECURITY_DESCRIPTOR_RELATIVE create_security_descriptor(mode_t mode, in
 	RtlAddAccessAllowedAceEx(acl, ACL_REVISION, ace_flags, WLIBC_ALL_PERMISSIONS, (PSID)ntsystem_sid);
 	RtlAddAccessAllowedAceEx(acl, ACL_REVISION, ace_flags, WLIBC_ALL_PERMISSIONS, (PSID)adminstrators_sid);
 
-	// Don't add user permission if we are admin or system as we havve already added them.
+	// Don't add user permission if we are admin or system as we have already added them.
 	if (current_uid != 0)
 	{
 		// Always give basic permissions to the owner.

@@ -12,16 +12,20 @@
 #include <winnt.h>
 #include <sys/types.h>
 
-extern PISID ntsystem_sid;      // Root (NT AUTHORITY\SYSTEM)
-extern PISID adminstrators_sid; // psuedo root (BUILTIN\Administrators)
-extern PISID users_sid;         // Users (BUILTIN\Users)
-extern PISID everyone_sid;      // Everyone
-extern PISID current_user_sid;  // Current User
+extern PISID ntsystem_sid;         // Root (NT AUTHORITY\SYSTEM)
+extern PISID adminstrators_sid;    // psuedo root (BUILTIN\Administrators)
+extern PISID users_sid;            // Users (BUILTIN\Users)
+extern PISID everyone_sid;         // Everyone
+extern PISID current_user_sid;     // Current User
+extern PISID current_group_sid;    // Current Group
+extern PISID current_computer_sid; // Current Computer
+
+extern uid_t current_uid;
+extern gid_t current_gid;
 
 void initialize_sids();
 void cleanup_security_decsriptors();
 
 PISECURITY_DESCRIPTOR_RELATIVE get_security_descriptor(mode_t mode, int is_directory);
-extern uid_t current_uid;
 
 #endif

@@ -1440,9 +1440,11 @@ typedef struct _TEB
 	PVOID TlsExpansionSlots;
 } TEB, *PTEB;
 
-#define NtCurrentProcess() ((HANDLE)(LONG_PTR)-1)
-#define NtCurrentThread()  ((HANDLE)(LONG_PTR)-2)
-#define NtCurrentSession() ((HANDLE)(LONG_PTR)-3)
+#define NtCurrentProcess()      ((HANDLE)(LONG_PTR)-1)
+#define NtCurrentThread()       ((HANDLE)(LONG_PTR)-2)
+#define NtCurrentSession()      ((HANDLE)(LONG_PTR)-3)
+#define NtCurrentProcessToken() ((HANDLE)(LONG_PTR)-4)
+#define NtCurrentThreadToken()  ((HANDLE)(LONG_PTR)-5)
 
 #define NtCurrentPeb() (NtCurrentTeb()->ProcessEnvironmentBlock)
 //#define NtCurrentProcessId() (NtCurrentTeb()->ClientId.UniqueProcess)
@@ -1699,5 +1701,12 @@ NTSTATUS
 NTAPI
 NtQueryValueKey(_In_ HANDLE KeyHandle, _In_ PUNICODE_STRING ValueName, _In_ KEY_VALUE_INFORMATION_CLASS KeyValueInformationClass,
 				_Out_writes_bytes_opt_(Length) PVOID KeyValueInformation, _In_ ULONG Length, _Out_ PULONG ResultLength);
+
+NTSYSCALLAPI
+NTSTATUS
+NTAPI
+NtQueryInformationToken(_In_ HANDLE TokenHandle, _In_ TOKEN_INFORMATION_CLASS TokenInformationClass,
+						_Out_writes_bytes_to_opt_(TokenInformationLength, *ReturnLength) PVOID TokenInformation,
+						_In_ ULONG TokenInformationLength, _Out_ PULONG ReturnLength);
 
 #endif
