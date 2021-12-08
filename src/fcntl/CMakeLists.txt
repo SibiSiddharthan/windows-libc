@@ -12,6 +12,7 @@ SOURCES
 fcntl.c
 internal.c
 open.c
+osfhandle.c
 
 HEADERS
 fcntl.h
