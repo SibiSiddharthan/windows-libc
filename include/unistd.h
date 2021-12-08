@@ -167,7 +167,6 @@ WLIBC_INLINE wchar_t *wgetcwd(wchar_t *wbuf, size_t size)
 }
 
 WLIBC_API gid_t wlibc_getgid();
-WLIBC_API gid_t wlibc_getegid();
 
 WLIBC_INLINE gid_t getgid()
 {
@@ -176,7 +175,8 @@ WLIBC_INLINE gid_t getgid()
 
 WLIBC_INLINE gid_t getegid()
 {
-	return wlibc_getegid();
+	// Same as getgid
+	return wlibc_getgid();
 }
 
 WLIBC_API pid_t wlibc_getpid();
