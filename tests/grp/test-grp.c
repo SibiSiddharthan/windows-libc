@@ -137,6 +137,68 @@ int test_getgrnam()
 	return 0;
 }
 
+int test_getgrgid()
+{
+	int status;
+	struct group *entry, *grgid_entry, *grgid_r_result, grgid_r_entry;
+	char buffer[1024];
+	gid_t non_existent_group = 200;
+
+	while (1)
+	{
+		entry = getgrent();
+		if (entry == NULL)
+		{
+			break;
+		}
+
+		// getgrgid
+		grgid_entry = getgrgid(entry->gr_gid);
+		if (grgid_entry == NULL)
+		{
+			printf("Search for group '%s' failed\n", entry->gr_name);
+			return -1;
+		}
+
+		ASSERT_STREQ(grgid_entry->gr_name, entry->gr_name);
+		ASSERT_EQ(grgid_entry->gr_gid, entry->gr_gid);
+		for (int i = 0; entry->gr_mem[i] != NULL; ++i)
+		{
+			ASSERT_STREQ(grgid_entry->gr_mem[i], entry->gr_mem[i]);
+		}
+
+		// getgrgid_r
+		status = getgrgid_r(entry->gr_gid, &grgid_r_entry, buffer, 1024, &grgid_r_result);
+		ASSERT_EQ(status, 0);
+		if (grgid_r_result == NULL)
+		{
+			printf("Search for group '%s' failed\n", entry->gr_name);
+			return -1;
+		}
+
+		ASSERT_STREQ(grgid_r_entry.gr_name, entry->gr_name);
+		ASSERT_EQ(grgid_r_entry.gr_gid, entry->gr_gid);
+		for (int i = 0; entry->gr_mem[i] != NULL; ++i)
+		{
+			ASSERT_STREQ(grgid_r_entry.gr_mem[i], entry->gr_mem[i]);
+		}
+	}
+
+	endgrent();
+
+	// Non existent groups
+	errno = 0;
+	grgid_entry = getgrgid(non_existent_group);
+	ASSERT_NULL(grgid_entry);
+	ASSERT_ERRNO(ENOENT);
+
+	status = getgrgid_r(non_existent_group, &grgid_r_entry, buffer, 1024, &grgid_r_result);
+	ASSERT_NULL(grgid_r_result);
+	ASSERT_EQ(status, ENOENT);
+
+	return 0;
+}
+
 int main()
 {
 	INITIAILIZE_TESTS();
@@ -144,6 +206,7 @@ int main()
 	TEST(test_getgrent());
 	TEST(test_getgrent_r());
 	TEST(test_getgrnam());
+	TEST(test_getgrgid());
 
 	VERIFY_RESULT_AND_EXIT();
 }

@@ -370,7 +370,7 @@ int wlibc_getgrent_r(struct group *restrict grp_entry, char *restrict buffer, si
 	if (grp_entry == NULL || buffer == NULL || result == NULL || size < 0)
 	{
 		errno = EINVAL;
-		return -1;
+		return EINVAL;
 	}
 
 	// Save errno and restore it if no error has been encountered.

@@ -181,6 +181,12 @@ finish_global:
 
 struct group *wlibc_getgrnam(const char *name)
 {
+	if (name == NULL || name[0] == '\0')
+	{
+		errno = EINVAL;
+		return NULL;
+	}
+
 	static char grp_buffer[1024];
 	static struct group entry;
 
@@ -195,10 +201,16 @@ struct group *wlibc_getgrnam(const char *name)
 int wlibc_getgrnam_r(const char *restrict name, struct group *restrict grp_entry, char *restrict buffer, size_t size,
 					 struct group **restrict result)
 {
+	if (name == NULL || name[0] == '\0')
+	{
+		errno = EINVAL;
+		return EINVAL;
+	}
+
 	if (grp_entry == NULL || buffer == NULL || result == NULL || size < 0)
 	{
 		errno = EINVAL;
-		return -1;
+		return EINVAL;
 	}
 
 	// Save errno and restore it if no error has been encountered.

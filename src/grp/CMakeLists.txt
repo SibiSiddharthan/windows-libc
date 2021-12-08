@@ -10,6 +10,7 @@ MODULE grp
 
 SOURCES
 grent.c
+grgid.c
 grnam.c
 
 HEADERS
