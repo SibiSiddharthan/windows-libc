@@ -22,7 +22,6 @@ _WLIBC_BEGIN_DECLS
 #define L_tmpnam  260
 #define L_ctermid 260
 #define L_cuserid
-#define P_tmpdir "/tmp" // point this to tempdir
 
 typedef struct WLIBC_FILE FILE;
 
@@ -418,6 +417,8 @@ WLIBC_INLINE int remove(const char *path)
 	return wlibc_common_remove(AT_FDCWD, path, AT_REMOVEANY);
 }
 
+WLIBC_API char *wlibc_tmpdir();
+
 WLIBC_API FILE *wlibc_tmpfile();
 
 WLIBC_INLINE FILE *tmpfile()
@@ -425,12 +426,27 @@ WLIBC_INLINE FILE *tmpfile()
 	return wlibc_tmpfile();
 }
 
-WLIBC_API char *wlibc_tmpnam(char *name);
+WLIBC_API char *wlibc_tempnam(const char *restrict dir, const char *restrict prefix);
 
-WLIBC_INLINE char *tmpnam(char *name)
+WLIBC_INLINE char *tempnam(const char *restrict dir, const char *restrict prefix)
+{
+	return wlibc_tempnam(dir, prefix);
+}
+
+WLIBC_API char *wlibc_tmpnam(const char *name);
+
+WLIBC_INLINE char *tmpnam(const char *name)
 {
 	return wlibc_tmpnam(name);
 }
+
+WLIBC_INLINE char *tmpnam_r(const char *name)
+{
+	// Same as tmpnam
+	return wlibc_tmpnam(name);
+}
+
+#define P_tmpdir wlibc_tmpdir()
 
 WLIBC_API int wlibc_fcloseall();
 

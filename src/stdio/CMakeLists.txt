@@ -38,6 +38,7 @@ printf.c
 rename.c
 scanf.c
 setvbuf.c
+temp.c
 ungetc.c
 #pipe-hooks.c
 #stdio-hooks.c

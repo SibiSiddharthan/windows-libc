@@ -17,6 +17,7 @@ internal
 pipe
 rename
 stream
+temp
 ungetc)
 
 add_executable(pipe-helper pipe-helper.c)
