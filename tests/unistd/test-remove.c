@@ -68,6 +68,26 @@ int test_unlink()
 	return 0;
 }
 
+int test_unlink_noperms()
+{
+	errno = 0;
+	int status;
+	int fd;
+	const char *filename = "t-unlink-noperms";
+
+	fd = creat(filename, 0000);
+	ASSERT_SUCCESS(close(fd));
+
+	status = unlink(filename);
+	ASSERT_EQ(status, 0);
+
+	fd = open("t-unlink", O_RDONLY | O_EXCL);
+	ASSERT_EQ(fd, -1);
+	ASSERT_ERRNO(ENOENT);
+
+	return 0;
+}
+
 int test_unlink_readonly()
 {
 	errno = 0;
@@ -75,7 +95,7 @@ int test_unlink_readonly()
 	int fd;
 	const char *filename = "t-unlink-readonly";
 
-	fd = creat(filename, S_IREAD);
+	fd = open(filename, O_CREAT | O_WRONLY | O_READONLY);
 	ASSERT_SUCCESS(close(fd));
 
 	status = unlink(filename);
@@ -312,6 +332,7 @@ int main()
 
 	// unlink
 	TEST(test_unlink());
+	TEST(test_unlink_noperms());
 	TEST(test_unlink_readonly());
 	TEST(test_unlink_symlink());
 	TEST(test_unlinkat());

@@ -103,7 +103,7 @@ int test_readonly()
 	int fd;
 	const char *filename = "t-truncate-readonly";
 
-	fd = creat(filename, S_IREAD);
+	fd = open(filename, O_CREAT | O_WRONLY | O_READONLY);
 	ASSERT_SUCCESS(close(fd));
 
 	status = truncate(filename, 10);
@@ -128,17 +128,10 @@ int main()
 	INITIAILIZE_TESTS();
 	CLEANUP(cleanup);
 
-	uid_t uid = getuid();
-
 	TEST(test_lesser_length());
 	TEST(test_greater_length());
 	TEST(test_ftruncate());
-	if (uid != ROOT_UID)
-	{
-		// Don't run this test if we are admin or system.
-		// In the future let's mark the file readonly and test it. TODO.
-		TEST(test_readonly());
-	}
+	TEST(test_readonly());
 
 	VERIFY_RESULT_AND_EXIT();
 }
