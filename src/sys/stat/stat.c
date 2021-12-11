@@ -17,7 +17,7 @@
 /* 116444736000000000 is the number of 100 nanosecond intervals from
    January 1st 1601 to January 1st 1970 (UTC)
 */
-struct timespec LARGE_INTEGER_to_timespec(LARGE_INTEGER LT)
+static struct timespec LARGE_INTEGER_to_timespec(LARGE_INTEGER LT)
 {
 	struct timespec result;
 	time_t epoch = LT.QuadPart - 116444736000000000LL;
@@ -199,6 +199,7 @@ int do_stat(HANDLE handle, struct stat *restrict statbuf)
 #endif
 		}
 
+		statbuf->st_attributes = attributes & S_IA_MASK;
 		statbuf->st_ino = stat_info.FileId.QuadPart;
 		statbuf->st_nlink = stat_info.NumberOfLinks;
 		statbuf->st_size = stat_info.EndOfFile.QuadPart;
@@ -305,9 +306,9 @@ int do_stat(HANDLE handle, struct stat *restrict statbuf)
 	return 0;
 }
 
-int common_stat(int dirfd, const char *restrict name, struct stat *restrict statbuf, int flags)
+int common_stat(int dirfd, const char *restrict path, struct stat *restrict statbuf, int flags)
 {
-	wchar_t *u16_ntpath = get_absolute_ntpath(dirfd, name);
+	wchar_t *u16_ntpath = get_absolute_ntpath(dirfd, path);
 	if (u16_ntpath == NULL)
 	{
 		errno = ENOENT;
@@ -328,7 +329,7 @@ int common_stat(int dirfd, const char *restrict name, struct stat *restrict stat
 	return result;
 }
 
-int wlibc_common_stat(int dirfd, const char *restrict name, struct stat *restrict statbuf, int flags)
+int wlibc_common_stat(int dirfd, const char *restrict path, struct stat *restrict statbuf, int flags)
 {
 	if (statbuf == NULL)
 	{
@@ -344,7 +345,7 @@ int wlibc_common_stat(int dirfd, const char *restrict name, struct stat *restric
 
 	if (flags != AT_EMPTY_PATH)
 	{
-		VALIDATE_PATH_AND_DIRFD(name, dirfd);
+		VALIDATE_PATH_AND_DIRFD(path, dirfd);
 	}
 	else
 	{
@@ -357,5 +358,5 @@ int wlibc_common_stat(int dirfd, const char *restrict name, struct stat *restric
 		return do_stat(get_fd_handle(dirfd), statbuf);
 	}
 
-	return common_stat(dirfd, name, statbuf, flags);
+	return common_stat(dirfd, path, statbuf, flags);
 }

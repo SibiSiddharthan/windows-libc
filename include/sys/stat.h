@@ -15,6 +15,7 @@
 
 _WLIBC_BEGIN_DECLS
 
+// File types
 #define S_IFMT   0xF000 // File type mask
 #define S_IFIFO  0x1000 // Pipe or FIFO (FIFO is unsupported)
 #define S_IFCHR  0x2000 // Character special
@@ -23,6 +24,23 @@ _WLIBC_BEGIN_DECLS
 #define S_IFREG  0x8000 // Regular
 #define S_IFLNK  0xA000 // Symbolic Link
 #define S_IFSOCK 0xC000 // Socket
+
+// File attributes
+#define S_IA_AUTOMOUNT  0x0000                                                     // Unsupported
+#define S_IA_APPEND     0x0000                                                     // Unsupported
+#define S_IA_NODUMP     0x0000                                                     // Unsupported
+#define S_IA_NOUNLINK   0x0000                                                     // Unsupported
+#define S_IA_READONLY   0x0001                                                     // FILE_ATTRIBUTE_READONLY
+#define S_IA_HIDDEN     0x0002                                                     // FILE_ATTRIBUTE_HIDDEN
+#define S_IA_SYSTEM     0x0004                                                     // FILE_ATTRIBUTE_SYSTEM
+#define S_IA_ARCHIVE    0x0020                                                     // FILE_ATTRIBUTE_ARCHIVE
+#define S_IA_SPARSE     0x0200                                                     // FILE_ATTRIBUTE_SPARSE_FILE
+#define S_IA_REPARSE    0x0400                                                     // FILE_ATTRIBUTE_REPARSE_POINT
+#define S_IA_COMPRESSED 0x0800                                                     // FILE_ATTRIBUTE_COMPRESSED
+#define S_IA_OFFLINE    0x1000                                                     // FILE_ATTRIBUTE_OFFLINE
+#define S_IA_ENCRYPTED  0x4000                                                     // FILE_ATTRIBUTE_ENCRYPTED
+#define S_IA_MASK       0x5e27                                                     // File attributes mask
+#define S_IA_SETTABLE   (S_IA_READONLY | S_IA_HIDDEN | S_IA_SYSTEM | S_IA_ARCHIVE) // File attributes settable mask
 
 // User permissions
 #define S_IRUSR 0400
@@ -62,6 +80,7 @@ struct stat
 	dev_t st_dev;                // ID of device containing file
 	ino_t st_ino;                // file serial number
 	mode_t st_mode;              // mode of file
+	uint32_t st_attributes;      // file attributes
 	nlink_t st_nlink;            // number of links to the file
 	uid_t st_uid;                // user ID of file
 	gid_t st_gid;                // group ID of file
@@ -101,6 +120,62 @@ struct stat
 #define UTIME_NOW  -1 // Change timestamp to current timestamp
 #define UTIME_OMIT -2 // Ignore timestamp
 
+struct statx_timestamp
+{
+	int64_t tv_sec;
+	uint32_t tv_nsec;
+};
+
+struct statx
+{
+	uint32_t stx_mask;
+	uint32_t stx_blksize;
+	uint64_t stx_attributes;
+	uint32_t stx_nlink;
+	uint32_t stx_uid;
+	uint32_t stx_gid;
+	uint16_t stx_mode;
+	uint64_t stx_ino;
+	uint64_t stx_size;
+	uint64_t stx_blocks;
+	uint64_t stx_attributes_mask;
+	struct statx_timestamp stx_atime;
+	struct statx_timestamp stx_btime;
+	struct statx_timestamp stx_ctime;
+	struct statx_timestamp stx_mtime;
+	uint32_t stx_rdev_major;
+	uint32_t stx_rdev_minor;
+	uint32_t stx_dev_major;
+	uint32_t stx_dev_minor;
+};
+#define STATX_TYPE        0x0001
+#define STATX_MODE        0x0002
+#define STATX_NLINK       0x0004
+#define STATX_UID         0x0008
+#define STATX_GID         0x0010
+#define STATX_INO         0x0020
+#define STATX_BLOCKS      0x0040
+#define STATX_SIZE        0x0080
+#define STATX_ATIME       0x0100
+#define STATX_MTIME       0x0200
+#define STATX_CTIME       0x0400
+#define STATX_BTIME       0x0800
+#define STATX_BASIC_STATS 0x0fff
+#define STATX_ALL         STATX_BASIC_STATS
+
+#define STATX_ATTR_AUTOMOUNT  S_IA_AUTOMOUNT
+#define STATX_ATTR_APPEND     S_IA_APPEND
+#define STATX_ATTR_NODUMP     S_IA_NODUMP
+#define STATX_ATTR_IMMUTABLE  S_IA_READONLY
+#define STATX_ATTR_HIDDEN     S_IA_HIDDEN
+#define STATX_ATTR_SYSTEM     S_IA_SYSTEM
+#define STATX_ATTR_ARCHIVE    S_IA_ARCHIVE
+#define STATX_ATTR_SPARSE     S_IA_SPARSE
+#define STATX_ATTR_REPARSE    S_IA_REPARSE
+#define STATX_ATTR_COMPRESSED S_IA_COMPRESSED
+#define STATX_ATTR_OFFLINE    S_IA_OFFLINE
+#define STATX_ATTR_ENCRYPTED  S_IA_ENCRYPTED
+
 WLIBC_API int wlibc_common_chmod(int dirfd, const char *path, mode_t mode, int flags);
 
 WLIBC_INLINE int chmod(const char *path, mode_t mode)
@@ -123,6 +198,28 @@ WLIBC_INLINE int fchmodat(int dirfd, const char *path, mode_t mode, int flags)
 	return wlibc_common_chmod(dirfd, path, mode, flags);
 }
 
+WLIBC_API int wlibc_common_chflags(int dirfd, const char *path, uint32_t attributes, int flags);
+
+WLIBC_INLINE int chflags(const char *path, uint32_t attributes)
+{
+	return wlibc_common_chflags(AT_FDCWD, path, attributes, 0);
+}
+
+WLIBC_INLINE int lchflags(const char *path, uint32_t attributes)
+{
+	return wlibc_common_chflags(AT_FDCWD, path, attributes, AT_SYMLINK_NOFOLLOW);
+}
+
+WLIBC_INLINE int fchflags(int fd, uint32_t attributes)
+{
+	return wlibc_common_chflags(fd, NULL, attributes, AT_EMPTY_PATH);
+}
+
+WLIBC_INLINE int fchflagsat(int dirfd, const char *path, uint32_t attributes, int flags)
+{
+	return wlibc_common_chflags(dirfd, path, attributes, flags);
+}
+
 WLIBC_API int wlibc_common_stat(int dirfd, const char *restrict path, struct stat *restrict statbuf, int flags);
 
 WLIBC_INLINE int stat(const char *restrict path, struct stat *restrict statbuf)
@@ -143,6 +240,18 @@ WLIBC_INLINE int fstat(int fd, struct stat *statbuf)
 WLIBC_INLINE int fstatat(int dirfd, const char *restrict path, struct stat *restrict statbuf, int flags)
 {
 	return wlibc_common_stat(dirfd, path, statbuf, flags);
+}
+
+// These macros should not conflict with AT_* macros in fcntl.h
+#define AT_STATX_FORCE_SYNC   0x00 // Unsupported
+#define AT_STATX_DONT_SYNC    0x00 // Unsupported
+#define AT_STATX_SYNC_AS_STAT 0x20 // Perform stat
+
+WLIBC_API int wlibc_statx(int dirfd, const char *restrict path, int flags, unsigned int mask, struct statx *restrict statxbuf);
+
+WLIBC_INLINE int statx(int dirfd, const char *restrict path, int flags, unsigned int mask, struct statx *restrict statxbuf)
+{
+	return wlibc_statx(dirfd, path, flags, mask, statxbuf);
 }
 
 WLIBC_API int wlibc_common_mkdir(int dirfd, const char *path, mode_t mode);
