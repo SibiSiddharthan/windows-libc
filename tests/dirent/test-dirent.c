@@ -31,7 +31,7 @@ int setup()
 	fd = creat("t/a6", 0700);
 	ASSERT_SUCCESS(close(fd));
 
-	ASSERT_SUCCESS(mkdir("t/d", 0));
+	ASSERT_SUCCESS(mkdir("t/d", 0700));
 
 	ASSERT_SUCCESS(symlink("a1", "t/s1"));
 	ASSERT_SUCCESS(symlink("a2", "t/s2"));

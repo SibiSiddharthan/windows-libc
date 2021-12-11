@@ -80,8 +80,9 @@ int common_symlink(const char *restrict source, int dirfd, const char *restrict 
 		(PSECURITY_DESCRIPTOR)get_security_descriptor(mode & 0777, options == FILE_DIRECTORY_FILE ? 1 : 0);
 	RtlInitUnicodeString(&u16_path, u16_nttarget);
 	InitializeObjectAttributes(&object, &u16_path, OBJ_CASE_INSENSITIVE, NULL, security_descriptor);
-	status = NtCreateFile(&target_handle, FILE_READ_ATTRIBUTES | FILE_WRITE_ATTRIBUTES, &object, &I, NULL, 0,
-						  FILE_SHARE_READ | FILE_SHARE_WRITE, FILE_CREATE, options, NULL, 0);
+	// Open synchronously as NtFsControlFile might return STATUS_PENDING.
+	status = NtCreateFile(&target_handle, FILE_READ_ATTRIBUTES | FILE_WRITE_ATTRIBUTES | SYNCHRONIZE, &object, &I, NULL, 0,
+						  FILE_SHARE_READ | FILE_SHARE_WRITE, FILE_CREATE, options | FILE_SYNCHRONOUS_IO_NONALERT, NULL, 0);
 	free(u16_nttarget);
 	if (status != STATUS_SUCCESS)
 	{

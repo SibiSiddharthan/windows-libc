@@ -644,6 +644,9 @@ void cleanup()
 	remove("t-readlinkat.dir/t-symlinkat");
 	remove("t-readlinkat.dir/t-symlinkat.sym");
 	remove("t-readlinkat.dir");
+
+	remove("t-readlinkat-empty-path");
+	remove("t-readlinkat-empty-path.sym");
 }
 
 int main()
