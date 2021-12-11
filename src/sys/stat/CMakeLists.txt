@@ -13,6 +13,7 @@ chflags.c
 chmod.c
 mkdir.c
 stat.c
+statx.c
 utimens.c
 
 HEADERS
