@@ -9,6 +9,7 @@ wlibc_module(
 MODULE sys.stat
 
 SOURCES
+chflags.c
 chmod.c
 mkdir.c
 stat.c
