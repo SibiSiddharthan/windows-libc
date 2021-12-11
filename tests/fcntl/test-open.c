@@ -317,6 +317,57 @@ int test_openat()
 	return 0;
 }
 
+int test_open_attributes()
+{
+	int status;
+	int fd;
+	struct stat statbuf;
+	const char *filename = "t-open-attributes";
+
+	// By default FILE_ATTRIBUTE_ARCHIVE is always set when creating a file.
+	// no attributes
+	fd = open(filename, O_RDWR | O_CREAT, 0700);
+
+	status = stat(filename, &statbuf);
+	ASSERT_EQ(status, 0);
+	ASSERT_EQ((statbuf.st_attributes & S_IA_MASK), S_IA_ARCHIVE);
+
+	ASSERT_SUCCESS(close(fd));
+	ASSERT_SUCCESS(unlink(filename));
+
+	// readonly
+	fd = open(filename, O_RDWR | O_CREAT | O_READONLY, 0700);
+
+	status = stat(filename, &statbuf);
+	ASSERT_EQ(status, 0);
+	ASSERT_EQ((statbuf.st_attributes & S_IA_MASK), (S_IA_READONLY | S_IA_ARCHIVE));
+
+	ASSERT_SUCCESS(close(fd));
+	ASSERT_SUCCESS(unlink(filename));
+
+	// hidden , system
+	fd = open(filename, O_RDWR | O_CREAT | O_HIDDEN | O_SYSTEM, 0700);
+
+	status = stat(filename, &statbuf);
+	ASSERT_EQ(status, 0);
+	ASSERT_EQ((statbuf.st_attributes & S_IA_MASK), (S_IA_HIDDEN | S_IA_SYSTEM | S_IA_ARCHIVE));
+
+	ASSERT_SUCCESS(close(fd));
+	ASSERT_SUCCESS(unlink(filename));
+
+	// archive, encrypted
+	fd = open(filename, O_RDWR | O_CREAT | O_ARCHIVE | O_ENCRYPTED, 0700);
+
+	status = stat(filename, &statbuf);
+	ASSERT_EQ(status, 0);
+	ASSERT_EQ((statbuf.st_attributes & S_IA_MASK), (S_IA_ARCHIVE | S_IA_ENCRYPTED));
+
+	ASSERT_SUCCESS(close(fd));
+	ASSERT_SUCCESS(unlink(filename));
+
+	return 0;
+}
+
 void cleanup()
 {
 	remove("t-create");
@@ -332,6 +383,7 @@ void cleanup()
 	remove("t-open-noatime");
 	remove("t-openat.dir/t-openat");
 	remove("t-openat.dir");
+	remove("t-open-attributes");
 }
 
 int main()
@@ -355,6 +407,7 @@ int main()
 	TEST(test_O_NOATIME());
 	TEST(test_null());
 	TEST(test_openat());
+	TEST(test_open_attributes());
 
 	VERIFY_RESULT_AND_EXIT();
 }

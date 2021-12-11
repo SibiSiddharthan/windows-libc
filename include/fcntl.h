@@ -48,19 +48,22 @@ _WLIBC_BEGIN_DECLS
 #define O_RANDOM      0x0010  // file access is primarily random
 #define O_TMPFILE     0x0040  // temporary file
 #define O_TEMPORARY   O_TMPFILE
-#define O_SHORT_LIVED 0x1000 // like temporary file but name of file is given(to implement msvc T,D)
+#define O_SHORT_LIVED 0x1000  // like temporary file but name of file is given(to implement msvc T,D)
+#define O_READONLY    0x10000 // file is read-only
+#define O_IMMUTABLE   O_READONLY
+#define O_HIDDEN      0x20000   // file is hidden
+#define O_SYSTEM      0x40000   // file is a system file
+#define O_ARCHIVE     0x0004    // file can be backed up
+#define O_ENCRYPTED   0x8000000 // file is encrypted by the file system
 
 // Unsupported
 #define O_LARGEFILE 0x0 // We always use 64 bit file offsets
 #define O_NOCTTY    0x0 // Unsupported
 
 // Compatibility with MSVC
-#define O_TEXT    0x4000  // file mode is text (translated)
-#define O_BINARY  0x8000  // file mode is binary (untranslated)
-#define O_WTEXT   0x10000 // file mode is UTF16 (translated)
-#define O_U16TEXT 0x20000 // file mode is UTF16 no BOM (translated)
-#define O_U8TEXT  0x40000 // file mode is UTF8  no BOM (translated)
-#define O_RAW     O_BINARY
+#define O_TEXT   0x4000 // file mode is text (translated)
+#define O_BINARY 0x8000 // file mode is binary (untranslated)
+#define O_RAW    O_BINARY
 
 // For *at functions
 #define AT_FDCWD            0x1000000

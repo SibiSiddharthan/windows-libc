@@ -21,7 +21,7 @@ static ACCESS_MASK determine_access_rights(int oflags)
 {
 	ACCESS_MASK access_rights = SYNCHRONIZE |                                        // always have this except for nonblocking handles
 								FILE_READ_ATTRIBUTES | FILE_READ_EA | READ_CONTROL | // read
-								FILE_WRITE_ATTRIBUTES | WRITE_DAC;   // write
+								FILE_WRITE_ATTRIBUTES | WRITE_DAC;                   // write
 	// Check if need to give this much by default. also WRITE_OWNER?
 
 	if (oflags & O_WRONLY)
@@ -135,6 +135,26 @@ static ULONG determine_file_attributes(int oflags)
 	if (oflags & O_TMPFILE)
 	{
 		attributes |= FILE_ATTRIBUTE_TEMPORARY;
+	}
+	if (oflags & O_READONLY)
+	{
+		attributes |= FILE_ATTRIBUTE_READONLY;
+	}
+	if (oflags & O_HIDDEN)
+	{
+		attributes |= FILE_ATTRIBUTE_HIDDEN;
+	}
+	if (oflags & O_SYSTEM)
+	{
+		attributes |= FILE_ATTRIBUTE_SYSTEM;
+	}
+	if (oflags & O_ARCHIVE)
+	{
+		attributes |= FILE_ATTRIBUTE_ARCHIVE;
+	}
+	if (oflags & O_ENCRYPTED)
+	{
+		attributes |= FILE_ATTRIBUTE_ENCRYPTED;
 	}
 	return attributes;
 }
@@ -404,7 +424,7 @@ int do_open(int dirfd, const char *name, int oflags, mode_t perm)
 	int fd = -1;
 	HANDLE handle;
 	ACCESS_MASK access_rights = determine_access_rights(oflags);
-	ULONG attributes = determine_file_attributes(oflags);
+	ULONG attributes = 0;
 	ULONG disposition = determine_create_dispostion(oflags);
 	ULONG options = determine_create_options(oflags);
 	PSECURITY_DESCRIPTOR security_descriptor = NULL;
@@ -419,6 +439,7 @@ int do_open(int dirfd, const char *name, int oflags, mode_t perm)
 			attributes |= FILE_ATTRIBUTE_READONLY;
 		}
 #endif
+		attributes = determine_file_attributes(oflags);
 		security_descriptor = (PSECURITY_DESCRIPTOR)get_security_descriptor(perm & 0777, 0);
 	}
 
