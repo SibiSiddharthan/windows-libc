@@ -72,6 +72,7 @@ void map_ntstatus_to_errno(NTSTATUS error)
 		break;
 	case STATUS_ACCESS_DENIED:
 	case STATUS_SHARING_VIOLATION:
+	case STATUS_SECTION_PROTECTION:
 		errno = EACCES;
 		break;
 	case STATUS_CANNOT_DELETE:
@@ -111,6 +112,8 @@ void map_ntstatus_to_errno(NTSTATUS error)
 	case STATUS_OBJECT_NAME_INVALID:
 	case STATUS_INVALID_EA_NAME:
 	case STATUS_EA_LIST_INCONSISTENT:
+	case STATUS_SECTION_TOO_BIG:
+	case STATUS_MAPPED_ALIGNMENT:
 		errno = EINVAL;
 		break;
 	case STATUS_FILE_IS_A_DIRECTORY:

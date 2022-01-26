@@ -1709,4 +1709,78 @@ NtQueryInformationToken(_In_ HANDLE TokenHandle, _In_ TOKEN_INFORMATION_CLASS To
 						_Out_writes_bytes_to_opt_(TokenInformationLength, *ReturnLength) PVOID TokenInformation,
 						_In_ ULONG TokenInformationLength, _Out_ PULONG ReturnLength);
 
+#define MAP_PROCESS 1
+#define MAP_SYSTEM  2
+
+NTSYSCALLAPI
+NTSTATUS
+NTAPI
+NtCreateSectionEx(_Out_ PHANDLE SectionHandle, _In_ ACCESS_MASK DesiredAccess, _In_opt_ POBJECT_ATTRIBUTES ObjectAttributes,
+				  _In_opt_ PLARGE_INTEGER MaximumSize, _In_ ULONG SectionPageProtection, _In_ ULONG AllocationAttributes,
+				  _In_opt_ HANDLE FileHandle, _Inout_updates_opt_(ExtendedParameterCount) PMEM_EXTENDED_PARAMETER ExtendedParameters,
+				  _In_ ULONG ExtendedParameterCount);
+
+NTSYSAPI
+NTSTATUS
+NTAPI
+NtMapViewOfSectionEx(_In_ HANDLE SectionHandle, _In_ HANDLE ProcessHandle,
+					 _Inout_ _At_(*BaseAddress, _Readable_bytes_(*ViewSize) _Writable_bytes_(*ViewSize)
+													_Post_readable_byte_size_(*ViewSize)) PVOID *BaseAddress,
+					 _Inout_opt_ PLARGE_INTEGER SectionOffset, _Inout_ PSIZE_T ViewSize, _In_ ULONG AllocationType, _In_ ULONG Win32Protect,
+					 _Inout_updates_opt_(ParameterCount) PMEM_EXTENDED_PARAMETER ExtendedParameters, _In_ ULONG ExtendedParameterCount);
+
+NTSYSCALLAPI
+NTSTATUS
+NTAPI
+NtUnmapViewOfSectionEx(_In_ HANDLE ProcessHandle, _In_opt_ PVOID BaseAddress, _In_ ULONG Flags);
+
+NTSYSCALLAPI
+NTSTATUS
+NTAPI
+NtLockVirtualMemory(_In_ HANDLE ProcessHandle, _Inout_ PVOID *BaseAddress, _Inout_ PSIZE_T RegionSize, _In_ ULONG MapType);
+
+NTSYSCALLAPI
+NTSTATUS
+NTAPI
+NtUnlockVirtualMemory(_In_ HANDLE ProcessHandle, _Inout_ PVOID *BaseAddress, _Inout_ PSIZE_T RegionSize, _In_ ULONG MapType);
+
+NTSYSCALLAPI
+NTSTATUS
+NTAPI
+NtProtectVirtualMemory(_In_ HANDLE ProcessHandle, _Inout_ PVOID *BaseAddress, _Inout_ PSIZE_T RegionSize, _In_ ULONG NewProtect,
+					   _Out_ PULONG OldProtect);
+
+NTSYSCALLAPI
+NTSTATUS
+NTAPI
+NtFlushVirtualMemory(_In_ HANDLE ProcessHandle, _Inout_ PVOID *BaseAddress, _Inout_ PSIZE_T RegionSize,
+					 _Out_ struct _IO_STATUS_BLOCK *IoStatus);
+
+NTSYSAPI
+NTSTATUS
+NTAPI
+NtAllocateVirtualMemoryEx(_In_ HANDLE ProcessHandle,
+						  _Inout_ _At_(*BaseAddress, _Readable_bytes_(*RegionSize) _Writable_bytes_(*RegionSize)
+														 _Post_readable_byte_size_(*RegionSize)) PVOID *BaseAddress,
+						  _Inout_ PSIZE_T RegionSize, _In_ ULONG AllocationType, _In_ ULONG PageProtection,
+						  _Inout_updates_opt_(ExtendedParameterCount) PMEM_EXTENDED_PARAMETER ExtendedParameters,
+						  _In_ ULONG ExtendedParameterCount);
+
+NTSYSCALLAPI
+NTSTATUS
+NTAPI
+NtFreeVirtualMemory(_In_ HANDLE ProcessHandle, _Inout_ PVOID *BaseAddress, _Inout_ PSIZE_T RegionSize, _In_ ULONG FreeType);
+
+NTSYSCALLAPI
+NTSTATUS
+NTAPI
+NtReadVirtualMemory(_In_ HANDLE ProcessHandle, _In_opt_ PVOID BaseAddress, _Out_writes_bytes_(BufferSize) PVOID Buffer,
+					_In_ SIZE_T BufferSize, _Out_opt_ PSIZE_T NumberOfBytesRead);
+
+NTSYSCALLAPI
+NTSTATUS
+NTAPI
+NtWriteVirtualMemory(_In_ HANDLE ProcessHandle, _In_opt_ PVOID BaseAddress, _In_reads_bytes_(BufferSize) PVOID Buffer,
+					 _In_ SIZE_T BufferSize, _Out_opt_ PSIZE_T NumberOfBytesWritten);
+
 #endif

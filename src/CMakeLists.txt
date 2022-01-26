@@ -64,6 +64,10 @@ if(ENABLE_ACCOUNTS)
 	wlibc_add_module(grp pwd)
 endif()
 
+if(ENABLE_MMAP)
+	wlibc_add_module(sys.mman)
+endif()
+
 #wlibc_add_module(sys.acl)
 wlibc_add_module(sys.utsname)
 

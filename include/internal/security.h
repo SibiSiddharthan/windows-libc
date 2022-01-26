@@ -5,8 +5,8 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#ifndef SECURITY_INTERNAL_H
-#define SECURITY_INTERNAL_H
+#ifndef WLIBC_SECURITY_INTERNAL_H
+#define WLIBC_SECURITY_INTERNAL_H
 
 #include <Windows.h>
 #include <winnt.h>

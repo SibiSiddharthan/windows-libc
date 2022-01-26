@@ -55,3 +55,7 @@ if(ENABLE_ACCOUNTS)
 	add_subdirectory(grp)
 	add_subdirectory(pwd)
 endif()
+
+if(ENABLE_MMAP)
+	add_subdirectory(sys/mman)
+endif()

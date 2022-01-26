@@ -13,5 +13,5 @@ int wlibc_getpagesize()
 	// This will not fail.
 	SYSTEM_BASIC_INFORMATION basic_info;
 	NtQuerySystemInformation(SystemBasicInformation, &basic_info, sizeof(SYSTEM_BASIC_INFORMATION), NULL);
-	return basic_info.AllocationGranularity;
+	return basic_info.PageSize;
 }
