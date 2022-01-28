@@ -1783,4 +1783,17 @@ NTAPI
 NtWriteVirtualMemory(_In_ HANDLE ProcessHandle, _In_opt_ PVOID BaseAddress, _In_reads_bytes_(BufferSize) PVOID Buffer,
 					 _In_ SIZE_T BufferSize, _Out_opt_ PSIZE_T NumberOfBytesWritten);
 
+#define SYMBOLIC_LINK_QUERY 0x0001
+#define SYMBOLIC_LINK_ALL_ACCESS (STANDARD_RIGHTS_REQUIRED | SYMBOLIC_LINK_QUERY)
+
+NTSYSCALLAPI
+NTSTATUS
+NTAPI
+NtOpenSymbolicLinkObject(_Out_ PHANDLE LinkHandle, _In_ ACCESS_MASK DesiredAccess, _In_ POBJECT_ATTRIBUTES ObjectAttributes);
+
+NTSYSCALLAPI
+NTSTATUS
+NTAPI
+NtQuerySymbolicLinkObject(_In_ HANDLE LinkHandle, _Inout_ PUNICODE_STRING LinkTarget, _Out_opt_ PULONG ReturnedLength);
+
 #endif
