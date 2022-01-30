@@ -8,6 +8,8 @@
 #include <internal/nt.h>
 #include <internal/error.h>
 #include <internal/fcntl.h>
+#include <internal/path.h>
+#include <stdlib.h>
 #include <unistd.h>
 
 int common_chdir(const wchar_t *wname)
@@ -48,6 +50,15 @@ int wlibc_fchdir(int fd)
 		return -1;
 	}
 
-	const wchar_t *dirpath = get_fd_path(fd);
-	return common_chdir(dirpath);
+	UNICODE_STRING *dirpath = xget_fd_dospath(fd);
+	if(dirpath == NULL)
+	{
+		errno = EBADF;
+		return -1;
+	}
+
+	int result = common_chdir(dirpath->Buffer);
+	free(dirpath);
+
+	return result;
 }

@@ -72,37 +72,45 @@ nt_device *dos_device_to_nt_device(char volume)
 		return NULL;
 	}
 
-	if (devices[volume - 'A'].length != 0)
+	// If length is '-1', it means the volume does not exist.
+	if (devices[volume - 'A'].length != (uint16_t)-1)
 	{
-		// In cache
-		return &devices[volume - 'A'];
-	}
-	else
-	{
-		// Zero extension for UTF16-LE(Little Endian) works here
-		path_buffer[10] = (WCHAR)volume;
-		InitializeObjectAttributes(&object, &path, OBJ_CASE_INSENSITIVE, NULL, NULL);
-		status = NtOpenSymbolicLinkObject(&handle, SYMBOLIC_LINK_QUERY, &object);
-		if (status != STATUS_SUCCESS)
+		if (devices[volume - 'A'].length != 0)
 		{
-			return NULL;
+			// In cache
+			return &devices[volume - 'A'];
 		}
-
-		// Use the cache structures buffer itself
-		realpath.Buffer = devices[volume - 'A'].name;
-		realpath.Length = 0;
-		realpath.MaximumLength = 26 * sizeof(WCHAR);
-
-		status = NtQuerySymbolicLinkObject(handle, &realpath, NULL);
-		if (status != STATUS_SUCCESS)
+		else
 		{
-			return NULL;
+			// Zero extension for UTF16-LE(Little Endian) works here
+			path_buffer[10] = (WCHAR)volume;
+			InitializeObjectAttributes(&object, &path, OBJ_CASE_INSENSITIVE, NULL, NULL);
+			status = NtOpenSymbolicLinkObject(&handle, SYMBOLIC_LINK_QUERY, &object);
+			if (status != STATUS_SUCCESS)
+			{
+				// Mark the volume as non existent.
+				devices[volume - 'A'].length = -1;
+				return NULL;
+			}
+
+			// Use the cache structures buffer itself
+			realpath.Buffer = devices[volume - 'A'].name;
+			realpath.Length = 0;
+			realpath.MaximumLength = 26 * sizeof(WCHAR);
+
+			status = NtQuerySymbolicLinkObject(handle, &realpath, NULL);
+			if (status != STATUS_SUCCESS)
+			{
+				// Mark the volume as non existent.
+				devices[volume - 'A'].length = -1;
+				return NULL;
+			}
+
+			NtClose(handle);
+
+			devices[volume - 'A'].length = realpath.Length;
+			return &devices[volume - 'A'];
 		}
-
-		NtClose(handle);
-
-		devices[volume - 'A'].length = realpath.Length;
-		return &devices[volume - 'A'];
 	}
 
 	return NULL;
@@ -460,4 +468,64 @@ void free_ntpath(UNICODE_STRING *ntpath)
 	}
 
 	free(ntpath);
+}
+
+UNICODE_STRING *xget_fd_dospath(int fd)
+{
+	UNICODE_STRING *path = (UNICODE_STRING *)xget_fd_path(fd);
+	nt_device *device = NULL;
+
+	if (path == NULL)
+	{
+		return NULL;
+	}
+
+	int i;
+	for (i = 0; i < 26; ++i)
+	{
+		// Iterate from A-Z.
+		// This is slow, need a better way. TODO
+		device = dos_device_to_nt_device(i + 'A');
+		if (device != NULL)
+		{
+			if (memcmp(device->name, path->Buffer, device->length) == 0)
+			{
+				break;
+			}
+		}
+	}
+
+	if (i < 26)
+	{
+		path->Buffer[0] = (WCHAR)(i + 'A');
+		path->Buffer[1] = L':';
+
+		int j;
+		int count = 0;
+		// Find the second slash
+		for (j = 2; path->Buffer[j] != L'\0'; ++j)
+		{
+			if (path->Buffer[j] == L'\\')
+			{
+				++count;
+			}
+
+			if (count == 2)
+			{
+				break;
+			}
+		}
+
+		if (count == 2)
+		{
+			memmove(path->Buffer + 2, path->Buffer + j, path->Length - j - 2);
+		}
+		if (count == 1) // just the drive, eg. C:
+		{
+			path->Length = 2 * sizeof(WCHAR);
+			memset(path->Buffer + 2, 0, path->MaximumLength - 2 * sizeof(WCHAR));
+		}
+	}
+
+	return path;
 }
