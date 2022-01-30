@@ -10,71 +10,56 @@
 #include <unistd.h>
 #include <internal/fcntl.h>
 
-int common_chown(const wchar_t *wname, uid_t owner, gid_t group, int do_lchown)
+int do_chown(HANDLE handle, uid_t owner, gid_t group)
 {
-	return 0; // TODO
+	// TODO
+	return 0;
 }
 
-int wlibc_chown(const char *name, uid_t owner, gid_t group)
+int common_chown(int dirfd, const char *path, uid_t owner, gid_t group, int flags)
 {
-	if (name == NULL)
+	// This requires 'SeTakeOwnershipPrivilege'.
+	HANDLE handle = just_open(dirfd, path, READ_CONTROL | WRITE_OWNER, flags == AT_SYMLINK_NOFOLLOW ? FILE_OPEN_REPARSE_POINT : 0);
+	if (handle == INVALID_HANDLE_VALUE)
 	{
-		errno = ENOENT;
+		// errno will be set by just_open
 		return -1;
 	}
 
-	wchar_t *wname = mb_to_wc(name);
-	int status = common_chown(wname, owner, group, 0);
-	free(wname);
-
-	return status;
+	int result = do_chown(handle, owner, group);
+	NtClose(handle);
+	return result;
 }
 
-int wlibc_wchown(const wchar_t *wname, uid_t owner, gid_t group)
+int wlibc_common_chown(int dirfd, const char *path, uid_t owner, gid_t group, int flags)
 {
-	if (wname == NULL)
+	if (owner < 0 || group < 0)
 	{
-		errno = ENOENT;
+		errno = EINVAL;
 		return -1;
 	}
 
-	return common_chown(wname, owner, group, 0);
-}
-
-int wlibc_lchown(const char *name, uid_t owner, gid_t group)
-{
-	if (name == NULL)
+	if (flags != 0 && flags != AT_SYMLINK_NOFOLLOW && flags != AT_EMPTY_PATH)
 	{
-		errno = ENOENT;
+		errno = EINVAL;
 		return -1;
 	}
 
-	wchar_t *wname = mb_to_wc(name);
-	int status = common_chown(wname, owner, group, 1);
-	free(wname);
-
-	return status;
-}
-
-int wlibc_wlchown(const wchar_t *wname, uid_t owner, gid_t group)
-{
-	if (wname == NULL)
+	if (flags != AT_EMPTY_PATH)
 	{
-		errno = ENOENT;
-		return -1;
+		VALIDATE_PATH_AND_DIRFD(path, dirfd);
+	}
+	else
+	{
+		if (!validate_fd(dirfd))
+		{
+			errno = EBADF;
+			return -1;
+		}
+
+		// fds opened by 'open' don't have WRITE_OWNER privelege, need to reopen file. TODO
+		return do_chown(get_fd_handle(dirfd), owner, group);
 	}
 
-	return common_chown(wname, owner, group, 1);
-}
-
-int wlibc_fchown(int fd, uid_t owner, gid_t group)
-{
-	if (!validate_fd(fd))
-	{
-		errno = EBADF;
-		return -1;
-	}
-
-	const wchar_t *wname = get_fd_path(fd);
-	return common_chown(wname, owner, group, 0);
+	return common_chown(dirfd, path, owner, group, flags);
 }

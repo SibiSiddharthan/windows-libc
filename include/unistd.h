@@ -75,50 +75,26 @@ WLIBC_INLINE int fchdir(int fd)
 	return wlibc_fchdir(fd);
 }
 
-WLIBC_API int wlibc_chown(const char *name, uid_t owner, gid_t group);
-WLIBC_API int wlibc_wchown(const wchar_t *wname, uid_t owner, gid_t group);
+WLIBC_API int wlibc_common_chown(int dirfd, const char *path, uid_t owner, gid_t group, int flags);
 
-WLIBC_INLINE int chown(const char *name, uid_t owner, gid_t group)
+WLIBC_INLINE int chown(const char *path, uid_t owner, gid_t group)
 {
-	return wlibc_chown(name, owner, group);
+	return wlibc_common_chown(AT_FDCWD, path, owner, group, 0);
 }
 
-WLIBC_INLINE int wchown(const wchar_t *wname, uid_t owner, gid_t group)
+WLIBC_INLINE int lchown(const char *path, uid_t owner, gid_t group)
 {
-	return wlibc_wchown(wname, owner, group);
+	return wlibc_common_chown(AT_FDCWD, path, owner, group, AT_SYMLINK_NOFOLLOW);
 }
-
-WLIBC_API int wlibc_lchown(const char *name, uid_t owner, gid_t group);
-WLIBC_API int wlibc_wlchown(const wchar_t *wname, uid_t owner, gid_t group);
-
-WLIBC_INLINE int lchown(const char *name, uid_t owner, gid_t group)
-{
-	return wlibc_lchown(name, owner, group);
-}
-
-WLIBC_INLINE int wlchown(const wchar_t *wname, uid_t owner, gid_t group)
-{
-	return wlibc_wlchown(wname, owner, group);
-}
-
-WLIBC_API int wlibc_fchown(int fd, uid_t owner, gid_t group);
 
 WLIBC_INLINE int fchown(int fd, uid_t owner, gid_t group)
 {
-	return wlibc_fchown(fd, owner, group);
+	return wlibc_common_chown(fd, NULL, owner, group, AT_EMPTY_PATH);
 }
 
-int wlibc_fchownat(int dirfd, const char *name, uid_t owner, gid_t group, int flags);
-int wlibc_wfchownat(int dirfd, const wchar_t *wname, uid_t owner, gid_t group, int flags);
-
-WLIBC_INLINE int fchownat(int dirfd, const char *name, uid_t owner, gid_t group, int flags)
+WLIBC_INLINE int fchownat(int dirfd, const char *path, uid_t owner, gid_t group, int flags)
 {
-	return wlibc_fchownat(dirfd, name, owner, group, flags);
-}
-
-WLIBC_INLINE int wfchownat(int dirfd, const wchar_t *wname, uid_t owner, gid_t group, int flags)
-{
-	return wlibc_wfchownat(dirfd, wname, owner, group, flags);
+	return wlibc_common_chown(dirfd, path, owner, group, flags);
 }
 
 WLIBC_API int wlibc_dup(int fd);

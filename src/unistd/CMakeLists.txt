@@ -16,7 +16,6 @@ close.c
 domainname.c
 dup.c
 exec.c
-fchownat.c
 fsync.c
 getcwd.c
 getgid.c
