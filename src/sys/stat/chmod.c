@@ -76,7 +76,7 @@ int wlibc_common_chmod(int dirfd, const char *path, mode_t mode, int flags)
 	}
 	else
 	{
-		enum handle_type type = get_fd_type(dirfd);
+		handle_t type = get_fd_type(dirfd);
 		if (type == PIPE_HANDLE || type == CONSOLE_HANDLE)
 		{
 			errno = EBADF;

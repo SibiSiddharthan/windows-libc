@@ -14,7 +14,7 @@
 
 typedef void *HANDLE;
 
-enum handle_type
+typedef enum _handle_t
 {
 	NULL_HANDLE,
 	CONSOLE_HANDLE,
@@ -22,13 +22,13 @@ enum handle_type
 	DIRECTORY_HANDLE,
 	PIPE_HANDLE,
 	INVALID_HANDLE = -1 // for errors
-};
+} handle_t;
 
 struct fd_table
 {
 	HANDLE _handle;
+	handle_t _type;
 	int _flags;
-	enum handle_type _type;
 	bool _free;
 };
 
@@ -42,13 +42,13 @@ void cleanup_fd_table();
 
 // Primary functions
 // Create an entry in the fd table with the following values, Return the lowest fd possible
-int register_to_fd_table(HANDLE _h, enum handle_type _type, int _flags);
+int register_to_fd_table(HANDLE _h, handle_t _type, int _flags);
 
 // Update the fd with these values
-void update_fd_table(int _fd, HANDLE _h, enum handle_type _type, int _flags);
+void update_fd_table(int _fd, HANDLE _h, handle_t _type, int _flags);
 
 // Create an entry in the fd table with the following values
-void insert_into_fd_table(int _fd, HANDLE _h, enum handle_type _type, int _flags);
+void insert_into_fd_table(int _fd, HANDLE _h, handle_t _type, int _flags);
 
 // Remove the file descriptor from the table without closing the handle
 // Used by the hooks to stdio
@@ -63,12 +63,12 @@ int get_fd(HANDLE _h);
 // Getters
 HANDLE get_fd_handle(int _fd);
 int get_fd_flags(int _fd);
-enum handle_type get_fd_type(int _fd);
+handle_t get_fd_type(int _fd);
 
 // Setters
 void set_fd_handle(int _fd, HANDLE _handle);
 void set_fd_flags(int _fd, int _flags);
-void set_fd_type(int _fd, enum handle_type _type);
+void set_fd_type(int _fd, handle_t _type);
 
 // Add flags to the file descriptor
 void add_fd_flags(int _fd, int _flags);
@@ -91,21 +91,21 @@ HANDLE just_open2(UNICODE_STRING *ntpath, ACCESS_MASK access, ULONG options);
 
 #define IS_ABSOLUTE_PATH(path) (((isalpha(path[0])) && (path[1] == ':')))
 
-#define VALIDATE_DIRFD(dirfd)                       \
-	if (dirfd != AT_FDCWD)                          \
-	{                                               \
-                                                    \
-		enum handle_type type = get_fd_type(dirfd); \
-		if (type == INVALID_HANDLE)                 \
-		{                                           \
-			errno = EBADF;                          \
-			return -1;                              \
-		}                                           \
-		if (type != DIRECTORY_HANDLE)               \
-		{                                           \
-			errno = ENOTDIR;                        \
-			return -1;                              \
-		}                                           \
+#define VALIDATE_DIRFD(dirfd)               \
+	if (dirfd != AT_FDCWD)                  \
+	{                                       \
+                                            \
+		handle_t type = get_fd_type(dirfd); \
+		if (type == INVALID_HANDLE)         \
+		{                                   \
+			errno = EBADF;                  \
+			return -1;                      \
+		}                                   \
+		if (type != DIRECTORY_HANDLE)       \
+		{                                   \
+			errno = ENOTDIR;                \
+			return -1;                      \
+		}                                   \
 	}
 
 #define VALIDATE_PATH_AND_DIRFD(path, dirfd) \

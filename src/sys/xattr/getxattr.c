@@ -132,7 +132,7 @@ ssize_t wlibc_common_getxattr(int fd, const char *restrict path, const char *res
 	}
 	else
 	{
-		enum handle_type type = get_fd_type(fd);
+		handle_t type = get_fd_type(fd);
 		if (type != FILE_HANDLE && type != DIRECTORY_HANDLE)
 		{
 			errno = EBADF;

@@ -158,7 +158,7 @@ int wlibc_common_setxattr(int fd, const char *restrict path, const char *restric
 	}
 	else
 	{
-		enum handle_type type = get_fd_type(fd);
+		handle_t type = get_fd_type(fd);
 		if (type != FILE_HANDLE && type != DIRECTORY_HANDLE)
 		{
 			errno = EBADF;

@@ -21,7 +21,7 @@ ssize_t wlibc_write(int fd, const void *buf, size_t count)
 		return -1;
 	}
 
-	enum handle_type _type = get_fd_type(fd);
+	handle_t _type = get_fd_type(fd);
 	if (_type == DIRECTORY_HANDLE || _type == INVALID_HANDLE)
 	{
 		errno = (_type == DIRECTORY_HANDLE ? EISDIR : EBADF);

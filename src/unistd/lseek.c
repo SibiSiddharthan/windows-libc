@@ -14,7 +14,7 @@
 
 off_t wlibc_lseek(int fd, off_t offset, int whence)
 {
-	enum handle_type type = get_fd_type(fd);
+	handle_t type = get_fd_type(fd);
 	if (type == INVALID_HANDLE)
 	{
 		errno = EBADF;

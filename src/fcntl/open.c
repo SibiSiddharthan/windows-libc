@@ -358,7 +358,7 @@ int do_open(int dirfd, const char *name, int oflags, mode_t perm)
 
 	if (handle != INVALID_HANDLE_VALUE)
 	{
-		enum handle_type type;
+		handle_t type;
 		// Check the pathname for identifying these, otherwise we would need to NtQueryVolumeInformationFIle
 		if (is_console || is_null)
 		{

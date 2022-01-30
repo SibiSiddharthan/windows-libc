@@ -71,7 +71,7 @@ int wlibc_common_chflags(int dirfd, const char *path, uint32_t attributes, int f
 	}
 	else
 	{
-		enum handle_type type = get_fd_type(dirfd);
+		handle_t type = get_fd_type(dirfd);
 		if (type != FILE_HANDLE && type != DIRECTORY_HANDLE)
 		{
 			errno = EBADF;

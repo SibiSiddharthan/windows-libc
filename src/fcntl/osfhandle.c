@@ -34,7 +34,7 @@ int wlibc_open_osfhandle(intptr_t handle, int flags)
 	FILE_FS_DEVICE_INFORMATION device_info;
 	FILE_ATTRIBUTE_TAG_INFORMATION attribute_info;
 	int fd;
-	enum handle_type htype;
+	handle_t htype;
 
 	status = NtQueryVolumeInformationFile((HANDLE)handle, &io, &device_info, sizeof(FILE_FS_DEVICE_INFORMATION), FileFsDeviceInformation);
 	if (status != STATUS_SUCCESS)

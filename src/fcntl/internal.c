@@ -18,26 +18,26 @@ size_t _fd_table_size = 0;
 CRITICAL_SECTION _fd_critical;
 
 // Declaration of static functions
-static int internal_insert_fd(int index, HANDLE _h, enum handle_type _type, int _flags);
-static int register_to_fd_table_internal(HANDLE _h, enum handle_type _type, int _flags);
-static void update_fd_table_internal(int _fd, HANDLE _h, enum handle_type _type, int _flags);
-static void insert_into_fd_table_internal(int _fd, HANDLE _h, enum handle_type _type, int _flags);
+static int internal_insert_fd(int index, HANDLE _h, handle_t _type, int _flags);
+static int register_to_fd_table_internal(HANDLE _h, handle_t _type, int _flags);
+static void update_fd_table_internal(int _fd, HANDLE _h, handle_t _type, int _flags);
+static void insert_into_fd_table_internal(int _fd, HANDLE _h, handle_t _type, int _flags);
 static void unregister_from_fd_table_internal(HANDLE _h);
 static int get_fd_internal(HANDLE _h);
 static int close_fd_internal(int _fd);
 
 static HANDLE get_fd_handle_internal(int _fd);
 static int get_fd_flags_internal(int _fd);
-static enum handle_type get_fd_type_internal(int _fd);
+static handle_t get_fd_type_internal(int _fd);
 
 static void set_fd_handle_internal(int _fd, HANDLE _handle);
 static void set_fd_flags_internal(int _fd, int _flags);
-static void set_fd_type_internal(int _fd, enum handle_type _type);
+static void set_fd_type_internal(int _fd, handle_t _type);
 static void add_fd_flags_internal(int _fd, int _flags);
 
 static bool validate_fd_internal(int _fd);
 
-enum handle_type determine_type(DEVICE_TYPE type)
+handle_t determine_type(DEVICE_TYPE type)
 {
 	switch (type)
 	{
@@ -198,7 +198,7 @@ void cleanup_fd_table()
 // Primary functions
 ///////////////////////////////////////
 
-static int internal_insert_fd(int index, HANDLE _h, enum handle_type _type, int _flags)
+static int internal_insert_fd(int index, HANDLE _h, handle_t _type, int _flags)
 {
 	_fd_io[index]._handle = _h;
 	_fd_io[index]._flags = _flags;
@@ -207,7 +207,7 @@ static int internal_insert_fd(int index, HANDLE _h, enum handle_type _type, int 
 	return index;
 }
 
-static int register_to_fd_table_internal(HANDLE _h, enum handle_type _type, int _flags)
+static int register_to_fd_table_internal(HANDLE _h, handle_t _type, int _flags)
 {
 	bool is_there_free_space = 0;
 	size_t index = -1;
@@ -247,7 +247,7 @@ static int register_to_fd_table_internal(HANDLE _h, enum handle_type _type, int 
 	return fd;
 }
 
-int register_to_fd_table(HANDLE _h, enum handle_type _type, int _flags)
+int register_to_fd_table(HANDLE _h, handle_t _type, int _flags)
 {
 	EnterCriticalSection(&_fd_critical);
 	int fd = register_to_fd_table_internal(_h, _type, _flags);
@@ -255,21 +255,21 @@ int register_to_fd_table(HANDLE _h, enum handle_type _type, int _flags)
 	return fd;
 }
 
-static void update_fd_table_internal(int _fd, HANDLE _h, enum handle_type _type, int _flags)
+static void update_fd_table_internal(int _fd, HANDLE _h, handle_t _type, int _flags)
 {
 	_fd_io[_fd]._handle = _h;
 	_fd_io[_fd]._type = _type;
 	_fd_io[_fd]._flags = _flags;
 }
 
-void update_fd_table(int _fd, HANDLE _h, enum handle_type _type, int _flags)
+void update_fd_table(int _fd, HANDLE _h, handle_t _type, int _flags)
 {
 	EnterCriticalSection(&_fd_critical);
 	update_fd_table_internal(_fd, _h, _type, _flags);
 	LeaveCriticalSection(&_fd_critical);
 }
 
-static void insert_into_fd_table_internal(int _fd, HANDLE _h, enum handle_type _type, int _flags)
+static void insert_into_fd_table_internal(int _fd, HANDLE _h, handle_t _type, int _flags)
 {
 	// grow the table
 	if (_fd >= _fd_table_size)
@@ -291,7 +291,7 @@ static void insert_into_fd_table_internal(int _fd, HANDLE _h, enum handle_type _
 	update_fd_table_internal(_fd, _h, _type, _flags);
 }
 
-void insert_into_fd_table(int _fd, HANDLE _h, enum handle_type _type, int _flags)
+void insert_into_fd_table(int _fd, HANDLE _h, handle_t _type, int _flags)
 {
 	EnterCriticalSection(&_fd_critical);
 	insert_into_fd_table_internal(_fd, _h, _type, _flags);
@@ -392,7 +392,7 @@ int get_fd_flags(int _fd)
 	return flags;
 }
 
-static enum handle_type get_fd_type_internal(int _fd)
+static handle_t get_fd_type_internal(int _fd)
 {
 	if (validate_fd_internal(_fd))
 		return _fd_io[_fd]._type;
@@ -400,9 +400,9 @@ static enum handle_type get_fd_type_internal(int _fd)
 		return INVALID_HANDLE;
 }
 
-enum handle_type get_fd_type(int _fd)
+handle_t get_fd_type(int _fd)
 {
-	enum handle_type type;
+	handle_t type;
 	EnterCriticalSection(&_fd_critical);
 	type = get_fd_type_internal(_fd);
 	LeaveCriticalSection(&_fd_critical);
@@ -436,12 +436,12 @@ void set_fd_flags(int _fd, int _flags)
 	LeaveCriticalSection(&_fd_critical);
 }
 
-static void set_fd_type_internal(int _fd, enum handle_type _type)
+static void set_fd_type_internal(int _fd, handle_t _type)
 {
 	_fd_io[_fd]._type = _type;
 }
 
-void set_fd_type(int _fd, enum handle_type _type)
+void set_fd_type(int _fd, handle_t _type)
 {
 	EnterCriticalSection(&_fd_critical);
 	set_fd_type_internal(_fd, _type);

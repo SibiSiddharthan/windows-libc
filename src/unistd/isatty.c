@@ -19,7 +19,7 @@ int wlibc_isatty(int fd)
 		return 0;
 	}
 
-	enum handle_type type = get_fd_type(fd);
+	handle_t type = get_fd_type(fd);
 	if(type == CONSOLE_HANDLE)
 	{
 		return 1;

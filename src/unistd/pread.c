@@ -20,7 +20,7 @@ ssize_t wlibc_pread(int fd, void *buf, size_t count, off_t offset)
 		return -1;
 	}
 
-	enum handle_type _type = get_fd_type(fd);
+	handle_t _type = get_fd_type(fd);
 	switch (_type)
 	{
 	case FILE_HANDLE:

@@ -16,7 +16,7 @@ int get_buf_mode(int flags);
 
 FILE *wlibc_fdopen(int fd, const char *mode)
 {
-	enum handle_type _type = get_fd_type(fd);
+	handle_t _type = get_fd_type(fd);
 	if (_type == DIRECTORY_HANDLE || _type == INVALID_HANDLE)
 	{
 		errno = (_type == INVALID_HANDLE ? EBADF : EISDIR);
