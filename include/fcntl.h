@@ -120,19 +120,6 @@ WLIBC_INLINE int fcntl(int fd, int cmd, ...)
 	return return_val;
 }
 
-WLIBC_API intptr_t wlibc_get_osfhandle(int fd);
-WLIBC_API int wlibc_open_osfhandle(intptr_t handle, int flags);
-
-WLIBC_INLINE intptr_t _get_osfhandle(int fd)
-{
-	return wlibc_get_osfhandle(fd);
-}
-
-WLIBC_INLINE int _open_osfhandle(intptr_t handle, int flags)
-{
-	return wlibc_open_osfhandle(handle, flags);
-}
-
 _WLIBC_END_DECLS
 
 #endif
