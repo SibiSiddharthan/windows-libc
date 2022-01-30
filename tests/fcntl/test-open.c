@@ -219,8 +219,13 @@ int test_O_TRUNC()
 
 int test_O_TMPFILE()
 {
-	errno = 0;
-	int fd = open(".", O_WRONLY | O_CREAT | O_TMPFILE, 0700);
+	int fd;
+
+	fd = open(".", O_WRONLY | O_CREAT | O_TMPFILE, 0700);
+	ASSERT_EQ(fd, 3);
+	ASSERT_SUCCESS(close(fd));
+
+	fd = open("./", O_WRONLY | O_CREAT | O_TMPFILE, 0700);
 	ASSERT_EQ(fd, 3);
 	ASSERT_SUCCESS(close(fd));
 

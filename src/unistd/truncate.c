@@ -5,14 +5,12 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <unistd.h>
+#include <internal/nt.h>
+#include <internal/error.h>
+#include <internal/fcntl.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <internal/fcntl.h>
-#include <Windows.h>
-#include <internal/error.h>
-#include <stdlib.h>
-#include <internal/nt.h>
+#include <unistd.h>
 
 static int common_truncate(HANDLE handle, off_t length)
 {
@@ -60,12 +58,14 @@ static int common_truncate(HANDLE handle, off_t length)
 	}
 #endif
 
-	IO_STATUS_BLOCK I;
+	NTSTATUS status;
+	IO_STATUS_BLOCK io;
 	FILE_END_OF_FILE_INFORMATION eof_info;
+
 	eof_info.EndOfFile.QuadPart = length;
 	// This does all the work neccessary.
 	// `SetFileInformationByHandle` with `FileEndofFileInfo` can also be used.
-	NTSTATUS status = NtSetInformationFile(handle, &I, &eof_info, sizeof(FILE_END_OF_FILE_INFORMATION), FileEndOfFileInformation);
+	status = NtSetInformationFile(handle, &io, &eof_info, sizeof(FILE_END_OF_FILE_INFORMATION), FileEndOfFileInformation);
 	if (status != STATUS_SUCCESS)
 	{
 		map_ntstatus_to_errno(status);
@@ -78,10 +78,10 @@ static int common_truncate(HANDLE handle, off_t length)
 static int do_ftruncate(HANDLE handle, off_t length)
 {
 	NTSTATUS status;
-	IO_STATUS_BLOCK I;
+	IO_STATUS_BLOCK io;
 	FILE_POSITION_INFORMATION pos_info;
 
-	status = NtQueryInformationFile(handle, &I, &pos_info, sizeof(FILE_POSITION_INFORMATION), FilePositionInformation);
+	status = NtQueryInformationFile(handle, &io, &pos_info, sizeof(FILE_POSITION_INFORMATION), FilePositionInformation);
 	if (status != STATUS_SUCCESS)
 	{
 		map_ntstatus_to_errno(status);
@@ -95,7 +95,7 @@ static int do_ftruncate(HANDLE handle, off_t length)
 	}
 
 	// truncate does not alter the file position
-	status = NtSetInformationFile(handle, &I, &pos_info, sizeof(FILE_POSITION_INFORMATION), FilePositionInformation);
+	status = NtSetInformationFile(handle, &io, &pos_info, sizeof(FILE_POSITION_INFORMATION), FilePositionInformation);
 	if (status != STATUS_SUCCESS)
 	{
 		map_ntstatus_to_errno(status);
@@ -109,16 +109,8 @@ int wlibc_truncate(const char *path, off_t length)
 {
 	VALIDATE_PATH(path, ENOENT, -1);
 
-	wchar_t *u16_ntpath = get_absolute_ntpath(AT_FDCWD, path);
-	if (u16_ntpath == NULL)
-	{
-		errno = ENOENT;
-		return -1;
-	}
-
-	HANDLE handle = just_open(u16_ntpath, FILE_WRITE_DATA | FILE_APPEND_DATA | SYNCHRONIZE, 0, FILE_OPEN,
-							  FILE_NON_DIRECTORY_FILE | FILE_SYNCHRONOUS_IO_NONALERT);
-	free(u16_ntpath);
+	HANDLE handle =
+		just_open(AT_FDCWD, path, FILE_WRITE_DATA | FILE_APPEND_DATA | SYNCHRONIZE, FILE_NON_DIRECTORY_FILE | FILE_SYNCHRONOUS_IO_NONALERT);
 	if (handle == INVALID_HANDLE_VALUE)
 	{
 		// errno wil be set by just_open

@@ -5,13 +5,13 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <sys/stat.h>
 #include <internal/nt.h>
 #include <internal/error.h>
-#include <internal/misc.h>
 #include <internal/fcntl.h>
+#include <internal/path.h>
 #include <internal/security.h>
 #include <errno.h>
+#include <sys/stat.h>
 
 int wlibc_common_mkdir(int dirfd, const char *path, mode_t mode)
 {
@@ -22,23 +22,25 @@ int wlibc_common_mkdir(int dirfd, const char *path, mode_t mode)
 	}
 	VALIDATE_PATH_AND_DIRFD(path, dirfd);
 
-	wchar_t *u16_ntpath = get_absolute_ntpath(dirfd, path);
-	if (path == NULL)
+	NTSTATUS status;
+	IO_STATUS_BLOCK io;
+	UNICODE_STRING *u16_ntpath;
+	OBJECT_ATTRIBUTES object;
+	PSECURITY_DESCRIPTOR security_descriptor = (PSECURITY_DESCRIPTOR)get_security_descriptor(mode & 0777, 1);
+	HANDLE handle;
+
+	u16_ntpath = xget_absolute_ntpath(dirfd, path);
+	if (u16_ntpath == NULL)
 	{
-		errno = ENOENT;
+		// errno will be set by `get_absolute_ntpath`
 		return -1;
 	}
 
-	IO_STATUS_BLOCK I;
-	UNICODE_STRING u16_path;
-	RtlInitUnicodeString(&u16_path, u16_ntpath);
-	OBJECT_ATTRIBUTES object;
-	PSECURITY_DESCRIPTOR security_descriptor = (PSECURITY_DESCRIPTOR)get_security_descriptor(mode & 0777, 1);
-	InitializeObjectAttributes(&object, &u16_path, OBJ_CASE_INSENSITIVE, NULL, security_descriptor);
-	HANDLE handle;
-	NTSTATUS status = NtCreateFile(&handle, FILE_READ_ATTRIBUTES, &object, &I, NULL, 0, FILE_SHARE_READ | FILE_SHARE_WRITE, FILE_CREATE,
-								   FILE_DIRECTORY_FILE, NULL, 0);
-	free(u16_ntpath);
+	InitializeObjectAttributes(&object, u16_ntpath, OBJ_CASE_INSENSITIVE, NULL, security_descriptor);
+	status = NtCreateFile(&handle, FILE_READ_ATTRIBUTES, &object, &io, NULL, 0, FILE_SHARE_READ | FILE_SHARE_WRITE, FILE_CREATE,
+						  FILE_DIRECTORY_FILE, NULL, 0);
+	free_ntpath(u16_ntpath);
+
 	if (status != STATUS_SUCCESS)
 	{
 		map_ntstatus_to_errno(status);

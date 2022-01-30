@@ -18,7 +18,7 @@ int do_chflags(HANDLE handle, uint32_t attributes)
 	FILE_BASIC_INFORMATION basic_info;
 
 	status = NtQueryInformationFile(handle, &io, &basic_info, sizeof(FILE_BASIC_INFORMATION), FileBasicInformation);
-	if(status != STATUS_SUCCESS)
+	if (status != STATUS_SUCCESS)
 	{
 		map_ntstatus_to_errno(status);
 		return -1;
@@ -27,7 +27,7 @@ int do_chflags(HANDLE handle, uint32_t attributes)
 	basic_info.FileAttributes = attributes;
 
 	status = NtSetInformationFile(handle, &io, &basic_info, sizeof(FILE_BASIC_INFORMATION), FileBasicInformation);
-	if(status != STATUS_SUCCESS)
+	if (status != STATUS_SUCCESS)
 	{
 		map_ntstatus_to_errno(status);
 		return -1;
@@ -38,16 +38,7 @@ int do_chflags(HANDLE handle, uint32_t attributes)
 
 int common_chflags(int dirfd, const char *path, uint32_t attributes, int flags)
 {
-	wchar_t *u16_ntpath = get_absolute_ntpath(dirfd, path);
-	if (u16_ntpath == NULL)
-	{
-		errno = ENOENT;
-		return -1;
-	}
-
-	HANDLE handle = just_open(u16_ntpath, FILE_READ_ATTRIBUTES | FILE_WRITE_ATTRIBUTES, 0, FILE_OPEN,
-							  flags == AT_SYMLINK_NOFOLLOW ? FILE_OPEN_REPARSE_POINT : 0);
-	free(u16_ntpath);
+	HANDLE handle = just_open(dirfd, path, FILE_READ_ATTRIBUTES | FILE_WRITE_ATTRIBUTES, flags == AT_SYMLINK_NOFOLLOW ? FILE_OPEN_REPARSE_POINT : 0);
 	if (handle == INVALID_HANDLE_VALUE)
 	{
 		// errno wil be set by just_open

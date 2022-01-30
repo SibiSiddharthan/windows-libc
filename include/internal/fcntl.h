@@ -8,9 +8,8 @@
 #ifndef FCNTL_INTERNAL_H
 #define FCNTL_INTERNAL_H
 
+#include <internal/nt.h>
 #include <sys/types.h>
-#include <Windows.h>
-#include <wchar.h>
 #include <stdbool.h>
 
 typedef void *HANDLE;
@@ -31,7 +30,6 @@ struct fd_table
 	int _flags;
 	enum handle_type _type;
 	bool _free;
-	wchar_t _path[260];
 };
 
 extern struct fd_table *_fd_io;
@@ -44,13 +42,13 @@ void cleanup_fd_table();
 
 // Primary functions
 // Create an entry in the fd table with the following values, Return the lowest fd possible
-int register_to_fd_table(HANDLE _h, const wchar_t *_path, enum handle_type _type, int _flags);
+int register_to_fd_table(HANDLE _h, enum handle_type _type, int _flags);
 
 // Update the fd with these values
-void update_fd_table(int _fd, HANDLE _h, const wchar_t *_path, enum handle_type _type, int _flags);
+void update_fd_table(int _fd, HANDLE _h, enum handle_type _type, int _flags);
 
 // Create an entry in the fd table with the following values
-void insert_into_fd_table(int _fd, HANDLE _h, const wchar_t *_path, enum handle_type _type, int _flags);
+void insert_into_fd_table(int _fd, HANDLE _h, enum handle_type _type, int _flags);
 
 // Remove the file descriptor from the table without closing the handle
 // Used by the hooks to stdio
@@ -66,13 +64,11 @@ int get_fd(HANDLE _h);
 HANDLE get_fd_handle(int _fd);
 int get_fd_flags(int _fd);
 enum handle_type get_fd_type(int _fd);
-const wchar_t *get_fd_path(int _fd);
 
 // Setters
 void set_fd_handle(int _fd, HANDLE _handle);
 void set_fd_flags(int _fd, int _flags);
 void set_fd_type(int _fd, enum handle_type _type);
-void set_fd_path(int _fd, const wchar_t *_path);
 
 // Add flags to the file descriptor
 void add_fd_flags(int _fd, int _flags);
@@ -82,8 +78,9 @@ void add_fd_flags(int _fd, int _flags);
 bool validate_fd(int _fd);
 
 // Few helper functions used by many functions
-wchar_t *get_absolute_ntpath(int dirfd, const char *path);
-HANDLE just_open(const wchar_t *u16_ntpath, ACCESS_MASK access, ULONG attributes, ULONG disposition, ULONG options);
+// Ignore attributes and disposition here as they will be '0' and 'FILE_OPEN' respectively.
+HANDLE just_open(int dirfd, const char *path, ACCESS_MASK access, ULONG options);
+HANDLE just_open2(UNICODE_STRING *ntpath, ACCESS_MASK access, ULONG options);
 
 #define VALIDATE_PATH(path, error, ret)  \
 	if (path == NULL || path[0] == '\0') \

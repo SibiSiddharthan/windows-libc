@@ -18,10 +18,10 @@ size_t _fd_table_size = 0;
 CRITICAL_SECTION _fd_critical;
 
 // Declaration of static functions
-static int internal_insert_fd(int index, HANDLE _h, const wchar_t *_path, enum handle_type _type, int _flags);
-static int register_to_fd_table_internal(HANDLE _h, const wchar_t *_path, enum handle_type _type, int _flags);
-static void update_fd_table_internal(int _fd, HANDLE _h, const wchar_t *_path, enum handle_type _type, int _flags);
-static void insert_into_fd_table_internal(int _fd, HANDLE _h, const wchar_t *_path, enum handle_type _type, int _flags);
+static int internal_insert_fd(int index, HANDLE _h, enum handle_type _type, int _flags);
+static int register_to_fd_table_internal(HANDLE _h, enum handle_type _type, int _flags);
+static void update_fd_table_internal(int _fd, HANDLE _h, enum handle_type _type, int _flags);
+static void insert_into_fd_table_internal(int _fd, HANDLE _h, enum handle_type _type, int _flags);
 static void unregister_from_fd_table_internal(HANDLE _h);
 static int get_fd_internal(HANDLE _h);
 static int close_fd_internal(int _fd);
@@ -29,12 +29,10 @@ static int close_fd_internal(int _fd);
 static HANDLE get_fd_handle_internal(int _fd);
 static int get_fd_flags_internal(int _fd);
 static enum handle_type get_fd_type_internal(int _fd);
-static const wchar_t *get_path_internal(int _fd);
 
 static void set_fd_handle_internal(int _fd, HANDLE _handle);
 static void set_fd_flags_internal(int _fd, int _flags);
 static void set_fd_type_internal(int _fd, enum handle_type _type);
-static void set_fd_path_internal(int _fd, const wchar_t *_path);
 static void add_fd_flags_internal(int _fd, int _flags);
 
 static bool validate_fd_internal(int _fd);
@@ -111,7 +109,6 @@ void init_fd_table()
 		_fd_io[0]._type = determine_type(device_info.DeviceType);
 		_fd_io[0]._flags = O_RDONLY;
 		_fd_io[0]._free = 0;
-		wcscpy(_fd_io[0]._path, L"CON");
 	}
 	else if (console_subsystem)
 	{
@@ -121,7 +118,6 @@ void init_fd_table()
 			_fd_io[0]._type = CONSOLE_HANDLE;
 			_fd_io[0]._flags = O_RDONLY;
 			_fd_io[0]._free = 0;
-			wcscpy(_fd_io[0]._path, L"CON");
 		}
 		else
 		{
@@ -136,7 +132,6 @@ void init_fd_table()
 		_fd_io[1]._type = determine_type(device_info.DeviceType);
 		_fd_io[1]._flags = O_WRONLY | (device_info.DeviceType == FILE_DEVICE_NAMED_PIPE ? O_APPEND : 0);
 		_fd_io[1]._free = 0;
-		wcscpy(_fd_io[1]._path, L"CON");
 	}
 	else if (console_subsystem)
 	{
@@ -146,7 +141,6 @@ void init_fd_table()
 			_fd_io[1]._type = CONSOLE_HANDLE;
 			_fd_io[1]._flags = O_RDONLY;
 			_fd_io[1]._free = 0;
-			wcscpy(_fd_io[1]._path, L"CON");
 		}
 		else
 		{
@@ -161,7 +155,6 @@ void init_fd_table()
 		_fd_io[2]._type = determine_type(device_info.DeviceType);
 		_fd_io[2]._flags = O_WRONLY | (device_info.DeviceType == FILE_DEVICE_NAMED_PIPE ? O_APPEND : 0);
 		_fd_io[2]._free = 0;
-		wcscpy(_fd_io[2]._path, L"CON");
 	}
 	else if (console_subsystem)
 	{
@@ -171,7 +164,6 @@ void init_fd_table()
 			_fd_io[2]._type = CONSOLE_HANDLE;
 			_fd_io[2]._flags = O_RDONLY;
 			_fd_io[2]._free = 0;
-			wcscpy(_fd_io[2]._path, L"CON");
 		}
 		else
 		{
@@ -206,35 +198,16 @@ void cleanup_fd_table()
 // Primary functions
 ///////////////////////////////////////
 
-static int internal_insert_fd(int index, HANDLE _h, const wchar_t *_path, enum handle_type _type, int _flags)
+static int internal_insert_fd(int index, HANDLE _h, enum handle_type _type, int _flags)
 {
 	_fd_io[index]._handle = _h;
 	_fd_io[index]._flags = _flags;
 	_fd_io[index]._type = _type;
 	_fd_io[index]._free = 0;
-
-	// Empty _path for pipes
-	if (_type == PIPE_HANDLE)
-	{
-		_fd_io[index]._path[0] = L'\0';
-		return index;
-	}
-
-	wcscpy(_fd_io[index]._path, _path);
-	if (_type == DIRECTORY_HANDLE)
-	{
-		int length = wcslen(_path);
-		// Append trailing slash
-		if (_fd_io[index]._path[length - 1] != L'\\')
-		{
-			wcscat(_fd_io[index]._path, L"\\");
-		}
-	}
-
 	return index;
 }
 
-static int register_to_fd_table_internal(HANDLE _h, const wchar_t *_path, enum handle_type _type, int _flags)
+static int register_to_fd_table_internal(HANDLE _h, enum handle_type _type, int _flags)
 {
 	bool is_there_free_space = 0;
 	size_t index = -1;
@@ -251,7 +224,7 @@ static int register_to_fd_table_internal(HANDLE _h, const wchar_t *_path, enum h
 
 	if (is_there_free_space)
 	{
-		fd = internal_insert_fd(index, _h, _path, _type, _flags);
+		fd = internal_insert_fd(index, _h, _type, _flags);
 	}
 
 	else // double the table size
@@ -262,7 +235,7 @@ static int register_to_fd_table_internal(HANDLE _h, const wchar_t *_path, enum h
 		memcpy(_fd_io, temp, sizeof(struct fd_table) * (_fd_table_size));
 		free(temp);
 
-		fd = internal_insert_fd(_fd_table_size, _h, _path, _type, _flags);
+		fd = internal_insert_fd(_fd_table_size, _h, _type, _flags);
 
 		for (size_t i = _fd_table_size + 1; i < _fd_table_size * 2; i++)
 		{
@@ -275,46 +248,29 @@ static int register_to_fd_table_internal(HANDLE _h, const wchar_t *_path, enum h
 	return fd;
 }
 
-int register_to_fd_table(HANDLE _h, const wchar_t *_path, enum handle_type _type, int _flags)
+int register_to_fd_table(HANDLE _h, enum handle_type _type, int _flags)
 {
 	EnterCriticalSection(&_fd_critical);
-	int fd = register_to_fd_table_internal(_h, _path, _type, _flags);
+	int fd = register_to_fd_table_internal(_h, _type, _flags);
 	LeaveCriticalSection(&_fd_critical);
 	return fd;
 }
 
-static void update_fd_table_internal(int _fd, HANDLE _h, const wchar_t *_path, enum handle_type _type, int _flags)
+static void update_fd_table_internal(int _fd, HANDLE _h, enum handle_type _type, int _flags)
 {
 	_fd_io[_fd]._handle = _h;
 	_fd_io[_fd]._type = _type;
 	_fd_io[_fd]._flags = _flags;
-
-	// Empty _path for pipes
-	if (_type == PIPE_HANDLE)
-	{
-		_fd_io[_fd]._path[0] = L'\0';
-	}
-
-	wcscpy(_fd_io[_fd]._path, _path);
-	if (_type == DIRECTORY_HANDLE)
-	{
-		int length = wcslen(_path);
-		// Append trailing slash
-		if (_fd_io[_fd]._path[length - 1] != L'\\')
-		{
-			wcscat(_fd_io[_fd]._path, L"\\");
-		}
-	}
 }
 
-void update_fd_table(int _fd, HANDLE _h, const wchar_t *_path, enum handle_type _type, int _flags)
+void update_fd_table(int _fd, HANDLE _h, enum handle_type _type, int _flags)
 {
 	EnterCriticalSection(&_fd_critical);
-	update_fd_table_internal(_fd, _h, _path, _type, _flags);
+	update_fd_table_internal(_fd, _h, _type, _flags);
 	LeaveCriticalSection(&_fd_critical);
 }
 
-static void insert_into_fd_table_internal(int _fd, HANDLE _h, const wchar_t *_path, enum handle_type _type, int _flags)
+static void insert_into_fd_table_internal(int _fd, HANDLE _h, enum handle_type _type, int _flags)
 {
 	// grow the table
 	if (_fd >= _fd_table_size)
@@ -334,13 +290,13 @@ static void insert_into_fd_table_internal(int _fd, HANDLE _h, const wchar_t *_pa
 	}
 
 	_fd_io[_fd]._free = 0;
-	update_fd_table_internal(_fd, _h, _path, _type, _flags);
+	update_fd_table_internal(_fd, _h, _type, _flags);
 }
 
-void insert_into_fd_table(int _fd, HANDLE _h, const wchar_t *_path, enum handle_type _type, int _flags)
+void insert_into_fd_table(int _fd, HANDLE _h, enum handle_type _type, int _flags)
 {
 	EnterCriticalSection(&_fd_critical);
-	insert_into_fd_table_internal(_fd, _h, _path, _type, _flags);
+	insert_into_fd_table_internal(_fd, _h, _type, _flags);
 	LeaveCriticalSection(&_fd_critical);
 }
 
@@ -455,19 +411,6 @@ enum handle_type get_fd_type(int _fd)
 	return type;
 }
 
-static const wchar_t *get_path_internal(int _fd)
-{
-	return (const wchar_t *)_fd_io[_fd]._path;
-}
-
-const wchar_t *get_fd_path(int _fd)
-{
-	EnterCriticalSection(&_fd_critical);
-	const wchar_t *wpath = get_path_internal(_fd);
-	LeaveCriticalSection(&_fd_critical);
-	return wpath;
-}
-
 ///////////////////////////////////////
 // Setters
 ///////////////////////////////////////
@@ -504,42 +447,6 @@ void set_fd_type(int _fd, enum handle_type _type)
 {
 	EnterCriticalSection(&_fd_critical);
 	set_fd_type_internal(_fd, _type);
-	LeaveCriticalSection(&_fd_critical);
-}
-
-static void set_fd_path_internal(int _fd, const wchar_t *_path)
-{
-	HANDLE file = get_fd_handle_internal(_fd);
-	if (file != NULL)
-	{
-		wchar_t temp_buf[MAX_PATH];
-		int length = GetFinalPathNameByHandle(file, temp_buf, MAX_PATH, VOLUME_NAME_DOS);
-		if (length == 0) // This will be true for a character device
-		{
-			wcscpy(_fd_io[_fd]._path, _path);
-		}
-		else
-		{
-			for (int i = 6; i < length; i++) // \\?\C:
-			{
-				if (temp_buf[i] == L'\\')
-				{
-					temp_buf[i] = L'/';
-				}
-			}
-			wcscpy(_fd_io[_fd]._path, temp_buf + 4);
-		}
-	}
-	else
-	{
-		wcscpy(_fd_io[_fd]._path, _path);
-	}
-}
-
-void set_fd_path(int _fd, const wchar_t *_path)
-{
-	EnterCriticalSection(&_fd_critical);
-	set_fd_path_internal(_fd, _path);
 	LeaveCriticalSection(&_fd_critical);
 }
 

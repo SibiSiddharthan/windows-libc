@@ -8,20 +8,28 @@
 #include <internal/nt.h>
 #include <internal/error.h>
 #include <internal/fcntl.h>
+#include <internal/path.h>
 #include <internal/security.h>
-#include <unistd.h>
 #include <stdlib.h>
-#include <wchar.h>
+#include <unistd.h>
 
 int common_symlink(const char *restrict source, int dirfd, const char *restrict target, mode_t mode)
 {
-	wchar_t *u16_nttarget = get_absolute_ntpath(dirfd, target);
+	NTSTATUS status;
+	IO_STATUS_BLOCK io;
+	HANDLE target_handle;
+	UNICODE_STRING *u16_nttarget, *u16_ntsource;
+	OBJECT_ATTRIBUTES object;
+	PSECURITY_DESCRIPTOR security_descriptor = NULL;
+
+	u16_nttarget = xget_absolute_ntpath(dirfd, target);
 	if (u16_nttarget == NULL)
 	{
-		errno = ENOENT;
+		// errno will be set by `get_absolute_ntpath`.
 		return -1;
 	}
 
+	// TODO cygwin shenanigans
 	bool is_absolute = false;
 	if (isalpha(source[0]) && source[1] == ':')
 	{
@@ -33,7 +41,7 @@ int common_symlink(const char *restrict source, int dirfd, const char *restrict 
 	int source_length = strlen(source);
 	char *normalized_source = malloc(target_length + source_length + 5); // '/../' + NULL
 	// This is an easy way of checking whether the link text if it exists is a directory or a file.
-	strcpy(normalized_source, target);
+	memcpy(normalized_source, target, target_length + 1); // Including NULL
 	if (target[target_length - 1] != '/' && target[target_length - 1] != '\\')
 	{
 		strcat(normalized_source, "/");
@@ -41,17 +49,18 @@ int common_symlink(const char *restrict source, int dirfd, const char *restrict 
 	strcat(normalized_source, "../");
 	strcat(normalized_source, source);
 
-	wchar_t *u16_ntsource = get_absolute_ntpath(dirfd, normalized_source);
+	u16_ntsource = xget_absolute_ntpath(dirfd, normalized_source);
 	free(normalized_source);
 	if (u16_ntsource == NULL)
 	{
-		errno = ENOENT;
-		free(u16_nttarget);
+		// Bad path
+		// errno will be set by 'get_absolute_ntpath'.
+		free_ntpath(u16_nttarget);
 		return -1;
 	}
 
-	HANDLE source_handle = just_open(u16_ntsource, FILE_READ_ATTRIBUTES, 0, FILE_OPEN, FILE_OPEN_REPARSE_POINT | FILE_NON_DIRECTORY_FILE);
-	free(u16_ntsource);
+	HANDLE source_handle = just_open2(u16_ntsource, FILE_READ_ATTRIBUTES, FILE_OPEN_REPARSE_POINT | FILE_NON_DIRECTORY_FILE);
+	free_ntpath(u16_ntsource);
 
 	ULONG options = FILE_NON_DIRECTORY_FILE;
 	if (source_handle == INVALID_HANDLE_VALUE)
@@ -71,19 +80,12 @@ int common_symlink(const char *restrict source, int dirfd, const char *restrict 
 		NtClose(source_handle);
 	}
 
-	NTSTATUS status;
-	IO_STATUS_BLOCK I;
-	HANDLE target_handle;
-	UNICODE_STRING u16_path;
-	OBJECT_ATTRIBUTES object;
-	PSECURITY_DESCRIPTOR security_descriptor =
-		(PSECURITY_DESCRIPTOR)get_security_descriptor(mode & 0777, options == FILE_DIRECTORY_FILE ? 1 : 0);
-	RtlInitUnicodeString(&u16_path, u16_nttarget);
-	InitializeObjectAttributes(&object, &u16_path, OBJ_CASE_INSENSITIVE, NULL, security_descriptor);
+	security_descriptor = (PSECURITY_DESCRIPTOR)get_security_descriptor(mode & 0777, options == FILE_DIRECTORY_FILE ? 1 : 0);
+	InitializeObjectAttributes(&object, u16_nttarget, OBJ_CASE_INSENSITIVE, NULL, security_descriptor);
 	// Open synchronously as NtFsControlFile might return STATUS_PENDING.
-	status = NtCreateFile(&target_handle, FILE_READ_ATTRIBUTES | FILE_WRITE_ATTRIBUTES | SYNCHRONIZE, &object, &I, NULL, 0,
+	status = NtCreateFile(&target_handle, FILE_READ_ATTRIBUTES | FILE_WRITE_ATTRIBUTES | SYNCHRONIZE, &object, &io, NULL, 0,
 						  FILE_SHARE_READ | FILE_SHARE_WRITE, FILE_CREATE, options | FILE_SYNCHRONOUS_IO_NONALERT, NULL, 0);
-	free(u16_nttarget);
+	free_ntpath(u16_nttarget);
 	if (status != STATUS_SUCCESS)
 	{
 		map_ntstatus_to_errno(status);
@@ -93,7 +95,10 @@ int common_symlink(const char *restrict source, int dirfd, const char *restrict 
 	// Set the reparse data
 	UTF8_STRING u8_source;
 	UNICODE_STRING u16_source;
-	RtlInitUTF8String(&u8_source, source);
+
+	u8_source.Length = source_length;
+	u8_source.MaximumLength = source_length + 1;
+	u8_source.Buffer = (PCHAR)source;
 	RtlUTF8StringToUnicodeString(&u16_source, &u8_source, TRUE);
 
 	// convert all forward slashes to back slashes
@@ -130,7 +135,7 @@ int common_symlink(const char *restrict source, int dirfd, const char *restrict 
 	RtlFreeUnicodeString(&u16_source);
 
 	status =
-		NtFsControlFile(target_handle, NULL, NULL, NULL, &I, FSCTL_SET_REPARSE_POINT, reparse_data, total_reparse_data_length, NULL, 0);
+		NtFsControlFile(target_handle, NULL, NULL, NULL, &io, FSCTL_SET_REPARSE_POINT, reparse_data, total_reparse_data_length, NULL, 0);
 
 	free(reparse_data);
 	NtClose(target_handle);

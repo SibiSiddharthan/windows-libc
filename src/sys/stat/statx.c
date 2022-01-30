@@ -7,8 +7,8 @@
 
 #include <internal/nt.h>
 #include <internal/fcntl.h>
-#include <sys/stat.h>
 #include <stdlib.h>
+#include <sys/stat.h>
 
 // From stat.c
 int do_stat(HANDLE handle, struct stat *restrict statbuf);
@@ -58,19 +58,10 @@ int do_statx(HANDLE handle, unsigned int mask, struct statx *restrict statxbuf)
 
 int common_statx(int dirfd, const char *restrict path, int flags, unsigned int mask, struct statx *restrict statxbuf)
 {
-	wchar_t *u16_ntpath = get_absolute_ntpath(dirfd, path);
 	struct stat statbuf;
 	int result;
 
-	if (u16_ntpath == NULL)
-	{
-		errno = ENOENT;
-		return -1;
-	}
-
-	HANDLE handle = just_open(u16_ntpath, FILE_READ_ATTRIBUTES | READ_CONTROL, 0, FILE_OPEN,
-							  flags == AT_SYMLINK_NOFOLLOW ? FILE_OPEN_REPARSE_POINT : 0);
-	free(u16_ntpath);
+	HANDLE handle = just_open(dirfd, path, FILE_READ_ATTRIBUTES | READ_CONTROL, flags == AT_SYMLINK_NOFOLLOW ? FILE_OPEN_REPARSE_POINT : 0);
 	if (handle == INVALID_HANDLE_VALUE)
 	{
 		// errno will be set by just_open

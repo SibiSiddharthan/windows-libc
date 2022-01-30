@@ -5,74 +5,42 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <unistd.h>
-#include <internal/misc.h>
-#include <Windows.h>
+#include <internal/nt.h>
 #include <internal/error.h>
 #include <internal/fcntl.h>
+#include <internal/path.h>
+#include <stdlib.h>
+#include <unistd.h>
 
-int common_link(int olddirfd, const char *restrict source, int newdirfd, const char *restrict target, int flags)
+int do_link(HANDLE handle, int dirfd, const char *restrict target)
 {
-	HANDLE handle = INVALID_HANDLE_VALUE;
-	if (flags != AT_EMPTY_PATH)
-	{
+	NTSTATUS status;
+	IO_STATUS_BLOCK io;
+	UNICODE_STRING *u16_nttarget = NULL;
+	PFILE_LINK_INFORMATION link_info = NULL;
+	size_t size_of_link_info;
 
-		wchar_t *u16_ntsource = get_absolute_ntpath(olddirfd, source);
-		if (u16_ntsource == NULL)
-		{
-			errno = ENOENT;
-			return -1;
-		}
-
-		ULONG options = FILE_NON_DIRECTORY_FILE; // We can't create hardlinks between directories
-		if (flags != AT_SYMLINK_FOLLOW)
-		{
-			options |= FILE_OPEN_REPARSE_POINT;
-		}
-
-		// If the file does not have FILE_WRITE_ATTRIBUTES, link creation fails.
-		handle = just_open(u16_ntsource, FILE_READ_ATTRIBUTES | FILE_WRITE_ATTRIBUTES | SYNCHRONIZE, 0, FILE_OPEN, options);
-		free(u16_ntsource);
-
-		if (handle == INVALID_HANDLE_VALUE)
-		{
-			// errno wil be set by just_open
-			return -1;
-		}
-	}
-	else
-	{
-		handle = get_fd_handle(olddirfd);
-	}
-
-	wchar_t *u16_nttarget = get_absolute_ntpath(newdirfd, target);
+	u16_nttarget = xget_absolute_ntpath(dirfd, target);
 	if (u16_nttarget == NULL)
 	{
-		errno = ENOENT; // bad path
-		if (flags != AT_EMPTY_PATH)
-		{
-			NtClose(handle);
-		}
+		// Bad path
+		// errno will be set by 'xget_absolute_ntpath'.
 		return -1;
 	}
 
-	int length = wcslen(u16_nttarget) * sizeof(wchar_t);
-	size_t size_of_link_info = sizeof(FILE_LINK_INFORMATION) - sizeof(WCHAR) + length;
-	IO_STATUS_BLOCK I;
-	PFILE_LINK_INFORMATION link_info = (PFILE_LINK_INFORMATION)malloc(size_of_link_info);
+	size_of_link_info = sizeof(FILE_LINK_INFORMATION) - sizeof(WCHAR) + u16_nttarget->Length;
+	link_info = (PFILE_LINK_INFORMATION)malloc(size_of_link_info);
+
 	memset(link_info, 0, size_of_link_info);
 	// No need to set RootDirectory as we are zeroing the memory
 	link_info->Flags = FILE_LINK_POSIX_SEMANTICS;
-	link_info->FileNameLength = length;
-	memcpy(link_info->FileName, u16_nttarget, length);
-	free(u16_nttarget);
+	link_info->FileNameLength = u16_nttarget->Length;
+	memcpy(link_info->FileName, u16_nttarget->Buffer, u16_nttarget->Length);
 
-	NTSTATUS status = NtSetInformationFile(handle, &I, link_info, size_of_link_info, FileLinkInformationEx);
+	free_ntpath(u16_nttarget);
+
+	status = NtSetInformationFile(handle, &io, link_info, size_of_link_info, FileLinkInformationEx);
 	free(link_info);
-	if (flags != AT_EMPTY_PATH)
-	{
-		NtClose(handle);
-	}
 
 	if (status != STATUS_SUCCESS)
 	{
@@ -81,6 +49,29 @@ int common_link(int olddirfd, const char *restrict source, int newdirfd, const c
 	}
 
 	return 0;
+}
+
+int common_link(int olddirfd, const char *restrict source, int newdirfd, const char *restrict target, int flags)
+{
+	HANDLE handle = INVALID_HANDLE_VALUE;
+	ULONG options = FILE_NON_DIRECTORY_FILE; // We can't create hardlinks between directories
+	if (flags != AT_SYMLINK_FOLLOW)
+	{
+		options |= FILE_OPEN_REPARSE_POINT;
+	}
+
+	// If the file does not have FILE_WRITE_ATTRIBUTES, link creation fails.
+	handle = just_open(olddirfd, source, FILE_READ_ATTRIBUTES | FILE_WRITE_ATTRIBUTES | SYNCHRONIZE, options);
+	if (handle == INVALID_HANDLE_VALUE)
+	{
+		// errno wil be set by just_open
+		return -1;
+	}
+
+	int result = do_link(handle, newdirfd, target);
+	NtClose(handle);
+
+	return result;
 }
 
 int wlibc_common_link(int olddirfd, const char *restrict source, int newdirfd, const char *restrict target, int flags)
@@ -96,6 +87,7 @@ int wlibc_common_link(int olddirfd, const char *restrict source, int newdirfd, c
 	if (flags != AT_EMPTY_PATH)
 	{
 		VALIDATE_PATH_AND_DIRFD(source, olddirfd);
+		return common_link(olddirfd, source, newdirfd, target, flags);
 	}
 	else
 	{
@@ -104,7 +96,8 @@ int wlibc_common_link(int olddirfd, const char *restrict source, int newdirfd, c
 			errno = EBADF;
 			return -1;
 		}
-	}
 
-	return common_link(olddirfd, source, newdirfd, target, flags);
+		HANDLE handle = get_fd_handle(olddirfd);
+		return do_link(handle, newdirfd, target);
+	}
 }

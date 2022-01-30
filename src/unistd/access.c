@@ -10,10 +10,10 @@
 #include <internal/fcntl.h>
 #include <internal/security.h>
 #include <fcntl.h>
+#include <stdbool.h>
+#include <stdlib.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include <stdlib.h>
-#include <stdbool.h>
 
 // From stat.c
 mode_t get_permissions(ACCESS_MASK access);
@@ -62,16 +62,8 @@ int do_access(HANDLE handle, int mode, int flags)
 int common_access(int dirfd, const char *path, int mode, int flags)
 {
 	int result = -1;
-	wchar_t *u16_ntpath = get_absolute_ntpath(dirfd, path);
-	if (u16_ntpath == NULL)
-	{
-		errno = ENOENT;
-		return -1;
-	}
 
-	HANDLE handle = just_open(u16_ntpath, FILE_READ_ATTRIBUTES | READ_CONTROL, 0, FILE_OPEN,
-							  flags == AT_SYMLINK_NOFOLLOW ? FILE_OPEN_REPARSE_POINT : 0);
-	free(u16_ntpath);
+	HANDLE handle = just_open(dirfd, path, FILE_READ_ATTRIBUTES | READ_CONTROL, flags == AT_SYMLINK_NOFOLLOW ? FILE_OPEN_REPARSE_POINT : 0);
 	if (handle == INVALID_HANDLE_VALUE)
 	{
 		// errno wil be set by just_open

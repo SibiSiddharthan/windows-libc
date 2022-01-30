@@ -7,15 +7,12 @@
 
 #include <internal/nt.h>
 #include <internal/dirent.h>
-#include <dirent.h>
-#include <wchar.h>
-#include <stdlib.h>
-#include <string.h>
 #include <internal/error.h>
-#include <errno.h>
 #include <internal/fcntl.h>
-#include <internal/misc.h>
+#include <dirent.h>
+#include <errno.h>
 #include <fcntl.h>
+#include <stdlib.h>
 
 static void initialize_dirstream(DIR **dirstream, int fd)
 {
@@ -33,24 +30,15 @@ DIR *wlibc_opendir(const char *path)
 {
 	VALIDATE_PATH(path, ENOENT, NULL);
 
-	wchar_t *u16_ntpath = get_absolute_ntpath(AT_FDCWD, path);
-	if (u16_ntpath == NULL)
-	{
-		errno = ENOENT;
-		return NULL;
-	}
-
-	HANDLE handle = just_open(u16_ntpath, FILE_READ_ATTRIBUTES | FILE_TRAVERSE | FILE_LIST_DIRECTORY | SYNCHRONIZE, 0, FILE_OPEN,
+	HANDLE handle = just_open(AT_FDCWD, path, FILE_READ_ATTRIBUTES | FILE_TRAVERSE | FILE_LIST_DIRECTORY | SYNCHRONIZE,
 							  FILE_DIRECTORY_FILE | FILE_SYNCHRONOUS_IO_NONALERT);
 	if (handle == INVALID_HANDLE_VALUE)
 	{
 		// errno wil be set by just_open
-		free(u16_ntpath);
 		return NULL;
 	}
 
-	int fd = register_to_fd_table(handle, u16_ntpath + 4, DIRECTORY_HANDLE, O_RDONLY | O_CLOEXEC | O_DIRECTORY);
-	free(u16_ntpath);
+	int fd = register_to_fd_table(handle, DIRECTORY_HANDLE, O_RDONLY | O_CLOEXEC | O_DIRECTORY);
 
 	DIR *dirstream = NULL;
 	initialize_dirstream(&dirstream, fd);

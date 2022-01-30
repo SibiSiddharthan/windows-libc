@@ -101,11 +101,11 @@ FILE *wlibc_popen(const char *restrict command, const char *restrict mode)
 	int fd;
 	if (pmode == O_RDONLY)
 	{
-		fd = register_to_fd_table(read_end, NULL, PIPE_HANDLE, O_RDONLY);
+		fd = register_to_fd_table(read_end, PIPE_HANDLE, O_RDONLY);
 	}
 	else
 	{
-		fd = register_to_fd_table(write_end, NULL, PIPE_HANDLE, O_WRONLY);
+		fd = register_to_fd_table(write_end, PIPE_HANDLE, O_WRONLY);
 	}
 
 	FILE *stream = create_stream(fd, _IOBUFFER_INTERNAL | _IOFBF | get_buf_mode(pmode), 4096);

@@ -6,8 +6,8 @@
 */
 
 #include <internal/nt.h>
-#include <internal/fcntl.h>
 #include <internal/error.h>
+#include <internal/fcntl.h>
 #include <fcntl.h>
 
 intptr_t wlibc_get_osfhandle(int fd)
@@ -81,7 +81,6 @@ int wlibc_open_osfhandle(intptr_t handle, int flags)
 		return -1;
 	}
 
-	// TODO Path rework
-	fd = register_to_fd_table((HANDLE)handle, L"UNKNOWN", htype, flags);
+	fd = register_to_fd_table((HANDLE)handle, htype, flags);
 	return fd;
 }

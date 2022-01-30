@@ -7,15 +7,15 @@
 
 #define _CRT_RAND_S
 
-#include <fcntl.h>
-#include <errno.h>
-#include <stdbool.h>
-#include <internal/fcntl.h>
 #include <internal/nt.h>
 #include <internal/error.h>
-#include <stdlib.h>
-#include <errno.h>
+#include <internal/fcntl.h>
+#include <internal/path.h>
 #include <internal/security.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <stdbool.h>
+#include <stdlib.h>
 
 static ACCESS_MASK determine_access_rights(int oflags)
 {
@@ -175,6 +175,7 @@ static bool validate_oflags(int oflags)
 	return true;
 }
 
+#if 0
 static int path_components_size = 32;
 
 typedef struct
@@ -364,12 +365,16 @@ wchar_t *get_absolute_ntpath(int dirfd, const char *path)
 	return u16_ntpath_final;
 }
 
+#endif
+
 HANDLE really_do_open(OBJECT_ATTRIBUTES *object, ACCESS_MASK access, ULONG attributes, ULONG disposition, ULONG options)
 {
-	HANDLE H = INVALID_HANDLE_VALUE;
-	IO_STATUS_BLOCK I;
+	NTSTATUS status;
+	IO_STATUS_BLOCK io;
+	HANDLE handle = INVALID_HANDLE_VALUE;
 	ULONG share = FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE;
-	NTSTATUS status = NtCreateFile(&H, access, object, &I, NULL, attributes, share, disposition, options, NULL, 0);
+
+	status = NtCreateFile(&handle, access, object, &io, NULL, attributes, share, disposition, options, NULL, 0);
 	if (status != STATUS_SUCCESS)
 	{
 		if (status == STATUS_OBJECT_NAME_INVALID)
@@ -381,29 +386,28 @@ HANDLE really_do_open(OBJECT_ATTRIBUTES *object, ACCESS_MASK access, ULONG attri
 				if (wc == L':' || wc == L'<' || wc == L'>' || wc == L'*' || wc == L'|' || wc == L'?' || wc == L'\"')
 				{
 					errno = EINVAL;
-					return H;
+					return handle;
 				}
 			}
 			if (object->ObjectName->Buffer[i - 1] == L'\\')
 			{
 				errno = EISDIR;
-				return H;
+				return handle;
 			}
 		}
 		map_ntstatus_to_errno(status);
 	}
-	return H;
+	return handle;
 }
 
-HANDLE just_open(const wchar_t *u16_ntpath, ACCESS_MASK access, ULONG attributes, ULONG disposition, ULONG options)
+HANDLE just_open2(UNICODE_STRING *ntpath, ACCESS_MASK access, ULONG options)
 {
-	UNICODE_STRING u16_path;
-	// Opening the console requires either FILE_GENERIC_READ or FILE_GENERIC_WRITE
-	if (memcmp(u16_ntpath, L"\\??\\CON", 16) == 0)
-	{
-		attributes = 0;
-		options = FILE_SYNCHRONOUS_IO_NONALERT;
+	OBJECT_ATTRIBUTES object;
 
+	// Opening the console requires either FILE_GENERIC_READ or FILE_GENERIC_WRITE
+	if (memcmp(ntpath->Buffer, L"\\Device\\ConDrv", 28) == 0)
+	{
+		options = FILE_SYNCHRONOUS_IO_NONALERT;
 		if (access & (FILE_WRITE_DATA | FILE_WRITE_ATTRIBUTES | FILE_WRITE_EA | WRITE_DAC))
 		{
 			access = FILE_GENERIC_WRITE;
@@ -413,23 +417,47 @@ HANDLE just_open(const wchar_t *u16_ntpath, ACCESS_MASK access, ULONG attributes
 			access = FILE_GENERIC_READ;
 		}
 	}
-	RtlInitUnicodeString(&u16_path, u16_ntpath);
-	OBJECT_ATTRIBUTES object;
-	InitializeObjectAttributes(&object, &u16_path, OBJ_CASE_INSENSITIVE, NULL, NULL);
-	return really_do_open(&object, access, attributes, disposition, options);
+
+	InitializeObjectAttributes(&object, ntpath, OBJ_CASE_INSENSITIVE, NULL, NULL);
+	return really_do_open(&object, access, 0, FILE_OPEN, options);
+}
+
+HANDLE just_open(int dirfd, const char *path, ACCESS_MASK access, ULONG options)
+{
+	HANDLE handle = INVALID_HANDLE_VALUE;
+	UNICODE_STRING *u16_ntpath = xget_absolute_ntpath(dirfd, path);
+
+	if (u16_ntpath == NULL)
+	{
+		// errno will be set by `get_absolute_ntpath`.
+		return handle;
+	}
+
+	handle = just_open2(u16_ntpath, access, options);
+	free_ntpath(u16_ntpath);
+
+	return handle;
 }
 
 int do_open(int dirfd, const char *name, int oflags, mode_t perm)
 {
-	int fd = -1;
 	HANDLE handle;
+	OBJECT_ATTRIBUTES object;
 	ACCESS_MASK access_rights = determine_access_rights(oflags);
 	ULONG attributes = 0;
 	ULONG disposition = determine_create_dispostion(oflags);
 	ULONG options = determine_create_options(oflags);
 	PSECURITY_DESCRIPTOR security_descriptor = NULL;
+	UNICODE_STRING *u16_ntpath = xget_absolute_ntpath(dirfd, name);
+
+	int fd = -1;
 	bool is_console = false;
 	bool is_null = false;
+
+	if (u16_ntpath == NULL)
+	{
+		goto finish;
+	}
 
 	if (oflags & (O_CREAT | O_TMPFILE))
 	{
@@ -439,25 +467,29 @@ int do_open(int dirfd, const char *name, int oflags, mode_t perm)
 			attributes |= FILE_ATTRIBUTE_READONLY;
 		}
 #endif
-		attributes = determine_file_attributes(oflags);
+		attributes |= determine_file_attributes(oflags);
 		security_descriptor = (PSECURITY_DESCRIPTOR)get_security_descriptor(perm & 0777, 0);
 	}
 
-	wchar_t *u16_ntpath = get_absolute_ntpath(dirfd, name);
-
 	if (oflags & O_TMPFILE)
 	{
-		int length = wcslen(u16_ntpath) + 1; // L'\0'
-		wchar_t *temp = (wchar_t *)malloc(sizeof(wchar_t) * length);
-		memcpy(temp, u16_ntpath, sizeof(wchar_t) * length);
-		u16_ntpath = (wchar_t *)realloc(u16_ntpath, sizeof(wchar_t) * (length + 6)); // number of digits of 32bit random(5) + slash(1)
-		memcpy(u16_ntpath, temp, sizeof(wchar_t) * length);
-		memset(u16_ntpath + length, 0, sizeof(wchar_t) * 6);
-		free(temp);
+		size_t temp_bufsize = (1 + 6) * sizeof(WCHAR); // number of digits of 32bit random(5) + slash(1) + NULL
+		UNICODE_STRING *u16_temppath = (UNICODE_STRING *)malloc(sizeof(UNICODE_STRING) + u16_ntpath->Length + temp_bufsize);
 
-		if (u16_ntpath[length - 2] != L'\\')
+		u16_temppath->Buffer = (WCHAR *)((char *)u16_temppath + sizeof(UNICODE_STRING));
+		memcpy(u16_temppath->Buffer, u16_ntpath->Buffer, u16_ntpath->Length);
+		u16_temppath->Length = u16_ntpath->Length;
+		u16_temppath->MaximumLength = u16_ntpath->Length + temp_bufsize;
+		memset((char *)u16_temppath->Buffer + u16_temppath->Length, 0, temp_bufsize);
+
+		// now swap the buffers
+		free_ntpath(u16_ntpath);
+		u16_ntpath = u16_temppath;
+
+		if (u16_ntpath->Buffer[u16_ntpath->Length / sizeof(WCHAR) - 1] != L'\\')
 		{
-			u16_ntpath[length++ - 1] = L'\\';
+			u16_ntpath->Buffer[u16_ntpath->Length / sizeof(WCHAR)] = L'\\';
+			u16_ntpath->Length += sizeof(WCHAR);
 		}
 
 		// Generate a random number, convert it to a wchar_t string with base 36(0-9,a-z)
@@ -465,21 +497,25 @@ int do_open(int dirfd, const char *name, int oflags, mode_t perm)
 		rand_s(&rn);
 		wchar_t rbuf[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 		_ultow_s(rn, rbuf, 8, 36);
-		// Append the string to u16_ntpath
-		wcsncat(u16_ntpath, rbuf, 5);
+		// Append the string to u16_ntpath.
+		// Remember the 'Length' should always be less than 'MaximumLength' so that `free_ntpath` will free the memory.
+		memcpy((char *)u16_temppath->Buffer + u16_temppath->Length, rbuf,
+			   u16_temppath->MaximumLength - u16_temppath->Length - sizeof(WCHAR));
+		u16_ntpath->Length = u16_temppath->MaximumLength - sizeof(WCHAR);
+		// Start from the end to figure out the length.
+		while (u16_ntpath->Buffer[u16_ntpath->Length / sizeof(WCHAR) - 1] == L'\0')
+		{
+			u16_ntpath->Length -= sizeof(WCHAR);
+		}
 	}
 
-	UNICODE_STRING u16_path;
-	RtlInitUnicodeString(&u16_path, u16_ntpath);
-
-	OBJECT_ATTRIBUTES object;
-	InitializeObjectAttributes(&object, &u16_path, OBJ_CASE_INSENSITIVE | OBJ_INHERIT, NULL, security_descriptor);
+	InitializeObjectAttributes(&object, u16_ntpath, OBJ_CASE_INSENSITIVE | OBJ_INHERIT, NULL, security_descriptor);
 	if (oflags & O_NOINHERIT)
 	{
 		object.Attributes &= ~OBJ_INHERIT;
 	}
 
-	if (memcmp(u16_ntpath, L"\\??\\NUL", 16) == 0)
+	if (memcmp(u16_ntpath->Buffer, L"\\Device\\Null", 26) == 0)
 	{
 		is_null = true;
 		attributes = 0;
@@ -489,7 +525,7 @@ int do_open(int dirfd, const char *name, int oflags, mode_t perm)
 	}
 
 	// opening console requires these
-	if (memcmp(u16_ntpath, L"\\??\\CON", 16) == 0)
+	if (memcmp(u16_ntpath->Buffer, L"\\Device\\ConDrv", 28) == 0)
 	{
 		is_console = true;
 		attributes = 0;
@@ -531,12 +567,12 @@ int do_open(int dirfd, const char *name, int oflags, mode_t perm)
 		{
 			// Handle belongs to a disk file, find out whether it is a file or directory
 			NTSTATUS status;
-			IO_STATUS_BLOCK I;
-			FILE_ATTRIBUTE_TAG_INFORMATION INFO;
+			IO_STATUS_BLOCK io;
+			FILE_ATTRIBUTE_TAG_INFORMATION tag_info;
 
-			status = NtQueryInformationFile(handle, &I, &INFO, sizeof(FILE_ATTRIBUTE_TAG_INFORMATION), FileAttributeTagInformation);
+			status = NtQueryInformationFile(handle, &io, &tag_info, sizeof(FILE_ATTRIBUTE_TAG_INFORMATION), FileAttributeTagInformation);
 
-			if ((INFO.FileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) && ((oflags & O_NOFOLLOW) && ((oflags & O_PATH) == 0)))
+			if ((tag_info.FileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) && ((oflags & O_NOFOLLOW) && ((oflags & O_PATH) == 0)))
 			{
 				// Close the handle if file is a symbolic link but only O_NOFOLLOW is specified. (Specify O_PATH also)
 				NtClose(handle);
@@ -544,7 +580,7 @@ int do_open(int dirfd, const char *name, int oflags, mode_t perm)
 				goto finish;
 			}
 
-			if ((access_rights & (FILE_WRITE_DATA | FILE_APPEND_DATA)) && (INFO.FileAttributes & FILE_ATTRIBUTE_DIRECTORY))
+			if ((access_rights & (FILE_WRITE_DATA | FILE_APPEND_DATA)) && (tag_info.FileAttributes & FILE_ATTRIBUTE_DIRECTORY))
 			{
 				// Close the handle if we request write access to a directory
 				NtClose(handle);
@@ -552,7 +588,7 @@ int do_open(int dirfd, const char *name, int oflags, mode_t perm)
 				goto finish;
 			}
 
-			if (INFO.FileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+			if (tag_info.FileAttributes & FILE_ATTRIBUTE_DIRECTORY)
 			{
 				type = DIRECTORY_HANDLE;
 			}
@@ -564,12 +600,12 @@ int do_open(int dirfd, const char *name, int oflags, mode_t perm)
 			if (oflags & O_NOATIME && (oflags & O_PATH) == 0)
 			{
 				FILE_BASIC_INFO BASIC_INFO;
-				status = NtQueryInformationFile(handle, &I, &BASIC_INFO, sizeof(FILE_BASIC_INFO), FileBasicInformation);
+				status = NtQueryInformationFile(handle, &io, &BASIC_INFO, sizeof(FILE_BASIC_INFO), FileBasicInformation);
 				if (status == STATUS_SUCCESS)
 				{
 					// Set it to -1 for no updates
 					BASIC_INFO.LastAccessTime.QuadPart = -1;
-					status = NtSetInformationFile(handle, &I, &BASIC_INFO, sizeof(FILE_BASIC_INFO), FileBasicInformation);
+					status = NtSetInformationFile(handle, &io, &BASIC_INFO, sizeof(FILE_BASIC_INFO), FileBasicInformation);
 					if (status != STATUS_SUCCESS)
 					{
 						map_ntstatus_to_errno(status); // just set errno;
@@ -582,12 +618,12 @@ int do_open(int dirfd, const char *name, int oflags, mode_t perm)
 			}
 		}
 
-		fd = register_to_fd_table(handle, u16_ntpath + 4, type, oflags); // skip "\??\"
+		fd = register_to_fd_table(handle, type, oflags);
 	}
 
 finish:
 	// u16_ntpath is malloc'ed, so free it.
-	free(u16_ntpath);
+	free_ntpath(u16_ntpath);
 	return fd;
 }
 

@@ -9,8 +9,8 @@
 #include <internal/error.h>
 #include <internal/fcntl.h>
 #include <internal/security.h>
-#include <sys/stat.h>
 #include <stdlib.h>
+#include <sys/stat.h>
 
 int do_chmod(HANDLE handle, mode_t mode)
 {
@@ -48,16 +48,8 @@ int do_chmod(HANDLE handle, mode_t mode)
 
 int common_chmod(int dirfd, const char *path, mode_t mode, int flags)
 {
-	wchar_t *u16_ntpath = get_absolute_ntpath(dirfd, path);
-	if (u16_ntpath == NULL)
-	{
-		errno = ENOENT;
-		return -1;
-	}
 
-	HANDLE handle = just_open(u16_ntpath, FILE_READ_ATTRIBUTES | READ_CONTROL | WRITE_DAC, 0, FILE_OPEN,
-							  flags == AT_SYMLINK_NOFOLLOW ? FILE_OPEN_REPARSE_POINT : 0);
-	free(u16_ntpath);
+	HANDLE handle = just_open(dirfd, path, FILE_READ_ATTRIBUTES | READ_CONTROL | WRITE_DAC, flags == AT_SYMLINK_NOFOLLOW ? FILE_OPEN_REPARSE_POINT : 0);
 	if (handle == INVALID_HANDLE_VALUE)
 	{
 		// errno wil be set by just_open

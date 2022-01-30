@@ -5,13 +5,11 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <unistd.h>
-#include <internal/misc.h>
-#include <Windows.h>
+#include <internal/nt.h>
 #include <internal/error.h>
 #include <internal/fcntl.h>
-#include <internal/nt.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 // Convert backslash to forward slash
 void convert_bs_to_fs(char *str, int length)
@@ -159,16 +157,7 @@ ssize_t do_readlink(HANDLE handle, char *restrict buf, size_t bufsiz)
 
 ssize_t common_readlink(int dirfd, const char *restrict path, char *restrict buf, size_t bufsiz)
 {
-	wchar_t *u16_ntpath = get_absolute_ntpath(dirfd, path);
-	if (u16_ntpath == NULL)
-	{
-		errno = ENOENT;
-		return -1;
-	}
-
-	HANDLE handle = just_open(u16_ntpath, FILE_READ_ATTRIBUTES, 0, FILE_OPEN, FILE_OPEN_REPARSE_POINT);
-	free(u16_ntpath);
-
+	HANDLE handle = just_open(dirfd, path, FILE_READ_ATTRIBUTES, FILE_OPEN_REPARSE_POINT);
 	if (handle == INVALID_HANDLE_VALUE)
 	{
 		// errno wil be set by just_open

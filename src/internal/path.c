@@ -307,6 +307,7 @@ UNICODE_STRING *xget_absolute_ntpath(int dirfd, const char *path)
 			if (rootdir_buffer == NULL)
 			{
 				// Bad file descriptor for directory.
+				// This really should not happen as dirfd is validated before this function call, but just in case.
 				errno = EBADF;
 				goto finish;
 			}
@@ -425,7 +426,6 @@ UNICODE_STRING *xget_absolute_ntpath(int dirfd, const char *path)
 	}
 
 	// All the constructed paths will have a terminating NULL.
-
 	u16_ntpath = (UNICODE_STRING *)malloc(required_size + sizeof(UNICODE_STRING));
 	u16_ntpath->Length = 0;
 	u16_ntpath->MaximumLength = required_size;

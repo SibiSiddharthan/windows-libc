@@ -27,7 +27,7 @@ int common_dup(int oldfd, int newfd, int flags)
 	// For dup
 	if (newfd == -1)
 	{
-		int fd = register_to_fd_table(target, get_fd_path(oldfd), get_fd_type(oldfd), get_fd_flags(oldfd));
+		int fd = register_to_fd_table(target, get_fd_type(oldfd), get_fd_flags(oldfd));
 		return fd;
 	}
 
@@ -44,7 +44,7 @@ int common_dup(int oldfd, int newfd, int flags)
 			}
 		}
 
-		insert_into_fd_table(newfd, target, get_fd_path(oldfd), get_fd_type(oldfd), get_fd_flags(oldfd) | flags);
+		insert_into_fd_table(newfd, target, get_fd_type(oldfd), get_fd_flags(oldfd) | flags);
 
 		return newfd;
 	}

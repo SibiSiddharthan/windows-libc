@@ -6,13 +6,12 @@
 */
 
 #include <internal/nt.h>
-#include <sys/xattr.h>
-#include <sys/types.h>
-#include <internal/fcntl.h>
 #include <internal/error.h>
-#include <stdlib.h>
+#include <internal/fcntl.h>
 #include <errno.h>
-#include <wchar.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <sys/xattr.h>
 
 ssize_t do_getxattr(HANDLE handle, const char *restrict name, void *restrict value, size_t size)
 {
@@ -94,16 +93,8 @@ finish:
 
 ssize_t common_getxattr(int fd, const char *restrict path, const char *restrict name, void *restrict value, size_t size, int flags)
 {
-	wchar_t *u16_ntpath = get_absolute_ntpath(fd, path);
-	if (u16_ntpath == NULL)
-	{
-		errno = ENOENT;
-		return -1;
-	}
-
-	HANDLE handle = just_open(u16_ntpath, FILE_READ_EA | SYNCHRONIZE, FILE_SYNCHRONOUS_IO_NONALERT, FILE_OPEN,
-							  flags == AT_SYMLINK_NOFOLLOW ? FILE_OPEN_REPARSE_POINT : 0);
-	free(u16_ntpath);
+	HANDLE handle = just_open(fd, path, FILE_READ_EA | SYNCHRONIZE,
+							  FILE_SYNCHRONOUS_IO_ALERT | (flags == AT_SYMLINK_NOFOLLOW ? FILE_OPEN_REPARSE_POINT : 0));
 	if (handle == INVALID_HANDLE_VALUE)
 	{
 		// errno wil be set by just_open

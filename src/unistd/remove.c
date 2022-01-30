@@ -5,22 +5,14 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <unistd.h>
 #include <internal/nt.h>
-#include <internal/misc.h>
 #include <internal/error.h>
-#include <fcntl.h>
 #include <internal/fcntl.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 int common_remove(int dirfd, const char *path, int flags)
 {
-	wchar_t *u16_ntpath = get_absolute_ntpath(dirfd, path);
-	if (u16_ntpath == NULL)
-	{
-		errno = ENOENT;
-		return -1;
-	}
-
 	ULONG options = FILE_OPEN_REPARSE_POINT;
 
 	switch (flags)
@@ -35,9 +27,7 @@ int common_remove(int dirfd, const char *path, int flags)
 		break;
 	}
 
-	HANDLE handle = just_open(u16_ntpath, DELETE, 0, FILE_OPEN, options);
-	free(u16_ntpath);
-
+	HANDLE handle = just_open(dirfd, path, DELETE, options);
 	if (handle == INVALID_HANDLE_VALUE)
 	{
 		// errno wil be set by just_open
@@ -45,11 +35,14 @@ int common_remove(int dirfd, const char *path, int flags)
 	}
 
 	// SetFileInformationByHandle with FileDispositionInfoEx can also be used
-	IO_STATUS_BLOCK I;
+	NTSTATUS status;
+	IO_STATUS_BLOCK io;
 	FILE_DISPOSITION_INFORMATION_EX dispostion;
+
 	dispostion.Flags = FILE_DISPOSITION_DELETE | FILE_DISPOSITION_POSIX_SEMANTICS | FILE_DISPOSITION_IGNORE_READONLY_ATTRIBUTE;
-	NTSTATUS status = NtSetInformationFile(handle, &I, &dispostion, sizeof(FILE_DISPOSITION_INFORMATION_EX), FileDispositionInformationEx);
+	status = NtSetInformationFile(handle, &io, &dispostion, sizeof(FILE_DISPOSITION_INFORMATION_EX), FileDispositionInformationEx);
 	NtClose(handle);
+
 	if (status != STATUS_SUCCESS)
 	{
 		map_ntstatus_to_errno(status);
