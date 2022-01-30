@@ -14,7 +14,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
-static int path_components_size = 32;
+static int path_components_size = 16;
 
 typedef struct
 {
@@ -31,11 +31,10 @@ static path_component *add_component(path_component *restrict components, int *r
 
 	if (*index == path_components_size)
 	{
-		void *temp = malloc(path_components_size * sizeof(path_component));
+		void *temp = malloc(path_components_size * 2 * sizeof(path_component));
 		memcpy(temp, components, path_components_size * sizeof(path_component));
-		components = (path_component *)realloc(components, 2 * path_components_size * sizeof(path_component));
-		memcpy(components, temp, path_components_size * sizeof(path_component));
-		free(temp);
+		free(components);
+		components = temp;
 		path_components_size *= 2;
 	}
 

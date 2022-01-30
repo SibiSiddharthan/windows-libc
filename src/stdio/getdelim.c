@@ -53,11 +53,10 @@ ssize_t common_getdelim(char **restrict buffer, size_t *restrict size, int delim
 		if (result == *size)
 		{
 			// Double the buffer
-			char *temp = (char *)malloc(buffer_size);
+			char *temp = (char *)malloc(buffer_size * 2);
 			memcpy(temp, *buffer, buffer_size);
-			*buffer = (char *)realloc(*buffer, buffer_size * 2);
-			memcpy(*buffer, temp, buffer_size);
-			free(temp);
+			free(*buffer);
+			*buffer = temp;
 			buffer_size *= 2;
 			*size = buffer_size;
 		}

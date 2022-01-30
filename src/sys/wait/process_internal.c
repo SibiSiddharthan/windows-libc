@@ -102,11 +102,10 @@ void add_child(pid_t pid, HANDLE child)
 	// No more space in process table. Double it's size
 	if (i == _wlibc_process_table_size)
 	{
-		process_table *temp = (process_table *)malloc(sizeof(process_table) * _wlibc_process_table_size);
+		process_table *temp = (process_table *)malloc(sizeof(process_table) * _wlibc_process_table_size * 2);
 		memcpy(temp, _wlibc_process_table, sizeof(process_table) * _wlibc_process_table_size);
-		_wlibc_process_table = (process_table *)realloc(_wlibc_process_table, sizeof(process_table) * 2 * _wlibc_process_table_size);
-		memcpy(_wlibc_process_table, temp, sizeof(process_table) * _wlibc_process_table_size);
-		free(temp);
+		free(_wlibc_process_table);
+		_wlibc_process_table = temp;
 
 		_wlibc_process_table[_wlibc_process_table_size].process_id = pid;
 		_wlibc_process_table[_wlibc_process_table_size].process_handle = child;

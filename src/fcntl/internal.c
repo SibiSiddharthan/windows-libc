@@ -229,11 +229,10 @@ static int register_to_fd_table_internal(HANDLE _h, enum handle_type _type, int 
 
 	else // double the table size
 	{
-		struct fd_table *temp = (struct fd_table *)malloc(sizeof(struct fd_table) * _fd_table_size);
+		struct fd_table *temp = (struct fd_table *)malloc(sizeof(struct fd_table) * _fd_table_size * 2);
 		memcpy(temp, _fd_io, sizeof(struct fd_table) * _fd_table_size);
-		_fd_io = (struct fd_table *)realloc(_fd_io, sizeof(struct fd_table) * _fd_table_size * 2);
-		memcpy(_fd_io, temp, sizeof(struct fd_table) * (_fd_table_size));
-		free(temp);
+		free(_fd_io);
+		_fd_io = temp;
 
 		fd = internal_insert_fd(_fd_table_size, _h, _type, _flags);
 
@@ -275,11 +274,10 @@ static void insert_into_fd_table_internal(int _fd, HANDLE _h, enum handle_type _
 	// grow the table
 	if (_fd >= _fd_table_size)
 	{
-		struct fd_table *temp = (struct fd_table *)malloc(sizeof(struct fd_table) * _fd_table_size);
+		struct fd_table *temp = (struct fd_table *)malloc(sizeof(struct fd_table) * _fd * 2); // Allocate double the requested fd number
 		memcpy(temp, _fd_io, sizeof(struct fd_table) * _fd_table_size);
-		_fd_io = (struct fd_table *)realloc(_fd_io, sizeof(struct fd_table) * _fd * 2); // Allocate double the requested fd number
-		memcpy(_fd_io, temp, sizeof(struct fd_table) * (_fd_table_size));
-		free(temp);
+		free(_fd_io);
+		_fd_io = temp;
 
 		for (size_t i = _fd_table_size; i < _fd * 2; i++)
 		{
