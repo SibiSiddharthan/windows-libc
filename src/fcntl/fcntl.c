@@ -10,7 +10,7 @@
 #include <errno.h>
 #include <stdarg.h>
 
-int common_dup(int oldfd, int newfd, int flags);
+int do_dup(int oldfd, int newfd, int flags);
 
 static int do_dupfd(int old_fd, int new_fd, int o_cloexec)
 {
@@ -20,7 +20,7 @@ static int do_dupfd(int old_fd, int new_fd, int o_cloexec)
 		++new_fd;
 	}
 
-	return common_dup(old_fd, new_fd, o_cloexec);
+	return do_dup(old_fd, new_fd, o_cloexec);
 }
 
 int wlibc_fcntl(int fd, int cmd, va_list args)

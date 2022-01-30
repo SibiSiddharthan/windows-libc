@@ -10,8 +10,8 @@
 
 #include <wlibc.h>
 #include <sys/types.h>
+#include <errno.h>
 #include <fcntl.h>
-#include <wchar.h>
 
 _WLIBC_BEGIN_DECLS
 
@@ -97,23 +97,39 @@ WLIBC_INLINE int fchownat(int dirfd, const char *path, uid_t owner, gid_t group,
 	return wlibc_common_chown(dirfd, path, owner, group, flags);
 }
 
-WLIBC_API int wlibc_dup(int fd);
-WLIBC_API int wlibc_dup2(int oldfd, int newfd);
-WLIBC_API int wlibc_dup3(int oldfd, int newfd, int flags);
+WLIBC_API int wlibc_common_dup(int oldfd, int newfd, int flags);
 
 WLIBC_INLINE int dup(int fd)
 {
-	return wlibc_dup(fd);
+	return wlibc_common_dup(fd, -1, 0);
 }
 
 WLIBC_INLINE int dup2(int oldfd, int newfd)
 {
-	return wlibc_dup2(oldfd, newfd);
+	if (oldfd < 0 || newfd < 0)
+	{
+		errno = EINVAL;
+		return -1;
+	}
+
+	return wlibc_common_dup(oldfd, newfd, 0);
 }
 
 WLIBC_INLINE int dup3(int oldfd, int newfd, int flags)
 {
-	return wlibc_dup3(oldfd, newfd, flags);
+	if (oldfd < 0 || newfd < 0)
+	{
+		errno = EINVAL;
+		return -1;
+	}
+
+	if (newfd == oldfd)
+	{
+		errno = EINVAL;
+		return -1;
+	}
+
+	return wlibc_common_dup(oldfd, newfd, flags);
 }
 
 WLIBC_API int wlibc_fdatasync(int fd);
