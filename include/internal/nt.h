@@ -1796,4 +1796,34 @@ NTSTATUS
 NTAPI
 NtQuerySymbolicLinkObject(_In_ HANDLE LinkHandle, _Inout_ PUNICODE_STRING LinkTarget, _Out_opt_ PULONG ReturnedLength);
 
+NTSYSAPI
+NTSTATUS
+NTAPI
+RtlInitializeCriticalSection(_Out_ PRTL_CRITICAL_SECTION CriticalSection);
+
+NTSYSAPI
+NTSTATUS
+NTAPI
+RtlInitializeCriticalSectionAndSpinCount(_Inout_ PRTL_CRITICAL_SECTION CriticalSection, _In_ ULONG SpinCount);
+
+NTSYSAPI
+NTSTATUS
+NTAPI
+RtlDeleteCriticalSection(_Inout_ PRTL_CRITICAL_SECTION CriticalSection);
+
+NTSYSAPI
+NTSTATUS
+NTAPI
+RtlEnterCriticalSection(_Inout_ PRTL_CRITICAL_SECTION CriticalSection);
+
+NTSYSAPI
+NTSTATUS
+NTAPI
+RtlLeaveCriticalSection(_Inout_ PRTL_CRITICAL_SECTION CriticalSection);
+
+NTSYSAPI
+BOOLEAN
+NTAPI
+RtlTryEnterCriticalSection(_Inout_ PRTL_CRITICAL_SECTION CriticalSection);
+
 #endif

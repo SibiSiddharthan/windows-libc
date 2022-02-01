@@ -5,9 +5,9 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <internal/stdio.h>
+#include <internal/nt.h>
 #include <internal/fcntl.h>
-#include <Windows.h>
+#include <internal/stdio.h>
 #include <stdlib.h>
 
 FILE *_wlibc_stdio_head = NULL;
@@ -71,7 +71,7 @@ FILE *create_stream(int fd, int buf_mode, int buf_size)
 	stream->pos = 0;
 	stream->prev_op = 0;
 	stream->phandle = NULL;
-	InitializeCriticalSection(&(stream->critical));
+	RtlInitializeCriticalSection(&(stream->critical));
 	insert_stream(stream);
 	return stream;
 }
@@ -110,7 +110,7 @@ void delete_stream(FILE *stream)
 		stream->next->prev = NULL;
 	}
 	// else (stream->prev == NULL && stream->next == NULL) fallthrough
-	DeleteCriticalSection(&(stream->critical));
+	RtlDeleteCriticalSection(&(stream->critical));
 	free(stream);
 
 	LeaveCriticalSection(&_wlibc_stdio_critical);

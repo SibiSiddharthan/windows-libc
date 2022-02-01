@@ -8,7 +8,7 @@
 #ifndef WLIBC_STDIO_INTERNAL_H
 #define WLIBC_STDIO_INTERNAL_H
 
-#include <Windows.h>
+#include <internal/nt.h>
 #include <sys/types.h>
 
 typedef struct WLIBC_FILE
@@ -24,7 +24,7 @@ typedef struct WLIBC_FILE
 	size_t pos; // ftell
 	int prev_op;
 	HANDLE phandle;
-	CRITICAL_SECTION critical;
+	RTL_CRITICAL_SECTION critical;
 	struct WLIBC_FILE *prev;
 	struct WLIBC_FILE *next;
 } FILE;
@@ -39,8 +39,8 @@ typedef struct WLIBC_FILE
 		return ret;                                           \
 	}
 
-#define LOCK_FILE_STREAM(stream)   EnterCriticalSection(&(stream->critical))
-#define UNLOCK_FILE_STREAM(stream) LeaveCriticalSection(&(stream->critical))
+#define LOCK_FILE_STREAM(stream)   RtlEnterCriticalSection(&(stream->critical))
+#define UNLOCK_FILE_STREAM(stream) RtlLeaveCriticalSection(&(stream->critical))
 
 #define _IOBUFFER_INTERNAL  0x1
 #define _IOBUFFER_EXTERNAL  0x2

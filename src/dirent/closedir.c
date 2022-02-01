@@ -5,12 +5,12 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <internal/dirent.h>
-#include <dirent.h>
-#include <Windows.h>
+#include <internal/nt.h>
 #include <internal/error.h>
-#include <stdlib.h>
+#include <internal/dirent.h>
 #include <internal/fcntl.h>
+#include <dirent.h>
+#include <stdlib.h>
 
 int wlibc_closedir(DIR *dirstream)
 {
@@ -20,7 +20,7 @@ int wlibc_closedir(DIR *dirstream)
 	{
 		// Free the memory of DIR and it's components
 		free(dirstream->buffer);
-		DeleteCriticalSection(&(dirstream->critical));
+		RtlDeleteCriticalSection(&(dirstream->critical));
 		free(dirstream);
 		return 0;
 	}

@@ -5,10 +5,10 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <stdio.h>
 #include <internal/stdio.h>
 #include <internal/fcntl.h>
 #include <fcntl.h>
+#include <stdio.h>
 #include <unistd.h>
 
 int common_fflush(FILE *stream)
@@ -48,7 +48,7 @@ int common_fflush(FILE *stream)
 	return 0;
 }
 
-int flushall(int lock)
+int common_flushall(int lock)
 {
 	FILE *start = _wlibc_stdio_head;
 	int status = 0;
@@ -76,7 +76,7 @@ int wlibc_fflush_unlocked(FILE *stream)
 {
 	if (stream == NULL)
 	{
-		return flushall(0);
+		return common_flushall(0);
 	}
 
 	VALIDATE_FILE_STREAM(stream, EOF);
@@ -87,7 +87,7 @@ int wlibc_fflush(FILE *stream)
 {
 	if (stream == NULL)
 	{
-		return flushall(1);
+		return common_flushall(1);
 	}
 
 	VALIDATE_FILE_STREAM(stream, EOF);

@@ -5,10 +5,10 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <stdio.h>
+#include <internal/nt.h>
 #include <internal/stdio.h>
+#include <stdio.h>
 #include <errno.h>
-#include <Windows.h>
 
 #define LOCK    0
 #define UNLOCK  1
@@ -20,17 +20,17 @@ int wlibc_lockfile_op(FILE *stream, int op)
 
 	if (op == LOCK)
 	{
-		EnterCriticalSection(&(stream->critical));
+		RtlEnterCriticalSection(&(stream->critical));
 		return 0;
 	}
 	if (op == UNLOCK)
 	{
-		LeaveCriticalSection(&(stream->critical));
+		RtlLeaveCriticalSection(&(stream->critical));
 		return 0;
 	}
 	if (op == TRYLOCK)
 	{
-		BOOL result = TryEnterCriticalSection(&(stream->critical));
+		BOOLEAN result = RtlTryEnterCriticalSection(&(stream->critical));
 		if (result == 0)
 		{
 			return -1; // Another thread holds the lock, fail by return non-zero

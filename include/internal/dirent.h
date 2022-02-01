@@ -8,8 +8,8 @@
 #ifndef WLIBC_DIRENT_INTERNAL_H
 #define WLIBC_DIRENT_INTERNAL_H
 
+#include <internal/nt.h>
 #include <sys/types.h>
-#include <Windows.h>
 
 typedef struct WLIBC_DIR
 {
@@ -19,19 +19,19 @@ typedef struct WLIBC_DIR
 	size_t offset;
 	size_t read_data;
 	size_t received_data;
-	CRITICAL_SECTION critical;
+	RTL_CRITICAL_SECTION critical;
 } DIR;
 
 #define DIR_STREAM_MAGIC 0x1
 #define VALIDATE_DIR_STREAM(stream, ret)                     \
 	if (stream == NULL || stream->magic != DIR_STREAM_MAGIC) \
 	{                                                        \
-		errno = EBADF;                                      \
+		errno = EBADF;                                       \
 		return ret;                                          \
 	}
 
-#define LOCK_DIR_STREAM(stream)   EnterCriticalSection(&(stream->critical))
-#define UNLOCK_DIR_STREAM(stream) LeaveCriticalSection(&(stream->critical))
+#define LOCK_DIR_STREAM(stream)   RtlEnterCriticalSection(&(stream->critical))
+#define UNLOCK_DIR_STREAM(stream) RtlLeaveCriticalSection(&(stream->critical))
 
 #define DIRENT_DIR_BUFFER_SIZE 131072 // 128 KB. This allows a minimum of 250 entries.
 
