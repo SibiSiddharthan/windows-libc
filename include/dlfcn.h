@@ -19,6 +19,8 @@ _WLIBC_BEGIN_DECLS
 #define RTLD_GLOBAL 0x0 // Load symbols in global namespace
 #define RTLD_LOCAL  0x0 // Do not load symbols in global namespace
 
+extern unsigned long _wlibc_last_dlfcn_error;
+
 WLIBC_API void *wlibc_dlopen(const char *filename, int flags /* unused */);
 
 WLIBC_INLINE void *dlopen(const char *filename, int flags /* unused */)

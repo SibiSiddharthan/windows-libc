@@ -5,16 +5,14 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <wchar.h>
-#include <stdlib.h>
 #include <internal/nt.h>
 #include <internal/fcntl.h>
-#include <internal/dlfcn.h>
 #include <internal/langinfo.h>
 #include <internal/process.h>
+#include <internal/security.h>
 #include <internal/signal.h>
 #include <internal/stdio.h>
-#include <internal/security.h>
+#include <stdlib.h>
 
 extern int main(int argc, char **argv);
 
@@ -42,10 +40,6 @@ int wmain(int argc, wchar_t **wargv)
 	initialize_stdio();
 	atexit(cleanup_fd_table);
 	atexit(cleanup_stdio);
-#endif
-#ifdef WLIBC_DLFCN
-	dlfcn_init();
-	atexit(dlfcn_cleanup);
 #endif
 #ifdef WLIBC_LANGINFO
 	langinfo_init();

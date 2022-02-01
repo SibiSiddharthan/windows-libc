@@ -5,12 +5,8 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
+#include <internal/nt.h>
 #include <dlfcn.h>
-#include <internal/dlfcn.h>
-#include <Windows.h>
-#include <wchar.h>
-#include <internal/error.h>
-#include <internal/misc.h>
 
 void *wlibc_dlopen(const char *filename, int flags /*unused*/)
 {
@@ -19,16 +15,21 @@ void *wlibc_dlopen(const char *filename, int flags /*unused*/)
 		return NULL;
 	}
 
-	wchar_t *wfilename = mb_to_wc(filename);
+	NTSTATUS status;
+	UTF8_STRING u8_image;
+	UNICODE_STRING u16_image;
+	HANDLE handle;
 
-	HMODULE module = LoadLibrary(wfilename);
-	if (module == NULL)
+	RtlInitUTF8String(&u8_image, filename);
+	RtlUTF8StringToUnicodeString(&u16_image, &u8_image, TRUE);
+
+	status = LdrLoadDll(NULL, NULL, &u16_image, &handle);
+	if (status != STATUS_SUCCESS)
 	{
-		_last_dlfcn_error = GetLastError();
-		map_win32_error_to_wlibc(_last_dlfcn_error);
-		return NULL;
+		_wlibc_last_dlfcn_error = status;
+		handle = NULL;
 	}
 
-	free(wfilename);
-	return (void *)module;
+	RtlFreeUnicodeString(&u16_image);
+	return handle;
 }

@@ -5,19 +5,27 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
+#include <internal/nt.h>
 #include <dlfcn.h>
-#include <internal/dlfcn.h>
-#include <Windows.h>
-#include <internal/error.h>
 
 void *wlibc_dlsym(void *restrict handle, const char *restrict symbol)
 {
-	void *ptr = GetProcAddress((HMODULE)handle, symbol);
-	if (ptr == NULL)
+	if (symbol == NULL)
 	{
-		_last_dlfcn_error = GetLastError();
-		map_win32_error_to_wlibc(_last_dlfcn_error);
 		return NULL;
 	}
-	return ptr;
+
+	NTSTATUS status;
+	UTF8_STRING u8_symbol;
+	PVOID procedure = NULL;
+
+	RtlInitUTF8String(&u8_symbol, symbol);
+	status = LdrGetProcedureAddressForCaller(handle, &u8_symbol, 0, &procedure, 0, NULL);
+	if (status != STATUS_SUCCESS)
+	{
+		_wlibc_last_dlfcn_error = status;
+		return NULL;
+	}
+
+	return procedure;
 }

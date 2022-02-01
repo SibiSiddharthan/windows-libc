@@ -23,7 +23,7 @@ int test_invalid_dll()
 	handle = dlopen("bogus.dll", 0);
 	ASSERT_NULL(handle);
 	actual_err = dlerror();
-	ASSERT_STREQ(actual_err, "The specified module could not be found.\r\n")
+	ASSERT_STREQ(actual_err, "The specified module could not be found.")
 	ASSERT_FAIL(dlclose(NULL));
 
 	return 0;
@@ -62,7 +62,7 @@ int test_dlsym()
 	dummy = (void (*)())dlsym(handle, "dummy");
 	ASSERT_NULL(dummy);
 	actual_err = dlerror();
-	ASSERT_STREQ(actual_err, "The specified procedure could not be found.\r\n");
+	ASSERT_STREQ(actual_err, "The specified procedure could not be found.");
 
 	ASSERT_SUCCESS(dlclose(handle));
 

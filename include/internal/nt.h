@@ -1826,4 +1826,27 @@ BOOLEAN
 NTAPI
 RtlTryEnterCriticalSection(_Inout_ PRTL_CRITICAL_SECTION CriticalSection);
 
+NTSYSAPI
+NTSTATUS
+NTAPI
+LdrLoadDll(_In_opt_ PWSTR DllPath, _In_opt_ PULONG DllCharacteristics, _In_ PUNICODE_STRING DllName, _Out_ PVOID *DllHandle);
+
+NTSYSAPI
+NTSTATUS
+NTAPI
+LdrUnloadDll(_In_ PVOID DllHandle);
+
+NTSYSAPI
+NTSTATUS
+NTAPI
+LdrGetProcedureAddressEx(_In_ PVOID DllHandle, _In_opt_ PANSI_STRING ProcedureName, _In_opt_ ULONG ProcedureNumber,
+						 _Out_ PVOID *ProcedureAddress, _In_ ULONG Flags);
+
+NTSYSAPI
+NTSTATUS
+NTAPI
+LdrGetProcedureAddressForCaller(_In_ PVOID DllHandle, _In_opt_ PANSI_STRING ProcedureName, _In_opt_ ULONG ProcedureNumber,
+								_Out_ PVOID *ProcedureAddress, _In_ ULONG Flags, _In_ PVOID *Callback);
+
+
 #endif

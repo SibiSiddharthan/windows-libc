@@ -5,29 +5,24 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
+#include <internal/nt.h>
 #include <dlfcn.h>
-#include <internal/dlfcn.h>
-#include <Windows.h>
-#include <internal/error.h>
+
+unsigned long _wlibc_last_dlfcn_error = 0;
 
 char *wlibc_dlerror()
 {
-	if (_last_dlfcn_error == ERROR_SUCCESS)
+	switch (_wlibc_last_dlfcn_error)
 	{
+	case STATUS_INVALID_FILE_FOR_SECTION:
+		return "This file is not a valid Win32 application.";
+	case STATUS_DLL_NOT_FOUND:
+		return "The specified module could not be found.";
+	case STATUS_ENTRYPOINT_NOT_FOUND:
+	case STATUS_ORDINAL_NOT_FOUND:
+		return "The specified procedure could not be found.";
+	case STATUS_SUCCESS: // No error.
+	default:
 		return NULL;
 	}
-
-	// Call the ANSI version explicitly as we are always returning char*
-	DWORD length = FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, _last_dlfcn_error,
-								  MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), _dlfcn_error_message, 65535, NULL);
-
-	_last_dlfcn_error = ERROR_SUCCESS;
-
-	if (length == 0)
-	{
-		map_win32_error_to_wlibc(GetLastError());
-		return NULL;
-	}
-
-	return _dlfcn_error_message;
 }

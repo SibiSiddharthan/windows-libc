@@ -13,7 +13,6 @@ dlclose.c
 dlerror.c
 dlopen.c
 dlsym.c
-internal.c
 
 HEADERS
 dlfcn.h
