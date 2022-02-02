@@ -7,7 +7,6 @@
 
 #include <internal/nt.h>
 #include <internal/fcntl.h>
-#include <internal/langinfo.h>
 #include <internal/process.h>
 #include <internal/security.h>
 #include <internal/signal.h>
@@ -40,10 +39,6 @@ int wmain(int argc, wchar_t **wargv)
 	initialize_stdio();
 	atexit(cleanup_fd_table);
 	atexit(cleanup_stdio);
-#endif
-#ifdef WLIBC_LANGINFO
-	langinfo_init();
-	atexit(langinfo_cleanup);
 #endif
 #ifdef WLIBC_PROCESS
 	process_init();

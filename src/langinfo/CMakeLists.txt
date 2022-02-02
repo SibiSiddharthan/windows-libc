@@ -9,7 +9,6 @@ wlibc_module(
 MODULE langinfo
 
 SOURCES
-internal.c
 langinfo.c
 
 HEADERS

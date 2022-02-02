@@ -6,20 +6,17 @@
 */
 
 #include <langinfo.h>
-#include <internal/langinfo.h>
 #include <locale.h>
 #include <errno.h>
 #include <string.h>
 #include <time.h>
 
+#define MAX_LANGINFO_LENGTH 32
+
+// POSIX says subsequent calls to nl_langinfo may invalidate the returned pointer.
 char *wlibc_nl_langinfo(nl_item item)
 {
-	static int invoke_count = 0;
-	++invoke_count;
-	if (invoke_count % MAX_LANGINFO_INVOKE_COUNT == 0)
-	{
-		invoke_count = 1;
-	}
+	static char buffer[MAX_LANGINFO_LENGTH];
 
 	switch (item)
 	{
@@ -34,8 +31,7 @@ char *wlibc_nl_langinfo(nl_item item)
 		}
 		else
 		{
-			strncpy(__nl_langinfo_buf[invoke_count - 1], locale, MAX_LANGINFO_LENGTH);
-			return __nl_langinfo_buf[invoke_count - 1];
+			return locale;
 		}
 	}
 
@@ -57,21 +53,17 @@ char *wlibc_nl_langinfo(nl_item item)
 	}
 	case AM_STR:
 	{
-		char buf[32];
 		struct tm TM;
 		TM.tm_hour = 6; // 6AM
-		strftime(buf, 32, "%p", &TM);
-		strncpy(__nl_langinfo_buf[invoke_count - 1], buf, MAX_LANGINFO_LENGTH);
-		return __nl_langinfo_buf[invoke_count - 1];
+		strftime(buffer, MAX_LANGINFO_LENGTH, "%p", &TM);
+		return buffer;
 	}
 	case PM_STR:
 	{
-		char buf[32];
 		struct tm TM;
 		TM.tm_hour = 18; // 6PM
-		strftime(buf, 32, "%p", &TM);
-		strncpy(__nl_langinfo_buf[invoke_count - 1], buf, MAX_LANGINFO_LENGTH);
-		return __nl_langinfo_buf[invoke_count - 1];
+		strftime(buffer, MAX_LANGINFO_LENGTH, "%p", &TM);
+		return buffer;
 	}
 
 	case DAY_1:
@@ -82,12 +74,10 @@ char *wlibc_nl_langinfo(nl_item item)
 	case DAY_6:
 	case DAY_7:
 	{
-		char buf[32];
 		struct tm TM;
 		TM.tm_wday = item - DAY_1; // 0-6
-		strftime(buf, 32, "%A", &TM);
-		strncpy(__nl_langinfo_buf[invoke_count - 1], buf, MAX_LANGINFO_LENGTH);
-		return __nl_langinfo_buf[invoke_count - 1];
+		strftime(buffer, MAX_LANGINFO_LENGTH, "%A", &TM);
+		return buffer;
 	}
 
 	case ABDAY_1:
@@ -98,12 +88,10 @@ char *wlibc_nl_langinfo(nl_item item)
 	case ABDAY_6:
 	case ABDAY_7:
 	{
-		char buf[32];
 		struct tm TM;
 		TM.tm_wday = item - ABDAY_1; // 0-6
-		strftime(buf, 32, "%a", &TM);
-		strncpy(__nl_langinfo_buf[invoke_count - 1], buf, MAX_LANGINFO_LENGTH);
-		return __nl_langinfo_buf[invoke_count - 1];
+		strftime(buffer, MAX_LANGINFO_LENGTH, "%a", &TM);
+		return buffer;
 	}
 
 	case MON_1:
@@ -119,12 +107,10 @@ char *wlibc_nl_langinfo(nl_item item)
 	case MON_11:
 	case MON_12:
 	{
-		char buf[32];
 		struct tm TM;
 		TM.tm_mon = item - MON_1; // 0-11
-		strftime(buf, 32, "%B", &TM);
-		strncpy(__nl_langinfo_buf[invoke_count - 1], buf, MAX_LANGINFO_LENGTH);
-		return __nl_langinfo_buf[invoke_count - 1];
+		strftime(buffer, MAX_LANGINFO_LENGTH, "%B", &TM);
+		return buffer;
 	}
 
 	case ABMON_1:
@@ -140,12 +126,10 @@ char *wlibc_nl_langinfo(nl_item item)
 	case ABMON_11:
 	case ABMON_12:
 	{
-		char buf[32];
 		struct tm TM;
 		TM.tm_mon = item - ABMON_1; // 0-11
-		strftime(buf, 32, "%b", &TM);
-		strncpy(__nl_langinfo_buf[invoke_count - 1], buf, MAX_LANGINFO_LENGTH);
-		return __nl_langinfo_buf[invoke_count - 1];
+		strftime(buffer, MAX_LANGINFO_LENGTH, "%b", &TM);
+		return buffer;
 	}
 
 	case ERA:
@@ -159,18 +143,18 @@ char *wlibc_nl_langinfo(nl_item item)
 
 	case RADIXCHAR:
 	{
-		strncpy(__nl_langinfo_buf[invoke_count - 1], localeconv()->decimal_point, MAX_LANGINFO_LENGTH);
-		return __nl_langinfo_buf[invoke_count - 1];
+		strncpy(buffer, localeconv()->decimal_point, MAX_LANGINFO_LENGTH);
+		return buffer;
 	}
 	case THOUSEP:
 	{
-		strncpy(__nl_langinfo_buf[invoke_count - 1], localeconv()->thousands_sep, MAX_LANGINFO_LENGTH);
-		return __nl_langinfo_buf[invoke_count - 1];
+		strncpy(buffer, localeconv()->thousands_sep, MAX_LANGINFO_LENGTH);
+		return buffer;
 	}
 	case CRNCYSTR:
 	{
-		strncpy(__nl_langinfo_buf[invoke_count - 1], localeconv()->currency_symbol, MAX_LANGINFO_LENGTH);
-		return __nl_langinfo_buf[invoke_count - 1];
+		strncpy(buffer, localeconv()->currency_symbol, MAX_LANGINFO_LENGTH);
+		return buffer;
 	}
 
 	case YESEXPR:
