@@ -5,11 +5,9 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <stdio.h>
-#include <internal/misc.h>
-#include <errno.h>
 #include <internal/stdio.h>
-#include <fcntl.h>
+#include <errno.h>
+#include <stdio.h>
 #include <unistd.h>
 
 int common_fflush(FILE *stream);

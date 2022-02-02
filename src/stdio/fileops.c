@@ -5,11 +5,11 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <internal/stdio.h>
 #include <internal/fcntl.h>
+#include <internal/stdio.h>
+#include <errno.h>
 #include <stdio.h>
 #include <stdio_ext.h>
-#include <errno.h>
 
 int common_fileno(FILE *stream);
 

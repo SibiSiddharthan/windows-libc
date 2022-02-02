@@ -5,8 +5,8 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <stdio.h>
 #include <internal/stdio.h>
+#include <stdio.h>
 #include <string.h>
 
 size_t common_fwrite(const char *restrict buffer, size_t size, size_t count, FILE *restrict stream);

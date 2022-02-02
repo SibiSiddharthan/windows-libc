@@ -7,13 +7,11 @@
 
 #include <internal/nt.h>
 #include <internal/dirent.h>
+#include <internal/error.h>
+#include <internal/fcntl.h>
 #include <dirent.h>
-#include <wchar.h>
 #include <stdlib.h>
 #include <string.h>
-#include <internal/fcntl.h>
-#include <internal/misc.h>
-#include <internal/error.h>
 
 struct dirent *do_readdir(DIR *dirstream, struct dirent *entry)
 {

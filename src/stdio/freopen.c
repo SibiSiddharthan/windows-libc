@@ -5,13 +5,13 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <internal/stdio.h>
-#include <internal/fcntl.h>
-#include <errno.h>
-#include <wchar.h>
-#include <internal/misc.h>
 #include <internal/nt.h>
+#include <internal/fcntl.h>
+#include <internal/stdio.h>
+#include <errno.h>
 #include <fcntl.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 int parse_mode(const char *mode);
 int get_buf_mode(int flags);

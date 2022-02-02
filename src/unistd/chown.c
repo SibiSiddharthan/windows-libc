@@ -5,14 +5,15 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <internal/misc.h>
+#include <internal/nt.h>
+#include <internal/fcntl.h>
 #include <errno.h>
 #include <unistd.h>
-#include <internal/fcntl.h>
 
 int do_chown(HANDLE handle, uid_t owner, gid_t group)
 {
 	// TODO
+	errno = ENOTSUP;
 	return 0;
 }
 

@@ -5,9 +5,9 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
+#include <internal/stdio.h>
 #include <fcntl.h>
 #include <string.h>
-#include <internal/stdio.h>
 
 int parse_mode(const char *mode)
 {

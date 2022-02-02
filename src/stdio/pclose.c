@@ -5,10 +5,10 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
+#include <internal/error.h>
+#include <internal/process.h>
 #include <internal/stdio.h>
 #include <stdio.h>
-#include <internal/process.h>
-#include <internal/error.h>
 
 int common_fclose(FILE *stream);
 

@@ -5,13 +5,12 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
+#include <internal/fcntl.h>
+#include <internal/stdio.h>
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <errno.h>
-#include <internal/stdio.h>
-#include <internal/fcntl.h>
 #include <unistd.h>
-#include <Windows.h>
 
 int common_fflush(FILE *stream);
 

@@ -5,11 +5,11 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
+#include <internal/fcntl.h>
+#include <internal/stdio.h>
+#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <internal/stdio.h>
-#include <internal/fcntl.h>
-#include <fcntl.h>
 
 int common_fgetc(FILE *stream);
 int common_fseek(FILE *stream, ssize_t offset, int whence);

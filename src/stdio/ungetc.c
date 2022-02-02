@@ -8,7 +8,6 @@
 #include <internal/stdio.h>
 #include <stdio.h>
 #include <errno.h>
-#include <internal/misc.h>
 #include <fcntl.h>
 
 int common_ungetc(int ch, FILE *stream)

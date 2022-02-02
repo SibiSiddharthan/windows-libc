@@ -5,8 +5,8 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <stdio.h>
 #include <internal/stdio.h>
+#include <stdio.h>
 
 int common_ferror(FILE *stream)
 {
