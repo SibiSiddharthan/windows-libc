@@ -15,6 +15,7 @@
 
 struct fd_table *_fd_io = NULL;
 size_t _fd_table_size = 0;
+unsigned int _fd_io_sequence = 0;
 CRITICAL_SECTION _fd_critical;
 
 // Declaration of static functions
@@ -60,7 +61,11 @@ HANDLE open_conin()
 	IO_STATUS_BLOCK io;
 	UNICODE_STRING name;
 	OBJECT_ATTRIBUTES object;
-	RtlInitUnicodeString(&name, L"\\??\\CON");
+
+	name.Buffer = L"\\Device\\ConDrv\\CurrentIn";
+	name.Length = 48;
+	name.MaximumLength = 50;
+
 	InitializeObjectAttributes(&object, &name, OBJ_CASE_INSENSITIVE | OBJ_INHERIT, NULL, NULL);
 	NTSTATUS status = NtCreateFile(&handle, FILE_GENERIC_READ, &object, &io, NULL, 0, FILE_SHARE_READ | FILE_SHARE_WRITE, FILE_OPEN,
 								   FILE_SYNCHRONOUS_IO_NONALERT, NULL, 0);
@@ -73,7 +78,11 @@ HANDLE open_conout()
 	IO_STATUS_BLOCK io;
 	UNICODE_STRING name;
 	OBJECT_ATTRIBUTES object;
-	RtlInitUnicodeString(&name, L"\\??\\CON");
+
+	name.Buffer = L"\\Device\\ConDrv\\CurrentOut";
+	name.Length = 50;
+	name.MaximumLength = 52;
+
 	InitializeObjectAttributes(&object, &name, OBJ_CASE_INSENSITIVE | OBJ_INHERIT, NULL, NULL);
 	NTSTATUS status = NtCreateFile(&handle, FILE_GENERIC_WRITE, &object, &io, NULL, 0, FILE_SHARE_READ | FILE_SHARE_WRITE, FILE_OPEN,
 								   FILE_SYNCHRONOUS_IO_NONALERT, NULL, 0);
@@ -99,8 +108,8 @@ void init_fd_table()
 	NTSTATUS status;
 	FILE_FS_DEVICE_INFORMATION device_info;
 
-	_fd_io = (struct fd_table *)malloc(sizeof(struct fd_table) * 4);
 	_fd_table_size = 4;
+	_fd_io = (struct fd_table *)malloc(sizeof(struct fd_table) * _fd_table_size);
 
 	status = NtQueryVolumeInformationFile(hin, &I, &device_info, sizeof(FILE_FS_DEVICE_INFORMATION), FileFsDeviceInformation);
 	if (status == STATUS_SUCCESS)
@@ -108,7 +117,6 @@ void init_fd_table()
 		_fd_io[0]._handle = hin;
 		_fd_io[0]._type = determine_type(device_info.DeviceType);
 		_fd_io[0]._flags = O_RDONLY;
-		_fd_io[0]._free = 0;
 	}
 	else if (console_subsystem)
 	{
@@ -117,11 +125,11 @@ void init_fd_table()
 		{
 			_fd_io[0]._type = CONSOLE_HANDLE;
 			_fd_io[0]._flags = O_RDONLY;
-			_fd_io[0]._free = 0;
+			_fd_io[0]._sequence = 1;
 		}
 		else
 		{
-			_fd_io[0]._free = 1;
+			_fd_io[0]._handle = INVALID_HANDLE_VALUE;
 		}
 	}
 
@@ -131,7 +139,6 @@ void init_fd_table()
 		_fd_io[1]._handle = hout;
 		_fd_io[1]._type = determine_type(device_info.DeviceType);
 		_fd_io[1]._flags = O_WRONLY | (device_info.DeviceType == FILE_DEVICE_NAMED_PIPE ? O_APPEND : 0);
-		_fd_io[1]._free = 0;
 	}
 	else if (console_subsystem)
 	{
@@ -140,11 +147,10 @@ void init_fd_table()
 		{
 			_fd_io[1]._type = CONSOLE_HANDLE;
 			_fd_io[1]._flags = O_RDONLY;
-			_fd_io[1]._free = 0;
 		}
 		else
 		{
-			_fd_io[1]._free = 1;
+			_fd_io[1]._handle = INVALID_HANDLE_VALUE;
 		}
 	}
 
@@ -154,7 +160,6 @@ void init_fd_table()
 		_fd_io[2]._handle = herr;
 		_fd_io[2]._type = determine_type(device_info.DeviceType);
 		_fd_io[2]._flags = O_WRONLY | (device_info.DeviceType == FILE_DEVICE_NAMED_PIPE ? O_APPEND : 0);
-		_fd_io[2]._free = 0;
 	}
 	else if (console_subsystem)
 	{
@@ -163,16 +168,15 @@ void init_fd_table()
 		{
 			_fd_io[2]._type = CONSOLE_HANDLE;
 			_fd_io[2]._flags = O_RDONLY;
-			_fd_io[2]._free = 0;
 		}
 		else
 		{
-			_fd_io[2]._free = 1;
+			_fd_io[2]._handle = INVALID_HANDLE_VALUE;
 		}
 	}
 
 	// Cygwin/MSYS gives the same handle as stdout and stderr, duplicate the handle
-	if ((_fd_io[1]._free == 0 && _fd_io[2]._free == 0) && _fd_io[1]._handle == _fd_io[2]._handle)
+	if ((_fd_io[1]._handle != INVALID_HANDLE_VALUE && _fd_io[2]._handle != INVALID_HANDLE_VALUE) && _fd_io[1]._handle == _fd_io[2]._handle)
 	{
 		HANDLE new_stderr;
 		NTSTATUS status = NtDuplicateObject(NtCurrentProcess(), _fd_io[1]._handle, NtCurrentProcess(), &new_stderr, 0, 0,
@@ -184,7 +188,14 @@ void init_fd_table()
 		}
 	}
 
-	_fd_io[3]._free = 1; // set the last one as free, since we are allocating in powers of 2
+	// Initialize the sequence numbers for the std handles.
+	// Don't worry if the handles are uninitialized.
+	_fd_io[0]._sequence = ++_fd_io_sequence;
+	_fd_io[1]._sequence = ++_fd_io_sequence;
+	_fd_io[2]._sequence = ++_fd_io_sequence;
+
+	// set the remaining file descriptors as free, since we are allocating in powers of 2
+	_fd_io[3]._handle = INVALID_HANDLE_VALUE;
 }
 
 // Not worrying about open handles (not closed by the user)
@@ -203,7 +214,7 @@ static int internal_insert_fd(int index, HANDLE _h, handle_t _type, int _flags)
 	_fd_io[index]._handle = _h;
 	_fd_io[index]._flags = _flags;
 	_fd_io[index]._type = _type;
-	_fd_io[index]._free = 0;
+	_fd_io[index]._sequence = ++_fd_io_sequence;
 	return index;
 }
 
@@ -214,7 +225,7 @@ static int register_to_fd_table_internal(HANDLE _h, handle_t _type, int _flags)
 	int fd = -1;
 	for (size_t i = 0; i < _fd_table_size; i++)
 	{
-		if (_fd_io[i]._free)
+		if (_fd_io[i]._handle == INVALID_HANDLE_VALUE)
 		{
 			is_there_free_space = 1;
 			index = i;
@@ -238,7 +249,7 @@ static int register_to_fd_table_internal(HANDLE _h, handle_t _type, int _flags)
 
 		for (size_t i = _fd_table_size + 1; i < _fd_table_size * 2; i++)
 		{
-			_fd_io[i]._free = 1;
+			_fd_io[i]._handle = INVALID_HANDLE_VALUE;
 		}
 
 		_fd_table_size *= 2;
@@ -281,13 +292,12 @@ static void insert_into_fd_table_internal(int _fd, HANDLE _h, handle_t _type, in
 
 		for (size_t i = _fd_table_size; i < _fd * 2; i++)
 		{
-			_fd_io[i]._free = 1;
+			_fd_io[i]._handle = INVALID_HANDLE_VALUE;
 		}
 
 		_fd_table_size = _fd * 2;
 	}
 
-	_fd_io[_fd]._free = 0;
 	update_fd_table_internal(_fd, _h, _type, _flags);
 }
 
@@ -302,9 +312,8 @@ static void unregister_from_fd_table_internal(HANDLE _h)
 {
 	for (size_t i = 0; i < _fd_table_size; i++)
 	{
-		if (!_fd_io[i]._free && _fd_io[i]._handle == _h)
+		if (_fd_io[i]._handle != INVALID_HANDLE_VALUE && _fd_io[i]._handle == _h)
 		{
-			_fd_io[i]._free = 1;
 			// Calling this function after the handle has been closed
 			_fd_io[i]._handle = INVALID_HANDLE_VALUE;
 			break;
@@ -323,7 +332,7 @@ static int get_fd_internal(HANDLE _h)
 {
 	for (int i = 0; i < _fd_table_size; i++)
 	{
-		if (!_fd_io[i]._free && _h == _fd_io[i]._handle)
+		if (_fd_io[i]._handle != INVALID_HANDLE_VALUE && _h == _fd_io[i]._handle)
 		{
 			return i;
 		}
@@ -349,8 +358,8 @@ static int close_fd_internal(int _fd)
 		map_ntstatus_to_errno(status);
 		return -1;
 	}
+	// Closing the file descriptor. Mark the handle as invalid, so we can reuse the same fd again.
 	_fd_io[_fd]._handle = INVALID_HANDLE_VALUE;
-	_fd_io[_fd]._free = 1;
 	return 0;
 }
 
@@ -467,7 +476,7 @@ static bool validate_fd_internal(int _fd)
 {
 	if (_fd >= _fd_table_size)
 		return false;
-	if (_fd_io[_fd]._free)
+	if (_fd_io[_fd]._handle == INVALID_HANDLE_VALUE)
 		return false;
 	return true;
 }

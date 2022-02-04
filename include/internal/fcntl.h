@@ -29,11 +29,12 @@ struct fd_table
 	HANDLE _handle;
 	handle_t _type;
 	int _flags;
-	bool _free;
+	unsigned int _sequence;
 };
 
 extern struct fd_table *_fd_io;
 extern size_t _fd_table_size;
+extern unsigned int _fd_io_sequence;
 extern CRITICAL_SECTION _fd_critical;
 
 // Initialization and cleanup functions
