@@ -200,7 +200,7 @@ UNICODE_STRING *xget_fd_path(int fd)
 UNICODE_STRING *xget_absolute_ntpath(int dirfd, const char *path)
 {
 	UTF8_STRING u8_path;
-	UNICODE_STRING u16_path, u16_rootdir;
+	UNICODE_STRING u16_path, u16_rootdir = {0};
 
 	// User should free the allocated memory.
 	UNICODE_STRING *u16_ntpath = NULL;

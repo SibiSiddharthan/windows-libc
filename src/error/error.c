@@ -15,7 +15,7 @@
 #include <unistd.h>
 
 unsigned int error_message_count = 0;
-static char program_name[260] = {0};
+static char program_name_buffer[260] = {0};
 
 static char *get_program_name()
 {
@@ -34,10 +34,10 @@ static char *get_program_name()
 		++length;
 	}
 
-	memcpy(program_name, u8_imagepath.Buffer + start, length - 4); // strip '.exe'
+	memcpy(program_name_buffer, u8_imagepath.Buffer + start, length - 4); // strip '.exe'
 	RtlFreeUTF8String(&u8_imagepath);
 
-	return program_name;
+	return program_name_buffer;
 }
 
 static void write_log(int errnum, const char *filename, unsigned int linenum, int do_strerror, const char *format, va_list args)

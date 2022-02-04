@@ -48,6 +48,10 @@ int wlibc_flock(int fd, int operation)
 	case LOCK_UN:
 		status = NtUnlockFile(handle, &io, &offset, &length, 0);
 		break;
+	default:
+		// This should never happen.
+		status = STATUS_INVALID_PARAMETER_2;
+		break;
 	}
 
 	if (status != STATUS_SUCCESS)

@@ -6,6 +6,7 @@
 */
 
 #include <internal/stdio.h>
+#include <errno.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -22,7 +23,7 @@ int wlibc_fputs_unlocked(const char *restrict buffer, FILE *restrict stream)
 {
 	if (buffer == NULL)
 	{
-		return EINVAL;
+		errno = EINVAL;
 		return EOF;
 	}
 
@@ -34,7 +35,7 @@ int wlibc_fputs(const char *restrict buffer, FILE *restrict stream)
 {
 	if (buffer == NULL)
 	{
-		return EINVAL;
+		errno = EINVAL;
 		return EOF;
 	}
 

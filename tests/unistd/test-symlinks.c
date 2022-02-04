@@ -29,7 +29,7 @@ static int verify_file_contents(int dirfd, const char *filename)
 	}
 
 	length = read(fd, buf, 16);
-	if (length != sizeof_test_content)
+	if (length != (ssize_t)sizeof_test_content)
 	{
 		return -1;
 	}
@@ -47,7 +47,7 @@ static int write_file_contents(int fd)
 	ssize_t length;
 
 	length = write(fd, test_content, sizeof_test_content);
-	if (length != sizeof_test_content)
+	if (length != (ssize_t)sizeof_test_content)
 	{
 		return -1;
 	}

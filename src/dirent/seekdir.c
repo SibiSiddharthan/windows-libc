@@ -5,11 +5,11 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
+#include <internal/nt.h>
 #include <internal/dirent.h>
-#include <dirent.h>
-#include <Windows.h>
-#include <stdlib.h>
 #include <internal/fcntl.h>
+#include <dirent.h>
+#include <stdlib.h>
 
 void fill_dir_buffer(DIR *dirstream);
 

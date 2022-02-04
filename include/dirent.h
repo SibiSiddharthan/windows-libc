@@ -80,13 +80,13 @@ WLIBC_INLINE int readdir_r(DIR *restrict dirstream, struct dirent *restrict entr
 WLIBC_API void wlibc_rewinddir(DIR *dirstream);
 WLIBC_INLINE void rewinddir(DIR *dirstream)
 {
-	return wlibc_rewinddir(dirstream);
+	wlibc_rewinddir(dirstream);
 }
 
 WLIBC_API void wlibc_seekdir(DIR *dirstream, long long int pos);
 WLIBC_INLINE void seekdir(DIR *dirstream, long long int pos)
 {
-	return wlibc_seekdir(dirstream, pos);
+	wlibc_seekdir(dirstream, pos);
 }
 
 WLIBC_API off_t wlibc_telldir(DIR *dirstream);

@@ -124,7 +124,6 @@ int wlibc_raise(int sig)
 	case SIGSTOP:
 	case SIGKILL:
 		_exit(3);
-		return 0;
 	default:
 		errno = EINVAL;
 		return -1;

@@ -7,10 +7,10 @@
 
 #include <internal/nt.h>
 #include <internal/dirent.h>
-#include <dirent.h>
 #include <internal/error.h>
-#include <errno.h>
 #include <internal/fcntl.h>
+#include <dirent.h>
+#include <errno.h>
 
 void wlibc_rewinddir(DIR *dirstream)
 {

@@ -54,6 +54,4 @@ int wlibc_fcntl(int fd, int cmd, va_list args)
 		errno = EINVAL;
 		return -1;
 	}
-
-	return 0;
 }

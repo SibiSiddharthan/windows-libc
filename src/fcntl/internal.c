@@ -19,7 +19,7 @@ unsigned int _fd_io_sequence = 0;
 CRITICAL_SECTION _fd_critical;
 
 // Declaration of static functions
-static int internal_insert_fd(size_t index, HANDLE _h, handle_t _type, int _flags);
+static int internal_insert_fd(int index, HANDLE _h, handle_t _type, int _flags);
 static int register_to_fd_table_internal(HANDLE _h, handle_t _type, int _flags);
 static void update_fd_table_internal(int _fd, HANDLE _h, handle_t _type, int _flags);
 static void insert_into_fd_table_internal(int _fd, HANDLE _h, handle_t _type, int _flags);
@@ -105,14 +105,14 @@ void init_fd_table()
 	HANDLE hout = NtCurrentPeb()->ProcessParameters->StandardOutput;
 	HANDLE herr = NtCurrentPeb()->ProcessParameters->StandardError;
 
-	IO_STATUS_BLOCK I;
 	NTSTATUS status;
+	IO_STATUS_BLOCK io;
 	FILE_FS_DEVICE_INFORMATION device_info;
 
 	_fd_table_size = 4;
 	_fd_io = (struct fd_table *)malloc(sizeof(struct fd_table) * _fd_table_size);
 
-	status = NtQueryVolumeInformationFile(hin, &I, &device_info, sizeof(FILE_FS_DEVICE_INFORMATION), FileFsDeviceInformation);
+	status = NtQueryVolumeInformationFile(hin, &io, &device_info, sizeof(FILE_FS_DEVICE_INFORMATION), FileFsDeviceInformation);
 	if (status == STATUS_SUCCESS)
 	{
 		_fd_io[0]._handle = hin;
@@ -134,7 +134,7 @@ void init_fd_table()
 		}
 	}
 
-	status = NtQueryVolumeInformationFile(hout, &I, &device_info, sizeof(FILE_FS_DEVICE_INFORMATION), FileFsDeviceInformation);
+	status = NtQueryVolumeInformationFile(hout, &io, &device_info, sizeof(FILE_FS_DEVICE_INFORMATION), FileFsDeviceInformation);
 	if (status == STATUS_SUCCESS)
 	{
 		_fd_io[1]._handle = hout;
@@ -155,7 +155,7 @@ void init_fd_table()
 		}
 	}
 
-	status = NtQueryVolumeInformationFile(herr, &I, &device_info, sizeof(FILE_FS_DEVICE_INFORMATION), FileFsDeviceInformation);
+	status = NtQueryVolumeInformationFile(herr, &io, &device_info, sizeof(FILE_FS_DEVICE_INFORMATION), FileFsDeviceInformation);
 	if (status == STATUS_SUCCESS)
 	{
 		_fd_io[2]._handle = herr;
@@ -180,8 +180,8 @@ void init_fd_table()
 	if ((_fd_io[1]._handle != INVALID_HANDLE_VALUE && _fd_io[2]._handle != INVALID_HANDLE_VALUE) && _fd_io[1]._handle == _fd_io[2]._handle)
 	{
 		HANDLE new_stderr;
-		NTSTATUS status = NtDuplicateObject(NtCurrentProcess(), _fd_io[1]._handle, NtCurrentProcess(), &new_stderr, 0, 0,
-											DUPLICATE_SAME_ACCESS | DUPLICATE_SAME_ATTRIBUTES);
+		status = NtDuplicateObject(NtCurrentProcess(), _fd_io[1]._handle, NtCurrentProcess(), &new_stderr, 0, 0,
+								   DUPLICATE_SAME_ACCESS | DUPLICATE_SAME_ATTRIBUTES);
 		if (status == STATUS_SUCCESS)
 		{
 			// Don't do anything in case of failure
@@ -210,26 +210,26 @@ void cleanup_fd_table(void)
 // Primary functions
 ///////////////////////////////////////
 
-static int internal_insert_fd(size_t index, HANDLE _h, handle_t _type, int _flags)
+static int internal_insert_fd(int index, HANDLE _h, handle_t _type, int _flags)
 {
 	_fd_io[index]._handle = _h;
 	_fd_io[index]._flags = _flags;
 	_fd_io[index]._type = _type;
 	_fd_io[index]._sequence = ++_fd_io_sequence;
-	return (int)index;
+	return index;
 }
 
 static int register_to_fd_table_internal(HANDLE _h, handle_t _type, int _flags)
 {
 	bool is_there_free_space = false;
-	size_t index = -1;
+	int index = -1;
 	int fd = -1;
 	for (size_t i = 0; i < _fd_table_size; i++)
 	{
 		if (_fd_io[i]._handle == INVALID_HANDLE_VALUE)
 		{
 			is_there_free_space = true;
-			index = i;
+			index = (int)i;
 			break;
 		}
 	}
@@ -246,7 +246,7 @@ static int register_to_fd_table_internal(HANDLE _h, handle_t _type, int _flags)
 		free(_fd_io);
 		_fd_io = temp;
 
-		fd = internal_insert_fd(_fd_table_size, _h, _type, _flags);
+		fd = internal_insert_fd((int)_fd_table_size, _h, _type, _flags);
 
 		for (size_t i = _fd_table_size + 1; i < _fd_table_size * 2; i++)
 		{

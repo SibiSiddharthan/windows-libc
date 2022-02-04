@@ -23,9 +23,12 @@ if(CMAKE_C_COMPILER_ID STREQUAL "Clang")
 endif()
 
 if(CMAKE_C_COMPILER_ID STREQUAL "MSVC")
-	add_compile_options(/W3
+	add_compile_options(/W4
 						/wd4146 # Unary minus
-						/wd4098 /wd4477
+						/wd4714 # No inline in debug build
+						/wd4100 # Unused parameter
+						/wd4244 # Truncation loss of data
+						/wd4245 # Signed/Unsigned mismatch
 						/std:c11)
 endif()
 
