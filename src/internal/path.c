@@ -115,19 +115,69 @@ nt_device *dos_device_to_nt_device(char volume)
 	return NULL;
 }
 
-void nt_device_to_dos_device();
+// void nt_device_to_dos_device();
 
-void *xget_fd_path(int fd)
+typedef struct _fd_path
+{
+	int fd;
+	unsigned int sequence;
+	UNICODE_STRING *nt_path;
+} fd_path;
+
+#define FD_PATH_CACHE_SLOTS 128
+
+fd_path fd_path_cache[FD_PATH_CACHE_SLOTS] = {{-1, 0, NULL}};
+
+UNICODE_STRING *check_fd_path_cache(int fd, int sequence)
+{
+	int index = sequence & (FD_PATH_CACHE_SLOTS - 1);
+
+	// In the cache.
+	if (sequence == fd_path_cache[index].sequence && fd == fd_path_cache[index].fd)
+	{
+		return fd_path_cache[index].nt_path;
+	}
+
+	// Not in cache.
+	return NULL;
+}
+
+void update_fd_path_cache(int fd, int sequence, PUNICODE_STRING nt_path)
+{
+	int index = sequence & (FD_PATH_CACHE_SLOTS - 1);
+	fd_path_cache[index].sequence = sequence;
+	fd_path_cache[index].fd = fd;
+	if (fd_path_cache[index].nt_path != NULL)
+	{
+		// previosly used slot, free the memory.
+		free(fd_path_cache[index].nt_path);
+	}
+	fd_path_cache[index].nt_path = nt_path;
+}
+
+// NOTE: The returned pointer should not be freed.
+UNICODE_STRING *xget_fd_path(int fd)
 {
 	NTSTATUS status;
 	HANDLE handle;
 	ULONG length;
+	UNICODE_STRING *path = NULL;
+	int sequence;
 
-	void *path = NULL;
+	EnterCriticalSection(&_fd_critical);
+	sequence = _fd_io[fd]._sequence;
+	handle = _fd_io[fd]._handle;
+	LeaveCriticalSection(&_fd_critical);
 
-	handle = get_fd_handle(fd);
+	// Check the cache first.
+	path = check_fd_path_cache(fd, sequence);
+	if (path != NULL)
+	{
+		return path;
+	}
+
+	// Not in cache do the lookup.
 	path = malloc(1024);
-
 	status = NtQueryObject(handle, ObjectNameInformation, path, 1024, &length);
 
 	if (status == STATUS_BUFFER_OVERFLOW)
@@ -140,6 +190,9 @@ void *xget_fd_path(int fd)
 	{
 		return NULL;
 	}
+
+	// Update the cache.
+	update_fd_path_cache(fd, sequence, path);
 
 	return path;
 }
@@ -161,6 +214,7 @@ UNICODE_STRING *xget_absolute_ntpath(int dirfd, const char *path)
 
 	bool path_is_absolute = false;
 	bool cygwin_path = false;
+	bool rootdir_has_trailing_slash = false;
 
 	// For all these predefined devices we set MaximumLength to be same as Length (omitting the terminating NULL).
 	// This enables us to use the static storage an avoids needless memory allocation.
@@ -281,7 +335,6 @@ UNICODE_STRING *xget_absolute_ntpath(int dirfd, const char *path)
 	}
 	else
 	{
-		// After this block u16_rootdir will be filled with a trailing slash and *without* a terminating NULL
 		if (dirfd == AT_FDCWD)
 		{
 			/*
@@ -289,7 +342,7 @@ UNICODE_STRING *xget_absolute_ntpath(int dirfd, const char *path)
 			   There is no way of knowing whether the current working directory has changed
 			   based on the handle and buffer as they are reused for subsequent `SetCurrentDirectory` calls.
 			   We rely on the dospath and change the drive letter to it's NT device name. Since we cache the
-			   devices this approach is faster and no overhead syscalls happen here (except for the very first call ofcourse).
+			   devices this approach is faster and no overhead of syscalls happen here (except for the very first call ofcourse).
 			*/
 			PUNICODE_STRING pu16_cwd;
 			// TODO Locking
@@ -307,10 +360,13 @@ UNICODE_STRING *xget_absolute_ntpath(int dirfd, const char *path)
 			u16_rootdir.Length = device->length + cwd_length_without_drive_letter;
 			u16_rootdir.MaximumLength = u16_rootdir.Length;
 			u16_rootdir.Buffer = (WCHAR *)rootdir_buffer;
+
+			// DosPath always has a trailing slash.
+			rootdir_has_trailing_slash = true;
 		}
 		else
 		{
-			rootdir_buffer = xget_fd_path(dirfd);
+			rootdir_buffer = (char *)xget_fd_path(dirfd);
 			if (rootdir_buffer == NULL)
 			{
 				// Bad file descriptor for directory.
@@ -322,9 +378,15 @@ UNICODE_STRING *xget_absolute_ntpath(int dirfd, const char *path)
 			u16_rootdir.Length = ((PUNICODE_STRING)rootdir_buffer)->Length;
 			u16_rootdir.MaximumLength = ((PUNICODE_STRING)rootdir_buffer)->MaximumLength;
 			u16_rootdir.Buffer = ((PUNICODE_STRING)rootdir_buffer)->Buffer;
-			// Add a trailing slash that overwrites the terminating NULL
-			u16_rootdir.Buffer[u16_rootdir.Length / sizeof(WCHAR)] = L'\\';
-			u16_rootdir.Length += 2;
+
+			// Check to see if the path has a trailing slash. Most likely it will not.
+			if (u16_rootdir.Buffer[u16_rootdir.Length / sizeof(WCHAR) - 1] == L'\\')
+			{
+				rootdir_has_trailing_slash = true;
+			}
+
+			// This is to prevent freeing the pointer.
+			rootdir_buffer = NULL;
 		}
 	}
 
@@ -344,7 +406,7 @@ UNICODE_STRING *xget_absolute_ntpath(int dirfd, const char *path)
 
 	if (!path_is_absolute)
 	{
-		required_size += u16_rootdir.Length;
+		required_size += u16_rootdir.Length + 2; // L'\'
 	}
 	else // absolute path
 	{
@@ -356,6 +418,11 @@ UNICODE_STRING *xget_absolute_ntpath(int dirfd, const char *path)
 	if (!path_is_absolute)
 	{
 		memcpy((char *)ntpath_buffer, u16_rootdir.Buffer, u16_rootdir.Length);
+		if (!rootdir_has_trailing_slash)
+		{
+			ntpath_buffer[u16_rootdir.Length / sizeof(WCHAR)] = L'\\';
+			u16_rootdir.Length += 2;
+		}
 		memcpy((char *)ntpath_buffer + u16_rootdir.Length, u16_path.Buffer, u16_path.MaximumLength);
 	}
 	else // absolute path
@@ -469,62 +536,125 @@ void free_ntpath(UNICODE_STRING *ntpath)
 	free(ntpath);
 }
 
+/*
+   To convert NT device names to dos devices, we use a cache with 2 slots.
+   The first cache slot is the one that is expected to be hit most of the time.
+   The second one is expected to be hit rarely since most applications will not
+   change their working directory to different drive frequently. Once an application
+   changes to a different drive and calls any routine that uses this function, the
+   second cache slot will be promoted to the first slot and the the first slot demoted
+   to second.
+*/
+typedef struct _dos_device
+{
+	dev_t device_number;
+	char label;
+} dos_device;
+
+dos_device dos_device_cache[2] = {{-1, 0}, {-1, 0}};
+
 UNICODE_STRING *xget_fd_dospath(int fd)
 {
-	UNICODE_STRING *path = (UNICODE_STRING *)xget_fd_path(fd);
+	UNICODE_STRING *ntpath = NULL;
+	UNICODE_STRING *dospath = NULL;
 	nt_device *device = NULL;
+	dev_t device_number = 0;
+	char label = 0;
 
-	if (path == NULL)
+	ntpath = (UNICODE_STRING *)xget_fd_path(fd);
+	if (ntpath == NULL)
 	{
 		return NULL;
 	}
 
-	int i;
-	for (i = 0; i < 26; ++i)
+	// Perform a simple 'atoi' (UTF16-LE).
+	for (int i = 22; ntpath->Buffer[i] != L'\\' && ntpath->Buffer[i] != L'\0'; ++i) // skip "\Device\HarddiskVolume"
 	{
-		// Iterate from A-Z.
-		// This is slow, need a better way. TODO
-		device = dos_device_to_nt_device(i + 'A');
-		if (device != NULL)
+		device_number = device_number * 10 + (dev_t)(ntpath->Buffer[i] - L'0');
+	}
+
+	// Check the cache first.
+	// slot 1
+	if (dos_device_cache[0].device_number == device_number)
+	{
+		label = dos_device_cache[0].label;
+	}
+	// slot 2
+	else if (dos_device_cache[1].device_number == device_number)
+	{
+		label = dos_device_cache[1].label;
+		// If the second slot is hit, swap it with the first slot.
+		dos_device temp = dos_device_cache[0];
+		dos_device_cache[0] = dos_device_cache[1];
+		dos_device_cache[1] = temp;
+	}
+	// Not in cache
+	else
+	{
+		for (int i = 0; i < 26; ++i)
 		{
-			if (memcmp(device->name, path->Buffer, device->length) == 0)
+			// Iterate from A-Z.
+			device = dos_device_to_nt_device(i + 'A');
+			if (device != NULL)
 			{
-				break;
+				// skip "\Device\HarddiskVolume"
+				if (memcmp(device->name + 22, ntpath->Buffer + 22, device->length - (22 * sizeof(WCHAR))) == 0)
+				{
+					label = i + 'A';
+					// Put the entry in the cache.
+					// Check if the first slot is populated if not, always put the new entry
+					// in the second slot.
+					if (dos_device_cache[0].device_number == (dev_t)-1)
+					{
+						dos_device_cache[0].device_number = device_number;
+						dos_device_cache[0].label = label;
+					}
+					else
+					{
+						dos_device_cache[1].device_number = device_number;
+						dos_device_cache[1].label = label;
+					}
+
+					break;
+				}
 			}
 		}
 	}
 
-	if (i < 26)
+	if (label != 0)
 	{
-		path->Buffer[0] = (WCHAR)(i + 'A');
-		path->Buffer[1] = L':';
+		// We technically will actually use less than this, but this is close enough. ((-) "\Device\HarddiskVolume" (+) "C:").
+		dospath = (UNICODE_STRING *)malloc(sizeof(UNICODE_STRING) + ntpath->Length - (16 * sizeof(WCHAR)));
+		dospath->Buffer = (WCHAR *)((char *)dospath + sizeof(UNICODE_STRING));
+		dospath->Buffer[0] = (WCHAR)label;
+		dospath->Buffer[1] = L':';
 
 		int j;
-		int count = 0;
+		bool second_slash_found = false;
 		// Find the second slash
-		for (j = 2; path->Buffer[j] != L'\0'; ++j)
+		for (j = 22; ntpath->Buffer[j] != L'\0'; ++j) // skip "\Device\HarddiskVolume"
 		{
-			if (path->Buffer[j] == L'\\')
+			if (ntpath->Buffer[j] == L'\\')
 			{
-				++count;
-			}
-
-			if (count == 2)
-			{
+				second_slash_found = true;
 				break;
 			}
 		}
 
-		if (count == 2)
+		if (second_slash_found)
 		{
-			memmove(path->Buffer + 2, path->Buffer + j, path->Length - j - 2);
+			memcpy(dospath->Buffer + 2, ntpath->Buffer + j, ntpath->Length - (j * sizeof(WCHAR)));
+			dospath->Length = ntpath->Length - ((j - 2) * sizeof(WCHAR));
+			dospath->MaximumLength = dospath->Length + sizeof(WCHAR);
+			dospath->Buffer[dospath->Length / sizeof(WCHAR)] = L'\0';
 		}
-		if (count == 1) // just the drive, eg. C:
+		else // just the drive, eg. C:
 		{
-			path->Length = 2 * sizeof(WCHAR);
-			memset(path->Buffer + 2, 0, path->MaximumLength - 2 * sizeof(WCHAR));
+			dospath->Buffer[2] = L'\0';
+			dospath->Length = 2 * sizeof(WCHAR);
+			dospath->MaximumLength = 3 * sizeof(WCHAR);
 		}
 	}
 
-	return path;
+	return dospath;
 }
