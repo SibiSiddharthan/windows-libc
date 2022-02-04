@@ -200,7 +200,7 @@ void init_fd_table()
 }
 
 // Not worrying about open handles (not closed by the user)
-void cleanup_fd_table()
+void cleanup_fd_table(void)
 {
 	free(_fd_io);
 	DeleteCriticalSection(&_fd_critical);

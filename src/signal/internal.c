@@ -15,7 +15,7 @@ int _wlibc_signal_mask[NSIG];
 sigset_t _wlibc_blocked_signals = 0;
 sigset_t _wlibc_pending_signals = 0;
 
-void signal_init()
+void signal_init(void)
 {
 	InitializeCriticalSection(&_wlibc_signal_critical);
 
@@ -54,7 +54,7 @@ void signal_init()
 	}
 }
 
-void signal_cleanup()
+void signal_cleanup(void)
 {
 	DeleteCriticalSection(&_wlibc_signal_critical);
 }

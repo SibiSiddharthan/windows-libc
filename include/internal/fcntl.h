@@ -38,8 +38,8 @@ extern unsigned int _fd_io_sequence;
 extern CRITICAL_SECTION _fd_critical;
 
 // Initialization and cleanup functions
-void init_fd_table();
-void cleanup_fd_table();
+void init_fd_table(void);
+void cleanup_fd_table(void);
 
 // Primary functions
 // Create an entry in the fd table with the following values, Return the lowest fd possible

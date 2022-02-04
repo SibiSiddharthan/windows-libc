@@ -20,8 +20,8 @@ extern int _wlibc_signal_mask[NSIG];
 extern sigset_t _wlibc_blocked_signals;
 extern sigset_t _wlibc_pending_signals;
 
-void signal_init();
-void signal_cleanup();
+void signal_init(void);
+void signal_cleanup(void);
 
 _crt_signal_t get_action(int signum);
 _crt_signal_t set_action(int signum, _crt_signal_t action); // return the old action

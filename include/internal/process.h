@@ -24,8 +24,8 @@ extern pid_t _wlibc_child_process_count;
 
 extern CRITICAL_SECTION _wlibc_process_critical;
 
-void process_init();
-void process_cleanup();
+void process_init(void);
+void process_cleanup(void);
 
 bool is_child(pid_t pid);
 HANDLE get_child_handle(pid_t pid);

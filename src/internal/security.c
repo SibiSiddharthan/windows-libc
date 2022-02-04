@@ -39,7 +39,7 @@ gid_t current_gid;
 #define WLIBC_EXTRA_PERMISSIONS (WRITE_DAC | WRITE_OWNER) // skip ACCESS_SYSTEM_SECURITY
 #define WLIBC_ALL_PERMISSIONS   (WLIBC_READ_PERMISSIONS | WLIBC_WRITE_PERMISSIONS | WLIBC_EXECUTE_PERMISSIONS | WLIBC_EXTRA_PERMISSIONS)
 
-void initialize_sids()
+void initialize_sids(void)
 {
 	SID_IDENTIFIER_AUTHORITY nt_authority = SECURITY_NT_AUTHORITY;
 	SID_IDENTIFIER_AUTHORITY world_authority = SECURITY_WORLD_SID_AUTHORITY;
@@ -98,7 +98,7 @@ void initialize_sids()
 	}
 }
 
-void cleanup_security_decsriptors()
+void cleanup_security_decsriptors(void)
 {
 	for (int i = 0; i < 1024; ++i)
 	{

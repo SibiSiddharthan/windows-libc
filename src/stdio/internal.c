@@ -20,7 +20,7 @@ CRITICAL_SECTION _wlibc_stdio_critical;
 
 static void insert_stream(FILE *stream);
 
-void initialize_stdio()
+void initialize_stdio(void)
 {
 	InitializeCriticalSection(&_wlibc_stdio_critical);
 
@@ -31,7 +31,7 @@ void initialize_stdio()
 
 int common_fflush(FILE *stream);
 
-void cleanup_stdio()
+void cleanup_stdio(void)
 {
 	while (_wlibc_stdio_head != NULL) //&& _wlibc_stdio_head->prev != NULL)
 	{

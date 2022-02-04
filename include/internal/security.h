@@ -23,8 +23,8 @@ extern PISID current_computer_sid; // Current Computer
 extern uid_t current_uid;
 extern gid_t current_gid;
 
-void initialize_sids();
-void cleanup_security_decsriptors();
+void initialize_sids(void);
+void cleanup_security_decsriptors(void);
 
 PISECURITY_DESCRIPTOR_RELATIVE get_security_descriptor(mode_t mode, int is_directory);
 

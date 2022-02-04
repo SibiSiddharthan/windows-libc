@@ -68,8 +68,8 @@ typedef struct WLIBC_FILE
 extern FILE *_wlibc_stdio_head;
 extern CRITICAL_SECTION _wlibc_stdio_critical;
 
-void initialize_stdio();
-void cleanup_stdio();
+void initialize_stdio(void);
+void cleanup_stdio(void);
 FILE *create_stream(int fd, int buf_mode, int buf_size);
 void delete_stream(FILE *stream);
 

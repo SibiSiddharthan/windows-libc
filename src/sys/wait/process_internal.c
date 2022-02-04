@@ -16,7 +16,7 @@ pid_t _wlibc_child_process_count = 0;
 
 CRITICAL_SECTION _wlibc_process_critical;
 
-void process_init()
+void process_init(void)
 {
 	_wlibc_process_table = (process_table *)malloc(sizeof(process_table) * 4);
 	_wlibc_process_table_size = 4;
@@ -30,7 +30,7 @@ void process_init()
 	InitializeCriticalSection(&_wlibc_process_critical);
 }
 
-void process_cleanup()
+void process_cleanup(void)
 {
 	free(_wlibc_process_table);
 	DeleteCriticalSection(&_wlibc_process_critical);
