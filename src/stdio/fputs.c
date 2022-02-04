@@ -14,7 +14,7 @@ size_t common_fwrite(const char *restrict buffer, size_t size, size_t count, FIL
 int common_fputs(const char *restrict buffer, FILE *restrict stream)
 {
 	size_t length = strlen(buffer);
-	int result = common_fwrite(buffer, 1, length, stream);
+	int result = (int)common_fwrite(buffer, 1, length, stream);
 	return result;
 }
 

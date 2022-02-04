@@ -39,7 +39,7 @@ struct dirent *do_readdir(DIR *dirstream, struct dirent *entry)
 
 	PFILE_ID_EXTD_BOTH_DIR_INFORMATION direntry = (PFILE_ID_EXTD_BOTH_DIR_INFORMATION)((char *)dirstream->buffer + dirstream->offset);
 
-	// copy only the lower 8 bytes, the upper 8 bytes will be zero on NTFS
+	// Copy only the lower 8 bytes, the upper 8 bytes will be zero on NTFS
 	entry->d_ino = *(ino_t *)(&direntry->FileId.Identifier);
 	entry->d_off = dirstream->offset;
 
@@ -66,19 +66,19 @@ struct dirent *do_readdir(DIR *dirstream, struct dirent *entry)
 		entry->d_type = DT_UNKNOWN;
 	}
 
-	entry->d_reclen = offsetof(FILE_ID_EXTD_BOTH_DIR_INFORMATION, FileName) + direntry->FileNameLength;
+	entry->d_reclen = (uint16_t)(offsetof(FILE_ID_EXTD_BOTH_DIR_INFORMATION, FileName) + direntry->FileNameLength);
 
-	u16_path.Length = direntry->FileNameLength;
-	u16_path.MaximumLength = direntry->FileNameLength;
+	u16_path.Length = (USHORT)direntry->FileNameLength;
+	u16_path.MaximumLength = (USHORT)direntry->FileNameLength;
 	u16_path.Buffer = direntry->FileName;
 
 	RtlUnicodeStringToUTF8String(&u8_path, &u16_path, TRUE);
 	memcpy(entry->d_name, u8_path.Buffer, u8_path.MaximumLength);
-	entry->d_namlen = u8_path.Length; // This includes the NULL character.
+	entry->d_namlen = (uint8_t)u8_path.Length; // This does not include the NULL character.
 	RtlFreeUTF8String(&u8_path);
 
 	dirstream->offset += direntry->NextEntryOffset;
-	// each entry is aligned to a 8 byte boundary, except the last one
+	// Each entry is aligned to a 8 byte boundary, except the last one
 	dirstream->read_data += entry->d_reclen;
 	if (direntry->NextEntryOffset != 0)
 	{

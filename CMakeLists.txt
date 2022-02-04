@@ -23,7 +23,10 @@ if(CMAKE_C_COMPILER_ID STREQUAL "Clang")
 endif()
 
 if(CMAKE_C_COMPILER_ID STREQUAL "MSVC")
-	add_compile_options(/wd4098 /wd4477 /std:c11)
+	add_compile_options(/W3
+						/wd4146 # Unary minus
+						/wd4098 /wd4477
+						/std:c11)
 endif()
 
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)

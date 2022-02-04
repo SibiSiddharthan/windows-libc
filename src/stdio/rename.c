@@ -51,7 +51,7 @@ int do_rename(HANDLE handle, const UNICODE_STRING *path, int flags)
 {
 	NTSTATUS status;
 	IO_STATUS_BLOCK io;
-	size_t size_of_rename_info = sizeof(FILE_RENAME_INFORMATION) - sizeof(WCHAR) + path->Length;
+	ULONG size_of_rename_info = sizeof(FILE_RENAME_INFORMATION) - sizeof(WCHAR) + path->Length;
 	PFILE_RENAME_INFORMATION rename_info = (PFILE_RENAME_INFORMATION)malloc(size_of_rename_info);
 
 	memset(rename_info, 0, size_of_rename_info);

@@ -199,7 +199,7 @@ int test_absolute_path()
 	int status;
 	int fd;
 	ssize_t length;
-	int absolute_length;
+	size_t absolute_length;
 	char filename_absolute[MAX_PATH], linkname_absolute[MAX_PATH], buf[MAX_PATH];
 	const char *filename = "t-readlink-abs";
 	const char *linkname = "t-readlink-abs.sym";

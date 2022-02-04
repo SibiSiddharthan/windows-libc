@@ -150,7 +150,7 @@ ssize_t do_readlink(HANDLE handle, char *restrict buf, size_t bufsiz)
 	free(reparse_buffer);
 	if (result != -1)
 	{
-		convert_bs_to_fs(buf, result);
+		convert_bs_to_fs(buf, (int)result);
 	}
 	return result;
 }
@@ -164,7 +164,7 @@ ssize_t common_readlink(int dirfd, const char *restrict path, char *restrict buf
 		return -1;
 	}
 
-	int result = do_readlink(handle, buf, bufsiz);
+	ssize_t result = do_readlink(handle, buf, bufsiz);
 	NtClose(handle);
 
 	return result;

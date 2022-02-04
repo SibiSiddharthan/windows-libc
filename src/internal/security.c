@@ -148,7 +148,7 @@ static PISECURITY_DESCRIPTOR_RELATIVE create_security_descriptor(mode_t mode, in
 	  Size of User ACE                     : 36 (5 subauthorities usually) or 76 (15 max subauthorities)
 	  Total                                : 152 bytes or 192 bytes max
 	*/
-	const size_t size_of_sd_buffer = 256;
+	const ULONG size_of_sd_buffer = 256;
 	char *sd_buffer = (char *)malloc(size_of_sd_buffer);
 	memset(sd_buffer, 0, size_of_sd_buffer);
 

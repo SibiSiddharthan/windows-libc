@@ -37,7 +37,7 @@ int USER_INFO_3_to_passwd(PUSER_INFO_3 user_info, struct passwd *pw_entry, void 
 
 	// name
 	RtlInitUnicodeString(&u16_name, user_info->usri3_name);
-	u8_name.MaximumLength = size;
+	u8_name.MaximumLength = (USHORT)size;
 	u8_name.Buffer = (char *)buffer;
 
 	ntstatus = RtlUnicodeStringToUTF8String(&u8_name, &u16_name, FALSE);
@@ -57,7 +57,7 @@ int USER_INFO_3_to_passwd(PUSER_INFO_3 user_info, struct passwd *pw_entry, void 
 	}
 
 	RtlInitUnicodeString(&u16_gecos, user_info->usri3_comment);
-	u8_gecos.MaximumLength = size - u8_name.MaximumLength;
+	u8_gecos.MaximumLength = (USHORT)(size - u8_name.MaximumLength);
 	u8_gecos.Buffer = (char *)buffer + u8_name.MaximumLength;
 
 	ntstatus = RtlUnicodeStringToUTF8String(&u8_gecos, &u16_gecos, FALSE);
@@ -103,10 +103,10 @@ int USER_INFO_3_to_passwd(PUSER_INFO_3 user_info, struct passwd *pw_entry, void 
 			if (real_homedir != NULL)
 			{
 				u16_homedir.Buffer = real_homedir;
-				u16_homedir.Length = homedir_size;
-				u16_homedir.MaximumLength = homedir_size;
+				u16_homedir.Length = (USHORT)homedir_size;
+				u16_homedir.MaximumLength = (USHORT)homedir_size;
 
-				u8_homedir.MaximumLength = size - u8_name.MaximumLength + u8_gecos.MaximumLength;
+				u8_homedir.MaximumLength = (USHORT)(size - u8_name.MaximumLength + u8_gecos.MaximumLength);
 				u8_homedir.Buffer = (char *)buffer + u8_name.MaximumLength + u8_gecos.MaximumLength;
 				ntstatus = RtlUnicodeStringToUTF8String(&u8_homedir, &u16_homedir, FALSE);
 				free(real_homedir);

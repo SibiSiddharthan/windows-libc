@@ -19,7 +19,7 @@ unsigned int _fd_io_sequence = 0;
 CRITICAL_SECTION _fd_critical;
 
 // Declaration of static functions
-static int internal_insert_fd(int index, HANDLE _h, handle_t _type, int _flags);
+static int internal_insert_fd(size_t index, HANDLE _h, handle_t _type, int _flags);
 static int register_to_fd_table_internal(HANDLE _h, handle_t _type, int _flags);
 static void update_fd_table_internal(int _fd, HANDLE _h, handle_t _type, int _flags);
 static void insert_into_fd_table_internal(int _fd, HANDLE _h, handle_t _type, int _flags);
@@ -210,25 +210,25 @@ void cleanup_fd_table(void)
 // Primary functions
 ///////////////////////////////////////
 
-static int internal_insert_fd(int index, HANDLE _h, handle_t _type, int _flags)
+static int internal_insert_fd(size_t index, HANDLE _h, handle_t _type, int _flags)
 {
 	_fd_io[index]._handle = _h;
 	_fd_io[index]._flags = _flags;
 	_fd_io[index]._type = _type;
 	_fd_io[index]._sequence = ++_fd_io_sequence;
-	return index;
+	return (int)index;
 }
 
 static int register_to_fd_table_internal(HANDLE _h, handle_t _type, int _flags)
 {
-	bool is_there_free_space = 0;
+	bool is_there_free_space = false;
 	size_t index = -1;
 	int fd = -1;
 	for (size_t i = 0; i < _fd_table_size; i++)
 	{
 		if (_fd_io[i]._handle == INVALID_HANDLE_VALUE)
 		{
-			is_there_free_space = 1;
+			is_there_free_space = true;
 			index = i;
 			break;
 		}
@@ -291,7 +291,7 @@ static void insert_into_fd_table_internal(int _fd, HANDLE _h, handle_t _type, in
 		free(_fd_io);
 		_fd_io = temp;
 
-		for (int i = _fd_table_size; i < _fd * 2; i++)
+		for (int i = (int)_fd_table_size; i < _fd * 2; ++i)
 		{
 			_fd_io[i]._handle = INVALID_HANDLE_VALUE;
 		}
@@ -335,7 +335,7 @@ static int get_fd_internal(HANDLE _h)
 	{
 		if (_fd_io[i]._handle != INVALID_HANDLE_VALUE && _h == _fd_io[i]._handle)
 		{
-			return i;
+			return (int)i;
 		}
 	}
 
@@ -475,7 +475,7 @@ void add_fd_flags(int _fd, int _flags)
 ///////////////////////////////////////
 static bool validate_fd_internal(int _fd)
 {
-	if (_fd >= (int)_fd_table_size)
+	if (_fd < 0 || _fd >= (int)_fd_table_size)
 		return false;
 	if (_fd_io[_fd]._handle == INVALID_HANDLE_VALUE)
 		return false;

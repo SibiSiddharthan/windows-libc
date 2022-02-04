@@ -362,7 +362,7 @@ UNICODE_STRING *xget_absolute_ntpath(int dirfd, const char *path)
 			rootdir_buffer = (char *)malloc(1024);
 
 			// No need to check return value here as RTL_USER_PROCESS_PARAMETERS can be trusted
-			device = dos_device_to_nt_device(pu16_cwd->Buffer[0]);
+			device = dos_device_to_nt_device((char)pu16_cwd->Buffer[0]);
 
 			memcpy(rootdir_buffer, device->name, device->length);
 			memcpy(rootdir_buffer + device->length, pu16_cwd->Buffer + 2, cwd_length_without_drive_letter);
@@ -412,7 +412,7 @@ UNICODE_STRING *xget_absolute_ntpath(int dirfd, const char *path)
 		}
 	}
 
-	size_t required_size = u16_path.MaximumLength; // Includes L'\0'
+	USHORT required_size = u16_path.MaximumLength; // Includes L'\0'
 
 	if (!path_is_absolute)
 	{
@@ -643,7 +643,7 @@ UNICODE_STRING *xget_fd_dospath(int fd)
 		if (second_slash_found)
 		{
 			memcpy(dospath->Buffer + 2, ntpath->Buffer + j, ntpath->Length - (j * sizeof(WCHAR)));
-			dospath->Length = ntpath->Length - ((j - 2) * sizeof(WCHAR));
+			dospath->Length = (USHORT)(ntpath->Length - ((j - 2) * sizeof(WCHAR)));
 			dospath->MaximumLength = dospath->Length + sizeof(WCHAR);
 			dospath->Buffer[dospath->Length / sizeof(WCHAR)] = L'\0';
 		}

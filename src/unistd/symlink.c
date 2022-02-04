@@ -37,8 +37,8 @@ int common_symlink(const char *restrict source, int dirfd, const char *restrict 
 	}
 
 	// Try opening the source
-	int target_length = strlen(target);
-	int source_length = strlen(source);
+	size_t target_length = strlen(target);
+	size_t source_length = strlen(source);
 	char *normalized_source = malloc(target_length + source_length + 5); // '/../' + NULL
 	// This is an easy way of checking whether the link text if it exists is a directory or a file.
 	memcpy(normalized_source, target, target_length + 1); // Including NULL
@@ -96,8 +96,8 @@ int common_symlink(const char *restrict source, int dirfd, const char *restrict 
 	UTF8_STRING u8_source;
 	UNICODE_STRING u16_source;
 
-	u8_source.Length = source_length;
-	u8_source.MaximumLength = source_length + 1;
+	u8_source.Length = (USHORT)source_length;
+	u8_source.MaximumLength = (USHORT)(source_length + 1);
 	u8_source.Buffer = (PCHAR)source;
 	RtlUTF8StringToUnicodeString(&u16_source, &u8_source, TRUE);
 
@@ -110,7 +110,7 @@ int common_symlink(const char *restrict source, int dirfd, const char *restrict 
 		}
 	}
 
-	size_t total_reparse_data_length =
+	USHORT total_reparse_data_length =
 		REPARSE_DATA_BUFFER_HEADER_SIZE + 12 + 2 * u16_source.Length + (is_absolute ? 8 : 0); // For SubstituteName, PrintName
 	PREPARSE_DATA_BUFFER reparse_data = (PREPARSE_DATA_BUFFER)malloc(total_reparse_data_length);
 	memset(reparse_data, 0, total_reparse_data_length);

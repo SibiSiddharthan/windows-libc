@@ -26,7 +26,7 @@ int wlibc_ttyname_r(int fd, char *buf, size_t bufsiz)
 {
 	if (wlibc_isatty(fd))
 	{
-		if (GetConsoleOriginalTitleA(buf, bufsiz) == 0) // bufsiz is too small
+		if (GetConsoleOriginalTitleA(buf, (DWORD)bufsiz) == 0) // bufsiz is too small
 		{
 			errno = ERANGE;
 			return errno;

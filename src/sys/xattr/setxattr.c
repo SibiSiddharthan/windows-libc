@@ -20,12 +20,12 @@ int do_setxattr(HANDLE handle, const char *restrict name, const void *restrict v
 	PFILE_GET_EA_INFORMATION name_info;
 	PFILE_FULL_EA_INFORMATION ea_info;
 
-	int length;
+	size_t length;
 	char check_buffer[260];
 	char query_buffer[512];
 	char *insert_buffer = NULL;
 	size_t size_of_insert_buffer;
-	ssize_t result = -1;
+	int result = -1;
 
 	length = strlen(name);
 	if (length > 254) // max UCHAR - 1
@@ -38,7 +38,7 @@ int do_setxattr(HANDLE handle, const char *restrict name, const void *restrict v
 
 	name_info = (PFILE_GET_EA_INFORMATION)check_buffer;
 	name_info->NextEntryOffset = 0;
-	name_info->EaNameLength = length;
+	name_info->EaNameLength = (UCHAR)length;
 	memcpy(name_info->EaName, name, length);
 
 	if (operation != 0)
@@ -74,15 +74,15 @@ int do_setxattr(HANDLE handle, const char *restrict name, const void *restrict v
 	memset(insert_buffer, 0, size_of_insert_buffer);
 	ea_info = (PFILE_FULL_EA_INFORMATION)insert_buffer;
 
-	ea_info->EaNameLength = length;
-	ea_info->EaValueLength = size;
+	ea_info->EaNameLength = (UCHAR)length;
+	ea_info->EaValueLength = (USHORT)size;
 	memcpy(ea_info->EaName, name, length + 1);
 	if (size > 0)
 	{
 		memcpy(ea_info->EaName + length + 1, value, size);
 	}
 
-	status = NtSetEaFile(handle, &io, ea_info, size_of_insert_buffer);
+	status = NtSetEaFile(handle, &io, ea_info, (ULONG)size_of_insert_buffer);
 	if (status != STATUS_SUCCESS)
 	{
 		map_ntstatus_to_errno(status);
@@ -106,7 +106,7 @@ int common_setxattr(int fd, const char *restrict path, const char *restrict name
 		return -1;
 	}
 
-	ssize_t result = do_setxattr(handle, name, value, size, operation);
+	int result = do_setxattr(handle, name, value, size, operation);
 	NtClose(handle);
 	return result;
 }

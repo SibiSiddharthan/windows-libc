@@ -252,12 +252,12 @@ int do_stat(HANDLE handle, struct stat *restrict statbuf)
 		status = NtQueryVolumeInformationFile(handle, &I, &size_info, sizeof(FILE_FS_SIZE_INFORMATION), FileFsSizeInformation);
 		if (status == STATUS_SUCCESS)
 		{
-			statbuf->st_blksize = size_info.BytesPerSector * size_info.SectorsPerAllocationUnit;
+			statbuf->st_blksize = (blksize_t)(size_info.BytesPerSector * size_info.SectorsPerAllocationUnit);
 			if (statbuf->st_mode & S_IFDIR)
 			{
 				statbuf->st_size = statbuf->st_blksize;
 			}
-			statbuf->st_blocks = statbuf->st_size / statbuf->st_blksize + (statbuf->st_size % statbuf->st_blksize == 0 ? 0 : 1);
+			statbuf->st_blocks = (blkcnt_t)(statbuf->st_size / statbuf->st_blksize + (statbuf->st_size % statbuf->st_blksize == 0 ? 0 : 1));
 		}
 		else
 		{

@@ -36,7 +36,7 @@ int LOCALGROUP_INFO_0_to_group(PLOCALGROUP_INFO_0 group_info, struct group *grp_
 
 	// name
 	RtlInitUnicodeString(&u16_name, group_info->lgrpi0_name);
-	u8_name.MaximumLength = size;
+	u8_name.MaximumLength = (USHORT)size;
 	u8_name.Buffer = (char *)buffer;
 
 	ntstatus = RtlUnicodeStringToUTF8String(&u8_name, &u16_name, FALSE);
@@ -80,7 +80,7 @@ int LOCALGROUP_INFO_0_to_group(PLOCALGROUP_INFO_0 group_info, struct group *grp_
 			for (DWORD i = 0; i < member_entries_read; ++i)
 			{
 				RtlInitUnicodeString(&u16_member, member_info[i].lgrmi1_name);
-				u8_member.MaximumLength = size - buffer_used;
+				u8_member.MaximumLength = (USHORT)(size - buffer_used);
 				u8_member.Buffer = (char *)buffer + buffer_used;
 
 				if (u8_member.MaximumLength == 0)
@@ -122,7 +122,7 @@ int GROUP_INFO_2_to_group(PGROUP_INFO_2 group_info, struct group *grp_entry, voi
 
 	// name
 	RtlInitUnicodeString(&u16_name, group_info->grpi2_name);
-	u8_name.MaximumLength = size;
+	u8_name.MaximumLength = (USHORT)size;
 	u8_name.Buffer = (char *)buffer;
 
 	ntstatus = RtlUnicodeStringToUTF8String(&u8_name, &u16_name, FALSE);
@@ -161,7 +161,7 @@ int GROUP_INFO_2_to_group(PGROUP_INFO_2 group_info, struct group *grp_entry, voi
 			for (DWORD i = 0; i < member_entries_read; ++i)
 			{
 				RtlInitUnicodeString(&u16_member, member_info[i].grui0_name);
-				u8_member.MaximumLength = size - buffer_used;
+				u8_member.MaximumLength = (USHORT)(size - buffer_used);
 				u8_member.Buffer = (char *)buffer + buffer_used;
 
 				if (u8_member.MaximumLength == 0)

@@ -53,7 +53,7 @@ ssize_t wlibc_pread(int fd, void *buf, size_t count, off_t offset)
 	}
 
 	byte_offset.QuadPart = offset;
-	status = NtReadFile(file, NULL, NULL, NULL, &io, buf, count, &byte_offset, NULL);
+	status = NtReadFile(file, NULL, NULL, NULL, &io, buf, (ULONG)count, &byte_offset, NULL);
 	if (status != STATUS_SUCCESS && status != STATUS_PENDING && status != STATUS_END_OF_FILE)
 	{
 		map_ntstatus_to_errno(status);

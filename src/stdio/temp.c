@@ -58,8 +58,8 @@ char *wlibc_tmpdir()
 		if (localdir != NULL)
 		{
 			u16_localdir.Buffer = localdir;
-			u16_localdir.Length = localdir_size;
-			u16_localdir.MaximumLength = localdir_size;
+			u16_localdir.Length = (USHORT)localdir_size;
+			u16_localdir.MaximumLength = (USHORT)localdir_size;
 
 			u8_localdir.Buffer = tmpdir;
 			u8_localdir.MaximumLength = L_tmpnam;

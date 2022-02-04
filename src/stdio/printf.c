@@ -43,7 +43,7 @@ int wlibc_vfprintf(FILE *restrict stream, const char *restrict format, va_list a
 
 	char *buffer = (char *)malloc(count + 1);
 	print_chars(buffer, count + 1, format, args);
-	ssize_t result = fwrite(buffer, 1, count, stream);
+	int result = (int)fwrite(buffer, 1, count, stream);
 	free(buffer);
 	return result;
 }
@@ -57,7 +57,7 @@ int wlibc_vdprintf(int fd, const char *restrict format, va_list args)
 	}
 	char *buffer = (char *)malloc(count + 1);
 	print_chars(buffer, count + 1, format, args);
-	ssize_t result = write(fd, buffer, count);
+	int result = (int)write(fd, buffer, count);
 	free(buffer);
 	return result;
 }

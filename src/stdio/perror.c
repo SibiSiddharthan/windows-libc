@@ -188,13 +188,13 @@ void wlibc_perror(char const *message)
 
 	if (message)
 	{
-		int message_length = strlen(message);
+		size_t message_length = strlen(message);
 		fwrite(message, 1, message_length, stderr);
 	}
 
 	fwrite(": ", 1, 2, stderr);
 
 	const char *sys_message = get_message();
-	int sys_length = strlen(sys_message);
+	size_t sys_length = strlen(sys_message);
 	fwrite(sys_message, 1, sys_length, stderr);
 }

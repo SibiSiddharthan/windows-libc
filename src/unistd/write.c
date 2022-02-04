@@ -43,7 +43,7 @@ ssize_t wlibc_write(int fd, const void *buf, size_t count)
 	}
 
 	IO_STATUS_BLOCK I;
-	NTSTATUS status = NtWriteFile(file, NULL, NULL, NULL, &I, (PVOID)buf, count, &offset, NULL);
+	NTSTATUS status = NtWriteFile(file, NULL, NULL, NULL, &I, (PVOID)buf, (ULONG)count, &offset, NULL);
 	if (status != STATUS_SUCCESS && status != STATUS_PENDING)
 	{
 		// NOTE: According to POSIX when status is STATUS_PIPE_BROKEN the signal SIGPIPE should be raised.

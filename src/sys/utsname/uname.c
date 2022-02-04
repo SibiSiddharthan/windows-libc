@@ -17,8 +17,8 @@ static void u16_value_to_u8_value(char *destination, wchar_t *source, size_t siz
 	UTF8_STRING u8_data;
 	UNICODE_STRING u16_data;
 
-	u16_data.Length = size;
-	u16_data.MaximumLength = size;
+	u16_data.Length = (USHORT)size;
+	u16_data.MaximumLength = (USHORT)size;
 	u16_data.Buffer = source;
 
 	u8_data.MaximumLength = WLIBC_UTSNAME_LENGTH;

@@ -38,12 +38,12 @@ int wlibc_gethostname(char *name, size_t length)
 		}
 	}
 
-	u16_hostname.Length = size;
-	u16_hostname.MaximumLength = size;
+	u16_hostname.Length = (USHORT)size;
+	u16_hostname.MaximumLength = (USHORT)size;
 	u16_hostname.Buffer = data;
 
 	u8_hostname.Buffer = name;
-	u8_hostname.MaximumLength = length;
+	u8_hostname.MaximumLength = (USHORT)length;
 	status = RtlUnicodeStringToUTF8String(&u8_hostname, &u16_hostname, FALSE);
 	free(data);
 

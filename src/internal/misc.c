@@ -9,7 +9,7 @@
 
 char *wc_to_mb(const wchar_t *wstr)
 {
-	int length = wcslen(wstr) + 1;
+	size_t length = wcslen(wstr) + 1;
 	char *str = (char *)malloc(sizeof(char) * length);
 	wcstombs(str, wstr, length);
 	return str;
@@ -17,7 +17,7 @@ char *wc_to_mb(const wchar_t *wstr)
 
 wchar_t *mb_to_wc(const char *str)
 {
-	int length = strlen(str) + 1;
+	size_t length = strlen(str) + 1;
 	wchar_t *wstr = (wchar_t *)malloc(sizeof(wchar_t) * length);
 	mbstowcs(wstr, str, length);
 	return wstr;
@@ -25,8 +25,8 @@ wchar_t *mb_to_wc(const char *str)
 
 char *mbstrcat(const char *str1, const char *str2)
 {
-	int str1_length = strlen(str1);
-	int str2_length = strlen(str2);
+	size_t str1_length = strlen(str1);
+	size_t str2_length = strlen(str2);
 	char *ret = (char *)malloc(sizeof(char) * (str1_length + str2_length + 1));
 	strcpy(ret, str1);
 	strcat(ret, str2);
@@ -35,8 +35,8 @@ char *mbstrcat(const char *str1, const char *str2)
 
 wchar_t *wcstrcat(const wchar_t *wstr1, const wchar_t *wstr2)
 {
-	int wstr1_length = wcslen(wstr1);
-	int wstr2_length = wcslen(wstr2);
+	size_t wstr1_length = wcslen(wstr1);
+	size_t wstr2_length = wcslen(wstr2);
 	wchar_t *ret = (wchar_t *)malloc(sizeof(wchar_t) * (wstr1_length + wstr2_length + 1));
 	wcscpy(ret, wstr1);
 	wcscat(ret, wstr2);
@@ -70,7 +70,7 @@ int is_absolute_pathw(const wchar_t *wstr)
 int has_executable_extenstion(const wchar_t *wstr)
 {
 	wchar_t ext[4];
-	int length = wcslen(wstr);
+	size_t length = wcslen(wstr);
 	if (length > 3)
 	{
 		wcsncpy(ext, wstr + (length - 4), 4);

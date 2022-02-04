@@ -51,22 +51,22 @@ WLIBC_INLINE size_t __fbufmode(FILE *stream)
 
 WLIBC_INLINE int __freading(FILE *stream)
 {
-	return wlibc_fileops(stream, reading, NULL);
+	return (int)wlibc_fileops(stream, reading, NULL);
 }
 
 WLIBC_INLINE int __fwriting(FILE *stream)
 {
-	return wlibc_fileops(stream, writing, NULL);
+	return (int)wlibc_fileops(stream, writing, NULL);
 }
 
 WLIBC_INLINE int __freadable(FILE *stream)
 {
-	return wlibc_fileops(stream, readable, NULL);
+	return (int)wlibc_fileops(stream, readable, NULL);
 }
 
 WLIBC_INLINE int __fwritable(FILE *stream)
 {
-	return wlibc_fileops(stream, writeable, NULL);
+	return (int)wlibc_fileops(stream, writeable, NULL);
 }
 
 WLIBC_INLINE int __ffbf(FILE *stream)
@@ -118,7 +118,7 @@ WLIBC_INLINE void __freadptrinc(FILE *stream, size_t size)
 
 WLIBC_INLINE int __fsetlocking(FILE *stream, int type /*unused*/)
 {
-	return wlibc_fileops(stream, locking, NULL);
+	return (int)wlibc_fileops(stream, locking, NULL);
 }
 
 WLIBC_INLINE const char *__freadptr(FILE *stream, size_t *bufsize)

@@ -16,7 +16,7 @@ typedef int gid_t;
 typedef long long int ssize_t;
 typedef int pid_t;
 typedef unsigned int dev_t;
-typedef unsigned short nlink_t;
+typedef unsigned long nlink_t;
 typedef unsigned short blksize_t;
 typedef unsigned int blkcnt_t;
 typedef long long suseconds_t;

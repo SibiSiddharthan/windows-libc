@@ -18,7 +18,7 @@ int do_link(HANDLE handle, int dirfd, const char *restrict target)
 	IO_STATUS_BLOCK io;
 	UNICODE_STRING *u16_nttarget = NULL;
 	PFILE_LINK_INFORMATION link_info = NULL;
-	size_t size_of_link_info;
+	ULONG size_of_link_info;
 
 	u16_nttarget = xget_absolute_ntpath(dirfd, target);
 	if (u16_nttarget == NULL)

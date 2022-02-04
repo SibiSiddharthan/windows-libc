@@ -21,7 +21,7 @@ static bool validate_template(const char *template, int suffixlen, int *length)
 		return false;
 	}
 
-	*length = strlen(template);
+	*length = (int)strlen(template);
 
 	if (suffixlen + 6 > *length)
 	{

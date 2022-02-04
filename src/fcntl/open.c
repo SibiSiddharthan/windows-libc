@@ -281,7 +281,7 @@ int do_open(int dirfd, const char *name, int oflags, mode_t perm)
 
 	if (oflags & O_TMPFILE)
 	{
-		size_t temp_bufsize = (1 + 6) * sizeof(WCHAR); // number of digits of 32bit random(5) + slash(1) + NULL
+		USHORT temp_bufsize = (1 + 6) * sizeof(WCHAR); // number of digits of 32bit random(5) + slash(1) + NULL
 		UNICODE_STRING *u16_temppath = (UNICODE_STRING *)malloc(sizeof(UNICODE_STRING) + u16_ntpath->Length + temp_bufsize);
 
 		u16_temppath->Buffer = (WCHAR *)((char *)u16_temppath + sizeof(UNICODE_STRING));

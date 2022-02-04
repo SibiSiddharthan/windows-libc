@@ -30,7 +30,7 @@ ssize_t wlibc_read(int fd, void *buf, size_t count)
 	HANDLE file = get_fd_handle(fd);
 	IO_STATUS_BLOCK I;
 	I.Information = 0;
-	NTSTATUS status = NtReadFile(file, NULL, NULL, NULL, &I, buf, count, NULL, NULL);
+	NTSTATUS status = NtReadFile(file, NULL, NULL, NULL, &I, buf, (ULONG)count, NULL, NULL);
 	if (status != STATUS_SUCCESS && status != STATUS_PENDING && status != STATUS_END_OF_FILE && status != STATUS_PIPE_BROKEN)
 	{
 		// When status is set to STATUS_PIPE_BROKEN , it is not treated as an error.

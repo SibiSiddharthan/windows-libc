@@ -53,7 +53,7 @@ ssize_t wlibc_pwrite(int fd, const void *buf, size_t count, off_t offset)
 	}
 
 	byte_offset.QuadPart = offset;
-	status = NtWriteFile(file, NULL, NULL, NULL, &io, (PVOID)buf, count, &byte_offset, NULL);
+	status = NtWriteFile(file, NULL, NULL, NULL, &io, (PVOID)buf, (ULONG)count, &byte_offset, NULL);
 	if (status != STATUS_SUCCESS && status != STATUS_PENDING)
 	{
 		map_ntstatus_to_errno(status);

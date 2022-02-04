@@ -39,12 +39,12 @@ int wlibc_getdomainname(char *name, size_t length)
 		return 0;
 	}
 
-	u16_domainname.Length = size;
-	u16_domainname.MaximumLength = size;
+	u16_domainname.Length = (USHORT)size;
+	u16_domainname.MaximumLength = (USHORT)size;
 	u16_domainname.Buffer = data;
 
 	u8_domainname.Buffer = name;
-	u8_domainname.MaximumLength = length;
+	u8_domainname.MaximumLength = (USHORT)length;
 	status = RtlUnicodeStringToUTF8String(&u8_domainname, &u16_domainname, FALSE);
 	free(data);
 

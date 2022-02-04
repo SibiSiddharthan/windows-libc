@@ -27,7 +27,7 @@ ssize_t do_listxattr(HANDLE handle, char *restrict list, size_t size)
 
 	while (status != STATUS_NO_MORE_EAS)
 	{
-		status = NtQueryEaFile(handle, &io, query_buffer, query_buffer_size, FALSE, NULL, 0, NULL, FALSE);
+		status = NtQueryEaFile(handle, &io, query_buffer, (ULONG)query_buffer_size, FALSE, NULL, 0, NULL, FALSE);
 		if (status == STATUS_NO_EAS_ON_FILE)
 		{
 			// This is not an error.
@@ -39,7 +39,7 @@ ssize_t do_listxattr(HANDLE handle, char *restrict list, size_t size)
 		{
 			query_buffer_size = 65536; // Use this big of a buffer
 			query_buffer = (char *)realloc(query_buffer, query_buffer_size);
-			status = NtQueryEaFile(handle, &io, query_buffer, query_buffer_size, FALSE, NULL, 0, NULL, FALSE);
+			status = NtQueryEaFile(handle, &io, query_buffer, (ULONG)query_buffer_size, FALSE, NULL, 0, NULL, FALSE);
 			if (status != STATUS_SUCCESS)
 			{
 				map_ntstatus_to_errno(status);

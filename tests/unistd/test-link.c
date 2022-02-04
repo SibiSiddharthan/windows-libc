@@ -126,7 +126,7 @@ int test_symlink()
 	status = link(source_symlink, target);
 	ASSERT_EQ(status, 0);
 
-	status = readlink(target, rbuf, 16);
+	status = (int)readlink(target, rbuf, 16);
 	ASSERT_EQ(status, 6);
 	ASSERT_MEMEQ(rbuf, source, 6);
 
@@ -203,7 +203,7 @@ int test_linkat_AT_SYMLINK_FOLLOW()
 	ASSERT_EQ(status, 0);
 
 	errno = 0;
-	status = readlinkat(AT_FDCWD, target, rbuf, 64);
+	status = (int)readlinkat(AT_FDCWD, target, rbuf, 64);
 	ASSERT_EQ(status, -1);
 	ASSERT_ERRNO(EINVAL);
 

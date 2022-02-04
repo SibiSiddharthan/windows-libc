@@ -56,7 +56,7 @@ FILE *wlibc_popen(const char *restrict command, const char *restrict mode)
 		SetHandleInformation(write_end, HANDLE_FLAG_INHERIT, 0);
 	}
 
-	int length = strlen(command) + 1;
+	size_t length = strlen(command) + 1;
 	char *actual_command = (char *)malloc(sizeof(char) * (length + 11)); //"cmd.exe /C "
 	memcpy(actual_command, "cmd.exe /C ", 11);
 	memcpy(actual_command + 11, command, length);
