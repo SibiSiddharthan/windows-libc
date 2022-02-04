@@ -23,7 +23,7 @@ int common_fseek(FILE *stream, ssize_t offset, int whence)
 	// No need to seek
 	if (whence == SEEK_CUR && stream->prev_op == OP_READ)
 	{
-		ssize_t new_pos = stream->pos + offset;
+		size_t new_pos = stream->pos + offset;
 		if (new_pos >= stream->start && new_pos <= stream->end && stream->start != stream->end)
 		{
 			stream->pos = new_pos;

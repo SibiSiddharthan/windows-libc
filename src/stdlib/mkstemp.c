@@ -47,11 +47,11 @@ static void gen_tempstring(char *start, size_t length)
 	rand_s(&rn);
 	_ultoa_s(rn, buffer, 8, 36);
 
-	for (int i = 0; i < length; ++i)
+	for (size_t i = 0; i < length; ++i)
 	{
 		if (start[i] == 'X')
 		{
-			if(buffer[i] != '\0')
+			if (buffer[i] != '\0')
 			{
 				start[i] = buffer[i];
 			}
@@ -61,7 +61,6 @@ static void gen_tempstring(char *start, size_t length)
 				start[i] |= 32;
 			}
 		}
-
 	}
 }
 
@@ -145,51 +144,3 @@ int wlibc_common_mkstemp(char *template, int suffixlen, int flags, int operation
 	errno = 0;
 	return status;
 }
-
-#if 0
-char *wlibc_common_mktemp(char *template, int directory)
-{
-	int status = -1;
-	int length = 0;
-	struct stat statbuf;
-
-	if (!validate_template(template, 0, &length))
-	{
-		errno = EINVAL;
-		return NULL;
-	}
-
-	if (directory)
-	{
-		while (1)
-		{
-			// keep trying till we succeed
-			gen_tempstring(template + length - 6, 6);
-			status = wlibc_common_mkdir(AT_FDCWD, template, 0700);
-			if (status == 0)
-			{
-				break;
-			}
-		}
-	}
-	else
-	{
-		while (1)
-		{
-			// keep trying till we succeed
-			gen_tempstring(template + length - 6, 6);
-			status = wlibc_common_stat(AT_FDCWD, template, &statbuf, AT_SYMLINK_NOFOLLOW);
-			if (status == -1 && errno == ENOENT)
-			{
-				// clear errno
-				errno = 0;
-				break;
-			}
-		}
-	}
-
-	// clear any errno set
-	errno = 0;
-	return template;
-}
-#endif

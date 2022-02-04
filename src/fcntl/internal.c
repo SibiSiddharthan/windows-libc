@@ -284,14 +284,14 @@ void update_fd_table(int _fd, HANDLE _h, handle_t _type, int _flags)
 static void insert_into_fd_table_internal(int _fd, HANDLE _h, handle_t _type, int _flags)
 {
 	// grow the table
-	if (_fd >= _fd_table_size)
+	if (_fd >= (int)_fd_table_size)
 	{
 		struct fd_table *temp = (struct fd_table *)malloc(sizeof(struct fd_table) * _fd * 2); // Allocate double the requested fd number
 		memcpy(temp, _fd_io, sizeof(struct fd_table) * _fd_table_size);
 		free(_fd_io);
 		_fd_io = temp;
 
-		for (size_t i = _fd_table_size; i < _fd * 2; i++)
+		for (int i = _fd_table_size; i < _fd * 2; i++)
 		{
 			_fd_io[i]._handle = INVALID_HANDLE_VALUE;
 		}
@@ -331,7 +331,7 @@ void unregister_from_fd_table(HANDLE _h)
 
 static int get_fd_internal(HANDLE _h)
 {
-	for (int i = 0; i < _fd_table_size; i++)
+	for (size_t i = 0; i < _fd_table_size; i++)
 	{
 		if (_fd_io[i]._handle != INVALID_HANDLE_VALUE && _h == _fd_io[i]._handle)
 		{
@@ -475,7 +475,7 @@ void add_fd_flags(int _fd, int _flags)
 ///////////////////////////////////////
 static bool validate_fd_internal(int _fd)
 {
-	if (_fd >= _fd_table_size)
+	if (_fd >= (int)_fd_table_size)
 		return false;
 	if (_fd_io[_fd]._handle == INVALID_HANDLE_VALUE)
 		return false;

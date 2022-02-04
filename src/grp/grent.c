@@ -10,8 +10,8 @@
 #include <LM.h>
 #include <grp.h>
 
-static int gr_index = 0;
-static int gr_started = 0;
+static DWORD gr_index = 0;
+static DWORD gr_started = 0;
 static BYTE *local_enum_buffer = NULL;
 static BYTE *global_enum_buffer = NULL;
 
@@ -77,7 +77,7 @@ int LOCALGROUP_INFO_0_to_group(PLOCALGROUP_INFO_0 group_info, struct group *grp_
 			grp_entry->gr_mem[member_entries_read] = NULL;
 
 			member_info = (PLOCALGROUP_MEMBERS_INFO_1)local_member_buffer;
-			for (int i = 0; i < member_entries_read; ++i)
+			for (DWORD i = 0; i < member_entries_read; ++i)
 			{
 				RtlInitUnicodeString(&u16_member, member_info[i].lgrmi1_name);
 				u8_member.MaximumLength = size - buffer_used;
@@ -158,7 +158,7 @@ int GROUP_INFO_2_to_group(PGROUP_INFO_2 group_info, struct group *grp_entry, voi
 			grp_entry->gr_mem[member_entries_read] = NULL;
 
 			member_info = (PGROUP_USERS_INFO_0)global_member_buffer;
-			for (int i = 0; i < member_entries_read; ++i)
+			for (DWORD i = 0; i < member_entries_read; ++i)
 			{
 				RtlInitUnicodeString(&u16_member, member_info[i].grui0_name);
 				u8_member.MaximumLength = size - buffer_used;

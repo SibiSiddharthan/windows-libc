@@ -15,7 +15,7 @@ int __cdecl __stdio_common_vsprintf_p(_In_ unsigned __int64 _Options, _Out_write
 									  _In_z_ _Printf_format_string_params_(2) char const *_Format, _In_opt_ _locale_t _Locale,
 									  va_list _ArgList);
 
-size_t number_of_chars(const char *restrict format, va_list args)
+int number_of_chars(const char *restrict format, va_list args)
 {
 	if (format == NULL)
 	{
@@ -35,7 +35,7 @@ int print_chars(char *restrict buffer, size_t size, const char *restrict format,
 
 int wlibc_vfprintf(FILE *restrict stream, const char *restrict format, va_list args)
 {
-	size_t count = number_of_chars(format, args);
+	int count = number_of_chars(format, args);
 	if (count == -1)
 	{
 		return -1;
@@ -50,7 +50,7 @@ int wlibc_vfprintf(FILE *restrict stream, const char *restrict format, va_list a
 
 int wlibc_vdprintf(int fd, const char *restrict format, va_list args)
 {
-	size_t count = number_of_chars(format, args);
+	int count = number_of_chars(format, args);
 	if (count == -1)
 	{
 		return -1;
@@ -64,7 +64,7 @@ int wlibc_vdprintf(int fd, const char *restrict format, va_list args)
 
 int wlibc_vasprintf(char **restrict buffer, const char *restrict format, va_list args)
 {
-	size_t count = number_of_chars(format, args);
+	int count = number_of_chars(format, args);
 	if (count == -1)
 	{
 		return -1;

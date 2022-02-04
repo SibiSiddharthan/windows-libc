@@ -16,8 +16,8 @@
 #include <wchar.h>
 #include <stdio.h>
 
-static int pw_index = 0;
-static int pw_started = 0;
+static DWORD pw_index = 0;
+static DWORD pw_started = 0;
 static BYTE *enum_buffer = NULL;
 
 int USER_INFO_3_to_passwd(PUSER_INFO_3 user_info, struct passwd *pw_entry, void *buffer, size_t size)

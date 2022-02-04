@@ -123,7 +123,7 @@ int wlibc_sigprocmask(int how, const sigset_t *set, sigset_t *oldset)
 		return -1;
 	}
 
-	if (*set > ((2u << (NSIG - 1)) - 1) || *set & (1u << SIGKILL) || *set & (1u << SIGSTOP))
+	if (*set > (sigset_t)((2u << (NSIG - 1)) - 1) || *set & (1u << SIGKILL) || *set & (1u << SIGSTOP))
 	{
 		errno = EINVAL;
 		return -1;

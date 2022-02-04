@@ -185,7 +185,7 @@ WLIBC_INLINE int fsetpos(FILE *restrict stream, fpos_t *restrict pos)
 WLIBC_INLINE int fgetpos(FILE *restrict stream, fpos_t *restrict pos)
 {
 	*pos = wlibc_ftell(stream);
-	return *pos != -1ull ? 0 : -1;
+	return *pos != -1ll ? 0 : -1;
 }
 
 WLIBC_INLINE int rewind(FILE *stream)

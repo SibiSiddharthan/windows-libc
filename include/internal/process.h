@@ -19,8 +19,8 @@ typedef struct
 } process_table;
 
 extern process_table *_wlibc_process_table;
-extern unsigned int _wlibc_process_table_size;
-extern unsigned int _wlibc_child_process_count;
+extern pid_t _wlibc_process_table_size;
+extern pid_t _wlibc_child_process_count;
 
 extern CRITICAL_SECTION _wlibc_process_critical;
 

@@ -34,7 +34,7 @@ pid_t wlibc_waitpid_implementation(pid_t pid, int *wstatus, int options)
 		HANDLE *child_handles = (HANDLE *)malloc(sizeof(HANDLE) * child_count);
 
 		EnterCriticalSection(&_wlibc_process_critical);
-		for (int i = 0; i < child_count; i++)
+		for (DWORD i = 0; i < child_count; i++)
 		{
 			child_handles[i] = _wlibc_process_table[i].process_handle;
 		}

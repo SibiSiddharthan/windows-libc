@@ -12,9 +12,9 @@
 
 int common_fflush(FILE *stream);
 
-static size_t read_wrapper(FILE *restrict stream, void *restrict buffer, size_t size)
+static ssize_t read_wrapper(FILE *restrict stream, void *restrict buffer, size_t size)
 {
-	size_t result = read(stream->fd, buffer, size);
+	ssize_t result = read(stream->fd, buffer, size);
 	// Set the stream error states
 	if (result == 0)
 	{

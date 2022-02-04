@@ -50,7 +50,7 @@ ssize_t common_getdelim(char **restrict buffer, size_t *restrict size, int delim
 			break;
 		}
 
-		if (result == *size)
+		if (result == (ssize_t)*size)
 		{
 			// Double the buffer
 			char *temp = (char *)malloc(buffer_size * 2);

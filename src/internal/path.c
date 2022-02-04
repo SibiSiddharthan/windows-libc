@@ -128,7 +128,7 @@ typedef struct _fd_path
 
 fd_path fd_path_cache[FD_PATH_CACHE_SLOTS] = {{-1, 0, NULL}};
 
-UNICODE_STRING *check_fd_path_cache(int fd, int sequence)
+UNICODE_STRING *check_fd_path_cache(int fd, unsigned int sequence)
 {
 	int index = sequence & (FD_PATH_CACHE_SLOTS - 1);
 

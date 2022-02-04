@@ -35,7 +35,7 @@
 	}
 
 #define ASSERT_EQ(actual, expected)                                                                                        \
-	if (actual != expected)                                                                                                \
+	if (((long long)actual) != ((long long)expected))                                                                      \
 	{                                                                                                                      \
 		printf("Assertion failed at %s:%d in %s. Expected value of %lld but got %lld\n", __FILE__, __LINE__, __FUNCTION__, \
 			   (long long)expected, (long long)actual);                                                                    \
@@ -43,7 +43,7 @@
 	}
 
 #define ASSERT_NOTEQ(val_1, val_2)                                                                                                        \
-	if (val_1 == val_2)                                                                                                                   \
+	if (((long long)val_1) == ((long long)val_2))                                                                                         \
 	{                                                                                                                                     \
 		printf("Assertion failed at %s:%d in %s. %lld should not be equal to %lld\n", __FILE__, __LINE__, __FUNCTION__, (long long)val_1, \
 			   (long long)val_2);                                                                                                         \
@@ -76,7 +76,7 @@
 
 #define ASSERT_SUCCESS(op)                                                                                                          \
 	{                                                                                                                               \
-		if (op != 0)                                                                                                               \
+		if (op != 0)                                                                                                                \
 		{                                                                                                                           \
 			printf("Operation %s called at %s:%d in %s failed but should have succeeded\n", #op, __FILE__, __LINE__, __FUNCTION__); \
 			return 1;                                                                                                               \

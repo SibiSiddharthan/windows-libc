@@ -53,7 +53,7 @@ static int verify_file_contents_given(int dirfd, const char *filename, const cha
 	}
 
 	length = read(fd, buf, 16);
-	if (length != strlen(content))
+	if (length != (ssize_t)strlen(content))
 	{
 		return -1;
 	}

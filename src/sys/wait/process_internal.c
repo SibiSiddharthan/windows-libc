@@ -11,8 +11,8 @@
 #include <stdbool.h>
 
 process_table *_wlibc_process_table = NULL;
-unsigned int _wlibc_process_table_size = 0;
-unsigned int _wlibc_child_process_count = 0;
+pid_t _wlibc_process_table_size = 0;
+pid_t _wlibc_child_process_count = 0;
 
 CRITICAL_SECTION _wlibc_process_critical;
 
