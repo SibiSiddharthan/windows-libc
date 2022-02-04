@@ -11,6 +11,7 @@
 #include <internal/path.h>
 #include <internal/security.h>
 #include <errno.h>
+#include <stdlib.h>
 #include <sys/stat.h>
 
 int wlibc_common_mkdir(int dirfd, const char *path, mode_t mode)
@@ -39,7 +40,7 @@ int wlibc_common_mkdir(int dirfd, const char *path, mode_t mode)
 	InitializeObjectAttributes(&object, u16_ntpath, OBJ_CASE_INSENSITIVE, NULL, security_descriptor);
 	status = NtCreateFile(&handle, FILE_READ_ATTRIBUTES, &object, &io, NULL, 0, FILE_SHARE_READ | FILE_SHARE_WRITE, FILE_CREATE,
 						  FILE_DIRECTORY_FILE, NULL, 0);
-	free_ntpath(u16_ntpath);
+	free(u16_ntpath);
 
 	if (status != STATUS_SUCCESS)
 	{

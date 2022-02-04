@@ -202,9 +202,8 @@ UNICODE_STRING *xget_absolute_ntpath(int dirfd, const char *path)
 	UTF8_STRING u8_path;
 	UNICODE_STRING u16_path, u16_rootdir;
 
-	// User should free this by calling `free_ntpath`.
+	// User should free the allocated memory.
 	UNICODE_STRING *u16_ntpath = NULL;
-	static UNICODE_STRING u16_ntdevices;
 
 	nt_device *device = NULL;
 	// malloc'ed resources
@@ -224,101 +223,112 @@ UNICODE_STRING *xget_absolute_ntpath(int dirfd, const char *path)
 	{
 		if (strncmp(path + 5, "null", 5) == 0)
 		{
-			u16_ntdevices.Length = 24;
-			u16_ntdevices.MaximumLength = u16_ntdevices.Length;
-			u16_ntdevices.Buffer = L"\\Device\\Null";
-			return &u16_ntdevices;
+			u16_ntpath = (UNICODE_STRING *)malloc(sizeof(UNICODE_STRING));
+			u16_ntpath->Length = 24;
+			u16_ntpath->MaximumLength = u16_ntpath->Length;
+			u16_ntpath->Buffer = L"\\Device\\Null";
+			return u16_ntpath;
 		}
 		if (strncmp(path + 5, "tty", 4) == 0)
 		{
-			u16_ntdevices.Length = 44;
-			u16_ntdevices.MaximumLength = u16_ntdevices.Length;
-			u16_ntdevices.Buffer = L"\\Device\\ConDrv\\Console";
-			return &u16_ntdevices;
+			u16_ntpath = (UNICODE_STRING *)malloc(sizeof(UNICODE_STRING));
+			u16_ntpath->Length = 44;
+			u16_ntpath->MaximumLength = u16_ntpath->Length;
+			u16_ntpath->Buffer = L"\\Device\\ConDrv\\Console";
+			return u16_ntpath;
 		}
 		if (strncmp(path + 5, "stdin", 6) == 0)
 		{
-			u16_ntdevices.Length = 48;
-			u16_ntdevices.MaximumLength = u16_ntdevices.Length;
-			u16_ntdevices.Buffer = L"\\Device\\ConDrv\\CurrentIn";
-			return &u16_ntdevices;
+			u16_ntpath = (UNICODE_STRING *)malloc(sizeof(UNICODE_STRING));
+			u16_ntpath->Length = 48;
+			u16_ntpath->MaximumLength = u16_ntpath->Length;
+			u16_ntpath->Buffer = L"\\Device\\ConDrv\\CurrentIn";
+			return u16_ntpath;
 		}
 		if (strncmp(path + 5, "stdout", 7) == 0)
 		{
-			u16_ntdevices.Length = 50;
-			u16_ntdevices.MaximumLength = u16_ntdevices.Length;
-			u16_ntdevices.Buffer = L"\\Device\\ConDrv\\CurrentOut";
-			return &u16_ntdevices;
+			u16_ntpath = (UNICODE_STRING *)malloc(sizeof(UNICODE_STRING));
+			u16_ntpath->Length = 50;
+			u16_ntpath->MaximumLength = u16_ntpath->Length;
+			u16_ntpath->Buffer = L"\\Device\\ConDrv\\CurrentOut";
+			return u16_ntpath;
 		}
 		if (strncmp(path + 5, "stderr", 7) == 0)
 		{
-			u16_ntdevices.Length = 50;
-			u16_ntdevices.MaximumLength = u16_ntdevices.Length;
-			u16_ntdevices.Buffer = L"\\Device\\ConDrv\\CurrentOut";
-			return &u16_ntdevices;
+			u16_ntpath = (UNICODE_STRING *)malloc(sizeof(UNICODE_STRING));
+			u16_ntpath->Length = 50;
+			u16_ntpath->MaximumLength = u16_ntpath->Length;
+			u16_ntpath->Buffer = L"\\Device\\ConDrv\\CurrentOut";
+			return u16_ntpath;
 		}
 		// Other devices to be implemented via drivers. TODO
 		if (strncmp(path + 5, "zero", 5) == 0)
 		{
-			u16_ntdevices.Length = 24;
-			u16_ntdevices.MaximumLength = u16_ntdevices.Length;
-			u16_ntdevices.Buffer = L"\\Device\\Zero";
-			return &u16_ntdevices;
+			u16_ntpath = (UNICODE_STRING *)malloc(sizeof(UNICODE_STRING));
+			u16_ntpath->Length = 24;
+			u16_ntpath->MaximumLength = u16_ntpath->Length;
+			u16_ntpath->Buffer = L"\\Device\\Zero";
+			return u16_ntpath;
 		}
 		if (strncmp(path + 5, "full", 5) == 0)
 		{
-			u16_ntdevices.Length = 24;
-			u16_ntdevices.MaximumLength = u16_ntdevices.Length;
-			u16_ntdevices.Buffer = L"\\Device\\Full";
-			return &u16_ntdevices;
+			u16_ntpath->Length = 24;
+			u16_ntpath->MaximumLength = u16_ntpath->Length;
+			u16_ntpath->Buffer = L"\\Device\\Full";
+			return u16_ntpath;
 		}
 		if (strncmp(path + 5, "random", 7) == 0)
 		{
-			u16_ntdevices.Length = 28;
-			u16_ntdevices.MaximumLength = u16_ntdevices.Length;
-			u16_ntdevices.Buffer = L"\\Device\\Random";
-			return &u16_ntdevices;
+			u16_ntpath = (UNICODE_STRING *)malloc(sizeof(UNICODE_STRING));
+			u16_ntpath->Length = 28;
+			u16_ntpath->MaximumLength = u16_ntpath->Length;
+			u16_ntpath->Buffer = L"\\Device\\Random";
+			return u16_ntpath;
 		}
 		if (strncmp(path + 5, "urandom", 8) == 0)
 		{
-			u16_ntdevices.Length = 28;
-			u16_ntdevices.MaximumLength = u16_ntdevices.Length;
-			u16_ntdevices.Buffer = L"\\Device\\Random";
-			return &u16_ntdevices;
+			u16_ntpath = (UNICODE_STRING *)malloc(sizeof(UNICODE_STRING));
+			u16_ntpath->Length = 28;
+			u16_ntpath->MaximumLength = u16_ntpath->Length;
+			u16_ntpath->Buffer = L"\\Device\\Random";
+			return u16_ntpath;
 		}
 	}
 
 	// DOS devices
 	if (stricmp(path, "NUL") == 0)
 	{
-		u16_ntdevices.Length = 24;
-		u16_ntdevices.MaximumLength = u16_ntdevices.Length;
-		u16_ntdevices.Buffer = L"\\Device\\Null";
-		return &u16_ntdevices;
+		u16_ntpath = (UNICODE_STRING *)malloc(sizeof(UNICODE_STRING));
+		u16_ntpath->Length = 24;
+		u16_ntpath->MaximumLength = u16_ntpath->Length;
+		u16_ntpath->Buffer = L"\\Device\\Null";
+		return u16_ntpath;
 	}
 	if (strnicmp(path, "CON", 3) == 0)
 	{
-
 		if (path[3] == '\0')
 		{
-			u16_ntdevices.Length = 44;
-			u16_ntdevices.MaximumLength = u16_ntdevices.Length;
-			u16_ntdevices.Buffer = L"\\Device\\ConDrv\\Console";
-			return &u16_ntdevices;
+			u16_ntpath = (UNICODE_STRING *)malloc(sizeof(UNICODE_STRING));
+			u16_ntpath->Length = 44;
+			u16_ntpath->MaximumLength = u16_ntpath->Length;
+			u16_ntpath->Buffer = L"\\Device\\ConDrv\\Console";
+			return u16_ntpath;
 		}
 		if (strnicmp(path + 3, "IN$", 4) == 0)
 		{
-			u16_ntdevices.Length = 48;
-			u16_ntdevices.MaximumLength = u16_ntdevices.Length;
-			u16_ntdevices.Buffer = L"\\Device\\ConDrv\\CurrentIn";
-			return &u16_ntdevices;
+			u16_ntpath = (UNICODE_STRING *)malloc(sizeof(UNICODE_STRING));
+			u16_ntpath->Length = 48;
+			u16_ntpath->MaximumLength = u16_ntpath->Length;
+			u16_ntpath->Buffer = L"\\Device\\ConDrv\\CurrentIn";
+			return u16_ntpath;
 		}
 		if (strnicmp(path + 3, "OUT$", 5) == 0)
 		{
-			u16_ntdevices.Length = 50;
-			u16_ntdevices.MaximumLength = u16_ntdevices.Length;
-			u16_ntdevices.Buffer = L"\\Device\\ConDrv\\CurrentOut";
-			return &u16_ntdevices;
+			u16_ntpath = (UNICODE_STRING *)malloc(sizeof(UNICODE_STRING));
+			u16_ntpath->Length = 50;
+			u16_ntpath->MaximumLength = u16_ntpath->Length;
+			u16_ntpath->Buffer = L"\\Device\\ConDrv\\CurrentOut";
+			return u16_ntpath;
 		}
 	}
 
@@ -523,17 +533,6 @@ finish:
 	free(ntpath_buffer);
 
 	return u16_ntpath;
-}
-
-void free_ntpath(UNICODE_STRING *ntpath)
-{
-	// Hack to prevent free'ing constant strings for device names like 'NUL', 'CON'.
-	if (ntpath == NULL || ntpath->Length == ntpath->MaximumLength)
-	{
-		return;
-	}
-
-	free(ntpath);
 }
 
 /*

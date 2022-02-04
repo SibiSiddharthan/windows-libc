@@ -37,7 +37,7 @@ int do_link(HANDLE handle, int dirfd, const char *restrict target)
 	link_info->FileNameLength = u16_nttarget->Length;
 	memcpy(link_info->FileName, u16_nttarget->Buffer, u16_nttarget->Length);
 
-	free_ntpath(u16_nttarget);
+	free(u16_nttarget);
 
 	status = NtSetInformationFile(handle, &io, link_info, size_of_link_info, FileLinkInformationEx);
 	free(link_info);

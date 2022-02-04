@@ -8,6 +8,7 @@
 #include <test-macros.h>
 #include <internal/path.h>
 #include <fcntl.h>
+#include <stdlib.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
@@ -26,11 +27,11 @@ int test_null()
 
 	path = get_absolute_ntpath(AT_FDCWD, "NUL");
 	ASSERT_MEMEQ((char *)path->Buffer, (char *)L"\\Device\\Null", path->Length);
-	free_ntpath(path);
+	free(path);
 
 	path = get_absolute_ntpath(AT_FDCWD, "/dev/null");
 	ASSERT_MEMEQ((char *)path->Buffer, (char *)L"\\Device\\Null", path->Length);
-	free_ntpath(path);
+	free(path);
 
 	return 0;
 }
@@ -41,11 +42,11 @@ int test_con()
 
 	path = get_absolute_ntpath(AT_FDCWD, "CON");
 	ASSERT_MEMEQ((char *)path->Buffer, (char *)L"\\Device\\ConDrv\\Console", path->Length);
-	free_ntpath(path);
+	free(path);
 
 	path = get_absolute_ntpath(AT_FDCWD, "/dev/tty");
 	ASSERT_MEMEQ((char *)path->Buffer, (char *)L"\\Device\\ConDrv\\Console", path->Length);
-	free_ntpath(path);
+	free(path);
 
 	return 0;
 }
@@ -56,14 +57,14 @@ int test_relative()
 
 	path = get_absolute_ntpath(AT_FDCWD, ".");
 	ASSERT_WSTREQ(path->Buffer, cwd);
-	free_ntpath(path);
+	free(path);
 
 	cwd[length] = L'\\';
 	cwd[length + 1] = L'a';
 	cwd[length + 2] = L'\0';
 	path = get_absolute_ntpath(AT_FDCWD, "a");
 	ASSERT_WSTREQ(path->Buffer, cwd);
-	free_ntpath(path);
+	free(path);
 
 	cwd[length + 2] = L'\\';
 	cwd[length + 3] = L'a';
@@ -72,61 +73,61 @@ int test_relative()
 	cwd[length + 6] = L'\0';
 	path = get_absolute_ntpath(AT_FDCWD, "a/abc");
 	ASSERT_WSTREQ(path->Buffer, cwd);
-	free_ntpath(path);
+	free(path);
 
 	path = get_absolute_ntpath(AT_FDCWD, "a\\abc");
 	ASSERT_WSTREQ(path->Buffer, cwd);
-	free_ntpath(path);
+	free(path);
 
 	path = get_absolute_ntpath(AT_FDCWD, "a/./abc");
 	ASSERT_WSTREQ(path->Buffer, cwd);
-	free_ntpath(path);
+	free(path);
 
 	// mix and forward slash with backward slashes
 	path = get_absolute_ntpath(AT_FDCWD, "a\\./abc");
 	ASSERT_WSTREQ(path->Buffer, cwd);
-	free_ntpath(path);
+	free(path);
 
 	cwd[length + 2] = L'b';
 	cwd[length + 3] = L'c';
 	cwd[length + 4] = L'\0';
 	path = get_absolute_ntpath(AT_FDCWD, "a/../abc");
 	ASSERT_WSTREQ(path->Buffer, cwd);
-	free_ntpath(path);
+	free(path);
 
 	path = get_absolute_ntpath(AT_FDCWD, "abc/.");
 	ASSERT_WSTREQ(path->Buffer, cwd);
-	free_ntpath(path);
+	free(path);
 
 	path = get_absolute_ntpath(AT_FDCWD, "abc/./.");
 	ASSERT_WSTREQ(path->Buffer, cwd);
-	free_ntpath(path);
+	free(path);
 
 	// trailing slash
 	cwd[length + 4] = L'\\';
 	cwd[length + 5] = L'\0';
 	path = get_absolute_ntpath(AT_FDCWD, "abc/");
 	ASSERT_WSTREQ(path->Buffer, cwd);
-	free_ntpath(path);
+	free(path);
 
 	path = get_absolute_ntpath(AT_FDCWD, "abc/./");
 	ASSERT_WSTREQ(path->Buffer, cwd);
-	free_ntpath(path);
+	free(path);
 
 	path = get_absolute_ntpath(AT_FDCWD, "abc/././");
 	ASSERT_WSTREQ(path->Buffer, cwd);
-	free_ntpath(path);
+	free(path);
 
 	cwd[length] = L'\0';
 	path = get_absolute_ntpath(AT_FDCWD, "abc/..");
 	ASSERT_WSTREQ(path->Buffer, cwd);
-	free_ntpath(path);
+	free(path);
 
 	cwd[length] = L'\\';
 	cwd[length + 1] = L'\0';
 	path = get_absolute_ntpath(AT_FDCWD, "abc/../");
 	ASSERT_WSTREQ(path->Buffer, cwd);
-	free_ntpath(path);
+	free(path);
 
 	cwd[length] = L'\0';
 
@@ -145,12 +146,12 @@ int test_at()
 
 	path = get_absolute_ntpath(fd, ".");
 	ASSERT_WSTREQ(path->Buffer, cwd);
-	free_ntpath(path);
+	free(path);
 
 	wcscat(cwd, L"\\abc");
 	path = get_absolute_ntpath(fd, "abc");
 	ASSERT_WSTREQ(path->Buffer, cwd);
-	free_ntpath(path);
+	free(path);
 
 	ASSERT_SUCCESS(close(fd));
 
@@ -167,54 +168,54 @@ int test_absolute()
 
 	path = get_absolute_ntpath(AT_FDCWD, "C:/abc");
 	ASSERT_WSTREQ(path->Buffer, cdrive);
-	free_ntpath(path);
+	free(path);
 
 	path = get_absolute_ntpath(AT_FDCWD, "C:\\abc");
 	ASSERT_WSTREQ(path->Buffer, cdrive);
-	free_ntpath(path);
+	free(path);
 
 	wcscat(cdrive, L"\\");
 
 	path = get_absolute_ntpath(AT_FDCWD, "C:/abc/");
 	ASSERT_WSTREQ(path->Buffer, cdrive);
-	free_ntpath(path);
+	free(path);
 
 	cdrive[cdrive_length] = L'\0';
 
 	path = get_absolute_ntpath(AT_FDCWD, "C:/abc/..");
 	ASSERT_WSTREQ(path->Buffer, cdrive);
-	free_ntpath(path);
+	free(path);
 
 	wcscat(cdrive, L"\\");
 
 	path = get_absolute_ntpath(AT_FDCWD, "C:/abc/../");
 	ASSERT_WSTREQ(path->Buffer, cdrive);
-	free_ntpath(path);
+	free(path);
 
 	cdrive[cdrive_length] = L'\0';
 	wcscat(cdrive, L"\\abc");
 
 	path = get_absolute_ntpath(AT_FDCWD, "C:/abc/.");
 	ASSERT_WSTREQ(path->Buffer, cdrive);
-	free_ntpath(path);
+	free(path);
 
 	cdrive[cdrive_length] = L'\0';
 	wcscat(cdrive, L"\\");
 
 	path = get_absolute_ntpath(AT_FDCWD, "C:/");
 	ASSERT_WSTREQ(path->Buffer, cdrive);
-	free_ntpath(path);
+	free(path);
 
 	cdrive[cdrive_length] = L'\0';
 
 	path = get_absolute_ntpath(AT_FDCWD, "C:");
 	ASSERT_WSTREQ(path->Buffer, cdrive);
-	free_ntpath(path);
+	free(path);
 
 	// bad path
 	path = get_absolute_ntpath(AT_FDCWD, "C:/..");
 	ASSERT_NULL(path);
-	free_ntpath(path); // should be a nop
+	free(path); // should be a nop
 
 	fd = open("t-path", O_RDONLY);
 	ASSERT_NOTEQ(fd, -1);
@@ -222,7 +223,7 @@ int test_absolute()
 	wcscat(cdrive, L"\\abc\\");
 	path = get_absolute_ntpath(fd, "C:/abc/");
 	ASSERT_WSTREQ(path->Buffer, cdrive);
-	free_ntpath(path);
+	free(path);
 
 	ASSERT_SUCCESS(close(fd));
 
@@ -246,8 +247,8 @@ int main()
 	memcpy(cdrive, cdrive_nt->Buffer, cdrive_nt->MaximumLength);
 	cdrive_length = cdrive_nt->Length / sizeof(wchar_t);
 
-	free_ntpath(cwd_nt);
-	free_ntpath(cdrive_nt);
+	free(cwd_nt);
+	free(cdrive_nt);
 
 	INITIAILIZE_TESTS();
 

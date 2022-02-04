@@ -110,7 +110,7 @@ int common_rename(int olddirfd, const char *restrict oldpath, int newdirfd, cons
 
 	int status = do_rename(old_handle, u16_ntnewpath, flags);
 
-	free_ntpath(u16_ntnewpath);
+	free(u16_ntnewpath);
 	NtClose(old_handle);
 
 	return status;

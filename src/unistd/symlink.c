@@ -55,12 +55,12 @@ int common_symlink(const char *restrict source, int dirfd, const char *restrict 
 	{
 		// Bad path
 		// errno will be set by 'get_absolute_ntpath'.
-		free_ntpath(u16_nttarget);
+		free(u16_nttarget);
 		return -1;
 	}
 
 	HANDLE source_handle = just_open2(u16_ntsource, FILE_READ_ATTRIBUTES, FILE_OPEN_REPARSE_POINT | FILE_NON_DIRECTORY_FILE);
-	free_ntpath(u16_ntsource);
+	free(u16_ntsource);
 
 	ULONG options = FILE_NON_DIRECTORY_FILE;
 	if (source_handle == INVALID_HANDLE_VALUE)
@@ -85,7 +85,7 @@ int common_symlink(const char *restrict source, int dirfd, const char *restrict 
 	// Open synchronously as NtFsControlFile might return STATUS_PENDING.
 	status = NtCreateFile(&target_handle, FILE_READ_ATTRIBUTES | FILE_WRITE_ATTRIBUTES | SYNCHRONIZE, &object, &io, NULL, 0,
 						  FILE_SHARE_READ | FILE_SHARE_WRITE, FILE_CREATE, options | FILE_SYNCHRONOUS_IO_NONALERT, NULL, 0);
-	free_ntpath(u16_nttarget);
+	free(u16_nttarget);
 	if (status != STATUS_SUCCESS)
 	{
 		map_ntstatus_to_errno(status);

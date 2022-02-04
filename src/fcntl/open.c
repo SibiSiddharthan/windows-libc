@@ -213,7 +213,7 @@ HANDLE just_open2(UNICODE_STRING *ntpath, ACCESS_MASK access, ULONG options)
 	OBJECT_ATTRIBUTES object;
 
 	// Opening the console requires either FILE_GENERIC_READ or FILE_GENERIC_WRITE
-	if (memcmp(ntpath->Buffer, L"\\Device\\ConDrv", 28) == 0)
+	if (memcmp(ntpath->Buffer + 8, L"ConDrv", 12) == 0) // skip "\Device\"
 	{
 		options = FILE_SYNCHRONOUS_IO_NONALERT;
 		if (access & (FILE_WRITE_DATA | FILE_WRITE_ATTRIBUTES | FILE_WRITE_EA | WRITE_DAC))
@@ -242,7 +242,7 @@ HANDLE just_open(int dirfd, const char *path, ACCESS_MASK access, ULONG options)
 	}
 
 	handle = just_open2(u16_ntpath, access, options);
-	free_ntpath(u16_ntpath);
+	free(u16_ntpath);
 
 	return handle;
 }
@@ -291,7 +291,7 @@ int do_open(int dirfd, const char *name, int oflags, mode_t perm)
 		memset((char *)u16_temppath->Buffer + u16_temppath->Length, 0, temp_bufsize);
 
 		// now swap the buffers
-		free_ntpath(u16_ntpath);
+		free(u16_ntpath);
 		u16_ntpath = u16_temppath;
 
 		if (u16_ntpath->Buffer[u16_ntpath->Length / sizeof(WCHAR) - 1] != L'\\')
@@ -306,7 +306,7 @@ int do_open(int dirfd, const char *name, int oflags, mode_t perm)
 		wchar_t rbuf[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 		_ultow_s(rn, rbuf, 8, 36);
 		// Append the string to u16_ntpath.
-		// Remember the 'Length' should always be less than 'MaximumLength' so that `free_ntpath` will free the memory.
+		// Remember the 'Length' should always be less than 'MaximumLength' so that `free` will free the memory.
 		memcpy((char *)u16_temppath->Buffer + u16_temppath->Length, rbuf,
 			   u16_temppath->MaximumLength - u16_temppath->Length - sizeof(WCHAR));
 		u16_ntpath->Length = u16_temppath->MaximumLength - sizeof(WCHAR);
@@ -323,7 +323,7 @@ int do_open(int dirfd, const char *name, int oflags, mode_t perm)
 		object.Attributes &= ~OBJ_INHERIT;
 	}
 
-	if (memcmp(u16_ntpath->Buffer, L"\\Device\\Null", 26) == 0)
+	if (memcmp(u16_ntpath->Buffer + 8, L"Null", 10) == 0) // Include the NULL in comparison as well.
 	{
 		is_null = true;
 		attributes = 0;
@@ -333,7 +333,7 @@ int do_open(int dirfd, const char *name, int oflags, mode_t perm)
 	}
 
 	// opening console requires these
-	if (memcmp(u16_ntpath->Buffer, L"\\Device\\ConDrv", 28) == 0)
+	if (memcmp(u16_ntpath->Buffer + 8, L"ConDrv", 12) == 0) // skip "\Device\"
 	{
 		is_console = true;
 		attributes = 0;
@@ -431,7 +431,7 @@ int do_open(int dirfd, const char *name, int oflags, mode_t perm)
 
 finish:
 	// u16_ntpath is malloc'ed, so free it.
-	free_ntpath(u16_ntpath);
+	free(u16_ntpath);
 	return fd;
 }
 

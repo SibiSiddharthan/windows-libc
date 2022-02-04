@@ -10,14 +10,11 @@
 
 #include <internal/nt.h>
 #include <sys/types.h>
-//#include <wchar.h>
 
 // \Device\HarddiskVolume1\Windows\System32
 UNICODE_STRING *xget_absolute_ntpath(int dirfd, const char *path);
 // C:\Windows\System32
 //wchar_t *xget_absolute_dospath(int dirfd, const char *path);
 UNICODE_STRING *xget_fd_dospath(int fd);
-
-void free_ntpath(UNICODE_STRING *ntpath);
 
 #endif
