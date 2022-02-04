@@ -224,7 +224,6 @@ int test_linkat_AT_EMPTY_PATH()
 	errno = 0;
 	int status;
 	int fd;
-	char buf[8];
 	const char *filename = "t-linkat-empty-path";
 
 	fd = open(".", O_WRONLY | O_TMPFILE | O_EXCL, 0700);

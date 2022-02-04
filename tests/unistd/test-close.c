@@ -49,7 +49,6 @@ int test_okay_directory()
 {
 	int status;
 	int fd;
-	const char *filename = "t-close";
 	HANDLE handle;
 	DWORD error;
 	BY_HANDLE_FILE_INFORMATION FILE_INFO;

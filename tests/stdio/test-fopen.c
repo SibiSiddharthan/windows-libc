@@ -96,7 +96,6 @@ int test_rplus()
 	FILE *f;
 	size_t flength;
 	ssize_t llength;
-	off_t offset;
 	char rbuf[16];
 	int fd;
 	int pos;

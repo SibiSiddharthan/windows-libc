@@ -17,7 +17,9 @@ add_compile_definitions(UNICODE _UNICODE
 						_CRT_SECURE_NO_WARNINGS _CRT_NONSTDC_NO_DEPRECATE)
 
 if(CMAKE_C_COMPILER_ID STREQUAL "Clang")
-	add_compile_options(-fcolor-diagnostics -fansi-escape-codes -Wall -Wno-unused-variable -std=c11)
+	add_compile_options(-fcolor-diagnostics -fansi-escape-codes
+						-Wall
+						-std=c11)
 endif()
 
 if(CMAKE_C_COMPILER_ID STREQUAL "MSVC")

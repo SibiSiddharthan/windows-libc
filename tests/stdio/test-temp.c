@@ -58,7 +58,6 @@ int test_tempnam()
 {
 	int status;
 	char *filename = NULL;
-	char tempname[L_tmpnam];
 
 	filename = tempnam(NULL, NULL);
 	printf("Temporary file: %s\n", filename);

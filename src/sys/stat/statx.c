@@ -58,7 +58,6 @@ int do_statx(HANDLE handle, unsigned int mask, struct statx *restrict statxbuf)
 
 int common_statx(int dirfd, const char *restrict path, int flags, unsigned int mask, struct statx *restrict statxbuf)
 {
-	struct stat statbuf;
 	int result;
 
 	HANDLE handle = just_open(dirfd, path, FILE_READ_ATTRIBUTES | READ_CONTROL, flags == AT_SYMLINK_NOFOLLOW ? FILE_OPEN_REPARSE_POINT : 0);

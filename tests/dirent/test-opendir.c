@@ -51,7 +51,7 @@ int test_ENOTDIR()
 	ASSERT_FAIL(closedir(D));
 
 	// try again but with a trailing slash this time, should fail as well
-	D = opendir(filename);
+	D = opendir(filename_with_slash);
 	ASSERT_ERRNO(ENOTDIR);
 	ASSERT_NULL(D);
 	ASSERT_FAIL(closedir(D));

@@ -77,7 +77,7 @@ int test_sigprocmask_1()
 {
 	global_variable = 0;
 	int result;
-	sigset_t new, old, pending;
+	sigset_t new, old;
 
 	result = sigemptyset(&new);
 	ASSERT_EQ(result, 0);

@@ -24,13 +24,15 @@ int wlibc_vfscanf(FILE *restrict stream, const char *restrict format, va_list ar
 		return -1;
 	}
 
+#if 0
 	ssize_t initial_pos = wlibc_ftell(stream);
 	// Assume no one is going to read more than 1024 characters at a time.
 	// This is a BAD assumption and will only work once. Let's keep it for the time being
 	char buffer[1024];
 	memset(buffer,0,1024);
 	fread(buffer,1,1024,stream);
-	
+#endif	
+	char buffer[1024];
 	int result = wlibc_vsscanf(buffer,format,args);
 
 	return result;

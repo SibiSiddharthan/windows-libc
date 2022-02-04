@@ -55,6 +55,7 @@ handle_t determine_type(DEVICE_TYPE type)
 	}
 }
 
+// Opening the console handle should not fail as we are only doing it if there is a console attached.
 HANDLE open_conin()
 {
 	HANDLE handle = INVALID_HANDLE_VALUE;
@@ -67,8 +68,8 @@ HANDLE open_conin()
 	name.MaximumLength = 50;
 
 	InitializeObjectAttributes(&object, &name, OBJ_CASE_INSENSITIVE | OBJ_INHERIT, NULL, NULL);
-	NTSTATUS status = NtCreateFile(&handle, FILE_GENERIC_READ, &object, &io, NULL, 0, FILE_SHARE_READ | FILE_SHARE_WRITE, FILE_OPEN,
-								   FILE_SYNCHRONOUS_IO_NONALERT, NULL, 0);
+	NtCreateFile(&handle, FILE_GENERIC_READ, &object, &io, NULL, 0, FILE_SHARE_READ | FILE_SHARE_WRITE, FILE_OPEN,
+				 FILE_SYNCHRONOUS_IO_NONALERT, NULL, 0);
 	return handle;
 }
 
@@ -84,8 +85,8 @@ HANDLE open_conout()
 	name.MaximumLength = 52;
 
 	InitializeObjectAttributes(&object, &name, OBJ_CASE_INSENSITIVE | OBJ_INHERIT, NULL, NULL);
-	NTSTATUS status = NtCreateFile(&handle, FILE_GENERIC_WRITE, &object, &io, NULL, 0, FILE_SHARE_READ | FILE_SHARE_WRITE, FILE_OPEN,
-								   FILE_SYNCHRONOUS_IO_NONALERT, NULL, 0);
+	NtCreateFile(&handle, FILE_GENERIC_WRITE, &object, &io, NULL, 0, FILE_SHARE_READ | FILE_SHARE_WRITE, FILE_OPEN,
+				 FILE_SYNCHRONOUS_IO_NONALERT, NULL, 0);
 	return handle;
 }
 

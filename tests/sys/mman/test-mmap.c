@@ -15,7 +15,6 @@ int test_file()
 	int status;
 	int fd;
 	size_t size;
-	off_t offset;
 	void *address;
 	char buffer[16];
 	const char *filename = "t-mmap";

@@ -17,7 +17,6 @@ int common_fflush(FILE *stream);
 int common_setvbuf(FILE *restrict stream, char *restrict buffer, int mode, size_t size)
 {
 	int buf_type = stream->buf_mode & (_IOBUFFER_RDONLY | _IOBUFFER_WRONLY | _IOBUFFER_RDWR);
-	int prev_mode = stream->buf_mode & (_IONBF | _IOLBF | _IOFBF);
 
 	// Always seek first
 	lseek(stream->fd, stream->pos, SEEK_SET);

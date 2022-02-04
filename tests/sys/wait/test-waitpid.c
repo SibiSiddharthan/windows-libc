@@ -22,8 +22,12 @@ pid_t create_process_simple()
 	memset(&pi, 0, sizeof(pi));
 
 	BOOL result = CreateProcessA(NULL, "child-helper", NULL, NULL, TRUE, 0, NULL, NULL, &si, &pi);
-	add_child(pi.dwProcessId, pi.hProcess);
+	if (result == 0)
+	{
+		return -1;
+	}
 
+	add_child(pi.dwProcessId, pi.hProcess);
 	return pi.dwProcessId;
 }
 
@@ -47,8 +51,12 @@ pid_t create_process(int arg1, int arg2) // mode, argument
 	strcat(cmd, buf);
 
 	BOOL result = CreateProcessA(NULL, cmd, NULL, NULL, TRUE, 0, NULL, NULL, &si, &pi);
-	add_child(pi.dwProcessId, pi.hProcess);
+	if (result == 0)
+	{
+		return -1;
+	}
 
+	add_child(pi.dwProcessId, pi.hProcess);
 	return pi.dwProcessId;
 }
 

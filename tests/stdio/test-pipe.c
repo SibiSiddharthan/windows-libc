@@ -29,7 +29,6 @@ int test_read()
 int test_write()
 {
 	int status;
-	char buf[16];
 	size_t length;
 	FILE *f;
 
@@ -64,7 +63,6 @@ int test_read_cr()
 int test_write_cr()
 {
 	int status;
-	char buf[16];
 	size_t length;
 	FILE *f;
 
