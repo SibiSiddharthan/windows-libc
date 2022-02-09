@@ -1796,6 +1796,167 @@ NTSTATUS
 NTAPI
 NtQuerySymbolicLinkObject(_In_ HANDLE LinkHandle, _Inout_ PUNICODE_STRING LinkTarget, _Out_opt_ PULONG ReturnedLength);
 
+NTSYSCALLAPI
+NTSTATUS
+NTAPI
+NtCreateMutant(_Out_ PHANDLE MutantHandle, _In_ ACCESS_MASK DesiredAccess, _In_opt_ POBJECT_ATTRIBUTES ObjectAttributes,
+			   _In_ BOOLEAN InitialOwner);
+
+NTSYSCALLAPI
+NTSTATUS
+NTAPI
+NtReleaseMutant(_In_ HANDLE MutantHandle, _Out_opt_ PLONG PreviousCount);
+
+typedef enum _WAIT_TYPE
+{
+	WaitAll,
+	WaitAny,
+	WaitNotification,
+	WaitDequeue
+} WAIT_TYPE;
+
+NTSYSCALLAPI
+NTSTATUS
+NTAPI
+NtSignalAndWaitForSingleObject(_In_ HANDLE SignalHandle, _In_ HANDLE WaitHandle, _In_ BOOLEAN Alertable, _In_opt_ PLARGE_INTEGER Timeout);
+
+NTSYSCALLAPI
+NTSTATUS
+NTAPI
+NtWaitForSingleObject(_In_ HANDLE Handle, _In_ BOOLEAN Alertable, _In_opt_ PLARGE_INTEGER Timeout);
+
+NTSYSCALLAPI
+NTSTATUS
+NTAPI
+NtWaitForMultipleObjects(_In_ ULONG Count, _In_reads_(Count) HANDLE Handles[], _In_ WAIT_TYPE WaitType, _In_ BOOLEAN Alertable,
+						 _In_opt_ PLARGE_INTEGER Timeout);
+
+typedef enum _PROCESSINFOCLASS
+{
+	ProcessBasicInformation,
+	MaxProcessInfoClass = 103
+} PROCESSINFOCLASS;
+
+typedef enum _THREADINFOCLASS
+{
+	ThreadBasicInformation,
+	ThreadTimes,
+	ThreadPriority,
+	ThreadBasePriority,
+	MaxThreadInfoClass = 51
+} THREADINFOCLASS;
+
+typedef LONG KPRIORITY;
+
+typedef struct _CLIENT_ID
+{
+	HANDLE UniqueProcess;
+	HANDLE UniqueThread;
+} CLIENT_ID, *PCLIENT_ID;
+
+typedef struct _THREAD_BASIC_INFORMATION
+{
+    NTSTATUS ExitStatus;
+    PTEB TebBaseAddress;
+    CLIENT_ID ClientId;
+    ULONG_PTR AffinityMask;
+    KPRIORITY Priority;
+    LONG BasePriority;
+} THREAD_BASIC_INFORMATION, *PTHREAD_BASIC_INFORMATION;
+
+NTSYSCALLAPI
+NTSTATUS
+NTAPI
+NtOpenProcess(_Out_ PHANDLE ProcessHandle, _In_ ACCESS_MASK DesiredAccess, _In_ POBJECT_ATTRIBUTES ObjectAttributes,
+			  _In_opt_ PCLIENT_ID ClientId);
+
+NTSYSCALLAPI
+NTSTATUS
+NTAPI
+NtTerminateProcess(_In_opt_ HANDLE ProcessHandle, _In_ NTSTATUS ExitStatus);
+
+NTSYSCALLAPI
+NTSTATUS
+NTAPI
+NtSuspendProcess(_In_ HANDLE ProcessHandle);
+
+NTSYSCALLAPI
+NTSTATUS
+NTAPI
+NtResumeProcess(_In_ HANDLE ProcessHandle);
+
+NTSYSCALLAPI
+NTSTATUS
+NTAPI
+NtQueryInformationProcess(_In_ HANDLE ProcessHandle, _In_ PROCESSINFOCLASS ProcessInformationClass,
+						  _Out_writes_bytes_(ProcessInformationLength) PVOID ProcessInformation, _In_ ULONG ProcessInformationLength,
+						  _Out_opt_ PULONG ReturnLength);
+
+NTSYSCALLAPI
+NTSTATUS
+NTAPI
+NtOpenThread(
+    _Out_ PHANDLE ThreadHandle,
+    _In_ ACCESS_MASK DesiredAccess,
+    _In_ POBJECT_ATTRIBUTES ObjectAttributes,
+    _In_opt_ PCLIENT_ID ClientId
+    );
+
+NTSYSCALLAPI
+NTSTATUS
+NTAPI
+NtTerminateThread(
+    _In_opt_ HANDLE ThreadHandle,
+    _In_ NTSTATUS ExitStatus
+    );
+
+NTSYSCALLAPI
+NTSTATUS
+NTAPI
+NtSuspendThread(
+    _In_ HANDLE ThreadHandle,
+    _Out_opt_ PULONG PreviousSuspendCount
+    );
+
+NTSYSCALLAPI
+NTSTATUS
+NTAPI
+NtResumeThread(
+    _In_ HANDLE ThreadHandle,
+    _Out_opt_ PULONG PreviousSuspendCount
+    );
+
+NTSYSCALLAPI
+NTSTATUS
+NTAPI
+NtYieldExecution(
+    VOID
+    );
+
+NTSYSCALLAPI
+NTSTATUS
+NTAPI
+NtQueryInformationThread(
+    _In_ HANDLE ThreadHandle,
+    _In_ THREADINFOCLASS ThreadInformationClass,
+    _Out_writes_bytes_(ThreadInformationLength) PVOID ThreadInformation,
+    _In_ ULONG ThreadInformationLength,
+    _Out_opt_ PULONG ReturnLength
+    );
+
+NTSYSCALLAPI
+NTSTATUS
+NTAPI
+NtSetInformationThread(
+    _In_ HANDLE ThreadHandle,
+    _In_ THREADINFOCLASS ThreadInformationClass,
+    _In_reads_bytes_(ThreadInformationLength) PVOID ThreadInformation,
+    _In_ ULONG ThreadInformationLength
+    );
+
+
+
+
 NTSYSAPI
 NTSTATUS
 NTAPI
@@ -1825,6 +1986,80 @@ NTSYSAPI
 BOOLEAN
 NTAPI
 RtlTryEnterCriticalSection(_Inout_ PRTL_CRITICAL_SECTION CriticalSection);
+
+NTSYSAPI
+VOID NTAPI RtlInitializeSRWLock(_Out_ PRTL_SRWLOCK SRWLock);
+
+NTSYSAPI
+VOID NTAPI RtlAcquireSRWLockExclusive(_Inout_ PRTL_SRWLOCK SRWLock);
+
+NTSYSAPI
+VOID NTAPI RtlAcquireSRWLockShared(_Inout_ PRTL_SRWLOCK SRWLock);
+
+NTSYSAPI
+VOID NTAPI RtlReleaseSRWLockExclusive(_Inout_ PRTL_SRWLOCK SRWLock);
+
+NTSYSAPI
+VOID NTAPI RtlReleaseSRWLockShared(_Inout_ PRTL_SRWLOCK SRWLock);
+
+NTSYSAPI
+BOOLEAN
+NTAPI
+RtlTryAcquireSRWLockExclusive(_Inout_ PRTL_SRWLOCK SRWLock);
+
+NTSYSAPI
+BOOLEAN
+NTAPI
+RtlTryAcquireSRWLockShared(_Inout_ PRTL_SRWLOCK SRWLock);
+
+NTSYSAPI
+VOID NTAPI RtlInitializeConditionVariable(_Out_ PRTL_CONDITION_VARIABLE ConditionVariable);
+
+NTSYSAPI
+NTSTATUS
+NTAPI
+RtlSleepConditionVariableCS(_Inout_ PRTL_CONDITION_VARIABLE ConditionVariable, _Inout_ PRTL_CRITICAL_SECTION CriticalSection,
+							_In_opt_ PLARGE_INTEGER Timeout);
+
+NTSYSAPI
+NTSTATUS
+NTAPI
+RtlSleepConditionVariableSRW(_Inout_ PRTL_CONDITION_VARIABLE ConditionVariable, _Inout_ PRTL_SRWLOCK SRWLock,
+							 _In_opt_ PLARGE_INTEGER Timeout, _In_ ULONG Flags);
+
+NTSYSAPI
+VOID NTAPI RtlWakeConditionVariable(_Inout_ PRTL_CONDITION_VARIABLE ConditionVariable);
+
+NTSYSAPI
+VOID NTAPI RtlWakeAllConditionVariable(_Inout_ PRTL_CONDITION_VARIABLE ConditionVariable);
+
+#define RTL_BARRIER_FLAGS_SPIN_ONLY  0x00000001
+#define RTL_BARRIER_FLAGS_BLOCK_ONLY 0x00000002
+#define RTL_BARRIER_FLAGS_NO_DELETE  0x00000004
+
+NTSYSAPI
+NTSTATUS
+NTAPI
+RtlInitBarrier(_Out_ PRTL_BARRIER Barrier, _In_ ULONG TotalThreads, _In_ ULONG SpinCount);
+
+NTSYSAPI
+NTSTATUS
+NTAPI
+RtlDeleteBarrier(_In_ PRTL_BARRIER Barrier);
+
+NTSYSAPI
+BOOLEAN
+NTAPI
+RtlBarrier(_Inout_ PRTL_BARRIER Barrier, _In_ ULONG Flags);
+
+NTSYSAPI
+BOOLEAN
+NTAPI
+RtlBarrierForDelete(_Inout_ PRTL_BARRIER Barrier, _In_ ULONG Flags);
+
+NTSYSAPI
+BOOL WINAPI RtlRunOnceExecuteOnce(_Inout_ PRTL_RUN_ONCE InitOnce, _In_ __callback PINIT_ONCE_FN InitFn, _Inout_opt_ PVOID Parameter,
+								  _Outptr_opt_result_maybenull_ LPVOID *Context);
 
 NTSYSAPI
 NTSTATUS

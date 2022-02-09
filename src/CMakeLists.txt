@@ -68,6 +68,10 @@ if(ENABLE_MMAP)
 	wlibc_add_module(sys.mman)
 endif()
 
+if(ENABLE_THREADS)
+	wlibc_add_module(thread)
+endif()
+
 #wlibc_add_module(sys.acl)
 wlibc_add_module(sys.utsname)
 

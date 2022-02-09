@@ -52,6 +52,7 @@ option(ENABLE_ACL_SUPPORT "Use ACLs for controlling permissions of files" ON)
 option(ENABLE_STRINGS "Enable extra string functions" ON)
 option(ENABLE_ACCOUNTS "Enable user(pwd) and group(grp) functions" ON)
 option(ENABLE_MMAP "Enable POSIX mmap API" ON)
+option(ENABLE_THREADS "Enable pthreads and C11 threads API" ON)
 #option(ENABLE_SOCKETS "Enable SOCKETS API" ON)
 
 add_subdirectory(src)
