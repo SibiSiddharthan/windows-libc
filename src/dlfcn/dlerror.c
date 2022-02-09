@@ -10,7 +10,7 @@
 
 unsigned long _wlibc_last_dlfcn_error = 0;
 
-char *wlibc_dlerror()
+char *wlibc_dlerror(void)
 {
 	switch (_wlibc_last_dlfcn_error)
 	{

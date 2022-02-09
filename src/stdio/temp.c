@@ -27,7 +27,7 @@ static void append_random_string(char *str)
 	strcat(str, buffer);
 }
 
-char *wlibc_tmpdir()
+char *wlibc_tmpdir(void)
 {
 	static char tmpdir[L_tmpnam];
 	static int tmpdir_initialized = 0;
@@ -75,7 +75,7 @@ char *wlibc_tmpdir()
 	return tmpdir;
 }
 
-FILE *wlibc_tmpfile()
+FILE *wlibc_tmpfile(void)
 {
 	int tries = 0;
 	errno_t old_errno;

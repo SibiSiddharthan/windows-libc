@@ -417,11 +417,11 @@ WLIBC_INLINE int remove(const char *path)
 	return wlibc_common_remove(AT_FDCWD, path, AT_REMOVEANY);
 }
 
-WLIBC_API char *wlibc_tmpdir();
+WLIBC_API char *wlibc_tmpdir(void);
 
-WLIBC_API FILE *wlibc_tmpfile();
+WLIBC_API FILE *wlibc_tmpfile(void);
 
-WLIBC_INLINE FILE *tmpfile()
+WLIBC_INLINE FILE *tmpfile(void)
 {
 	return wlibc_tmpfile();
 }

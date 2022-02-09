@@ -161,7 +161,7 @@ struct passwd *common_getpwent(struct passwd *restrict pwd_entry, char *restrict
 	return pwd_entry;
 }
 
-struct passwd *wlibc_getpwent()
+struct passwd *wlibc_getpwent(void)
 {
 	static char pwd_buffer[512];
 	static struct passwd entry;
@@ -174,7 +174,7 @@ struct passwd *wlibc_getpwent()
 	return &entry;
 }
 
-void wlibc_endpwent()
+void wlibc_endpwent(void)
 {
 	// Free the static buffer and reset the state.
 	if (pw_started == 1)
@@ -185,7 +185,7 @@ void wlibc_endpwent()
 	pw_index = 0;
 }
 
-void wlibc_setpwent()
+void wlibc_setpwent(void)
 {
 	pw_index = 0;
 }

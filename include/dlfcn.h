@@ -28,9 +28,9 @@ WLIBC_INLINE void *dlopen(const char *filename, int flags /* unused */)
 	return wlibc_dlopen(filename, flags);
 }
 
-WLIBC_API char *wlibc_dlerror();
+WLIBC_API char *wlibc_dlerror(void);
 
-WLIBC_INLINE void *dlerror()
+WLIBC_INLINE void *dlerror(void)
 {
 	return wlibc_dlerror();
 }

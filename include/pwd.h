@@ -25,21 +25,21 @@ struct passwd
 	char *pw_shell;  // Shell program.
 };
 
-WLIBC_API struct passwd *wlibc_getpwent();
-WLIBC_API void wlibc_endpwent();
-WLIBC_API void wlibc_setpwent();
+WLIBC_API struct passwd *wlibc_getpwent(void);
+WLIBC_API void wlibc_endpwent(void);
+WLIBC_API void wlibc_setpwent(void);
 
-WLIBC_INLINE struct passwd *getpwent()
+WLIBC_INLINE struct passwd *getpwent(void)
 {
 	return wlibc_getpwent();
 }
 
-WLIBC_INLINE void endpwent()
+WLIBC_INLINE void endpwent(void)
 {
 	wlibc_endpwent();
 }
 
-WLIBC_INLINE void setpwent()
+WLIBC_INLINE void setpwent(void)
 {
 	wlibc_setpwent();
 }

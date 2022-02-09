@@ -10,7 +10,7 @@
 #include <stdio.h>
 #include <string.h>
 
-const char *get_message()
+const char *get_message(void)
 {
 	switch (errno)
 	{

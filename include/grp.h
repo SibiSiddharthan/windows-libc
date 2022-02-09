@@ -21,21 +21,21 @@ struct group
 	char **gr_mem;   // Group members.
 };
 
-WLIBC_API struct group *wlibc_getgrent();
-WLIBC_API void wlibc_endgrent();
-WLIBC_API void wlibc_setgrent();
+WLIBC_API struct group *wlibc_getgrent(void);
+WLIBC_API void wlibc_endgrent(void);
+WLIBC_API void wlibc_setgrent(void);
 
-WLIBC_INLINE struct group *getgrent()
+WLIBC_INLINE struct group *getgrent(void)
 {
 	return wlibc_getgrent();
 }
 
-WLIBC_INLINE void endgrent()
+WLIBC_INLINE void endgrent(void)
 {
 	wlibc_endgrent();
 }
 
-WLIBC_INLINE void setgrent()
+WLIBC_INLINE void setgrent(void)
 {
 	wlibc_setgrent();
 }

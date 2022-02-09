@@ -56,7 +56,7 @@ handle_t determine_type(DEVICE_TYPE type)
 }
 
 // Opening the console handle should not fail as we are only doing it if there is a console attached.
-HANDLE open_conin()
+HANDLE open_conin(void)
 {
 	HANDLE handle = INVALID_HANDLE_VALUE;
 	IO_STATUS_BLOCK io;
@@ -73,7 +73,7 @@ HANDLE open_conin()
 	return handle;
 }
 
-HANDLE open_conout()
+HANDLE open_conout(void)
 {
 	HANDLE handle = INVALID_HANDLE_VALUE;
 	IO_STATUS_BLOCK io;
@@ -93,7 +93,7 @@ HANDLE open_conout()
 ///////////////////////////////////////
 // Initialization and cleanup functions
 ///////////////////////////////////////
-void init_fd_table()
+void init_fd_table(void)
 {
 	InitializeCriticalSection(&_fd_critical);
 	bool console_subsystem = true;

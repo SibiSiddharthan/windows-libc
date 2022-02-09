@@ -17,7 +17,7 @@
 unsigned int error_message_count = 0;
 static char program_name_buffer[260] = {0};
 
-static char *get_program_name()
+static char *get_program_name(void)
 {
 	int length = 0;
 	int start = 0;

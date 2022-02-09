@@ -335,7 +335,7 @@ struct group *common_getgrent(struct group *restrict grp_entry, char *restrict b
 	return grp_entry;
 }
 
-struct group *wlibc_getgrent()
+struct group *wlibc_getgrent(void)
 {
 	static char grp_buffer[1024];
 	static struct group entry;
@@ -348,7 +348,7 @@ struct group *wlibc_getgrent()
 	return &entry;
 }
 
-void wlibc_endgrent()
+void wlibc_endgrent(void)
 {
 	// Free the static buffers and reset the state.
 	if (gr_started == 1)
@@ -360,7 +360,7 @@ void wlibc_endgrent()
 	gr_index = 0;
 }
 
-void wlibc_setgrent()
+void wlibc_setgrent(void)
 {
 	gr_index = 0;
 }

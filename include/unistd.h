@@ -158,40 +158,40 @@ WLIBC_INLINE wchar_t *wgetcwd(wchar_t *wbuf, size_t size)
 	return wlibc_wgetcwd(wbuf, size);
 }
 
-WLIBC_API gid_t wlibc_getgid();
+WLIBC_API gid_t wlibc_getgid(void);
 
-WLIBC_INLINE gid_t getgid()
+WLIBC_INLINE gid_t getgid(void)
 {
 	return wlibc_getgid();
 }
 
-WLIBC_INLINE gid_t getegid()
+WLIBC_INLINE gid_t getegid(void)
 {
 	// Same as getgid
 	return wlibc_getgid();
 }
 
-WLIBC_API pid_t wlibc_getpid();
-WLIBC_API pid_t wlibc_getppid();
+WLIBC_API pid_t wlibc_getpid(void);
+WLIBC_API pid_t wlibc_getppid(void);
 
-WLIBC_INLINE pid_t getpid()
+WLIBC_INLINE pid_t getpid(void)
 {
 	return wlibc_getpid();
 }
 
-WLIBC_INLINE pid_t getppid()
+WLIBC_INLINE pid_t getppid(void)
 {
 	return wlibc_getppid();
 }
 
-WLIBC_API uid_t wlibc_getuid();
+WLIBC_API uid_t wlibc_getuid(void);
 
-WLIBC_INLINE uid_t getuid()
+WLIBC_INLINE uid_t getuid(void)
 {
 	return wlibc_getuid();
 }
 
-WLIBC_INLINE uid_t geteuid()
+WLIBC_INLINE uid_t geteuid(void)
 {
 	// Same as getuid
 	return wlibc_getuid();
@@ -210,8 +210,8 @@ WLIBC_INLINE int gethostname(char *name, size_t length)
 	return wlibc_gethostname(name, length);
 }
 
-WLIBC_API int wlibc_getpagesize();
-WLIBC_INLINE int getpagesize()
+WLIBC_API int wlibc_getpagesize(void);
+WLIBC_INLINE int getpagesize(void)
 {
 	return wlibc_getpagesize();
 }
