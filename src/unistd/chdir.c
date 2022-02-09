@@ -19,7 +19,7 @@ int common_chdir(const wchar_t *wname)
 	// Luckily doing this also updates 'DosPath', so all is well.
 	if (!SetCurrentDirectoryW(wname))
 	{
-		map_win32_error_to_wlibc(GetLastError());
+		map_doserror_to_errno(GetLastError());
 		return -1;
 	}
 

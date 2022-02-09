@@ -44,7 +44,7 @@ FILE *wlibc_popen(const char *restrict command, const char *restrict mode)
 	status = CreatePipe(&read_end, &write_end, &SA, 4096);
 	if (status == 0)
 	{
-		map_win32_error_to_wlibc(GetLastError());
+		map_doserror_to_errno(GetLastError());
 		return NULL;
 	}
 	if (pmode == O_RDONLY)
@@ -92,7 +92,7 @@ FILE *wlibc_popen(const char *restrict command, const char *restrict mode)
 
 	if (status == 0)
 	{
-		map_win32_error_to_wlibc(GetLastError());
+		map_doserror_to_errno(GetLastError());
 		CloseHandle(read_end);
 		CloseHandle(write_end);
 		return NULL;

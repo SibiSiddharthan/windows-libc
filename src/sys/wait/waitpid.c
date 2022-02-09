@@ -43,7 +43,7 @@ pid_t wlibc_waitpid_implementation(pid_t pid, int *wstatus, int options)
 		DWORD wait_result = WaitForMultipleObjects(child_count, child_handles, FALSE, (options & WNOHANG) ? 0 : INFINITE);
 		if (wait_result == WAIT_FAILED)
 		{
-			map_win32_error_to_wlibc(GetLastError());
+			map_doserror_to_errno(GetLastError());
 			free(child_handles);
 			return -1;
 		}
@@ -53,7 +53,7 @@ pid_t wlibc_waitpid_implementation(pid_t pid, int *wstatus, int options)
 			DWORD child_exit_code;
 			if (!GetExitCodeProcess(child_handles[wait_result - WAIT_OBJECT_0], &child_exit_code))
 			{
-				map_win32_error_to_wlibc(GetLastError());
+				map_doserror_to_errno(GetLastError());
 				free(child_handles);
 				return -1;
 			}
@@ -85,7 +85,7 @@ pid_t wlibc_waitpid_implementation(pid_t pid, int *wstatus, int options)
 			DWORD wait_result = WaitForSingleObject(child_handle, (options & WNOHANG) ? 0 : INFINITE);
 			if (wait_result == WAIT_FAILED)
 			{
-				map_win32_error_to_wlibc(GetLastError());
+				map_doserror_to_errno(GetLastError());
 				return -1;
 			}
 			else if (wait_result == WAIT_OBJECT_0) // child has exited
@@ -93,7 +93,7 @@ pid_t wlibc_waitpid_implementation(pid_t pid, int *wstatus, int options)
 				DWORD child_exit_code;
 				if (!GetExitCodeProcess(child_handle, &child_exit_code))
 				{
-					map_win32_error_to_wlibc(GetLastError());
+					map_doserror_to_errno(GetLastError());
 					return -1;
 				}
 

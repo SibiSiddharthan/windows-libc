@@ -76,7 +76,7 @@ int common_spawn(int mode, int search_path, const wchar_t *file, wchar_t **argv,
 		DWORD error = GetLastError();
 		if (error != ERROR_BAD_EXE_FORMAT)
 		{
-			map_win32_error_to_wlibc(error);
+			map_doserror_to_errno(error);
 			free(args);
 			if (env)
 			{
@@ -107,7 +107,7 @@ int common_spawn(int mode, int search_path, const wchar_t *file, wchar_t **argv,
 		DWORD exit_code;
 		if (!GetExitCodeProcess(PINFO.hProcess, &exit_code))
 		{
-			map_win32_error_to_wlibc(GetLastError());
+			map_doserror_to_errno(GetLastError());
 			return -1;
 		}
 

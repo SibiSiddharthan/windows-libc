@@ -21,13 +21,13 @@ int wlibc_pclose(FILE *stream)
 
 	if (WaitForSingleObject(process, INFINITE) == WAIT_FAILED)
 	{
-		map_win32_error_to_wlibc(GetLastError());
+		map_doserror_to_errno(GetLastError());
 		return -1;
 	}
 	DWORD exit_code = 0;
 	if (!GetExitCodeProcess(process, &exit_code))
 	{
-		map_win32_error_to_wlibc(GetLastError());
+		map_doserror_to_errno(GetLastError());
 		return -1;
 	}
 

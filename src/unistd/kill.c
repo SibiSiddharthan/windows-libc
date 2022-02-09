@@ -16,7 +16,7 @@ int wlibc_kill(pid_t pid, int sig)
 	HANDLE process = OpenProcess(PROCESS_TERMINATE, FALSE, pid);
 	if (process == NULL)
 	{
-		map_win32_error_to_wlibc(GetLastError());
+		map_doserror_to_errno(GetLastError());
 		return -1;
 	}
 
@@ -28,7 +28,7 @@ int wlibc_kill(pid_t pid, int sig)
 
 	if (!TerminateProcess(process, 3)) // All signals exit with status code 3. Maintain compatibility.
 	{
-		map_win32_error_to_wlibc(GetLastError());
+		map_doserror_to_errno(GetLastError());
 		return -1;
 	}
 

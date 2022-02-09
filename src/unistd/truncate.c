@@ -21,7 +21,7 @@ static int common_truncate(HANDLE handle, off_t length)
 
 	if (!SetFilePointerEx(file, offset, &newpos, FILE_END))
 	{
-		map_win32_error_to_wlibc(GetLastError());
+		map_doserror_to_errno(GetLastError());
 		return -1;
 	}
 
@@ -31,12 +31,12 @@ static int common_truncate(HANDLE handle, off_t length)
 		offset.QuadPart = length;
 		if (!SetFilePointerEx(file, offset, &newpos, FILE_BEGIN))
 		{
-			map_win32_error_to_wlibc(GetLastError());
+			map_doserror_to_errno(GetLastError());
 			return -1;
 		}
 		if (!SetEndOfFile(file))
 		{
-			map_win32_error_to_wlibc(GetLastError());
+			map_doserror_to_errno(GetLastError());
 			return -1;
 		}
 	}
@@ -50,7 +50,7 @@ static int common_truncate(HANDLE handle, off_t length)
 		BOOL status = WriteFile(file, buf, length - newpos.QuadPart, &bytes_written, NULL);
 		if (!status)
 		{
-			map_win32_error_to_wlibc(GetLastError());
+			map_doserror_to_errno(GetLastError());
 			free(buf);
 			return -1;
 		}

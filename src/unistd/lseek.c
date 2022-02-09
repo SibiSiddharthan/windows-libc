@@ -84,7 +84,7 @@ off_t wlibc_lseek(int fd, off_t offset, int whence)
 	_offset.QuadPart = offset;
 	if (!SetFilePointerEx(file, _offset, &_newpos, whence))
 	{
-		map_win32_error_to_wlibc(GetLastError());
+		map_doserror_to_errno(GetLastError());
 		return -1;
 	}
 	return _newpos.QuadPart;

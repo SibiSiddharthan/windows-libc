@@ -9,7 +9,7 @@
 #include <errno.h>
 #include <Windows.h>
 
-void map_win32_error_to_wlibc(unsigned long error)
+void map_doserror_to_errno(DWORD error)
 {
 	switch (error)
 	{
