@@ -8,4 +8,5 @@
 wlibc_add_tests(
 mutex
 once
+rwlock
 thread)

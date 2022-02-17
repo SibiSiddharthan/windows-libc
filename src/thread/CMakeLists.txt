@@ -14,7 +14,7 @@ cond.c
 key.c
 mutex.c
 once.c
-rdlock.c
+rwlock.c
 thread.c
 
 HEADERS
