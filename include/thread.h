@@ -53,7 +53,7 @@ typedef union _wlibc_once_t {
 typedef struct _wlibc_mutex_t
 {
 	unsigned int owner;
-	void *mutex;
+	void *handle;
 } mutex_t;
 
 typedef struct _wlibc_cond_t

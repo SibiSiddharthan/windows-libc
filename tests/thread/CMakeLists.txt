@@ -6,5 +6,6 @@
 ]]
 
 wlibc_add_tests(
-thread
-once)
+mutex
+once
+thread)
