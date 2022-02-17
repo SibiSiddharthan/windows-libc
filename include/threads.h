@@ -137,7 +137,7 @@ WLIBC_INLINE int cnd_broadcast(cnd_t *cond)
 
 WLIBC_INLINE int cnd_wait(cnd_t *cond, mtx_t *mutex)
 {
-	return wlibc_cond_wait(cond);
+	return wlibc_cond_wait(cond, mutex);
 }
 
 WLIBC_INLINE int cnd_timedwait(cnd_t *restrict cond, mtx_t *restrict mutex, const struct timespec *restrict abstime)

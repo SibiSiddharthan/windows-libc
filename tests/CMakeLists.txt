@@ -59,3 +59,7 @@ endif()
 if(ENABLE_MMAP)
 	add_subdirectory(sys/mman)
 endif()
+
+if(ENABLE_THREADS)
+	add_subdirectory(thread)
+endif()
