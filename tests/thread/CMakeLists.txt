@@ -6,4 +6,5 @@
 ]]
 
 wlibc_add_tests(
+thread
 once)
