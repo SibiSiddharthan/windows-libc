@@ -208,6 +208,9 @@ extern int pthread_rwlockattr_setkind_np(pthread_rwlockattr_t *attributes, int _
 #endif
 
 // Barrier functions.
+
+#define PTHREAD_BARRIER_SERIAL_THREAD 1
+
 WLIBC_INLINE int pthread_barrier_init(pthread_barrier_t *restrict barrier, const pthread_barrierattr_t *restrict attributes,
 									  unsigned int count)
 {

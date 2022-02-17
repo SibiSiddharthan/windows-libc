@@ -6,6 +6,7 @@
 ]]
 
 wlibc_add_tests(
+barrier
 mutex
 once
 rwlock
