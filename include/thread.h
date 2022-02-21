@@ -41,7 +41,7 @@ typedef struct _wlibc_barrier_attr_t
 
 typedef struct _wlibc_rwlock_attr_t
 {
-	int dummy;
+	int shared;
 } rwlock_attr_t;
 
 typedef void *(*thread_start_t)(void *);
@@ -135,6 +135,9 @@ WLIBC_API int wlibc_rwlock_wrlock(rwlock_t *rwlock);
 WLIBC_API int wlibc_rwlock_trywrlock(rwlock_t *rwlock);
 WLIBC_API int wlibc_rwlock_timedwrlock(rwlock_t *restrict rwlock, const struct timespec *restrict abstime);
 WLIBC_API int wlibc_rwlock_unlock(rwlock_t *rwlock);
+WLIBC_API int wlibc_rwlockattr_init(rwlock_attr_t *attributes);
+WLIBC_API int wlibc_rwlockattr_getpshared(const rwlock_attr_t *restrict attributes, int *restrict pshared);
+WLIBC_API int wlibc_rwlockattr_setpshared(rwlock_attr_t *attributes, int pshared);
 
 // Thread specific storage functions.
 WLIBC_API int wlibc_tss_create(key_t *index, dtor_t destructor);

@@ -201,14 +201,27 @@ WLIBC_INLINE int pthread_rwlock_unlock(pthread_rwlock_t *rwlock)
 	return wlibc_rwlock_unlock(rwlock);
 }
 
-#if 0
-extern int pthread_rwlockattr_init(pthread_rwlockattr_t *attributes);
-extern int pthread_rwlockattr_destroy(pthread_rwlockattr_t *attributes);
-extern int pthread_rwlockattr_getpshared(const pthread_rwlockattr_t *restrict attributes, int *restrict pshared);
-extern int pthread_rwlockattr_setpshared(pthread_rwlockattr_t *attributes, int pshared);
-extern int pthread_rwlockattr_getkind_np(const pthread_rwlockattr_t *restrict attributes, int *restrict __pref);
-extern int pthread_rwlockattr_setkind_np(pthread_rwlockattr_t *attributes, int __pref);
-#endif
+// Reader-Writer attributes.
+WLIBC_INLINE int pthread_rwlockattr_init(pthread_rwlockattr_t *attributes)
+{
+	return wlibc_rwlockattr_init(attributes);
+}
+
+WLIBC_INLINE int pthread_rwlockattr_destroy(pthread_rwlockattr_t *attributes)
+{
+	// nop
+	return 0;
+}
+
+WLIBC_INLINE int pthread_rwlockattr_getpshared(const pthread_rwlockattr_t *restrict attributes, int *restrict pshared)
+{
+	return wlibc_rwlockattr_getpshared(attributes, pshared);
+}
+
+WLIBC_INLINE int pthread_rwlockattr_setpshared(pthread_rwlockattr_t *attributes, int pshared)
+{
+	return wlibc_rwlockattr_setpshared(attributes, pshared);
+}
 
 // Barrier functions.
 
@@ -230,7 +243,7 @@ WLIBC_INLINE int pthread_barrier_wait(pthread_barrier_t *barrier)
 	return wlibc_barrier_wait(barrier);
 }
 
-// Attributes
+// Barrier attributes.
 WLIBC_INLINE int pthread_barrierattr_init(pthread_barrierattr_t *attributes)
 {
 	return wlibc_barrierattr_init(attributes);
@@ -285,7 +298,7 @@ WLIBC_INLINE int pthread_cond_timedwait(pthread_cond_t *restrict cond, pthread_m
 	return wlibc_cond_timedwait(cond, mutex, abstime);
 }
 
-// Attributes
+// Condition variable attributes
 WLIBC_INLINE int pthread_condattr_init(pthread_condattr_t *attributes)
 {
 	return wlibc_condattr_init(attributes);
