@@ -10,16 +10,19 @@
 #include <errno.h>
 #include <thread.h>
 
-#define VALIDATE_BARRIER_PTR(barrier) \
-	if (barrier == NULL)              \
-	{                                 \
-		errno = EINVAL;               \
-		return -1;                    \
+#define VALIDATE_PTR(ptr) \
+	if (ptr == NULL)      \
+	{                     \
+		errno = EINVAL;   \
+		return -1;        \
 	}
+
+#define VALIDATE_BARRIER(barrier)           VALIDATE_PTR(barrier)
+#define VALIDATE_BARRIER_ATTR(barrier_attr) VALIDATE_PTR(barrier_attr)
 
 int wlibc_barrier_init(barrier_t *restrict barrier, const barrier_attr_t *restrict attributes, unsigned int count)
 {
-	VALIDATE_BARRIER_PTR(barrier);
+	VALIDATE_BARRIER(barrier);
 
 	NTSTATUS status;
 
@@ -35,7 +38,7 @@ int wlibc_barrier_init(barrier_t *restrict barrier, const barrier_attr_t *restri
 
 int wlibc_barrier_destroy(barrier_t *barrier)
 {
-	VALIDATE_BARRIER_PTR(barrier);
+	VALIDATE_BARRIER(barrier);
 
 	// This function will not fail.
 	RtlDeleteBarrier((PRTL_BARRIER)barrier);
@@ -44,6 +47,35 @@ int wlibc_barrier_destroy(barrier_t *barrier)
 
 int wlibc_barrier_wait(barrier_t *barrier)
 {
-	VALIDATE_BARRIER_PTR(barrier);
+	VALIDATE_BARRIER(barrier);
 	return RtlBarrier((PRTL_BARRIER)barrier, 0);
+}
+
+int pthread_barrierattr_init(barrier_attr_t *attributes)
+{
+	VALIDATE_BARRIER_ATTR(attributes);
+	attributes->shared = WLIBC_PROCESS_PRIVATE;
+	return 0;
+}
+
+int pthread_barrierattr_getpshared(const barrier_attr_t *restrict attributes, int *restrict pshared)
+{
+	VALIDATE_BARRIER_ATTR(attributes);
+	VALIDATE_PTR(pshared);
+	*pshared = attributes->shared;
+	return 0;
+}
+
+int pthread_barrierattr_setpshared(barrier_attr_t *attributes, int pshared)
+{
+	// nop
+	// Synchronization barriers cannot be shared across processes in Windows.
+	VALIDATE_BARRIER_ATTR(attributes);
+	if (pshared != WLIBC_PROCESS_PRIVATE && pshared != WLIBC_PROCESS_SHARED)
+	{
+		errno = EINVAL;
+		return -1;
+	}
+
+	return 0;
 }

@@ -35,6 +35,9 @@ typedef key_t pthread_key_t;
 
 #define PTHREAD_ONCE_INIT WLIBC_THREAD_ONCE_INIT
 
+#define PTHREAD_PROCESS_PRIVATE WLIBC_PROCESS_PRIVATE // Private to a process.
+#define PTHREAD_PROCESS_SHARED  WLIBC_PROCESS_SHARED  // Shareabled across processes.
+
 // Thread functions.
 WLIBC_INLINE int pthread_create(pthread_t *thread, pthread_attr_t *attributes, pthread_start_t routine, void *arg)
 {
@@ -139,9 +142,9 @@ extern int pthread_mutexattr_init(pthread_mutexattr_t *attributes);
 /* Destroy mutex attribute object ATTR.  */
 extern int pthread_mutexattr_destroy(pthread_mutexattr_t *attributes);
 /* Get the process-shared flag of the mutex attribute ATTR.  */
-extern int pthread_mutexattr_getpshared(const pthread_mutexattr_t *restrict attributes, int *restrict __pshared);
+extern int pthread_mutexattr_getpshared(const pthread_mutexattr_t *restrict attributes, int *restrict pshared);
 /* Set the process-shared flag of the mutex attribute ATTR.  */
-extern int pthread_mutexattr_setpshared(pthread_mutexattr_t *attributes, int __pshared);
+extern int pthread_mutexattr_setpshared(pthread_mutexattr_t *attributes, int pshared);
 
 /* Return in *KIND the mutex kind attribute in *ATTR.  */
 extern int pthread_mutexattr_gettype(const pthread_mutexattr_t *restrict attributes, int *restrict __kind);
@@ -201,8 +204,8 @@ WLIBC_INLINE int pthread_rwlock_unlock(pthread_rwlock_t *rwlock)
 #if 0
 extern int pthread_rwlockattr_init(pthread_rwlockattr_t *attributes);
 extern int pthread_rwlockattr_destroy(pthread_rwlockattr_t *attributes);
-extern int pthread_rwlockattr_getpshared(const pthread_rwlockattr_t *restrict attributes, int *restrict __pshared);
-extern int pthread_rwlockattr_setpshared(pthread_rwlockattr_t *attributes, int __pshared);
+extern int pthread_rwlockattr_getpshared(const pthread_rwlockattr_t *restrict attributes, int *restrict pshared);
+extern int pthread_rwlockattr_setpshared(pthread_rwlockattr_t *attributes, int pshared);
 extern int pthread_rwlockattr_getkind_np(const pthread_rwlockattr_t *restrict attributes, int *restrict __pref);
 extern int pthread_rwlockattr_setkind_np(pthread_rwlockattr_t *attributes, int __pref);
 #endif
@@ -227,12 +230,27 @@ WLIBC_INLINE int pthread_barrier_wait(pthread_barrier_t *barrier)
 	return wlibc_barrier_wait(barrier);
 }
 
-#if 0
-extern int pthread_barrierattr_init(pthread_barrierattr_t *attributes);
-extern int pthread_barrierattr_destroy(pthread_barrierattr_t *attributes);
-extern int pthread_barrierattr_getpshared(const pthread_barrierattr_t *restrict attributes, int *restrict __pshared);
-extern int pthread_barrierattr_setpshared(pthread_barrierattr_t *attributes, int __pshared);
-#endif
+// Attributes
+WLIBC_INLINE int pthread_barrierattr_init(pthread_barrierattr_t *attributes)
+{
+	return wlibc_barrierattr_init(attributes);
+}
+
+WLIBC_INLINE int pthread_barrierattr_destroy(pthread_barrierattr_t *attributes)
+{
+	// nop
+	return 0;
+}
+
+WLIBC_INLINE int pthread_barrierattr_getpshared(const pthread_barrierattr_t *restrict attributes, int *restrict pshared)
+{
+	return wlibc_barrierattr_getpshared(attributes, pshared);
+}
+
+WLIBC_INLINE int pthread_barrierattr_setpshared(pthread_barrierattr_t *attributes, int pshared)
+{
+	return wlibc_barrierattr_setpshared(attributes, pshared);
+}
 
 // Condition variable functions.
 WLIBC_INLINE int pthread_cond_init(pthread_cond_t *restrict cond, const pthread_condattr_t *restrict attributes)
@@ -267,13 +285,29 @@ WLIBC_INLINE int pthread_cond_timedwait(pthread_cond_t *restrict cond, pthread_m
 	return wlibc_cond_timedwait(cond, mutex, abstime);
 }
 
-#if 0
-extern int pthread_condattr_init(pthread_condattr_t *attributes);
-extern int pthread_condattr_destroy(pthread_condattr_t *attributes);
-extern int pthread_condattr_getpshared(const pthread_condattr_t *restrict attributes, int *restrict __pshared);
-extern int pthread_condattr_setpshared(pthread_condattr_t *attributes, int __pshared);
-#endif
+// Attributes
+WLIBC_INLINE int pthread_condattr_init(pthread_condattr_t *attributes)
+{
+	return wlibc_condattr_init(attributes);
+}
 
+WLIBC_INLINE int pthread_condattr_destroy(pthread_condattr_t *attributes)
+{
+	// nop
+	return 0;
+}
+
+WLIBC_INLINE int pthread_condattr_getpshared(const pthread_condattr_t *restrict attributes, int *restrict pshared)
+{
+	return wlibc_condattr_getpshared(attributes, pshared);
+}
+
+WLIBC_INLINE int pthread_condattr_setpshared(pthread_condattr_t *attributes, int pshared)
+{
+	return wlibc_condattr_setpshared(attributes, pshared);
+}
+
+// Thread specific storage functions.
 WLIBC_API int pthread_key_create(pthread_key_t *key, void (*destructor)(void *))
 {
 	return wlibc_tss_create(key, destructor);

@@ -31,12 +31,12 @@ typedef struct _wlibc_mutex_attr_t
 
 typedef struct _wlibc_cond_attr_t
 {
-	int dummy;
+	int shared;
 } cond_attr_t;
 
 typedef struct _wlibc_barrier_attr_t
 {
-	int dummy;
+	int shared;
 } barrier_attr_t;
 
 typedef struct _wlibc_rwlock_attr_t
@@ -81,6 +81,9 @@ typedef struct _wlibc_key_t
 #define WLIBC_THREAD_ONCE_INIT {0}
 #define WLIBC_DTOR_ITERATIONS 2
 
+#define WLIBC_PROCESS_PRIVATE 0 // Private to a process.
+#define WLIBC_PROCESS_SHARED  1 // Shareabled across processes.
+
 // Thread functions.
 WLIBC_API int wlibc_thread_create(thread_t *thread, thread_attr_t *attributes, thread_start_t routine, void *arg);
 WLIBC_API int wlibc_thread_detach(thread_t thread);
@@ -111,11 +114,17 @@ WLIBC_API int wlibc_cond_signal(cond_t *cond);
 WLIBC_API int wlibc_cond_broadcast(cond_t *cond);
 WLIBC_API int wlibc_cond_wait(cond_t *restrict cond, mutex_t *restrict mutex);
 WLIBC_API int wlibc_cond_timedwait(cond_t *restrict cond, mutex_t *restrict mutex, const struct timespec *restrict abstime);
+WLIBC_API int wlibc_condattr_init(cond_attr_t *attributes);
+WLIBC_API int wlibc_condattr_getpshared(const cond_attr_t *restrict attributes, int *restrict pshared);
+WLIBC_API int wlibc_condattr_setpshared(cond_attr_t *attributes, int pshared);
 
 // Barrier functions.
 WLIBC_API int wlibc_barrier_init(barrier_t *restrict barrier, const barrier_attr_t *restrict attributes, unsigned int count);
 WLIBC_API int wlibc_barrier_destroy(barrier_t *barrier);
 WLIBC_API int wlibc_barrier_wait(barrier_t *barrier);
+WLIBC_API int wlibc_barrierattr_init(barrier_attr_t *attributes);
+WLIBC_API int wlibc_barrierattr_getpshared(const barrier_attr_t *restrict attributes, int *restrict pshared);
+WLIBC_API int wlibc_barrierattr_setpshared(barrier_attr_t *attributes, int pshared);
 
 // Reader-Writer lock functions.
 WLIBC_API int wlibc_rwlock_init(rwlock_t *restrict rwlock, const rwlock_attr_t *restrict attributes);
