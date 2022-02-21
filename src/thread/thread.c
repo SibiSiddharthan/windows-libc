@@ -7,12 +7,19 @@
 
 #include <internal/nt.h>
 #include <internal/error.h>
+#include <errno.h>
 #include <thread.h>
 
 int wlibc_thread_create(thread_t *thread, thread_attr_t *attributes, thread_start_t routine, void *arg)
 {
 	DWORD thread_id;
 	HANDLE thread_handle;
+
+	if (thread == NULL)
+	{
+		errno = EINVAL;
+		return -1;
+	}
 
 	thread_handle =
 		CreateRemoteThreadEx(NtCurrentProcess(), NULL, 0, (LPTHREAD_START_ROUTINE)routine, arg, CREATE_SUSPENDED, NULL, &thread_id);
@@ -46,15 +53,32 @@ int wlibc_thread_detach(thread_t thread)
 	return 0;
 }
 
-int wlibc_thread_join(thread_t thread, void **result)
+int wlibc_common_thread_join(thread_t thread, void **result, const struct timespec *abstime)
 {
 	NTSTATUS status;
+	LARGE_INTEGER timeout;
 	THREAD_BASIC_INFORMATION basic_info;
 
-	status = NtWaitForSingleObject(thread.handle, FALSE, NULL);
-	if (status != STATUS_SUCCESS)
+	timeout.QuadPart = 0;
+	// If abstime is null                    -> infinite wait.
+	// If abstime is 0(tv_sec, tv_nsec is 0) -> try wait.
+	if (abstime != NULL && abstime->tv_sec != 0 && abstime->tv_nsec != 0)
+	{
+		// From utimens.c. TODO
+		timeout.QuadPart = abstime->tv_sec * 10000000 + abstime->tv_nsec / 100;
+		timeout.QuadPart += 116444736000000000LL;
+	}
+
+	status = NtWaitForSingleObject(thread.handle, FALSE, abstime == NULL ? NULL : &timeout);
+	if (status != STATUS_SUCCESS && status != STATUS_TIMEOUT)
 	{
 		map_ntstatus_to_errno(status);
+		return -1;
+	}
+
+	if (status == STATUS_TIMEOUT)
+	{
+		errno = EBUSY;
 		return -1;
 	}
 
@@ -72,9 +96,28 @@ int wlibc_thread_join(thread_t thread, void **result)
 		return -1;
 	}
 
-	*result = (void *)basic_info.ExitStatus;
+	if (result != NULL)
+	{
+		*result = (void *)(intptr_t)basic_info.ExitStatus;
+	}
 
 	return 0;
+}
+
+int wlibc_thread_join(thread_t thread, void **result)
+{
+	return wlibc_common_thread_join(thread, result, NULL);
+}
+
+int wlibc_thread_tryjoin(thread_t thread, void **result)
+{
+	struct timespec timeout = {0, 0};
+	return wlibc_common_thread_join(thread, result, &timeout);
+}
+
+int wlibc_thread_timedjoin(thread_t thread, void **result, const struct timespec *abstime)
+{
+	return wlibc_common_thread_join(thread, result, abstime);
 }
 
 int wlibc_thread_equal(thread_t thread_a, thread_t thread_b)
@@ -97,7 +140,16 @@ int wlibc_thread_sleep(const struct timespec *duration, struct timespec *remaini
 	NTSTATUS status;
 	LARGE_INTEGER interval;
 
-	// TODO time conversions
+	if (duration == NULL)
+	{
+		errno = EINVAL;
+		return -1;
+	}
+
+	// Measure in 100 nanosecond intervals.
+	// Negative means relative measurement.
+	interval.QuadPart = -1 * (duration->tv_sec * 10000000 + duration->tv_nsec / 100);
+
 	status = NtDelayExecution(TRUE, &interval);
 	if (status != STATUS_SUCCESS)
 	{
@@ -106,6 +158,7 @@ int wlibc_thread_sleep(const struct timespec *duration, struct timespec *remaini
 		return -1;
 	}
 
+	// TODO Alerts
 	return 0;
 }
 
