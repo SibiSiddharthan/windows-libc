@@ -26,7 +26,8 @@ typedef struct _wlibc_thread_attr_t
 
 typedef struct _wlibc_mutex_attr_t
 {
-	int dummy;
+	int shared;
+	int type;
 } mutex_attr_t;
 
 typedef struct _wlibc_cond_attr_t
@@ -53,6 +54,8 @@ typedef union _wlibc_once_t {
 typedef struct _wlibc_mutex_t
 {
 	unsigned int owner;
+	unsigned int count;
+	int type;
 	void *handle;
 } mutex_t;
 
@@ -84,6 +87,10 @@ typedef struct _wlibc_key_t
 #define WLIBC_PROCESS_PRIVATE 0 // Private to a process.
 #define WLIBC_PROCESS_SHARED  1 // Shareabled across processes.
 
+#define WLIBC_MUTEX_NORMAL    0x0 // Plain mutex, infinite wait
+#define WLIBC_MUTEX_RECURSIVE 0x1 // Recursive mutex
+#define WLIBC_MUTEX_TIMED     0x2 // Waits can timeout
+
 // Thread functions.
 WLIBC_API int wlibc_thread_create(thread_t *thread, thread_attr_t *attributes, thread_start_t routine, void *arg);
 WLIBC_API int wlibc_thread_detach(thread_t thread);
@@ -107,6 +114,11 @@ WLIBC_API int wlibc_mutex_trylock(mutex_t *mutex);
 WLIBC_API int wlibc_mutex_lock(mutex_t *mutex);
 WLIBC_API int wlibc_mutex_timedlock(mutex_t *restrict mutex, const struct timespec *restrict abstime);
 WLIBC_API int wlibc_mutex_unlock(mutex_t *mutex);
+WLIBC_API int wlibc_mutexattr_init(mutex_attr_t *attributes);
+WLIBC_API int wlibc_mutexattr_getpshared(const mutex_attr_t *restrict attributes, int *restrict pshared);
+WLIBC_API int wlibc_mutexattr_setpshared(mutex_attr_t *attributes, int pshared);
+WLIBC_API int wlibc_mutexattr_gettype(const mutex_attr_t *restrict attributes, int *restrict type);
+WLIBC_API int wlibc_mutexattr_settype(mutex_attr_t *attributes, int type);
 
 // Condition variable functions.
 WLIBC_API int wlibc_cond_init(cond_t *restrict cond, const cond_attr_t *restrict attributes);

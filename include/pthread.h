@@ -38,6 +38,11 @@ typedef key_t pthread_key_t;
 #define PTHREAD_PROCESS_PRIVATE WLIBC_PROCESS_PRIVATE // Private to a process.
 #define PTHREAD_PROCESS_SHARED  WLIBC_PROCESS_SHARED  // Shareabled across processes.
 
+#define PTHREAD_MUTEX_NORMAL     WLIBC_MUTEX_TIMED
+#define PTHREAD_MUTEX_DEFAULT    PTHREAD_MUTEX_NORMAL
+#define PTHREAD_MUTEX_RECURSIVE  (WLIBC_MUTEX_RECURSIVE | WLIBC_MUTEX_TIMED)
+#define PTHREAD_MUTEX_ERRORCHECK (WLIBC_MUTEX_NORMAL | WLIBC_MUTEX_TIMED)
+
 // Thread functions.
 WLIBC_INLINE int pthread_create(pthread_t *thread, pthread_attr_t *attributes, pthread_start_t routine, void *arg)
 {
@@ -137,22 +142,37 @@ WLIBC_INLINE int pthread_mutex_unlock(pthread_mutex_t *mutex)
 	return wlibc_mutex_unlock(mutex);
 }
 
-#if 0
-extern int pthread_mutexattr_init(pthread_mutexattr_t *attributes);
-/* Destroy mutex attribute object ATTR.  */
-extern int pthread_mutexattr_destroy(pthread_mutexattr_t *attributes);
-/* Get the process-shared flag of the mutex attribute ATTR.  */
-extern int pthread_mutexattr_getpshared(const pthread_mutexattr_t *restrict attributes, int *restrict pshared);
-/* Set the process-shared flag of the mutex attribute ATTR.  */
-extern int pthread_mutexattr_setpshared(pthread_mutexattr_t *attributes, int pshared);
+// Mutex attributes
+WLIBC_INLINE int pthread_mutexattr_init(pthread_mutexattr_t *attributes)
+{
+	return wlibc_mutexattr_init(attributes);
+}
 
-/* Return in *KIND the mutex kind attribute in *ATTR.  */
-extern int pthread_mutexattr_gettype(const pthread_mutexattr_t *restrict attributes, int *restrict __kind);
-/* Set the mutex kind attribute in *ATTR to KIND (either PTHREAD_MUTEX_NORMAL,
-   PTHREAD_MUTEX_RECURSIVE, PTHREAD_MUTEX_ERRORCHECK, or
-   PTHREAD_MUTEX_DEFAULT).  */
-extern int pthread_mutexattr_settype(pthread_mutexattr_t *attributes, int __kind);
-#endif
+WLIBC_INLINE int pthread_mutexattr_destroy(pthread_mutexattr_t *attributes)
+{
+	// nop
+	return 0;
+}
+
+WLIBC_INLINE int pthread_mutexattr_getpshared(const pthread_mutexattr_t *restrict attributes, int *restrict pshared)
+{
+	return wlibc_mutexattr_getpshared(attributes, pshared);
+}
+
+WLIBC_INLINE int pthread_mutexattr_setpshared(pthread_mutexattr_t *attributes, int pshared)
+{
+	return wlibc_mutexattr_setpshared(attributes, pshared);
+}
+
+WLIBC_INLINE int pthread_mutexattr_gettype(const pthread_mutexattr_t *restrict attributes, int *restrict type)
+{
+	return wlibc_mutexattr_gettype(attributes, type);
+}
+
+WLIBC_INLINE int pthread_mutexattr_settype(pthread_mutexattr_t *attributes, int type)
+{
+	return wlibc_mutexattr_settype(attributes, type);
+}
 
 // Reader-Writer lock functions.
 WLIBC_INLINE int pthread_rwlock_init(pthread_rwlock_t *restrict rwlock, const pthread_rwlockattr_t *restrict attributes)

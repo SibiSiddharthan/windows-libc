@@ -76,6 +76,7 @@ void map_ntstatus_to_errno(NTSTATUS error)
 		errno = EACCES;
 		break;
 	case STATUS_CANNOT_DELETE:
+	case STATUS_MUTANT_NOT_OWNED:
 		errno = EPERM;
 		break;
 	case STATUS_OBJECT_NAME_NOT_FOUND:
@@ -100,8 +101,6 @@ void map_ntstatus_to_errno(NTSTATUS error)
 	case STATUS_INVALID_HANDLE:
 		errno = EBADF;
 		break;
-	// case ERROR_WRITE_FAULT:
-	// case ERROR_READ_FAULT:
 	case STATUS_IO_TIMEOUT:
 	case STATUS_IO_UNALIGNED_WRITE:
 	case STATUS_FILE_LOCK_CONFLICT:
@@ -120,9 +119,7 @@ void map_ntstatus_to_errno(NTSTATUS error)
 		errno = EISDIR;
 		break;
 	case STATUS_PIPE_BROKEN:
-	// case ERROR_BAD_PIPE:
 	case STATUS_PIPE_BUSY:
-	// case ERROR_NO_DATA:
 	case STATUS_PIPE_DISCONNECTED:
 	case STATUS_PIPE_NOT_AVAILABLE:
 		errno = EPIPE;
@@ -144,6 +141,9 @@ void map_ntstatus_to_errno(NTSTATUS error)
 		break;
 	case STATUS_EA_TOO_LARGE:
 		errno = E2BIG;
+		break;
+	case STATUS_TIMEOUT:
+		errno = EBUSY;
 		break;
 	default:
 		break;

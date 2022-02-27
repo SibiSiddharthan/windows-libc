@@ -37,9 +37,9 @@ enum
 // Mutex types.
 enum
 {
-	mtx_plain = 0,
-	mtx_recursive = 1,
-	mtx_timed = 2
+	mtx_plain = WLIBC_MUTEX_NORMAL,
+	mtx_recursive = WLIBC_MUTEX_RECURSIVE,
+	mtx_timed = WLIBC_MUTEX_TIMED
 };
 
 // Thread functions.
@@ -90,9 +90,10 @@ WLIBC_INLINE void call_once(once_flag *flag, void (*func)(void))
 }
 
 // Mutex functions.
-WLIBC_API int mtx_init(mtx_t *mutex, int __type)
+WLIBC_API int mtx_init(mtx_t *mutex, int type)
 {
-	return wlibc_mutex_init(mutex, NULL);
+	struct _wlibc_mutex_attr_t mutex_attr = {WLIBC_PROCESS_PRIVATE, type};
+	return wlibc_mutex_init(mutex, &mutex_attr);
 }
 
 WLIBC_API int mtx_lock(mtx_t *mutex)
@@ -125,6 +126,7 @@ WLIBC_INLINE int cnd_init(cnd_t *cond)
 {
 	return wlibc_cond_init(cond, NULL);
 }
+
 WLIBC_INLINE int cnd_signal(cnd_t *cond)
 {
 	return wlibc_cond_signal(cond);
