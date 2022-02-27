@@ -78,7 +78,7 @@ wlibc_add_module(sys.utsname)
 add_subdirectory(internal)
 
 add_library(wlibc)
-target_link_libraries(wlibc ${wlibc_enabled_modules} wlibc_internal ntdllp Netapi32)
+target_link_libraries(wlibc ${wlibc_enabled_modules} wlibc_internal ntdll Netapi32)
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
 	set_target_properties(wlibc PROPERTIES RUNTIME_OUTPUT_NAME "wlibcd" LIBRARY_OUTPUT_NAME "wlibcd" ARCHIVE_OUTPUT_NAME "wlibcd")
 endif()
