@@ -72,7 +72,7 @@ int wlibc_rwlock_unlock(rwlock_t *rwlock)
 
 	// CHECK
 	// Exclusive locks set the 0th bit to high.
-	if (rwlock->ptr == 1)
+	if (rwlock->ptr == (void *)1)
 	{
 		RtlReleaseSRWLockExclusive((PRTL_SRWLOCK)rwlock);
 	}

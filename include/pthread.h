@@ -35,6 +35,9 @@ typedef key_t pthread_key_t;
 
 #define PTHREAD_ONCE_INIT WLIBC_THREAD_ONCE_INIT
 
+#define PTHREAD_CREATE_JOINABLE WLIBC_THREAD_JOINABLE // Joinable thread.
+#define PTHREAD_CREATE_DETACHED WLIBC_THREAD_DETACHED // Detached thread.
+
 #define PTHREAD_PROCESS_PRIVATE WLIBC_PROCESS_PRIVATE // Private to a process.
 #define PTHREAD_PROCESS_SHARED  WLIBC_PROCESS_SHARED  // Shareabled across processes.
 
@@ -92,18 +95,37 @@ WLIBC_INLINE int pthread_timedjoin(pthread_t thread, void **result, const struct
 #define pthread_tryjoin_np   pthread_tryjoin
 #define pthread_timedjoin_np pthread_timedjoin
 
-#if 0
-extern int pthread_attr_init(pthread_attr_t *attributes);
-extern int pthread_attr_destroy(pthread_attr_t *attributes);
-extern int pthread_attr_getdetachstate(const pthread_attr_t *attributes, int *__detachstate);
-extern int pthread_attr_setdetachstate(pthread_attr_t *attributes, int __detachstate);
-extern int pthread_attr_getschedparam(const pthread_attr_t *restrict attributes, struct sched_param *restrict __param);
-extern int pthread_attr_setschedparam(pthread_attr_t *restrict attributes, const struct sched_param *restrict __param);
-extern int pthread_attr_getinheritsched(const pthread_attr_t *restrict attributes, int *restrict __inherit);
-extern int pthread_attr_setinheritsched(pthread_attr_t *attributes, int __inherit);
-extern int pthread_attr_getstacksize(const pthread_attr_t *restrict attributes, size_t *restrict __stacksize);
-extern int pthread_attr_setstacksize(pthread_attr_t *attributes, size_t __stacksize);
-#endif
+// Attributes
+WLIBC_INLINE int pthread_attr_init(pthread_attr_t *attributes)
+{
+	return wlibc_threadattr_init(attributes);
+}
+
+WLIBC_INLINE int pthread_attr_destroy(pthread_attr_t *attributes)
+{
+	// nop
+	return 0;
+}
+
+WLIBC_INLINE int pthread_attr_getdetachstate(const pthread_attr_t *attributes, int *detachstate)
+{
+	return wlibc_threadattr_getdetachstate(attributes, detachstate);
+}
+
+WLIBC_INLINE int pthread_attr_setdetachstate(pthread_attr_t *attributes, int detachstate)
+{
+	return wlibc_threadattr_setdetachstate(attributes, detachstate);
+}
+
+WLIBC_INLINE int pthread_attr_getstacksize(const pthread_attr_t *restrict attributes, size_t *restrict stacksize)
+{
+	return wlibc_threadattr_getstacksize(attributes, stacksize);
+}
+
+WLIBC_INLINE int pthread_attr_setstacksize(pthread_attr_t *attributes, size_t stacksize)
+{
+	return wlibc_threadattr_setstacksize(attributes, stacksize);
+}
 
 // One time initialization.
 WLIBC_INLINE int pthread_once(pthread_once_t *control, void (*init)(void))

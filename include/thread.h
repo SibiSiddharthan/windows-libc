@@ -21,7 +21,8 @@ typedef struct _wlibc_thread_t
 
 typedef struct _wlibc_thread_attr_t
 {
-	int dummy;
+	size_t stacksize;
+	int state;
 } thread_attr_t;
 
 typedef struct _wlibc_mutex_attr_t
@@ -84,6 +85,9 @@ typedef struct _wlibc_key_t
 #define WLIBC_THREAD_ONCE_INIT {0}
 #define WLIBC_DTOR_ITERATIONS 2
 
+#define WLIBC_THREAD_JOINABLE 0 // Joinable thread.
+#define WLIBC_THREAD_DETACHED 1 // Detached thread.
+
 #define WLIBC_PROCESS_PRIVATE 0 // Private to a process.
 #define WLIBC_PROCESS_SHARED  1 // Shareabled across processes.
 
@@ -103,6 +107,11 @@ WLIBC_API int wlibc_thread_sleep(const struct timespec *duration, struct timespe
 WLIBC_API int wlibc_thread_yield(void);
 WLIBC_API void wlibc_thread_exit_p(void *retval);
 WLIBC_API void wlibc_thread_exit_c11(int result);
+WLIBC_API int wlibc_threadattr_init(thread_attr_t *attributes);
+WLIBC_API int wlibc_threadattr_getdetachstate(const thread_attr_t *attributes, int *detachstate);
+WLIBC_API int wlibc_threadattr_setdetachstate(thread_attr_t *attributes, int detachstate);
+WLIBC_API int wlibc_threadattr_getstacksize(const thread_attr_t *restrict attributes, size_t *restrict stacksize);
+WLIBC_API int wlibc_threadattr_setstacksize(thread_attr_t *attributes, size_t stacksize);
 
 // One time initialization.
 WLIBC_API int wlibc_thread_once(once_t *control, void (*init)(void));

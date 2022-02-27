@@ -10,10 +10,21 @@
 #include <errno.h>
 #include <thread.h>
 
+#define VALIDATE_PTR(ptr) \
+	if (ptr == NULL)      \
+	{                     \
+		errno = EINVAL;   \
+		return -1;        \
+	}
+
+#define VALIDATE_THREAD_ATTR(thread_attr) VALIDATE_PTR(thread_attr)
+
 int wlibc_thread_create(thread_t *thread, thread_attr_t *attributes, thread_start_t routine, void *arg)
 {
 	DWORD thread_id;
 	HANDLE thread_handle;
+	SIZE_T stacksize = 0;
+	BOOLEAN should_detach = FALSE;
 
 	if (thread == NULL)
 	{
@@ -21,8 +32,17 @@ int wlibc_thread_create(thread_t *thread, thread_attr_t *attributes, thread_star
 		return -1;
 	}
 
+	if (attributes != NULL)
+	{
+		stacksize = attributes->stacksize;
+		if (attributes->state == WLIBC_THREAD_DETACHED)
+		{
+			should_detach = TRUE;
+		}
+	}
+
 	thread_handle =
-		CreateRemoteThreadEx(NtCurrentProcess(), NULL, 0, (LPTHREAD_START_ROUTINE)routine, arg, CREATE_SUSPENDED, NULL, &thread_id);
+		CreateRemoteThreadEx(NtCurrentProcess(), NULL, stacksize, (LPTHREAD_START_ROUTINE)routine, arg, CREATE_SUSPENDED, NULL, &thread_id);
 	if (thread_handle == NULL)
 	{
 		map_doserror_to_errno(GetLastError());
@@ -33,6 +53,12 @@ int wlibc_thread_create(thread_t *thread, thread_attr_t *attributes, thread_star
 	thread->id = thread_id;
 
 	NtResumeThread(thread_handle, NULL);
+
+	if (should_detach)
+	{
+		NtClose(thread_handle);
+		thread->handle = 0;
+	}
 
 	return 0;
 }
@@ -70,15 +96,9 @@ int wlibc_common_thread_join(thread_t thread, void **result, const struct timesp
 	}
 
 	status = NtWaitForSingleObject(thread.handle, FALSE, abstime == NULL ? NULL : &timeout);
-	if (status != STATUS_SUCCESS && status != STATUS_TIMEOUT)
+	if (status != STATUS_SUCCESS)
 	{
 		map_ntstatus_to_errno(status);
-		return -1;
-	}
-
-	if (status == STATUS_TIMEOUT)
-	{
-		errno = EBUSY;
 		return -1;
 	}
 
@@ -165,5 +185,46 @@ int wlibc_thread_sleep(const struct timespec *duration, struct timespec *remaini
 int wlibc_thread_yield(void)
 {
 	NtYieldExecution();
+	return 0;
+}
+
+int wlibc_threadattr_init(thread_attr_t *attributes)
+{
+	attributes->stacksize = 0;
+	attributes->state = WLIBC_THREAD_JOINABLE;
+	return 0;
+}
+
+int wlibc_threadattr_getdetachstate(const thread_attr_t *attributes, int *detachstate)
+{
+	VALIDATE_THREAD_ATTR(attributes);
+	*detachstate = attributes->state;
+	return 0;
+}
+
+int wlibc_threadattr_setdetachstate(thread_attr_t *attributes, int detachstate)
+{
+	VALIDATE_THREAD_ATTR(attributes);
+	if (detachstate != WLIBC_THREAD_JOINABLE && detachstate != WLIBC_THREAD_DETACHED)
+	{
+		errno = EINVAL;
+		return -1;
+	}
+
+	attributes->state = detachstate;
+	return 0;
+}
+
+int wlibc_threadattr_getstacksize(const thread_attr_t *restrict attributes, size_t *restrict stacksize)
+{
+	VALIDATE_THREAD_ATTR(attributes);
+	*stacksize = attributes->stacksize;
+	return 0;
+}
+
+int wlibc_threadattr_setstacksize(thread_attr_t *attributes, size_t stacksize)
+{
+	VALIDATE_THREAD_ATTR(attributes);
+	attributes->stacksize = stacksize;
 	return 0;
 }
