@@ -188,6 +188,16 @@ int wlibc_thread_yield(void)
 	return 0;
 }
 
+void wlibc_thread_exit_p(void *retval)
+{
+	NtTerminateThread(NtCurrentThread(), (NTSTATUS)(intptr_t)retval);
+}
+
+void wlibc_thread_exit_c11(int result)
+{
+	NtTerminateThread(NtCurrentThread(), (NTSTATUS)result);
+}
+
 int wlibc_threadattr_init(thread_attr_t *attributes)
 {
 	attributes->stacksize = 0;
