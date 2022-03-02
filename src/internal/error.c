@@ -143,7 +143,7 @@ void map_ntstatus_to_errno(NTSTATUS error)
 		errno = E2BIG;
 		break;
 	case STATUS_TIMEOUT:
-		errno = EBUSY;
+		errno = ETIMEDOUT;
 		break;
 	default:
 		break;

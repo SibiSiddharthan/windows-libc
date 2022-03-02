@@ -125,6 +125,11 @@ int wlibc_mutex_common_lock(mutex_t *restrict mutex, const struct timespec *rest
 	if (status != STATUS_SUCCESS)
 	{
 		map_ntstatus_to_errno(status);
+		// If we are doing a try lock errno should be set to EBUSY.
+		if (timeout.QuadPart == 0 && errno == ETIMEDOUT)
+		{
+			errno = EBUSY;
+		}
 		return -1;
 	}
 

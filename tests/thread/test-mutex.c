@@ -46,6 +46,18 @@ void *timedlock(void *arg)
 	return NULL;
 }
 
+void *trylock(void *arg)
+{
+	pthread_mutex_t *mutex = (pthread_mutex_t *)arg;
+
+	if (pthread_mutex_trylock(mutex) == 0)
+	{
+		++variable;
+		pthread_mutex_unlock(mutex);
+	}
+	return NULL;
+}
+
 int test_mutex_basic()
 {
 	int status;
@@ -184,6 +196,39 @@ int test_mutex_timed()
 	return 0;
 }
 
+int test_mutex_try()
+{
+	int status;
+	pthread_t thread;
+	pthread_mutex_t mutex;
+
+	status = pthread_mutex_init(&mutex, NULL);
+	ASSERT_EQ(status, 0);
+
+	status = pthread_mutex_trylock(&mutex);
+	ASSERT_EQ(status, 0);
+
+	status = pthread_create(&thread, NULL, trylock, (void *)&mutex);
+	ASSERT_EQ(status, 0);
+
+	usleep(1000);
+
+	status = pthread_join(thread, NULL);
+	ASSERT_EQ(status, 0);
+
+	status = pthread_mutex_unlock(&mutex);
+	ASSERT_EQ(status, 0);
+
+	// Thread has exited now, it should have failed while trying to acquire the mutex
+	// and the varaible should not be updated.
+	ASSERT_EQ(variable, 0);
+
+	status = pthread_mutex_destroy(&mutex);
+	ASSERT_EQ(status, 0);
+
+	return 0;
+}
+
 int main()
 {
 	INITIAILIZE_TESTS();
@@ -191,5 +236,6 @@ int main()
 	TEST(test_mutex_recursive());
 	variable = 0;
 	TEST(test_mutex_timed());
+	TEST(test_mutex_try());
 	VERIFY_RESULT_AND_EXIT();
 }
