@@ -73,6 +73,7 @@ typedef struct _wlibc_barrier_t
 typedef struct _wlibc_rwlock_t
 {
 	void *ptr;
+	int lock;
 } rwlock_t;
 
 typedef void (*dtor_t)(void *);
