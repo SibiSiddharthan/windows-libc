@@ -20,6 +20,7 @@ fsync.c
 getcwd.c
 getgid.c
 getpid.c
+gettid.c
 getuid.c
 getpagesize.c
 hostname.c

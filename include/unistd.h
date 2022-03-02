@@ -184,6 +184,13 @@ WLIBC_INLINE pid_t getppid(void)
 	return wlibc_getppid();
 }
 
+WLIBC_API pid_t wlibc_gettid(void);
+
+WLIBC_INLINE pid_t gettid(void)
+{
+	return wlibc_gettid();
+}
+
 WLIBC_API uid_t wlibc_getuid(void);
 
 WLIBC_INLINE uid_t getuid(void)
