@@ -15,8 +15,8 @@ _WLIBC_BEGIN_DECLS
 
 typedef struct _wlibc_thread_t
 {
-	int handle;
-	int id;
+	unsigned int handle;
+	unsigned int id;
 } thread_t;
 
 typedef struct _wlibc_thread_attr_t

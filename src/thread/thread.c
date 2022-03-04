@@ -49,7 +49,7 @@ int wlibc_thread_create(thread_t *thread, thread_attr_t *attributes, thread_star
 		return -1;
 	}
 
-	thread->handle = thread_handle;
+	thread->handle = (DWORD)(LONG_PTR)thread_handle;
 	thread->id = thread_id;
 
 	NtResumeThread(thread_handle, NULL);
@@ -69,7 +69,7 @@ int wlibc_thread_detach(thread_t thread)
 {
 	NTSTATUS status;
 
-	status = NtClose(thread.handle);
+	status = NtClose((HANDLE)(LONG_PTR)thread.handle);
 	if (status != STATUS_SUCCESS)
 	{
 		map_ntstatus_to_errno(status);
@@ -95,21 +95,21 @@ int wlibc_common_thread_join(thread_t thread, void **result, const struct timesp
 		timeout.QuadPart += 116444736000000000LL;
 	}
 
-	status = NtWaitForSingleObject(thread.handle, FALSE, abstime == NULL ? NULL : &timeout);
+	status = NtWaitForSingleObject((HANDLE)(LONG_PTR)thread.handle, FALSE, abstime == NULL ? NULL : &timeout);
 	if (status != STATUS_SUCCESS)
 	{
 		map_ntstatus_to_errno(status);
 		return -1;
 	}
 
-	status = NtQueryInformationThread(thread.handle, ThreadBasicInformation, &basic_info, sizeof(basic_info), NULL);
+	status = NtQueryInformationThread((HANDLE)(LONG_PTR)thread.handle, ThreadBasicInformation, &basic_info, sizeof(basic_info), NULL);
 	if (status != STATUS_SUCCESS)
 	{
 		map_ntstatus_to_errno(status);
 		return -1;
 	}
 
-	status = NtClose(thread.handle);
+	status = NtClose((HANDLE)(LONG_PTR)thread.handle);
 	if (status != STATUS_SUCCESS)
 	{
 		map_ntstatus_to_errno(status);
@@ -118,6 +118,7 @@ int wlibc_common_thread_join(thread_t thread, void **result, const struct timesp
 
 	if (result != NULL)
 	{
+		// NOTE: The result will be truncated to 32bits. Nothing can be done about it.
 		*result = (void *)(intptr_t)basic_info.ExitStatus;
 	}
 
@@ -149,7 +150,7 @@ thread_t wlibc_thread_self(void)
 {
 	thread_t thread;
 
-	thread.handle = NtCurrentThread();
+	thread.handle = (DWORD)(LONG_PTR)NtCurrentThread();
 	thread.id = GetCurrentThreadId();
 
 	return thread;
