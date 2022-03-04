@@ -61,5 +61,6 @@ if(ENABLE_MMAP)
 endif()
 
 if(ENABLE_THREADS)
-	add_subdirectory(thread)
+	add_subdirectory(pthread)
+	add_subdirectory(threads)
 endif()
