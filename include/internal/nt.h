@@ -1895,67 +1895,52 @@ NtQueryInformationProcess(_In_ HANDLE ProcessHandle, _In_ PROCESSINFOCLASS Proce
 NTSYSCALLAPI
 NTSTATUS
 NTAPI
-NtOpenThread(
-    _Out_ PHANDLE ThreadHandle,
-    _In_ ACCESS_MASK DesiredAccess,
-    _In_ POBJECT_ATTRIBUTES ObjectAttributes,
-    _In_opt_ PCLIENT_ID ClientId
-    );
+NtOpenThread(_Out_ PHANDLE ThreadHandle, _In_ ACCESS_MASK DesiredAccess, _In_ POBJECT_ATTRIBUTES ObjectAttributes,
+			 _In_opt_ PCLIENT_ID ClientId);
 
 NTSYSCALLAPI
 NTSTATUS
 NTAPI
-NtTerminateThread(
-    _In_opt_ HANDLE ThreadHandle,
-    _In_ NTSTATUS ExitStatus
-    );
+NtTerminateThread(_In_opt_ HANDLE ThreadHandle, _In_ NTSTATUS ExitStatus);
 
 NTSYSCALLAPI
 NTSTATUS
 NTAPI
-NtSuspendThread(
-    _In_ HANDLE ThreadHandle,
-    _Out_opt_ PULONG PreviousSuspendCount
-    );
+NtSuspendThread(_In_ HANDLE ThreadHandle, _Out_opt_ PULONG PreviousSuspendCount);
 
 NTSYSCALLAPI
 NTSTATUS
 NTAPI
-NtResumeThread(
-    _In_ HANDLE ThreadHandle,
-    _Out_opt_ PULONG PreviousSuspendCount
-    );
+NtResumeThread(_In_ HANDLE ThreadHandle, _Out_opt_ PULONG PreviousSuspendCount);
 
 NTSYSCALLAPI
 NTSTATUS
 NTAPI
-NtYieldExecution(
-    VOID
-    );
+NtYieldExecution(VOID);
 
 NTSYSCALLAPI
 NTSTATUS
 NTAPI
-NtQueryInformationThread(
-    _In_ HANDLE ThreadHandle,
-    _In_ THREADINFOCLASS ThreadInformationClass,
-    _Out_writes_bytes_(ThreadInformationLength) PVOID ThreadInformation,
-    _In_ ULONG ThreadInformationLength,
-    _Out_opt_ PULONG ReturnLength
-    );
+NtQueryInformationThread(_In_ HANDLE ThreadHandle, _In_ THREADINFOCLASS ThreadInformationClass,
+						 _Out_writes_bytes_(ThreadInformationLength) PVOID ThreadInformation, _In_ ULONG ThreadInformationLength,
+						 _Out_opt_ PULONG ReturnLength);
 
 NTSYSCALLAPI
 NTSTATUS
 NTAPI
-NtSetInformationThread(
-    _In_ HANDLE ThreadHandle,
-    _In_ THREADINFOCLASS ThreadInformationClass,
-    _In_reads_bytes_(ThreadInformationLength) PVOID ThreadInformation,
-    _In_ ULONG ThreadInformationLength
-    );
+NtSetInformationThread(_In_ HANDLE ThreadHandle, _In_ THREADINFOCLASS ThreadInformationClass,
+					   _In_reads_bytes_(ThreadInformationLength) PVOID ThreadInformation, _In_ ULONG ThreadInformationLength);
 
+NTSYSCALLAPI
+NTSTATUS
+NTAPI
+NtAlertThreadByThreadId(_In_ HANDLE ThreadId);
 
-
+// rev
+NTSYSCALLAPI
+NTSTATUS
+NTAPI
+NtWaitForAlertByThreadId(_In_ PVOID Address, _In_opt_ PLARGE_INTEGER Timeout);
 
 NTSYSAPI
 NTSTATUS

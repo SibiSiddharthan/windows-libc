@@ -315,8 +315,7 @@ WLIBC_INLINE int pthread_cond_init(pthread_cond_t *restrict cond, const pthread_
 
 WLIBC_INLINE int pthread_cond_destroy(pthread_cond_t *cond)
 {
-	// nop
-	return 0;
+	return wlibc_cond_destroy(cond);
 }
 
 WLIBC_INLINE int pthread_cond_signal(pthread_cond_t *cond)

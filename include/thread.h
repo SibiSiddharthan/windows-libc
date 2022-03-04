@@ -62,7 +62,12 @@ typedef struct _wlibc_mutex_t
 
 typedef struct _wlibc_cond_t
 {
-	void *ptr;
+	unsigned long *ptr;
+	int waiting_threads;
+	int queue_size;
+	int queue_begin;
+	int queue_end;
+	int lock;
 } cond_t;
 
 typedef struct _wlibc_barrier_t
@@ -132,6 +137,7 @@ WLIBC_API int wlibc_mutexattr_settype(mutex_attr_t *attributes, int type);
 
 // Condition variable functions.
 WLIBC_API int wlibc_cond_init(cond_t *restrict cond, const cond_attr_t *restrict attributes);
+WLIBC_API int wlibc_cond_destroy(cond_t *cond);
 WLIBC_API int wlibc_cond_signal(cond_t *cond);
 WLIBC_API int wlibc_cond_broadcast(cond_t *cond);
 WLIBC_API int wlibc_cond_wait(cond_t *restrict cond, mutex_t *restrict mutex);

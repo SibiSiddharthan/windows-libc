@@ -149,8 +149,7 @@ WLIBC_INLINE int cnd_timedwait(cnd_t *restrict cond, mtx_t *restrict mutex, cons
 
 WLIBC_INLINE void cnd_destroy(cnd_t *cond)
 {
-	// nop
-	return;
+	wlibc_cond_destroy(cond);
 }
 
 // Thread specific storage functions.
