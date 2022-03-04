@@ -191,12 +191,13 @@ int wlibc_thread_yield(void)
 
 void wlibc_thread_exit_p(void *retval)
 {
-	NtTerminateThread(NtCurrentThread(), (NTSTATUS)(intptr_t)retval);
+	// The exit code of thread will be truncated to 32bits.
+	RtlExitUserThread((NTSTATUS)(LONG_PTR)retval);
 }
 
 void wlibc_thread_exit_c11(int result)
 {
-	NtTerminateThread(NtCurrentThread(), (NTSTATUS)result);
+	RtlExitUserThread((NTSTATUS)result);
 }
 
 int wlibc_threadattr_init(thread_attr_t *attributes)
