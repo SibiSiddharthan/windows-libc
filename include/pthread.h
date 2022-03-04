@@ -204,8 +204,7 @@ WLIBC_INLINE int pthread_rwlock_init(pthread_rwlock_t *restrict rwlock, const pt
 
 WLIBC_INLINE int pthread_rwlock_destroy(pthread_rwlock_t *rwlock)
 {
-	// nop
-	return 0;
+	return wlibc_rwlock_destroy(rwlock);
 }
 
 WLIBC_INLINE int pthread_rwlock_rdlock(pthread_rwlock_t *rwlock)

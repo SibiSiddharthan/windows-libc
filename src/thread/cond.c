@@ -19,8 +19,22 @@
 		return -1;        \
 	}
 
-#define VALIDATE_COND(cond)           VALIDATE_PTR(cond)
-#define VALIDATE_MUTEX(mutex)         VALIDATE_PTR(mutex)
+#define VALIDATE_COND(cond) \
+	VALIDATE_PTR(cond)      \
+	if (cond->ptr == NULL)  \
+	{                       \
+		errno = EINVAL;     \
+		return -1;          \
+	}
+
+#define VALIDATE_MUTEX(mutex) \
+	VALIDATE_PTR(mutex)       \
+	if (mutex->handle == 0)   \
+	{                         \
+		errno = EINVAL;       \
+		return -1;            \
+	}
+
 #define VALIDATE_COND_ATTR(cond_attr) VALIDATE_PTR(cond_attr)
 
 // Spin till we get a lock on the queue.
@@ -34,7 +48,7 @@
 
 int wlibc_cond_init(cond_t *restrict cond, const cond_attr_t *restrict attributes)
 {
-	VALIDATE_COND(cond);
+	VALIDATE_PTR(cond);
 
 	// start with a size of 64.
 	cond->queue_size = 64;

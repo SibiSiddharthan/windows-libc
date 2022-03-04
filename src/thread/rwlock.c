@@ -17,18 +17,33 @@
 		return -1;        \
 	}
 
-#define VALIDATE_RWLOCK(rwlock)           VALIDATE_PTR(rwlock)
+#define VALIDATE_RWLOCK(rwlock)           \
+	VALIDATE_PTR(rwlock)                  \
+	if (rwlock->lock == RWLOCK_DESTROYED) \
+	{                                     \
+		errno = EINVAL;                   \
+		return -1;                        \
+	}
+
 #define VALIDATE_RWLOCK_ATTR(rwlock_attr) VALIDATE_PTR(rwlock_attr)
 
 #define RWLOCK_NOT_LOCKED     0
 #define RWLOCK_SHARED_LOCK    1
 #define RWLOCK_EXCLUSIVE_LOCK 2
+#define RWLOCK_DESTROYED      -1
 
 int wlibc_rwlock_init(rwlock_t *restrict rwlock, const rwlock_attr_t *restrict attributes)
 {
-	VALIDATE_RWLOCK(rwlock);
+	VALIDATE_PTR(rwlock);
 	rwlock->ptr = 0;
 	rwlock->lock = RWLOCK_NOT_LOCKED;
+	return 0;
+}
+
+int wlibc_rwlock_destroy(rwlock_t *rwlock)
+{
+	VALIDATE_RWLOCK(rwlock)
+	rwlock->lock = RWLOCK_DESTROYED;
 	return 0;
 }
 

@@ -17,12 +17,19 @@
 		return -1;        \
 	}
 
-#define VALIDATE_MUTEX(mutex)           VALIDATE_PTR(mutex)
+#define VALIDATE_MUTEX(mutex) \
+	VALIDATE_PTR(mutex)       \
+	if (mutex->handle == 0)   \
+	{                         \
+		errno = EINVAL;       \
+		return -1;            \
+	}
+
 #define VALIDATE_MUTEX_ATTR(mutex_attr) VALIDATE_PTR(mutex_attr)
 
 int wlibc_mutex_init(mutex_t *mutex, const mutex_attr_t *attributes)
 {
-	VALIDATE_MUTEX(mutex);
+	VALIDATE_PTR(mutex);
 	if (attributes != NULL)
 	{
 		if (attributes->shared != WLIBC_PROCESS_PRIVATE && attributes->shared != WLIBC_PROCESS_SHARED)

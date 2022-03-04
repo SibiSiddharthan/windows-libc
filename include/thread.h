@@ -156,6 +156,7 @@ WLIBC_API int wlibc_barrierattr_setpshared(barrier_attr_t *attributes, int pshar
 
 // Reader-Writer lock functions.
 WLIBC_API int wlibc_rwlock_init(rwlock_t *restrict rwlock, const rwlock_attr_t *restrict attributes);
+WLIBC_API int wlibc_rwlock_destroy(rwlock_t *rwlock);
 WLIBC_API int wlibc_rwlock_rdlock(rwlock_t *rwlock);
 WLIBC_API int wlibc_rwlock_tryrdlock(rwlock_t *rwlock);
 WLIBC_API int wlibc_rwlock_timedrdlock(rwlock_t *restrict rwlock, const struct timespec *restrict abstime);
