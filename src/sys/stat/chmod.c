@@ -8,6 +8,7 @@
 #include <internal/nt.h>
 #include <internal/error.h>
 #include <internal/fcntl.h>
+#include <internal/path.h>
 #include <internal/security.h>
 #include <stdlib.h>
 #include <sys/stat.h>
@@ -49,7 +50,8 @@ int do_chmod(HANDLE handle, mode_t mode)
 int common_chmod(int dirfd, const char *path, mode_t mode, int flags)
 {
 
-	HANDLE handle = just_open(dirfd, path, FILE_READ_ATTRIBUTES | READ_CONTROL | WRITE_DAC, flags == AT_SYMLINK_NOFOLLOW ? FILE_OPEN_REPARSE_POINT : 0);
+	HANDLE handle =
+		just_open(dirfd, path, FILE_READ_ATTRIBUTES | READ_CONTROL | WRITE_DAC, flags == AT_SYMLINK_NOFOLLOW ? FILE_OPEN_REPARSE_POINT : 0);
 	if (handle == INVALID_HANDLE_VALUE)
 	{
 		// errno wil be set by just_open
@@ -83,7 +85,20 @@ int wlibc_common_chmod(int dirfd, const char *path, mode_t mode, int flags)
 			return -1;
 		}
 
-		HANDLE handle = get_fd_handle(dirfd);
-		return do_chmod(handle, mode);
+		// The fd is validated, this call will not fail.
+		UNICODE_STRING *ntpath = xget_fd_ntpath(dirfd);
+		// 'open' does not give WRITE_DAC permission, reopen the file with 'WRITE_DAC'.
+		HANDLE handle = just_open2(ntpath, FILE_READ_ATTRIBUTES | READ_CONTROL | WRITE_DAC, 0);
+		if (handle == INVALID_HANDLE_VALUE)
+		{
+			// errno wil be set by `just_open2`.
+			return -1;
+		}
+
+		int result = do_chmod(handle, mode);
+		free(ntpath);
+		NtClose(handle);
+
+		return result;
 	}
 }

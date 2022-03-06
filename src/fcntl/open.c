@@ -21,8 +21,7 @@ static ACCESS_MASK determine_access_rights(int oflags)
 {
 	ACCESS_MASK access_rights = SYNCHRONIZE |                                        // always have this except for nonblocking handles
 								FILE_READ_ATTRIBUTES | FILE_READ_EA | READ_CONTROL | // read
-								FILE_WRITE_ATTRIBUTES | WRITE_DAC;                   // write
-	// Check if need to give this much by default. also WRITE_OWNER?
+								FILE_WRITE_ATTRIBUTES;                               // write
 
 	if (oflags & O_WRONLY)
 	{
@@ -216,7 +215,7 @@ HANDLE just_open2(UNICODE_STRING *ntpath, ACCESS_MASK access, ULONG options)
 	if (memcmp(ntpath->Buffer + 8, L"ConDrv", 12) == 0) // skip "\Device\"
 	{
 		options = FILE_SYNCHRONOUS_IO_NONALERT;
-		if (access & (FILE_WRITE_DATA | FILE_WRITE_ATTRIBUTES | FILE_WRITE_EA | WRITE_DAC))
+		if (access & (FILE_WRITE_DATA | FILE_WRITE_ATTRIBUTES | FILE_WRITE_EA))
 		{
 			access = FILE_GENERIC_WRITE;
 		}
@@ -325,11 +324,10 @@ int do_open(int dirfd, const char *name, int oflags, mode_t perm)
 
 	if (memcmp(u16_ntpath->Buffer + 8, L"Null", 10) == 0) // Include the NULL in comparison as well.
 	{
+		// NOTE: NtCreateFile on 'NUL' fails with STATUS_ACCESS_DENIED if requesting WRITE_DAC or WRITE_OWNER accesses.
 		is_null = true;
 		attributes = 0;
 		options = FILE_SYNCHRONOUS_IO_NONALERT;
-		// remove these or else NtCreateFile fails with STATUS_ACCESS_DENIED
-		access_rights &= ~(WRITE_DAC | WRITE_OWNER);
 	}
 
 	// opening console requires these
