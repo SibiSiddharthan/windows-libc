@@ -71,10 +71,10 @@ int test_fchdir()
 	int fd, dirfd_old, dirfd_new;
 	const char *filename = "t-fchdir.file";
 
-	dirfd_old = open(".", O_RDONLY | O_EXCL);
+	dirfd_old = open(".", O_RDONLY);
 	ASSERT_NOTEQ(dirfd_old, -1);
 
-	dirfd_new = open(dirname, O_RDONLY | O_EXCL);
+	dirfd_new = open(dirname, O_RDONLY);
 	ASSERT_NOTEQ(dirfd_new, -1);
 
 	status = fchdir(dirfd_new);
@@ -113,6 +113,46 @@ int test_dot()
 	return 0;
 }
 
+int test_fchdir_cdrive()
+{
+	int status;
+	int dirfd_old, dirfd_new;
+	const char *cdrive = "C:";
+	const char *cdrive_with_slash = "C:/";
+	char cwd[256];
+
+	dirfd_old = open(".", O_RDONLY);
+	ASSERT_NOTEQ(dirfd_old, -1);
+
+	dirfd_new = open(cdrive, O_PATH);
+	ASSERT_NOTEQ(dirfd_new, -1);
+
+	status = fchdir(dirfd_new);
+	ASSERT_EQ(status, 0);
+	ASSERT_SUCCESS(close(dirfd_new));
+
+	memset(cwd, 0, 256);
+	getcwd(cwd, 256);
+	ASSERT_STREQ(cwd, "C:");
+
+	dirfd_new = open(cdrive_with_slash, O_PATH);
+	ASSERT_NOTEQ(dirfd_new, -1);
+
+	status = fchdir(dirfd_new);
+	ASSERT_EQ(status, 0);
+	ASSERT_SUCCESS(close(dirfd_new));
+
+	memset(cwd, 0, 256);
+	getcwd(cwd, 256);
+	ASSERT_STREQ(cwd, "C:");
+
+	status = fchdir(dirfd_old);
+	ASSERT_EQ(status, 0);
+	ASSERT_SUCCESS(close(dirfd_old));
+
+	return 0;
+}
+
 void cleanup()
 {
 	remove("t-chdir.dir/t-chdir.file");
@@ -130,6 +170,7 @@ int main()
 	TEST(test_okay_with_slashes());
 	TEST(test_fchdir());
 	TEST(test_dot());
+	TEST(test_fchdir_cdrive());
 
 	if (rmdir(dirname) == -1)
 	{
