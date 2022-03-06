@@ -13,8 +13,10 @@
 
 // \Device\HarddiskVolume1\Windows\System32
 UNICODE_STRING *xget_absolute_ntpath(int dirfd, const char *path);
+UNICODE_STRING *xget_fd_ntpath(int fd);
+
 // C:\Windows\System32
-//wchar_t *xget_absolute_dospath(int dirfd, const char *path);
+UNICODE_STRING *xget_absolute_dospath(int dirfd, const char *path);
 UNICODE_STRING *xget_fd_dospath(int fd);
 
 #endif

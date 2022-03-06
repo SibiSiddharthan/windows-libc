@@ -156,7 +156,7 @@ void update_fd_path_cache(int fd, int sequence, PUNICODE_STRING nt_path)
 }
 
 // NOTE: The returned pointer should not be freed.
-UNICODE_STRING *xget_fd_path(int fd)
+UNICODE_STRING *xget_fd_ntpath_internal(int fd)
 {
 	NTSTATUS status;
 	HANDLE handle;
@@ -376,7 +376,7 @@ UNICODE_STRING *xget_absolute_ntpath(int dirfd, const char *path)
 		}
 		else
 		{
-			rootdir_buffer = (char *)xget_fd_path(dirfd);
+			rootdir_buffer = (char *)xget_fd_ntpath_internal(dirfd);
 			if (rootdir_buffer == NULL)
 			{
 				// Bad file descriptor for directory.
@@ -535,6 +535,18 @@ finish:
 	return u16_ntpath;
 }
 
+UNICODE_STRING *xget_fd_ntpath(int fd)
+{
+	UNICODE_STRING *ntpath = NULL;
+	UNICODE_STRING *ntpath_copy = NULL;
+
+	ntpath = xget_fd_ntpath_internal(fd);
+	ntpath_copy = (UNICODE_STRING *)malloc(sizeof(UNICODE_STRING) + ntpath->MaximumLength);
+	memcpy(ntpath_copy, ntpath, sizeof(UNICODE_STRING) + ntpath->MaximumLength);
+
+	return ntpath_copy;
+}
+
 /*
    To convert NT device names to dos devices, we use a cache with 2 slots.
    The first cache slot is the one that is expected to be hit most of the time.
@@ -552,19 +564,12 @@ typedef struct _dos_device
 
 dos_device dos_device_cache[2] = {{-1, 0}, {-1, 0}};
 
-UNICODE_STRING *xget_fd_dospath(int fd)
+static UNICODE_STRING *ntpath_to_dospath(UNICODE_STRING *ntpath)
 {
-	UNICODE_STRING *ntpath = NULL;
 	UNICODE_STRING *dospath = NULL;
 	nt_device *device = NULL;
 	dev_t device_number = 0;
 	char label = 0;
-
-	ntpath = (UNICODE_STRING *)xget_fd_path(fd);
-	if (ntpath == NULL)
-	{
-		return NULL;
-	}
 
 	// Perform a simple 'atoi' (UTF16-LE).
 	for (int i = 22; ntpath->Buffer[i] != L'\\' && ntpath->Buffer[i] != L'\0'; ++i) // skip "\Device\HarddiskVolume"
@@ -656,4 +661,34 @@ UNICODE_STRING *xget_fd_dospath(int fd)
 	}
 
 	return dospath;
+}
+
+UNICODE_STRING *xget_absolute_dospath(int dirfd, const char *path)
+{
+	UNICODE_STRING *ntpath = NULL;
+	UNICODE_STRING *dospath = NULL;
+
+	// First get the NT path, then convert it to a DOS path.
+	ntpath = xget_absolute_ntpath(dirfd, path);
+	if (ntpath == NULL)
+	{
+		// errno wil be set by 'get_absolute_ntpath'.
+		return NULL;
+	}
+
+	dospath = ntpath_to_dospath(ntpath);
+	free(ntpath);
+
+	return dospath;
+}
+
+UNICODE_STRING *xget_fd_dospath(int fd)
+{
+	UNICODE_STRING *ntpath = xget_fd_ntpath_internal(fd);
+	if (ntpath == NULL)
+	{
+		return NULL;
+	}
+
+	return ntpath_to_dospath(ntpath);
 }
