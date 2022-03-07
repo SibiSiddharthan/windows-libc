@@ -16,13 +16,13 @@ FILE *_wlibc_stdin = NULL;
 FILE *_wlibc_stdout = NULL;
 FILE *_wlibc_stderr = NULL;
 
-CRITICAL_SECTION _wlibc_stdio_critical;
+RTL_CRITICAL_SECTION _wlibc_stdio_critical;
 
 static void insert_stream(FILE *stream);
 
 void initialize_stdio(void)
 {
-	InitializeCriticalSection(&_wlibc_stdio_critical);
+	RtlInitializeCriticalSection(&_wlibc_stdio_critical);
 
 	_wlibc_stdin = create_stream(0, _IOFBF | _IOBUFFER_INTERNAL | _IOBUFFER_RDONLY, 512);
 	_wlibc_stdout = create_stream(1, _IOFBF | _IOBUFFER_INTERNAL | _IOBUFFER_WRONLY, 512);
@@ -33,6 +33,8 @@ int common_fflush(FILE *stream);
 
 void close_all_streams(void)
 {
+	RtlEnterCriticalSection(&_wlibc_stdio_critical);
+
 	while (_wlibc_stdio_head != NULL)
 	{
 		FILE *prev = _wlibc_stdio_head->prev;
@@ -53,12 +55,14 @@ void close_all_streams(void)
 		free(_wlibc_stdio_head);
 		_wlibc_stdio_head = prev;
 	}
+
+	RtlLeaveCriticalSection(&_wlibc_stdio_critical);
 }
 
 void cleanup_stdio(void)
 {
 	close_all_streams();
-	DeleteCriticalSection(&_wlibc_stdio_critical);
+	RtlDeleteCriticalSection(&_wlibc_stdio_critical);
 }
 
 FILE *create_stream(int fd, int buf_mode, int buf_size)
@@ -83,21 +87,25 @@ FILE *create_stream(int fd, int buf_mode, int buf_size)
 void insert_stream(FILE *stream)
 {
 	// stream won't be null here
-	EnterCriticalSection(&_wlibc_stdio_critical);
+	RtlEnterCriticalSection(&_wlibc_stdio_critical);
+
 	stream->prev = _wlibc_stdio_head;
 	stream->next = NULL;
+
 	if (_wlibc_stdio_head != NULL)
 	{
 		_wlibc_stdio_head->next = stream;
 	}
+
 	_wlibc_stdio_head = stream;
-	LeaveCriticalSection(&_wlibc_stdio_critical);
+
+	RtlLeaveCriticalSection(&_wlibc_stdio_critical);
 }
 
 void delete_stream(FILE *stream)
 {
 	// stream won't be null here
-	EnterCriticalSection(&_wlibc_stdio_critical);
+	RtlEnterCriticalSection(&_wlibc_stdio_critical);
 
 	if (stream->prev != NULL && stream->next != NULL)
 	{
@@ -121,5 +129,5 @@ void delete_stream(FILE *stream)
 	RtlDeleteCriticalSection(&(stream->critical));
 	free(stream);
 
-	LeaveCriticalSection(&_wlibc_stdio_critical);
+	RtlLeaveCriticalSection(&_wlibc_stdio_critical);
 }
