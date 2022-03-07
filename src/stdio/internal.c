@@ -31,9 +31,9 @@ void initialize_stdio(void)
 
 int common_fflush(FILE *stream);
 
-void cleanup_stdio(void)
+void close_all_streams(void)
 {
-	while (_wlibc_stdio_head != NULL) //&& _wlibc_stdio_head->prev != NULL)
+	while (_wlibc_stdio_head != NULL)
 	{
 		FILE *prev = _wlibc_stdio_head->prev;
 
@@ -53,7 +53,11 @@ void cleanup_stdio(void)
 		free(_wlibc_stdio_head);
 		_wlibc_stdio_head = prev;
 	}
+}
 
+void cleanup_stdio(void)
+{
+	close_all_streams();
 	DeleteCriticalSection(&_wlibc_stdio_critical);
 }
 
@@ -109,7 +113,11 @@ void delete_stream(FILE *stream)
 	{
 		stream->next->prev = NULL;
 	}
-	// else (stream->prev == NULL && stream->next == NULL) fallthrough
+	else // if(stream->prev == NULL && stream->next == NULL)
+	{
+		_wlibc_stdio_head = NULL;
+	}
+
 	RtlDeleteCriticalSection(&(stream->critical));
 	free(stream);
 

@@ -56,7 +56,7 @@ static void write_log(int errnum, const char *filename, unsigned int linenum, in
 		return;
 	}
 
-	// Flush stdout if it is valid . This prevents interspersing of stdout and stderr
+	// Flush stdout if it is valid. This prevents interspersing of stdout and stderr
 	// if they are writing to the same HANDLE
 	stdout_fileno = fileno(stdout);
 	if (stdout_fileno != -1)
@@ -64,11 +64,15 @@ static void write_log(int errnum, const char *filename, unsigned int linenum, in
 		wlibc_fflush(stdout);
 	}
 
-	// Eg "progname: file:line error: strerror"
-	fprintf(stderr, "%s: ", program_name);
 	if (filename)
 	{
-		fprintf(stderr, "%s:%u: ", filename, linenum);
+		// Eg "progname:file:line: error: strerror"
+		fprintf(stderr, "%s:%s:%u: ", program_name, filename, linenum);
+	}
+	else
+	{
+		// Eg "progname: error: strerror"
+		fprintf(stderr, "%s: ", program_name);
 	}
 
 	vfprintf(stderr, format, args);

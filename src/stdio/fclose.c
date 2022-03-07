@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+void close_all_streams(void);
 int common_fflush(FILE *stream);
 int wlibc_close(int fd);
 
@@ -39,6 +40,6 @@ int wlibc_fclose(FILE *stream)
 
 int wlibc_fcloseall()
 {
-	cleanup_stdio();
+	close_all_streams();
 	return 0;
 }

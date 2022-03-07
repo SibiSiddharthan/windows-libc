@@ -80,6 +80,10 @@ int test_list()
 	result = fcloseall();
 	ASSERT_EQ(result, 0);
 
+	// Repeated fcloseall's should not SEGFAULT.
+	result = fcloseall();
+	ASSERT_EQ(result, 0);
+
 	list = _wlibc_stdio_head;
 	ASSERT_NULL(list);
 
