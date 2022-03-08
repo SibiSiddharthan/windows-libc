@@ -22,6 +22,11 @@ int wlibc_spawnattr_init(spawnattr_t *attributes)
 	VALIDATE_SPAWNATTR(attributes);
 
 	attributes->flags = 0;
+	// Unused currently. TODO.
+	attributes->sigmask = 0;
+	attributes->sigdefault = 0;
+	attributes->pgroup = 0;
+	attributes->schedpolicy = 0;
 
 	return 0;
 }
@@ -80,5 +85,41 @@ int wlibc_spawnattr_setflags(spawnattr_t *attributes, short int flags)
 	}
 
 	attributes->flags = flags;
+	return 0;
+}
+
+int wlibc_spawnattr_getpgroup(const spawnattr_t *restrict attributes, pid_t *restrict pgroup)
+{
+	VALIDATE_SPAWNATTR(attributes);
+	VALIDATE_PTR(pgroup);
+
+	*pgroup = attributes->pgroup;
+	return 0;
+}
+
+int wlibc_spawnattr_setpgroup(spawnattr_t *attributes, pid_t pgroup)
+{
+	VALIDATE_SPAWNATTR(attributes);
+	VALIDATE_PTR(pgroup);
+
+	attributes->pgroup = pgroup;
+	return 0;
+}
+
+int wlibc_spawnattr_getschedpolicy(const spawnattr_t *restrict attributes, int *restrict schedpolicy)
+{
+	VALIDATE_SPAWNATTR(attributes);
+	VALIDATE_PTR(schedpolicy);
+
+	*schedpolicy = attributes->schedpolicy;
+	return 0;
+}
+
+int wlibc_spawnattr_setschedpolicy(spawnattr_t *attributes, int schedpolicy)
+{
+	VALIDATE_SPAWNATTR(attributes);
+	VALIDATE_PTR(schedpolicy);
+
+	attributes->schedpolicy = schedpolicy;
 	return 0;
 }

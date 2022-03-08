@@ -15,14 +15,14 @@
 _WLIBC_BEGIN_DECLS
 
 /* Data structure to contain attributes for thread creation.  */
-typedef struct
+typedef struct _spawnattr_t
 {
 	short int flags;
-	pid_t pgrp;
+	pid_t pgroup;
 	sigset_t sigdefault;
 	sigset_t sigmask;
-	// struct sched_param sp;
-	int policy;
+	// struct sched_param schedparam;
+	int schedpolicy;
 } spawnattr_t;
 
 typedef spawnattr_t posix_spawnattr_t;
@@ -77,7 +77,7 @@ struct spawn_action
 	};
 };
 
-typedef struct
+typedef struct _spawn_actions_t
 {
 	unsigned short size;
 	unsigned short used;
@@ -113,12 +113,20 @@ WLIBC_INLINE int posix_spawnp(pid_t *restrict pid, const char *restrict path, co
 
 // Spawn attributes.
 WLIBC_API int wlibc_spawnattr_init(spawnattr_t *attributes);
+WLIBC_API int wlibc_spawnattr_getflags(const spawnattr_t *restrict attributes, short int *restrict flags);
+WLIBC_API int wlibc_spawnattr_setflags(spawnattr_t *attributes, short int flags);
 WLIBC_API int wlibc_spawnattr_getsigdefault(const spawnattr_t *restrict attributes, sigset_t *restrict sigdefault);
 WLIBC_API int wlibc_spawnattr_setsigdefault(spawnattr_t *restrict attributes, const sigset_t *restrict sigdefault);
 WLIBC_API int wlibc_spawnattr_getsigmask(const spawnattr_t *restrict attributes, sigset_t *restrict sigmask);
 WLIBC_API int wlibc_spawnattr_setsigmask(spawnattr_t *restrict attributes, const sigset_t *restrict sigmask);
-WLIBC_API int wlibc_spawnattr_getflags(const spawnattr_t *restrict attributes, short int *restrict flags);
-WLIBC_API int wlibc_spawnattr_setflags(spawnattr_t *attributes, short int flags);
+WLIBC_API int wlibc_spawnattr_getpgroup(const spawnattr_t *restrict attributes, pid_t *restrict pgroup);
+WLIBC_API int wlibc_spawnattr_setpgroup(spawnattr_t *attributes, pid_t pgroup);
+WLIBC_API int wlibc_spawnattr_getschedpolicy(const spawnattr_t *restrict attributes, int *restrict schedpolicy);
+WLIBC_API int wlibc_spawnattr_setschedpolicy(spawnattr_t *attributes, int schedpolicy);
+#if 0
+WLIBC_API int wlibc_spawnattr_getschedparam(const spawnattr_t *restrict attributes, struct sched_param *restrict schedparam);
+WLIBC_API int wlibc_spawnattr_setschedparam(spawnattr_t *restrict attributes, const struct sched_param *restrict schedparam);
+#endif
 
 WLIBC_INLINE int posix_spawnattr_init(posix_spawnattr_t *attributes)
 {
@@ -129,6 +137,16 @@ WLIBC_INLINE int posix_spawnattr_destroy(posix_spawnattr_t *attributes)
 {
 	// nop
 	return 0;
+}
+
+WLIBC_INLINE int posix_spawnattr_getflags(const posix_spawnattr_t *restrict attributes, short int *restrict flags)
+{
+	return wlibc_spawnattr_getflags(attributes, flags);
+}
+
+WLIBC_INLINE int posix_spawnattr_setflags(posix_spawnattr_t *attributes, short int flags)
+{
+	return wlibc_spawnattr_setflags(attributes, flags);
 }
 
 WLIBC_INLINE int posix_spawnattr_getsigdefault(const posix_spawnattr_t *restrict attributes, sigset_t *restrict sigdefault)
@@ -151,22 +169,37 @@ WLIBC_INLINE int posix_spawnattr_setsigmask(posix_spawnattr_t *restrict attribut
 	return wlibc_spawnattr_setsigmask(attributes, sigmask);
 }
 
-WLIBC_INLINE int posix_spawnattr_getflags(const posix_spawnattr_t *restrict attributes, short int *restrict flags)
+WLIBC_INLINE int posix_spawnattr_getpgroup(const posix_spawnattr_t *restrict attributes, pid_t *restrict pgroup)
 {
-	return wlibc_spawnattr_getflags(attributes, flags);
+	return wlibc_spawnattr_getpgroup(attributes, pgroup);
 }
 
-WLIBC_INLINE int posix_spawnattr_setflags(posix_spawnattr_t *attributes, short int flags)
+WLIBC_INLINE int posix_spawnattr_setpgroup(posix_spawnattr_t *attributes, pid_t pgroup)
 {
-	return wlibc_spawnattr_setflags(attributes, flags);
+	return wlibc_spawnattr_setpgroup(attributes, pgroup);
 }
 
-// extern int posix_spawnattr_getpgroup(const posix_spawnattr_t *restrict attributes, pid_t *restrict pgroup);
-// extern int posix_spawnattr_setpgroup(posix_spawnattr_t *attributes, pid_t pgroup);
-// extern int posix_spawnattr_getschedpolicy(const posix_spawnattr_t *restrict attributes, int *restrict schedpolicy);
-// extern int posix_spawnattr_setschedpolicy(posix_spawnattr_t *attributes, int schedpolicy);
-//  extern int posix_spawnattr_getschedparam(const posix_spawnattr_t *restrict attributes, struct sched_param *restrict schedparam);
-//  extern int posix_spawnattr_setschedparam(posix_spawnattr_t *restrict attributes, const struct sched_param *restrict schedparam);
+WLIBC_INLINE int posix_spawnattr_getschedpolicy(const posix_spawnattr_t *restrict attributes, int *restrict schedpolicy)
+{
+	return wlibc_spawnattr_getschedpolicy(attributes, schedpolicy);
+}
+
+WLIBC_INLINE int posix_spawnattr_setschedpolicy(posix_spawnattr_t *attributes, int schedpolicy)
+{
+	return wlibc_spawnattr_setschedpolicy(attributes, schedpolicy);
+}
+
+#if 0
+WLIBC_INLINE int posix_spawnattr_getschedparam(const posix_spawnattr_t *restrict attributes, struct sched_param *restrict schedparam)
+{
+	return wlibc_spawnattr_getschedparam(attributes, schedparam);
+}
+
+WLIBC_INLINE int posix_spawnattr_setschedparam(posix_spawnattr_t *restrict attributes, const struct sched_param *restrict schedparam)
+{
+	return wlibc_spawnattr_setschedparam(attributes, schedparam);
+}
+#endif
 
 // Spawn actions.
 WLIBC_API int wlibc_spawn_file_actions_init(spawn_actions_t *actions);
