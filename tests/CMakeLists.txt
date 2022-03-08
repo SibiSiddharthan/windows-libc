@@ -64,3 +64,8 @@ if(ENABLE_THREADS)
 	add_subdirectory(pthread)
 	add_subdirectory(threads)
 endif()
+
+if(ENABLE_SPAWN)
+	add_subdirectory(spawn)
+endif()
+
