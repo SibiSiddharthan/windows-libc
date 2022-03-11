@@ -564,7 +564,7 @@ typedef struct _dos_device
 
 dos_device dos_device_cache[2] = {{-1, 0}, {-1, 0}};
 
-static UNICODE_STRING *ntpath_to_dospath(UNICODE_STRING *ntpath)
+UNICODE_STRING *ntpath_to_dospath(UNICODE_STRING *ntpath)
 {
 	UNICODE_STRING *dospath = NULL;
 	nt_device *device = NULL;

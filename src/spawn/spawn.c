@@ -120,7 +120,7 @@ static void give_inherit_information_to_startupinfo(inherit_information *inherit
 		{
 			unsigned char flag = FOPEN_FLAG;
 
-			if (inherit_info->fdinfo[i].flags & O_APPEND)
+			if (inherit_info->fdinfo[i].flags & O_APPEND) // This is tricky. CHECK
 			{
 				flag |= FAPPEND_FLAG;
 			}
@@ -168,6 +168,196 @@ static void give_inherit_information_to_startupinfo(inherit_information *inherit
 			}
 		}
 	}
+}
+
+// Return the dospath only if the file has executable permissions, else return NULL.
+static UNICODE_STRING *get_absolute_dospath_of_executable(const char *path)
+{
+	HANDLE handle;
+	UNICODE_STRING *dospath = NULL;
+	UNICODE_STRING *ntpath = NULL;
+
+	ntpath = xget_absolute_ntpath(AT_FDCWD, path);
+	if (ntpath == NULL)
+	{
+		goto finish;
+	}
+
+	// Make sure the file has execute permissions. If it doesn't an exectuable section
+	// can't be created and `CreateProcessW` will fail.
+	handle = just_open2(ntpath, FILE_EXECUTE, FILE_NON_DIRECTORY_FILE);
+	if (handle == INVALID_HANDLE_VALUE)
+	{
+		// errno will be set by `just_open`.
+		// EACCESS if we do not have execute access.
+		// ENOENT if the file is not PRESENT.
+		goto finish;
+	}
+
+	NtClose(handle);
+	dospath = ntpath_to_dospath(ntpath);
+
+finish:
+	free(ntpath);
+	return dospath;
+}
+
+static UNICODE_STRING *search_for_program(const char *path)
+{
+	int length;
+	char *program = NULL;
+	UNICODE_STRING *dospath = NULL;
+	bool executable_extension_given = false;
+
+	// First scan the path to see if there are any extensions.
+	length = strlen(path);
+	// Check for ".exe", ".cmd", ".bat". In this order.
+	if (length - 4 > 0)
+	{
+		if (path[length - 4] == '.')
+		{
+			if (strncmp(&path[length - 3], "exe", 3) == 0 || strncmp(&path[length - 3], "cmd", 3) || strncmp(&path[length - 3], "bat", 3))
+			{
+				executable_extension_given = true;
+			}
+		}
+	}
+
+	if (executable_extension_given)
+	{
+		return get_absolute_dospath_of_executable(path);
+	}
+
+	// No extension was given. Append an supposed extension and search.
+	program = (char *)malloc(length + 5);
+	memcpy(program, path, length);
+
+	// Given a program without an executable extension append the possible
+	// ".exe", ".cmd", ".bat" in this order.
+	// To speed up performing shebang execution, search for the program as is after
+	// appending ".exe".
+	// The rationale behind this is that most programs in Windows are .exes.
+	// Preferring exes over any other extension makes more sense. 
+	// Shebang scripts are more widely used than cmd or bat scripts I assume.
+
+	// '.exe'
+	memcpy(program + length, ".exe", 5);
+	dospath = get_absolute_dospath_of_executable(program);
+	if (dospath != NULL)
+	{
+		goto finish;
+	}
+
+	// No extension
+	// This is for shebang execution.
+	program[length] = '\0';
+	dospath = get_absolute_dospath_of_executable(path);
+	if (dospath != NULL)
+	{
+		goto finish;
+	}
+
+	// '.cmd'
+	memcpy(program + length, ".cmd", 5);
+	dospath = get_absolute_dospath_of_executable(program);
+	if (dospath != NULL)
+	{
+		goto finish;
+	}
+
+	// '.bat'
+	memcpy(program + length, ".bat", 5);
+	dospath = get_absolute_dospath_of_executable(program);
+	if (dospath != NULL)
+	{
+		goto finish;
+	}
+
+	// No executable file was found.
+
+finish:
+	free(program);
+	return dospath;
+}
+
+UNICODE_STRING *search_path_for_program(const char *path)
+{
+	const char path_separator = ';';
+	size_t length;
+	size_t buffer_size = 256;
+	char *program = NULL;
+	char *PATH = NULL;
+	UNICODE_STRING *dospath = NULL;
+
+	if ( // Normal Windows way -> C:
+		(isalpha(path[0]) && path[1] == ':') ||
+		// Cygwin way /c
+		path[0] == '/')
+	{
+		// An absolute path was given, no point in searching the PATH variable.
+		return search_for_program(path);
+	}
+
+	PATH = getenv("PATH");
+
+	if (PATH == NULL)
+	{
+		// No PATH in environment fail.
+		errno = ENOENT;
+		return NULL;
+	}
+
+	program = malloc(buffer_size);
+	length = strlen(path);
+
+	size_t i = 0, j = 0;
+	while (PATH[i] != '\0')
+	{
+		if (PATH[i] == path_separator)
+		{
+			if (i - j + length >= buffer_size) // (+) '\', (-) ';'
+			{
+				// Double the buffer.
+				buffer_size *= 2;
+				// If the buffer is not big enough keep doubling it.
+				while (i - j + length >= buffer_size)
+				{
+					buffer_size *= 2;
+				}
+
+				program = realloc(program, buffer_size);
+			}
+
+			// Append program to path. Eg PATH\PROGRAM
+			memcpy(program, PATH + j, i - j - 1); // Exclude ';'
+			program[i - j - 1] = '\\';
+			memcpy(program + (i - j), path, length + 1);
+			j = i;
+
+			// Check if the program exists in this particular directory.
+			dospath = search_for_program(program);
+			if (dospath != NULL)
+			{
+				goto finish;
+			}
+		}
+
+		++i;
+	}
+
+finish:
+	free(program);
+	return dospath;
+}
+
+static UNICODE_STRING *get_absolute_dospath_of_program(const char *path, int use_path)
+{
+	if (use_path)
+	{
+		return search_path_for_program(path);
+	}
+
+	return search_for_program(path);
 }
 
 static WCHAR *convert_argv_to_wargv(char *const argv[])
@@ -281,15 +471,16 @@ static WCHAR *convert_env_to_wenv(char *const env[])
 int wlibc_spawn(pid_t *restrict pid, const char *restrict path, const spawn_actions_t *restrict actions,
 				const spawnattr_t *restrict attributes, int use_path, char *restrict const argv[], char *restrict const env[])
 {
+
+	VALIDATE_PATH(path, ENOENT, -1);
+
 	// TODO
 	// Ignore spawn attributes for now.
-	// Ignore using path for now.
 	int result = -1;
 
 	STARTUPINFOW SINFO;
 	PROCESS_INFORMATION PINFO;
-	UNICODE_STRING u16_path, *pu16_cwd = NULL;
-	UTF8_STRING u8_path;
+	UNICODE_STRING *u16_path = NULL, *u16_cwd = NULL;
 	WCHAR *wpath = NULL;
 	WCHAR *wargv = NULL;
 	WCHAR *wenv = NULL;
@@ -300,9 +491,13 @@ int wlibc_spawn(pid_t *restrict pid, const char *restrict path, const spawn_acti
 	memset(&PINFO, 0, sizeof(PINFO));
 
 	// Convert path to UTF-16
-	RtlInitUTF8String(&u8_path, path);
-	RtlUTF8StringToUnicodeString(&u16_path, &u8_path, TRUE);
-	wpath = u16_path.Buffer;
+	u16_path = get_absolute_dospath_of_program(path, use_path);
+	if (u16_path == NULL)
+	{
+		// Appropriate errno will be set by `get_absolute_dospath_of_executable`.
+		goto finish;
+	}
+	wpath = u16_path->Buffer;
 
 	// Convert args to UTF-16
 	wargv = convert_argv_to_wargv((char *const *)argv);
@@ -470,25 +665,25 @@ int wlibc_spawn(pid_t *restrict pid, const char *restrict path, const spawn_acti
 		case chdir_action:
 		{
 			// Validate the chdir path given.
-			pu16_cwd = xget_absolute_dospath(AT_FDCWD, actions->actions[i].chdir_action.path);
-			if (pu16_cwd == NULL)
+			u16_cwd = xget_absolute_dospath(AT_FDCWD, actions->actions[i].chdir_action.path);
+			if (u16_cwd == NULL)
 			{
 				errno = ENOENT;
 				goto finish;
 			}
-			wenv = pu16_cwd->Buffer;
+			wenv = u16_cwd->Buffer;
 		}
 		break;
 
 		case fchdir_action:
 		{
-			pu16_cwd = xget_fd_dospath(actions->actions[i].fchdir_action.fd);
-			if (pu16_cwd == NULL)
+			u16_cwd = xget_fd_dospath(actions->actions[i].fchdir_action.fd);
+			if (u16_cwd == NULL)
 			{
 				errno = EBADF;
 				goto finish;
 			}
-			wenv = pu16_cwd->Buffer;
+			wenv = u16_cwd->Buffer;
 		}
 		break;
 		}
@@ -516,10 +711,10 @@ int wlibc_spawn(pid_t *restrict pid, const char *restrict path, const spawn_acti
 	result = 0;
 
 finish:
-	RtlFreeUnicodeString(&u16_path);
+	free(u16_path);
 	free(wargv);
 	free(wenv);
-	free(pu16_cwd);
+	free(u16_cwd);
 	free(SINFO.lpReserved2);
 	cleanup_inherit_information(&inherit_info, actions);
 

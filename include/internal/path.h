@@ -19,4 +19,6 @@ UNICODE_STRING *xget_fd_ntpath(int fd);
 UNICODE_STRING *xget_absolute_dospath(int dirfd, const char *path);
 UNICODE_STRING *xget_fd_dospath(int fd);
 
+UNICODE_STRING *ntpath_to_dospath(UNICODE_STRING *ntpath);
+
 #endif
