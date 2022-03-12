@@ -13,7 +13,7 @@
 
 _WLIBC_BEGIN_DECLS
 
-typedef struct WLIBC_FILE FILE;
+typedef struct _WLIBC_FILE FILE;
 
 #define FSETLOCKING_QUERY    0
 #define FSETLOCKING_INTERNAL 1

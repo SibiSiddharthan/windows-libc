@@ -23,7 +23,7 @@ _WLIBC_BEGIN_DECLS
 #define L_ctermid 260
 #define L_cuserid
 
-typedef struct WLIBC_FILE FILE;
+typedef struct _WLIBC_FILE FILE;
 
 extern FILE *_wlibc_stdin;
 extern FILE *_wlibc_stdout;

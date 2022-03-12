@@ -11,7 +11,7 @@
 #include <internal/nt.h>
 #include <sys/types.h>
 
-typedef struct WLIBC_DIR
+typedef struct _WLIBC_DIR
 {
 	unsigned int magic;
 	int fd;

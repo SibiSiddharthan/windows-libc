@@ -45,7 +45,7 @@ struct dirent
 	char d_name[260];
 };
 
-typedef struct WLIBC_DIR DIR;
+typedef struct _WLIBC_DIR DIR;
 
 WLIBC_API DIR *wlibc_opendir(const char *path);
 WLIBC_INLINE DIR *opendir(const char *path)

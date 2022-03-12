@@ -11,7 +11,7 @@
 #include <internal/nt.h>
 #include <sys/types.h>
 
-typedef struct WLIBC_FILE
+typedef struct _WLIBC_FILE
 {
 	unsigned int magic;
 	int fd;
@@ -25,8 +25,8 @@ typedef struct WLIBC_FILE
 	int prev_op;
 	HANDLE phandle;
 	RTL_CRITICAL_SECTION critical;
-	struct WLIBC_FILE *prev;
-	struct WLIBC_FILE *next;
+	struct _WLIBC_FILE *prev;
+	struct _WLIBC_FILE *next;
 } FILE;
 
 /* Buffer options */
@@ -66,7 +66,7 @@ typedef struct WLIBC_FILE
 #define FD_MEMSTREAM -1
 
 extern FILE *_wlibc_stdio_head;
-extern CRITICAL_SECTION _wlibc_stdio_critical;
+extern RTL_CRITICAL_SECTION _wlibc_stdio_critical;
 
 void initialize_stdio(void);
 void cleanup_stdio(void);
