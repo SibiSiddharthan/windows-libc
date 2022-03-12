@@ -164,10 +164,10 @@ UNICODE_STRING *xget_fd_ntpath_internal(int fd)
 	UNICODE_STRING *path = NULL;
 	int sequence;
 
-	EnterCriticalSection(&_fd_critical);
+	SHARED_LOCK_FD_TABLE();
 	sequence = _wlibc_fd_table[fd].sequence;
 	handle = _wlibc_fd_table[fd].handle;
-	LeaveCriticalSection(&_fd_critical);
+	SHARED_UNLOCK_FD_TABLE();
 
 	// Check the cache first.
 	path = check_fd_path_cache(fd, sequence);

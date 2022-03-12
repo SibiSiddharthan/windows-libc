@@ -15,7 +15,6 @@
 struct fd_table *_wlibc_fd_table = NULL;
 size_t _wlibc_fd_table_size = 0;
 unsigned int _wlibc_fd_sequence = 0;
-CRITICAL_SECTION _fd_critical;
 RTL_SRWLOCK _wlibc_fd_table_srwlock;
 
 // Declaration of static functions
@@ -95,7 +94,6 @@ HANDLE open_conout(void)
 void init_fd_table(void)
 {
 	RtlInitializeSRWLock(&_wlibc_fd_table_srwlock);
-	InitializeCriticalSection(&_fd_critical);
 	bool console_subsystem = true;
 	if (NtCurrentPeb()->ProcessParameters->ConsoleHandle == 0 || NtCurrentPeb()->ProcessParameters->ConsoleHandle == (HANDLE)-1)
 	{
@@ -177,7 +175,8 @@ void init_fd_table(void)
 	}
 
 	// Cygwin/MSYS gives the same handle as stdout and stderr, duplicate the handle
-	if ((_wlibc_fd_table[1].handle != INVALID_HANDLE_VALUE && _wlibc_fd_table[2].handle != INVALID_HANDLE_VALUE) && _wlibc_fd_table[1].handle == _wlibc_fd_table[2].handle)
+	if ((_wlibc_fd_table[1].handle != INVALID_HANDLE_VALUE && _wlibc_fd_table[2].handle != INVALID_HANDLE_VALUE) &&
+		_wlibc_fd_table[1].handle == _wlibc_fd_table[2].handle)
 	{
 		HANDLE new_stderr;
 		status = NtDuplicateObject(NtCurrentProcess(), _wlibc_fd_table[1].handle, NtCurrentProcess(), &new_stderr, 0, 0,
@@ -203,7 +202,6 @@ void init_fd_table(void)
 void cleanup_fd_table(void)
 {
 	free(_wlibc_fd_table);
-	DeleteCriticalSection(&_fd_critical);
 }
 
 ///////////////////////////////////////
@@ -261,9 +259,9 @@ static int register_to_fd_table_internal(HANDLE _h, handle_t _type, int _flags)
 
 int register_to_fd_table(HANDLE _h, handle_t _type, int _flags)
 {
-	EnterCriticalSection(&_fd_critical);
+	EXCLUSIVE_LOCK_FD_TABLE();
 	int fd = register_to_fd_table_internal(_h, _type, _flags);
-	LeaveCriticalSection(&_fd_critical);
+	EXCLUSIVE_UNLOCK_FD_TABLE();
 	return fd;
 }
 
@@ -290,9 +288,9 @@ static void insert_into_fd_table_internal(int _fd, HANDLE _h, handle_t _type, in
 
 void insert_into_fd_table(int _fd, HANDLE _h, handle_t _type, int _flags)
 {
-	EnterCriticalSection(&_fd_critical);
+	EXCLUSIVE_LOCK_FD_TABLE();
 	insert_into_fd_table_internal(_fd, _h, _type, _flags);
-	LeaveCriticalSection(&_fd_critical);
+	EXCLUSIVE_UNLOCK_FD_TABLE();
 }
 
 static void unregister_from_fd_table_internal(HANDLE _h)
@@ -310,9 +308,9 @@ static void unregister_from_fd_table_internal(HANDLE _h)
 
 void unregister_from_fd_table(HANDLE _h)
 {
-	EnterCriticalSection(&_fd_critical);
+	EXCLUSIVE_LOCK_FD_TABLE();
 	unregister_from_fd_table_internal(_h);
-	LeaveCriticalSection(&_fd_critical);
+	EXCLUSIVE_UNLOCK_FD_TABLE();
 }
 
 static int get_fd_internal(HANDLE _h)
@@ -331,9 +329,9 @@ static int get_fd_internal(HANDLE _h)
 
 int get_fd(HANDLE _h)
 {
-	EnterCriticalSection(&_fd_critical);
+	SHARED_LOCK_FD_TABLE();
 	int fd = get_fd_internal(_h);
-	LeaveCriticalSection(&_fd_critical);
+	SHARED_UNLOCK_FD_TABLE();
 	return fd;
 }
 
@@ -352,9 +350,9 @@ static int close_fd_internal(int _fd)
 
 int close_fd(int _fd)
 {
-	EnterCriticalSection(&_fd_critical);
+	EXCLUSIVE_LOCK_FD_TABLE();
 	int status = close_fd_internal(_fd);
-	LeaveCriticalSection(&_fd_critical);
+	EXCLUSIVE_UNLOCK_FD_TABLE();
 	return status;
 }
 
@@ -368,9 +366,10 @@ static HANDLE get_fd_handle_internal(int _fd)
 
 HANDLE get_fd_handle(int _fd)
 {
-	EnterCriticalSection(&_fd_critical);
-	HANDLE handle = get_fd_handle_internal(_fd);
-	LeaveCriticalSection(&_fd_critical);
+	HANDLE handle;
+	SHARED_LOCK_FD_TABLE();
+	handle = get_fd_handle_internal(_fd);
+	SHARED_UNLOCK_FD_TABLE();
 	return handle;
 }
 
@@ -382,9 +381,9 @@ static int get_fd_flags_internal(int _fd)
 int get_fd_flags(int _fd)
 {
 	int flags;
-	EnterCriticalSection(&_fd_critical);
+	SHARED_LOCK_FD_TABLE();
 	flags = get_fd_flags_internal(_fd);
-	LeaveCriticalSection(&_fd_critical);
+	SHARED_UNLOCK_FD_TABLE();
 	return flags;
 }
 
@@ -399,9 +398,9 @@ static handle_t get_fd_type_internal(int _fd)
 handle_t get_fd_type(int _fd)
 {
 	handle_t type;
-	EnterCriticalSection(&_fd_critical);
+	SHARED_LOCK_FD_TABLE();
 	type = get_fd_type_internal(_fd);
-	LeaveCriticalSection(&_fd_critical);
+	SHARED_UNLOCK_FD_TABLE();
 	return type;
 }
 
@@ -415,9 +414,9 @@ static void set_fd_handle_internal(int _fd, HANDLE _handle)
 
 void set_fd_handle(int _fd, HANDLE _handle)
 {
-	EnterCriticalSection(&_fd_critical);
+	EXCLUSIVE_LOCK_FD_TABLE();
 	set_fd_handle_internal(_fd, _handle);
-	LeaveCriticalSection(&_fd_critical);
+	EXCLUSIVE_UNLOCK_FD_TABLE();
 }
 
 static void set_fd_flags_internal(int _fd, int _flags)
@@ -427,9 +426,9 @@ static void set_fd_flags_internal(int _fd, int _flags)
 
 void set_fd_flags(int _fd, int _flags)
 {
-	EnterCriticalSection(&_fd_critical);
+	EXCLUSIVE_LOCK_FD_TABLE();
 	set_fd_flags_internal(_fd, _flags);
-	LeaveCriticalSection(&_fd_critical);
+	EXCLUSIVE_UNLOCK_FD_TABLE();
 }
 
 static void set_fd_type_internal(int _fd, handle_t _type)
@@ -439,9 +438,9 @@ static void set_fd_type_internal(int _fd, handle_t _type)
 
 void set_fd_type(int _fd, handle_t _type)
 {
-	EnterCriticalSection(&_fd_critical);
+	EXCLUSIVE_LOCK_FD_TABLE();
 	set_fd_type_internal(_fd, _type);
-	LeaveCriticalSection(&_fd_critical);
+	EXCLUSIVE_UNLOCK_FD_TABLE();
 }
 
 static void add_fd_flags_internal(int _fd, int _flags)
@@ -451,9 +450,9 @@ static void add_fd_flags_internal(int _fd, int _flags)
 
 void add_fd_flags(int _fd, int _flags)
 {
-	EnterCriticalSection(&_fd_critical);
+	EXCLUSIVE_LOCK_FD_TABLE();
 	add_fd_flags_internal(_fd, _flags);
-	LeaveCriticalSection(&_fd_critical);
+	EXCLUSIVE_UNLOCK_FD_TABLE();
 }
 
 ///////////////////////////////////////
@@ -470,8 +469,9 @@ static bool validate_fd_internal(int _fd)
 
 bool validate_fd(int _fd)
 {
-	EnterCriticalSection(&_fd_critical);
-	bool condition = validate_fd_internal(_fd);
-	LeaveCriticalSection(&_fd_critical);
+	bool condition = false;
+	SHARED_LOCK_FD_TABLE();
+	condition = validate_fd_internal(_fd);
+	SHARED_UNLOCK_FD_TABLE();
 	return condition;
 }

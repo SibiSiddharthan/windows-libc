@@ -37,7 +37,7 @@ static void initialize_inherit_information(inherit_information *info, int max_fd
 	info->fdinfo = (inherit_fdinfo *)malloc(sizeof(inherit_fdinfo) * (max_fd + 1));
 	info->fds = max_fd;
 
-	EnterCriticalSection(&_fd_critical);
+	SHARED_LOCK_FD_TABLE();
 	for (int i = 0; i <= max_fd; ++i)
 	{
 		if (i < (int)_wlibc_fd_table_size)
@@ -54,7 +54,7 @@ static void initialize_inherit_information(inherit_information *info, int max_fd
 			info->fdinfo[i].flags = 0;
 		}
 	}
-	LeaveCriticalSection(&_fd_critical);
+	SHARED_UNLOCK_FD_TABLE();
 }
 
 static void cleanup_inherit_information(inherit_information *restrict info, const spawn_actions_t *restrict actions)

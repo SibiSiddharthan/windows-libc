@@ -33,7 +33,6 @@ struct fd_table
 extern struct fd_table *_wlibc_fd_table;
 extern size_t _wlibc_fd_table_size;
 extern unsigned int _wlibc_fd_sequence;
-extern CRITICAL_SECTION _fd_critical;
 extern RTL_SRWLOCK _wlibc_fd_table_srwlock;
 
 // Initialization and cleanup functions
