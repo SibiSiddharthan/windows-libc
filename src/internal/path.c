@@ -165,8 +165,8 @@ UNICODE_STRING *xget_fd_ntpath_internal(int fd)
 	int sequence;
 
 	EnterCriticalSection(&_fd_critical);
-	sequence = _fd_io[fd]._sequence;
-	handle = _fd_io[fd]._handle;
+	sequence = _wlibc_fd_table[fd].sequence;
+	handle = _wlibc_fd_table[fd].handle;
 	LeaveCriticalSection(&_fd_critical);
 
 	// Check the cache first.

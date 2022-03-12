@@ -12,8 +12,6 @@
 #include <sys/types.h>
 #include <stdbool.h>
 
-typedef void *HANDLE;
-
 typedef enum _handle_t
 {
 	NULL_HANDLE,
@@ -26,16 +24,17 @@ typedef enum _handle_t
 
 struct fd_table
 {
-	HANDLE _handle;
-	handle_t _type;
-	int _flags;
-	unsigned int _sequence;
+	HANDLE handle;
+	handle_t type;
+	int flags;
+	unsigned int sequence;
 };
 
-extern struct fd_table *_fd_io;
-extern size_t _fd_table_size;
-extern unsigned int _fd_io_sequence;
+extern struct fd_table *_wlibc_fd_table;
+extern size_t _wlibc_fd_table_size;
+extern unsigned int _wlibc_fd_sequence;
 extern CRITICAL_SECTION _fd_critical;
+extern RTL_SRWLOCK _wlibc_fd_table_srwlock;
 
 // Initialization and cleanup functions
 void init_fd_table(void);
@@ -82,6 +81,17 @@ bool validate_fd(int _fd);
 // Ignore attributes and disposition here as they will be '0' and 'FILE_OPEN' respectively.
 HANDLE just_open(int dirfd, const char *path, ACCESS_MASK access, ULONG options);
 HANDLE just_open2(UNICODE_STRING *ntpath, ACCESS_MASK access, ULONG options);
+
+#define SHARED_LOCK_FD_TABLE()      RtlAcquireSRWLockShared(&_wlibc_fd_table_srwlock)
+#define SHARED_UNLOCK_FD_TABLE()    RtlReleaseSRWLockShared(&_wlibc_fd_table_srwlock)
+#define EXCLUSIVE_LOCK_FD_TABLE()   RtlAcquireSRWLockExclusive(&_wlibc_fd_table_srwlock)
+#define EXCLUSIVE_UNLOCK_FD_TABLE() RtlReleaseSRWLockExclusive(&_wlibc_fd_table_srwlock)
+
+#define FD_IN_TABLE(fd)     (fd < _wlibc_fd_table_size)
+#define FD_GET_HANDLE(fd)   ((HANDLE)(INT_PTR)_wlibc_fd_table[fd].handle)
+#define FD_GET_TYPE(fd)     (_wlibc_fd_table[fd].type)
+#define FD_GET_FLAGS(fd)    (_wlibc_fd_table[fd].flags)
+#define FD_GET_SEQUENCE(fd) (_wlibc_fd_table[fd].sequence)
 
 #define VALIDATE_PATH(path, error, ret)  \
 	if (path == NULL || path[0] == '\0') \

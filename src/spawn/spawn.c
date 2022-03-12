@@ -40,12 +40,12 @@ static void initialize_inherit_information(inherit_information *info, int max_fd
 	EnterCriticalSection(&_fd_critical);
 	for (int i = 0; i <= max_fd; ++i)
 	{
-		if (i < (int)_fd_table_size)
+		if (i < (int)_wlibc_fd_table_size)
 		{
 			// This can be memcpy'd. TODO
-			info->fdinfo[i].handle = _fd_io[i]._handle;
-			info->fdinfo[i].type = _fd_io[i]._type;
-			info->fdinfo[i].flags = _fd_io[i]._flags;
+			info->fdinfo[i].handle = _wlibc_fd_table[i].handle;
+			info->fdinfo[i].type = _wlibc_fd_table[i].type;
+			info->fdinfo[i].flags = _wlibc_fd_table[i].flags;
 		}
 		else
 		{
@@ -546,7 +546,7 @@ int wlibc_spawn(pid_t *restrict pid, const char *restrict path, const spawn_acti
 		}
 	}
 
-	max_fd_requested = __max(max_fd_requested, (int)_fd_table_size);
+	max_fd_requested = __max(max_fd_requested, (int)_wlibc_fd_table_size);
 	inherit_information inherit_info;
 
 	initialize_inherit_information(&inherit_info, max_fd_requested);
