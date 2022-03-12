@@ -12,7 +12,7 @@
 #include <fcntl.h>
 #include <stdlib.h>
 
-struct fd_table *_wlibc_fd_table = NULL;
+fdinfo *_wlibc_fd_table = NULL;
 size_t _wlibc_fd_table_size = 0;
 unsigned int _wlibc_fd_sequence = 0;
 RTL_SRWLOCK _wlibc_fd_table_srwlock;
@@ -108,7 +108,7 @@ void init_fd_table(void)
 	FILE_FS_DEVICE_INFORMATION device_info;
 
 	_wlibc_fd_table_size = 4;
-	_wlibc_fd_table = (struct fd_table *)malloc(sizeof(struct fd_table) * _wlibc_fd_table_size);
+	_wlibc_fd_table = (fdinfo *)malloc(sizeof(fdinfo) * _wlibc_fd_table_size);
 
 	status = NtQueryVolumeInformationFile(hin, &io, &device_info, sizeof(FILE_FS_DEVICE_INFORMATION), FileFsDeviceInformation);
 	if (status == STATUS_SUCCESS)
@@ -239,8 +239,8 @@ static int register_to_fd_table_internal(HANDLE _h, handle_t _type, int _flags)
 
 	else // double the table size
 	{
-		struct fd_table *temp = (struct fd_table *)malloc(sizeof(struct fd_table) * _wlibc_fd_table_size * 2);
-		memcpy(temp, _wlibc_fd_table, sizeof(struct fd_table) * _wlibc_fd_table_size);
+		fdinfo *temp = (fdinfo *)malloc(sizeof(fdinfo) * _wlibc_fd_table_size * 2);
+		memcpy(temp, _wlibc_fd_table, sizeof(fdinfo) * _wlibc_fd_table_size);
 		free(_wlibc_fd_table);
 		_wlibc_fd_table = temp;
 
@@ -270,8 +270,8 @@ static void insert_into_fd_table_internal(int _fd, HANDLE _h, handle_t _type, in
 	// grow the table
 	if (_fd >= (int)_wlibc_fd_table_size)
 	{
-		struct fd_table *temp = (struct fd_table *)malloc(sizeof(struct fd_table) * _fd * 2); // Allocate double the requested fd number
-		memcpy(temp, _wlibc_fd_table, sizeof(struct fd_table) * _wlibc_fd_table_size);
+		fdinfo *temp = (fdinfo *)malloc(sizeof(fdinfo) * _fd * 2); // Allocate double the requested fd number
+		memcpy(temp, _wlibc_fd_table, sizeof(fdinfo) * _wlibc_fd_table_size);
 		free(_wlibc_fd_table);
 		_wlibc_fd_table = temp;
 
@@ -402,6 +402,21 @@ handle_t get_fd_type(int _fd)
 	type = get_fd_type_internal(_fd);
 	SHARED_UNLOCK_FD_TABLE();
 	return type;
+}
+
+void get_fdinfo(int fd, fdinfo *info)
+{
+	if (validate_fd_internal(fd))
+	{
+		// TODO try to avoid a jmp here.
+		memcpy(info, &_wlibc_fd_table[fd], sizeof(fdinfo));
+	}
+	else
+	{
+		// TODO do this in a single load.
+		info->handle = INVALID_HANDLE_VALUE;
+		info->type = INVALID_HANDLE;
+	}
 }
 
 ///////////////////////////////////////

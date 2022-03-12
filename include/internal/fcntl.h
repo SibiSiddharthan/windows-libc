@@ -14,23 +14,23 @@
 
 typedef enum _handle_t
 {
+	INVALID_HANDLE = 0, // for errors
 	NULL_HANDLE,
 	CONSOLE_HANDLE,
 	FILE_HANDLE,
 	DIRECTORY_HANDLE,
-	PIPE_HANDLE,
-	INVALID_HANDLE = -1 // for errors
+	PIPE_HANDLE
 } handle_t;
 
-struct fd_table
+typedef struct _fdinfo
 {
 	HANDLE handle;
 	handle_t type;
 	int flags;
 	unsigned int sequence;
-};
+} fdinfo;
 
-extern struct fd_table *_wlibc_fd_table;
+extern fdinfo *_wlibc_fd_table;
 extern size_t _wlibc_fd_table_size;
 extern unsigned int _wlibc_fd_sequence;
 extern RTL_SRWLOCK _wlibc_fd_table_srwlock;
@@ -58,6 +58,10 @@ int close_fd(int _fd);
 
 // Return the file descriptor corresponding to the given handle
 int get_fd(HANDLE _h);
+
+// Return information on the fd.
+// If fd given is invalid, type is set to INVALID_HANDLE, and handle is set to INVALID_HANDLE_VALUE.
+void get_fdinfo(int fd, fdinfo *info);
 
 // Getters
 HANDLE get_fd_handle(int _fd);
