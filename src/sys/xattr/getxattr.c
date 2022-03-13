@@ -8,6 +8,7 @@
 #include <internal/nt.h>
 #include <internal/error.h>
 #include <internal/fcntl.h>
+#include <internal/validate.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -114,7 +115,7 @@ ssize_t wlibc_common_getxattr(int fd, const char *restrict path, const char *res
 		return -1;
 	}
 
-	VALIDATE_PATH(name, EINVAL, -1); // Need to have a different macro for this
+	VALIDATE_STRING(name, EINVAL, -1);
 
 	if (size != 0)
 	{

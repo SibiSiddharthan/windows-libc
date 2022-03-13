@@ -7,6 +7,7 @@
 
 #include <internal/nt.h>
 #include <internal/error.h>
+#include <internal/validate.h>
 #include <LM.h>
 #include <grp.h>
 #include <string.h>
@@ -201,13 +202,9 @@ struct group *wlibc_getgrnam(const char *name)
 int wlibc_getgrnam_r(const char *restrict name, struct group *restrict grp_entry, char *restrict buffer, size_t size,
 					 struct group **restrict result)
 {
-	if (name == NULL || name[0] == '\0')
-	{
-		errno = EINVAL;
-		return EINVAL;
-	}
+	VALIDATE_STRING(name, EINVAL, EINVAL);
 
-	if (grp_entry == NULL || buffer == NULL || result == NULL || size < 0)
+	if (grp_entry == NULL || buffer == NULL || result == NULL)
 	{
 		errno = EINVAL;
 		return EINVAL;

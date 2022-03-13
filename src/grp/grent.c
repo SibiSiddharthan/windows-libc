@@ -367,7 +367,7 @@ void wlibc_setgrent(void)
 
 int wlibc_getgrent_r(struct group *restrict grp_entry, char *restrict buffer, size_t size, struct group **restrict result)
 {
-	if (grp_entry == NULL || buffer == NULL || result == NULL || size < 0)
+	if (grp_entry == NULL || buffer == NULL || result == NULL)
 	{
 		errno = EINVAL;
 		return EINVAL;

@@ -7,29 +7,23 @@
 
 #include <internal/nt.h>
 #include <internal/error.h>
+#include <internal/validate.h>
 #include <errno.h>
 #include <thread.h>
 
-#define VALIDATE_PTR(ptr) \
-	if (ptr == NULL)      \
-	{                     \
-		errno = EINVAL;   \
-		return -1;        \
+#define VALIDATE_MUTEX(mutex)       \
+	VALIDATE_PTR(mutex, EINVAL, -1) \
+	if (mutex->handle == 0)         \
+	{                               \
+		errno = EINVAL;             \
+		return -1;                  \
 	}
 
-#define VALIDATE_MUTEX(mutex) \
-	VALIDATE_PTR(mutex)       \
-	if (mutex->handle == 0)   \
-	{                         \
-		errno = EINVAL;       \
-		return -1;            \
-	}
-
-#define VALIDATE_MUTEX_ATTR(mutex_attr) VALIDATE_PTR(mutex_attr)
+#define VALIDATE_MUTEX_ATTR(mutex_attr) VALIDATE_PTR(mutex_attr, EINVAL, -1)
 
 int wlibc_mutex_init(mutex_t *mutex, const mutex_attr_t *attributes)
 {
-	VALIDATE_PTR(mutex);
+	VALIDATE_PTR(mutex, EINVAL, -1);
 	if (attributes != NULL)
 	{
 		if (attributes->shared != WLIBC_PROCESS_PRIVATE && attributes->shared != WLIBC_PROCESS_SHARED)
@@ -163,7 +157,7 @@ int wlibc_mutex_trylock(mutex_t *mutex)
 int wlibc_mutex_timedlock(mutex_t *restrict mutex, const struct timespec *restrict abstime)
 {
 	VALIDATE_MUTEX(mutex);
-	VALIDATE_PTR(abstime);
+	VALIDATE_PTR(abstime, EINVAL, -1);
 
 	return wlibc_mutex_common_lock(mutex, abstime);
 }
@@ -201,7 +195,7 @@ int wlibc_mutexattr_init(mutex_attr_t *attributes)
 int wlibc_mutexattr_getpshared(const mutex_attr_t *restrict attributes, int *restrict pshared)
 {
 	VALIDATE_MUTEX_ATTR(attributes);
-	VALIDATE_PTR(pshared);
+	VALIDATE_PTR(pshared, EINVAL, -1);
 
 	*pshared = attributes->shared;
 	return 0;
@@ -225,7 +219,7 @@ int wlibc_mutexattr_setpshared(mutex_attr_t *attributes, int pshared)
 int wlibc_mutexattr_gettype(const mutex_attr_t *restrict attributes, int *restrict type)
 {
 	VALIDATE_MUTEX_ATTR(attributes);
-	VALIDATE_PTR(type);
+	VALIDATE_PTR(type, EINVAL, -1);
 
 	*type = attributes->type;
 	return 0;

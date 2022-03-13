@@ -7,18 +7,12 @@
 
 #include <internal/nt.h>
 #include <internal/error.h>
+#include <internal/validate.h>
 #include <errno.h>
 #include <thread.h>
 
-#define VALIDATE_PTR(ptr) \
-	if (ptr == NULL)      \
-	{                     \
-		errno = EINVAL;   \
-		return -1;        \
-	}
-
-#define VALIDATE_BARRIER(barrier)           VALIDATE_PTR(barrier)
-#define VALIDATE_BARRIER_ATTR(barrier_attr) VALIDATE_PTR(barrier_attr)
+#define VALIDATE_BARRIER(barrier)           VALIDATE_PTR(barrier, EINVAL, -1)
+#define VALIDATE_BARRIER_ATTR(barrier_attr) VALIDATE_PTR(barrier_attr, EINVAL, -1)
 
 // NOTE: As of Windows 10 21H2 ntdll.lib does not export the Rtl barrier functions. They are present in ntdllp.lib.
 // The Github hosted runner does not have ntdllp.lib yet. For the time being use the kernel32.lib functions.
@@ -77,7 +71,7 @@ int pthread_barrierattr_init(barrier_attr_t *attributes)
 int pthread_barrierattr_getpshared(const barrier_attr_t *restrict attributes, int *restrict pshared)
 {
 	VALIDATE_BARRIER_ATTR(attributes);
-	VALIDATE_PTR(pshared);
+	VALIDATE_PTR(pshared, EINVAL, -1);
 	*pshared = attributes->shared;
 	return 0;
 }

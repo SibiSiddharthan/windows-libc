@@ -6,12 +6,13 @@
 */
 
 #include <internal/nt.h>
-#include <error.h>
-#include <stdio.h>
+#include <internal/validate.h>
 #include <errno.h>
-#include <string.h>
-#include <stdlib.h>
+#include <error.h>
 #include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 unsigned int error_message_count = 0;
@@ -92,11 +93,7 @@ static void write_log(int errnum, const char *filename, unsigned int linenum, in
 
 void wlibc_error(int status, int errnum, const char *filename, unsigned int linenum, int do_strerror, const char *format, va_list args)
 {
-	if (format == NULL)
-	{
-		errno = EINVAL;
-		return;
-	}
+	VALIDATE_STRING(format, EINVAL, );
 
 	write_log(errnum, filename, linenum, do_strerror, format, args);
 	exit(status);
@@ -104,11 +101,7 @@ void wlibc_error(int status, int errnum, const char *filename, unsigned int line
 
 void wlibc_warn(int errnum, const char *filename, unsigned int linenum, int do_strerror, const char *format, va_list args)
 {
-	if (format == NULL)
-	{
-		errno = EINVAL;
-		return;
-	}
+	VALIDATE_STRING(format, EINVAL, );
 
 	write_log(errnum, filename, linenum, do_strerror, format, args);
 }

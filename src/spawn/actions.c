@@ -5,17 +5,14 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
+#include <internal/fcntl.h>
+#include <internal/validate.h>
 #include <errno.h>
 #include <spawn.h>
 #include <string.h>
 #include <stdlib.h>
 
-#define VALIDATE_ACTIONS(actions) \
-	if (actions == NULL)          \
-	{                             \
-		errno = EINVAL;           \
-		return -1;                \
-	}
+#define VALIDATE_ACTIONS(actions) VALIDATE_PTR(actions, EINVAL, -1)
 
 #define DOUBLE_ACTIONS_IF_NEEDED(actions) \
 	if (actions->used == actions->size)   \
@@ -28,13 +25,6 @@
 	{                          \
 		errno = EINVAL;        \
 		return -1;             \
-	}
-
-#define SIMPLE_VALIDATE_PATH(path)       \
-	if (path == NULL || path[0] == '\0') \
-	{                                    \
-		errno = EINVAL;                  \
-		return -1;                       \
 	}
 
 static void double_the_actions(spawn_actions_t *actions)
@@ -85,7 +75,7 @@ int wlibc_spawn_file_actions_addopen(spawn_actions_t *actions, int fd, const cha
 {
 	VALIDATE_ACTIONS(actions);
 	SIMPLE_VALIDATE_FD(fd);
-	SIMPLE_VALIDATE_PATH(path);
+	VALIDATE_PATH(path, EINVAL, -1);
 	DOUBLE_ACTIONS_IF_NEEDED(actions);
 
 	int length = strlen(path);
@@ -122,7 +112,7 @@ int wlibc_spawn_file_actions_adddup2(spawn_actions_t *actions, int oldfd, int ne
 int wlibc_spawn_file_actions_addchdir(spawn_actions_t *restrict actions, const char *restrict path)
 {
 	VALIDATE_ACTIONS(actions);
-	SIMPLE_VALIDATE_PATH(path);
+	VALIDATE_PATH(path, EINVAL, -1);
 	DOUBLE_ACTIONS_IF_NEEDED(actions);
 
 	int length = strlen(path);

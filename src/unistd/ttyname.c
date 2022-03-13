@@ -5,8 +5,9 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
+#include <internal/nt.h>
 #include <internal/fcntl.h>
-#include <Windows.h>
+#include <internal/validate.h>
 #include <errno.h>
 #include <unistd.h>
 
@@ -24,6 +25,8 @@ char *wlibc_ttyname(int fd)
 
 int wlibc_ttyname_r(int fd, char *buf, size_t bufsiz)
 {
+	VALIDATE_PTR(buf, EINVAL, EINVAL);
+
 	if (wlibc_isatty(fd))
 	{
 		if (GetConsoleOriginalTitleA(buf, (DWORD)bufsiz) == 0) // bufsiz is too small

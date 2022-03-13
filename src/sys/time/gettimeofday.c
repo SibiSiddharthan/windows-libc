@@ -5,9 +5,10 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <sys/time.h>
-#include <Windows.h>
+#include <internal/nt.h>
+#include <internal/validate.h>
 #include <errno.h>
+#include <sys/time.h>
 #include <time.h>
 
 /* 116444736000000000 is the number of 100 nanosecond intervals from
@@ -16,11 +17,7 @@
 
 int wlibc_gettimeofday(struct timeval *restrict tp, void *restrict tz /*unused*/)
 {
-	if (tp == NULL)
-	{
-		errno = EINVAL;
-		return -1;
-	}
+	VALIDATE_PTR(tp, EINVAL, -1);
 
 	SYSTEMTIME systemtime;
 	FILETIME filetime;

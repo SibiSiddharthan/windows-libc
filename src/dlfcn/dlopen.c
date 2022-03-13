@@ -6,19 +6,18 @@
 */
 
 #include <internal/nt.h>
+#include <internal/fcntl.h>
 #include <dlfcn.h>
+#include <errno.h>
 
 void *wlibc_dlopen(const char *filename, int flags /*unused*/)
 {
-	if (filename == NULL)
-	{
-		return NULL;
-	}
-
 	NTSTATUS status;
 	UTF8_STRING u8_image;
 	UNICODE_STRING u16_image;
 	HANDLE handle;
+
+	VALIDATE_PATH(filename, ENOENT, NULL);
 
 	RtlInitUTF8String(&u8_image, filename);
 	RtlUTF8StringToUnicodeString(&u16_image, &u8_image, TRUE);

@@ -6,26 +6,20 @@
 */
 
 #include <internal/nt.h>
+#include <internal/validate.h>
 #include <errno.h>
 #include <thread.h>
 #include <intrin.h>
 
-#define VALIDATE_PTR(ptr) \
-	if (ptr == NULL)      \
-	{                     \
-		errno = EINVAL;   \
-		return -1;        \
-	}
-
 #define VALIDATE_RWLOCK(rwlock)           \
-	VALIDATE_PTR(rwlock)                  \
+	VALIDATE_PTR(rwlock, EINVAL, -1)      \
 	if (rwlock->lock == RWLOCK_DESTROYED) \
 	{                                     \
 		errno = EINVAL;                   \
 		return -1;                        \
 	}
 
-#define VALIDATE_RWLOCK_ATTR(rwlock_attr) VALIDATE_PTR(rwlock_attr)
+#define VALIDATE_RWLOCK_ATTR(rwlock_attr) VALIDATE_PTR(rwlock_attr, EINVAL, -1)
 
 #define RWLOCK_NOT_LOCKED     0
 #define RWLOCK_SHARED_LOCK    1
@@ -34,7 +28,7 @@
 
 int wlibc_rwlock_init(rwlock_t *restrict rwlock, const rwlock_attr_t *restrict attributes)
 {
-	VALIDATE_PTR(rwlock);
+	VALIDATE_PTR(rwlock, EINVAL, -1);
 	rwlock->ptr = 0;
 	rwlock->lock = RWLOCK_NOT_LOCKED;
 	return 0;
@@ -71,7 +65,7 @@ int wlibc_rwlock_tryrdlock(rwlock_t *rwlock)
 int wlibc_rwlock_timedrdlock(rwlock_t *restrict rwlock, const struct timespec *restrict abstime)
 {
 	VALIDATE_RWLOCK(rwlock);
-	VALIDATE_PTR(abstime);
+	VALIDATE_PTR(abstime, EINVAL, -1);
 
 	LARGE_INTEGER duetime, current;
 
@@ -122,7 +116,7 @@ int wlibc_rwlock_trywrlock(rwlock_t *rwlock)
 int wlibc_rwlock_timedwrlock(rwlock_t *restrict rwlock, const struct timespec *restrict abstime)
 {
 	VALIDATE_RWLOCK(rwlock);
-	VALIDATE_PTR(abstime);
+	VALIDATE_PTR(abstime, EINVAL, -1);
 
 	LARGE_INTEGER duetime, current;
 
@@ -192,7 +186,7 @@ int wlibc_rwlockattr_init(rwlock_attr_t *attributes)
 int wlibc_rwlockattr_getpshared(const rwlock_attr_t *restrict attributes, int *restrict pshared)
 {
 	VALIDATE_RWLOCK_ATTR(attributes);
-	VALIDATE_PTR(pshared);
+	VALIDATE_PTR(pshared, EINVAL, -1);
 	*pshared = attributes->shared;
 	return 0;
 }

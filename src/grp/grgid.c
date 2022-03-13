@@ -193,13 +193,7 @@ struct group *wlibc_getgrgid(gid_t gid)
 
 int wlibc_getgrgid_r(gid_t gid, struct group *restrict grp_entry, char *restrict buffer, size_t size, struct group **restrict result)
 {
-	if (gid < 0)
-	{
-		errno = EINVAL;
-		return EINVAL;
-	}
-
-	if (grp_entry == NULL || buffer == NULL || result == NULL || size < 0)
+	if (grp_entry == NULL || buffer == NULL || result == NULL || gid < 0)
 	{
 		errno = EINVAL;
 		return EINVAL;

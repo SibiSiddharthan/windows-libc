@@ -6,18 +6,18 @@
 */
 
 #include <internal/nt.h>
+#include <internal/validate.h>
 #include <dlfcn.h>
+#include <errno.h>
 
 void *wlibc_dlsym(void *restrict handle, const char *restrict symbol)
 {
-	if (symbol == NULL)
-	{
-		return NULL;
-	}
-
 	NTSTATUS status;
 	UTF8_STRING u8_symbol;
 	PVOID procedure = NULL;
+
+	VALIDATE_PTR(handle, EINVAL, NULL); // We know that handle can't be 0.
+	VALIDATE_STRING(symbol, EINVAL, NULL);
 
 	RtlInitUTF8String(&u8_symbol, symbol);
 	status = LdrGetProcedureAddressForCaller(handle, &u8_symbol, 0, &procedure, 0, NULL);

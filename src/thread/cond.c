@@ -7,35 +7,29 @@
 
 #include <internal/nt.h>
 #include <internal/error.h>
+#include <internal/validate.h>
 #include <errno.h>
 #include <intrin.h>
 #include <stdlib.h>
 #include <thread.h>
 
-#define VALIDATE_PTR(ptr) \
-	if (ptr == NULL)      \
-	{                     \
-		errno = EINVAL;   \
-		return -1;        \
+#define VALIDATE_COND(cond)        \
+	VALIDATE_PTR(cond, EINVAL, -1) \
+	if (cond->ptr == NULL)         \
+	{                              \
+		errno = EINVAL;            \
+		return -1;                 \
 	}
 
-#define VALIDATE_COND(cond) \
-	VALIDATE_PTR(cond)      \
-	if (cond->ptr == NULL)  \
-	{                       \
-		errno = EINVAL;     \
-		return -1;          \
+#define VALIDATE_MUTEX(mutex)       \
+	VALIDATE_PTR(mutex, EINVAL, -1) \
+	if (mutex->handle == 0)         \
+	{                               \
+		errno = EINVAL;             \
+		return -1;                  \
 	}
 
-#define VALIDATE_MUTEX(mutex) \
-	VALIDATE_PTR(mutex)       \
-	if (mutex->handle == 0)   \
-	{                         \
-		errno = EINVAL;       \
-		return -1;            \
-	}
-
-#define VALIDATE_COND_ATTR(cond_attr) VALIDATE_PTR(cond_attr)
+#define VALIDATE_COND_ATTR(cond_attr) VALIDATE_PTR(cond_attr, EINVAL, -1)
 
 // Spin till we get a lock on the queue.
 #define LOCK_QUEUE(lock)                                                   \
@@ -48,7 +42,7 @@
 
 int wlibc_cond_init(cond_t *restrict cond, const cond_attr_t *restrict attributes)
 {
-	VALIDATE_PTR(cond);
+	VALIDATE_PTR(cond, EINVAL, -1);
 
 	// start with a size of 64.
 	cond->queue_size = 64;
@@ -244,7 +238,7 @@ int wlibc_cond_timedwait(cond_t *restrict cond, mutex_t *restrict mutex, const s
 {
 	VALIDATE_COND(cond);
 	VALIDATE_MUTEX(mutex);
-	VALIDATE_PTR(abstime);
+	VALIDATE_PTR(abstime, EINVAL, -1);
 	return wlibc_cond_common_wait(cond, mutex, abstime);
 }
 
@@ -259,7 +253,7 @@ int wlibc_condattr_init(cond_attr_t *attributes)
 int wlibc_condattr_getpshared(const cond_attr_t *restrict attributes, int *restrict pshared)
 {
 	VALIDATE_COND_ATTR(attributes);
-	VALIDATE_PTR(pshared);
+	VALIDATE_PTR(pshared, EINVAL, -1);
 	*pshared = attributes->shared;
 	return 0;
 }

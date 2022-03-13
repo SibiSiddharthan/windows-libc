@@ -6,6 +6,7 @@
 */
 
 #include <internal/nt.h>
+#include <internal/validate.h>
 #include <LM.h>
 #include <errno.h>
 #include <pwd.h>
@@ -68,13 +69,9 @@ struct passwd *wlibc_getpwnam(const char *name)
 int wlibc_getpwnam_r(const char *restrict name, struct passwd *restrict pwd_entry, char *restrict buffer, size_t size,
 					 struct passwd **restrict result)
 {
-	if (name == NULL || name[0] == '\0')
-	{
-		errno = EINVAL;
-		return EINVAL;
-	}
+	VALIDATE_STRING(name, EINVAL, EINVAL);
 
-	if (pwd_entry == NULL || buffer == NULL || result == NULL || size < 0)
+	if (pwd_entry == NULL || buffer == NULL || result == NULL)
 	{
 		errno = EINVAL;
 		return EINVAL;

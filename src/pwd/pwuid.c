@@ -93,13 +93,7 @@ struct passwd *wlibc_getpwuid(uid_t uid)
 
 int wlibc_getpwuid_r(uid_t uid, struct passwd *restrict pwd_entry, char *restrict buffer, size_t size, struct passwd **restrict result)
 {
-	if (uid < 0)
-	{
-		errno = EINVAL;
-		return EINVAL;
-	}
-
-	if (pwd_entry == NULL || buffer == NULL || result == NULL || size < 0)
+	if (pwd_entry == NULL || buffer == NULL || result == NULL || uid < 0)
 	{
 		errno = EINVAL;
 		return EINVAL;

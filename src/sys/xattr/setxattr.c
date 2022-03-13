@@ -8,6 +8,7 @@
 #include <internal/nt.h>
 #include <internal/error.h>
 #include <internal/fcntl.h>
+#include <internal/validate.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -149,7 +150,7 @@ int wlibc_common_setxattr(int fd, const char *restrict path, const char *restric
 		return -1;
 	}
 
-	VALIDATE_PATH(name, EINVAL, -1); // Need to have a different macro for this
+	VALIDATE_STRING(name, EINVAL, -1);
 
 	if (flags != AT_EMPTY_PATH)
 	{

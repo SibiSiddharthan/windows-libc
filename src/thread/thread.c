@@ -7,17 +7,11 @@
 
 #include <internal/nt.h>
 #include <internal/error.h>
+#include <internal/validate.h>
 #include <errno.h>
 #include <thread.h>
 
-#define VALIDATE_PTR(ptr) \
-	if (ptr == NULL)      \
-	{                     \
-		errno = EINVAL;   \
-		return -1;        \
-	}
-
-#define VALIDATE_THREAD_ATTR(thread_attr) VALIDATE_PTR(thread_attr)
+#define VALIDATE_THREAD_ATTR(thread_attr) VALIDATE_PTR(thread_attr, EINVAL, -1)
 
 int wlibc_thread_create(thread_t *thread, thread_attr_t *attributes, thread_start_t routine, void *arg)
 {
@@ -138,6 +132,7 @@ int wlibc_thread_tryjoin(thread_t thread, void **result)
 
 int wlibc_thread_timedjoin(thread_t thread, void **result, const struct timespec *abstime)
 {
+	VALIDATE_PTR(abstime, EINVAL, -1);
 	return wlibc_common_thread_join(thread, result, abstime);
 }
 
@@ -210,6 +205,7 @@ int wlibc_threadattr_init(thread_attr_t *attributes)
 int wlibc_threadattr_getdetachstate(const thread_attr_t *attributes, int *detachstate)
 {
 	VALIDATE_THREAD_ATTR(attributes);
+	VALIDATE_PTR(detachstate, EINVAL, -1);
 	*detachstate = attributes->state;
 	return 0;
 }
@@ -230,6 +226,7 @@ int wlibc_threadattr_setdetachstate(thread_attr_t *attributes, int detachstate)
 int wlibc_threadattr_getstacksize(const thread_attr_t *restrict attributes, size_t *restrict stacksize)
 {
 	VALIDATE_THREAD_ATTR(attributes);
+	VALIDATE_PTR(stacksize, EINVAL, -1);
 	*stacksize = attributes->stacksize;
 	return 0;
 }

@@ -6,10 +6,11 @@
 */
 
 #include <internal/nt.h>
-#include <internal/registry.h>
 #include <internal/error.h>
-#include <sys/utsname.h>
+#include <internal/registry.h>
+#include <internal/validate.h>
 #include <stdlib.h>
+#include <sys/utsname.h>
 #include <unistd.h>
 
 static void u16_value_to_u8_value(char *destination, wchar_t *source, size_t size)
@@ -30,11 +31,7 @@ static void u16_value_to_u8_value(char *destination, wchar_t *source, size_t siz
 
 int wlibc_uname(struct utsname *name)
 {
-	if (name == NULL)
-	{
-		errno = EINVAL;
-		return -1;
-	}
+	VALIDATE_PTR(name, EINVAL, -1);
 
 	NTSTATUS status;
 	size_t size;
@@ -49,7 +46,8 @@ int wlibc_uname(struct utsname *name)
 	u16_value_to_u8_value(name->sysname, sysname, size);
 
 	// version
-	wchar_t *version = get_registry_value(L"\\Registry\\Machine\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", L"DisplayVersion", &size);
+	wchar_t *version =
+		get_registry_value(L"\\Registry\\Machine\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", L"DisplayVersion", &size);
 	if (version == NULL)
 	{
 		// errno will be set by get_registry_value
