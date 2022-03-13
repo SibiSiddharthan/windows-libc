@@ -6,15 +6,23 @@
 */
 
 #include <internal/nt.h>
-#include <internal/fcntl.h>
 #include <internal/error.h>
-#include <sys/file.h>
+#include <internal/fcntl.h>
 #include <errno.h>
+#include <sys/file.h>
 
 int wlibc_flock(int fd, int operation)
 {
+	NTSTATUS status;
+	IO_STATUS_BLOCK io;
+	HANDLE handle;
+	LARGE_INTEGER offset, length;
+	fdinfo info;
+
+	get_fdinfo(fd, &info);
+
 	// Only support regular files
-	if (get_fd_type(fd) != FILE_HANDLE)
+	if (info.type != FILE_HANDLE)
 	{
 		errno = EBADF;
 		return -1;
@@ -29,10 +37,8 @@ int wlibc_flock(int fd, int operation)
 		return -1;
 	}
 
-	HANDLE handle = get_fd_handle(fd);
-	NTSTATUS status;
-	IO_STATUS_BLOCK io;
-	LARGE_INTEGER offset, length;
+	handle = info.handle;
+
 	// We are always locking the entire file
 	offset.QuadPart = 0;
 	length.QuadPart = -1;

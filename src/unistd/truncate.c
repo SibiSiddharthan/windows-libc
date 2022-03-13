@@ -9,7 +9,6 @@
 #include <internal/error.h>
 #include <internal/fcntl.h>
 #include <errno.h>
-#include <fcntl.h>
 #include <unistd.h>
 
 static int common_truncate(HANDLE handle, off_t length)
@@ -125,18 +124,21 @@ int wlibc_truncate(const char *path, off_t length)
 
 int wlibc_ftruncate(int fd, off_t length)
 {
-	if (get_fd_type(fd) != FILE_HANDLE)
+	fdinfo info;
+
+	get_fdinfo(fd, &info);
+
+	if (info.type != FILE_HANDLE)
 	{
 		errno = EBADF;
 		return -1;
 	}
 
-	if ((get_fd_flags(fd) & (O_WRONLY | O_RDWR)) == 0)
+	if ((info.flags & (O_WRONLY | O_RDWR)) == 0)
 	{
 		errno = EACCES;
 		return -1;
 	}
 
-	HANDLE handle = get_fd_handle(fd);
-	return do_ftruncate(handle, length);
+	return do_ftruncate(info.handle, length);
 }

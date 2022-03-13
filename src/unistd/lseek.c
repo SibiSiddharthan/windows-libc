@@ -5,23 +5,30 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <unistd.h>
-#include <Windows.h>
-#include <internal/error.h>
-#include <errno.h>
-#include <internal/fcntl.h>
 #include <internal/nt.h>
+#include <internal/error.h>
+#include <internal/fcntl.h>
+#include <errno.h>
+#include <unistd.h>
 
 off_t wlibc_lseek(int fd, off_t offset, int whence)
 {
-	handle_t type = get_fd_type(fd);
-	if (type == INVALID_HANDLE)
+	NTSTATUS status;
+	IO_STATUS_BLOCK io;
+	HANDLE handle;
+	FILE_POSITION_INFORMATION pos_info;
+	LONGLONG current_pos = 0;
+	fdinfo info;
+
+	get_fdinfo(fd, &info);
+
+	if (info.type == INVALID_HANDLE)
 	{
 		errno = EBADF;
 		return -1;
 	}
 	// Fail if a pipe fd is given
-	if (type == PIPE_HANDLE)
+	if (info.type == PIPE_HANDLE)
 	{
 		errno = ESPIPE;
 		return -1;
@@ -33,11 +40,8 @@ off_t wlibc_lseek(int fd, off_t offset, int whence)
 		return -1;
 	}
 
-	HANDLE handle = get_fd_handle(fd);
-	IO_STATUS_BLOCK I;
-	NTSTATUS status;
-	FILE_POSITION_INFORMATION pos_info;
-	LONGLONG current_pos = 0;
+	handle = info.handle;
+
 	switch (whence)
 	{
 	case SEEK_SET:
@@ -50,7 +54,7 @@ off_t wlibc_lseek(int fd, off_t offset, int whence)
 		break;
 	case SEEK_CUR:
 		FILE_POSITION_INFORMATION curpos_info;
-		status = NtQueryInformationFile(handle, &I, &curpos_info, sizeof(FILE_POSITION_INFORMATION), FilePositionInformation);
+		status = NtQueryInformationFile(handle, &io, &curpos_info, sizeof(FILE_POSITION_INFORMATION), FilePositionInformation);
 		if (status != STATUS_SUCCESS)
 		{
 			map_ntstatus_to_errno(status);
@@ -61,7 +65,7 @@ off_t wlibc_lseek(int fd, off_t offset, int whence)
 
 	case SEEK_END:
 		FILE_STANDARD_INFORMATION standard_info;
-		status = NtQueryInformationFile(handle, &I, &standard_info, sizeof(FILE_STANDARD_INFORMATION), FileStandardInformation);
+		status = NtQueryInformationFile(handle, &io, &standard_info, sizeof(FILE_STANDARD_INFORMATION), FileStandardInformation);
 		if (status != STATUS_SUCCESS)
 		{
 			map_ntstatus_to_errno(status);
@@ -72,7 +76,7 @@ off_t wlibc_lseek(int fd, off_t offset, int whence)
 	}
 
 	pos_info.CurrentByteOffset.QuadPart = current_pos + offset;
-	status = NtSetInformationFile(handle, &I, &pos_info, sizeof(FILE_POSITION_INFORMATION), FilePositionInformation);
+	status = NtSetInformationFile(handle, &io, &pos_info, sizeof(FILE_POSITION_INFORMATION), FilePositionInformation);
 	if (status != STATUS_SUCCESS)
 	{
 		map_ntstatus_to_errno(status);

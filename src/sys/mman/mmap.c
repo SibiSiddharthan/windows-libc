@@ -69,8 +69,11 @@ void *wlibc_mmap(void *address, size_t size, int protection, int flags, int fd, 
 	HANDLE section_handle, file_handle;
 	ULONG page_protection, allocation_attributes;
 	LARGE_INTEGER max_size, section_offset;
+	fdinfo info;
 
-	if ((flags & MAP_ANONYMOUS) == 0 && get_fd_type(fd) != FILE_HANDLE)
+	get_fdinfo(fd, &info);
+
+	if ((flags & MAP_ANONYMOUS) == 0 && info.type != FILE_HANDLE)
 	{
 		errno = EBADF;
 		return MAP_FAILED;
@@ -88,7 +91,7 @@ void *wlibc_mmap(void *address, size_t size, int protection, int flags, int fd, 
 	}
 	else
 	{
-		file_handle = get_fd_handle(fd);
+		file_handle = info.handle;
 	}
 
 	max_size.QuadPart = size;

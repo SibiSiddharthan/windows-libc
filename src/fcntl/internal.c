@@ -406,6 +406,8 @@ handle_t get_fd_type(int _fd)
 
 void get_fdinfo(int fd, fdinfo *info)
 {
+	SHARED_LOCK_FD_TABLE();
+
 	if (validate_fd_internal(fd))
 	{
 		// TODO try to avoid a jmp here.
@@ -417,6 +419,8 @@ void get_fdinfo(int fd, fdinfo *info)
 		info->handle = INVALID_HANDLE_VALUE;
 		info->type = INVALID_HANDLE;
 	}
+
+	SHARED_UNLOCK_FD_TABLE();
 }
 
 ///////////////////////////////////////

@@ -17,15 +17,17 @@ int get_buf_mode(int flags);
 
 FILE *wlibc_fdopen(int fd, const char *mode)
 {
-	handle_t _type = get_fd_type(fd);
-	if (_type == DIRECTORY_HANDLE || _type == INVALID_HANDLE)
+	fdinfo info;
+	get_fdinfo(fd, &info);
+
+	if (info.type == DIRECTORY_HANDLE || info.type == INVALID_HANDLE)
 	{
-		errno = (_type == INVALID_HANDLE ? EBADF : EISDIR);
+		errno = (info.type == INVALID_HANDLE ? EBADF : EISDIR);
 		return NULL;
 	}
 
 	int std_flags = parse_mode(mode);
-	int fd_flags = get_fd_flags(fd);
+	int fd_flags = info.flags;
 
 	int important_fd_flags = fd_flags & (O_APPEND | O_ACCMODE);
 	int important_std_flags = std_flags & (O_APPEND | O_ACCMODE);

@@ -5,18 +5,23 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
+#include <internal/nt.h>
+#include <internal/error.h>
+#include <internal/fcntl.h>
 #include <errno.h>
 #include <unistd.h>
-#include <internal/error.h>
-#include <Windows.h>
-#include <fcntl.h>
-#include <internal/fcntl.h>
 
+// Make the first parameter as fdinfo. TODO
 int do_dup(int oldfd, int newfd, int flags)
 {
 	NTSTATUS status;
-	HANDLE source = get_fd_handle(oldfd);
+	HANDLE source;
 	HANDLE target;
+	fdinfo oldfd_info;
+
+	get_fdinfo(oldfd, &oldfd_info);
+
+	source = oldfd_info.handle;
 
 	if (flags == O_CLOEXEC)
 	{
@@ -29,15 +34,22 @@ int do_dup(int oldfd, int newfd, int flags)
 								   DUPLICATE_SAME_ACCESS | DUPLICATE_SAME_ATTRIBUTES);
 	}
 
+	if (status != STATUS_SUCCESS)
+	{
+		map_ntstatus_to_errno(status);
+		return -1;
+	}
+
 	// For dup
 	if (newfd == -1)
 	{
-		return register_to_fd_table(target, get_fd_type(oldfd), get_fd_flags(oldfd));
+		return register_to_fd_table(target, oldfd_info.type, oldfd_info.flags);
 	}
 
 	// For dup2, dup3
 	else
 	{
+		// TODO do this entire block atomically.
 		// newfd exists in the table
 		if (validate_fd(newfd))
 		{
@@ -48,7 +60,7 @@ int do_dup(int oldfd, int newfd, int flags)
 			}
 		}
 
-		insert_into_fd_table(newfd, target, get_fd_type(oldfd), get_fd_flags(oldfd) | flags);
+		insert_into_fd_table(newfd, target, oldfd_info.type, oldfd_info.flags | flags);
 
 		return newfd;
 	}

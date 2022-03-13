@@ -6,22 +6,30 @@
 */
 
 #include <internal/nt.h>
-#include <unistd.h>
 #include <internal/error.h>
-#include <errno.h>
 #include <internal/fcntl.h>
-#include <fcntl.h>
+#include <errno.h>
+#include <unistd.h>
 
 ssize_t wlibc_pwrite(int fd, const void *buf, size_t count, off_t offset)
 {
+	ssize_t result = 0;
+	NTSTATUS status;
+	IO_STATUS_BLOCK io;
+	HANDLE handle;
+	LARGE_INTEGER byte_offset;
+	FILE_POSITION_INFORMATION pos_info;
+	fdinfo info;
+
 	if (buf == NULL)
 	{
 		errno = EFAULT;
 		return -1;
 	}
 
-	handle_t _type = get_fd_type(fd);
-	switch (_type)
+	get_fdinfo(fd, &info);
+
+	switch (info.type)
 	{
 	case FILE_HANDLE:
 	case NULL_HANDLE:
@@ -37,15 +45,10 @@ ssize_t wlibc_pwrite(int fd, const void *buf, size_t count, off_t offset)
 		errno = EBADF;
 		return -1;
 	}
-	
-	ssize_t result = 0;
-	HANDLE file = get_fd_handle(fd);
-	NTSTATUS status;
-	IO_STATUS_BLOCK io;
-	LARGE_INTEGER byte_offset;
-	FILE_POSITION_INFORMATION pos_info;
 
-	status = NtQueryInformationFile(file, &io, &pos_info, sizeof(FILE_POSITION_INFORMATION), FilePositionInformation);
+	handle = info.handle;
+
+	status = NtQueryInformationFile(handle, &io, &pos_info, sizeof(FILE_POSITION_INFORMATION), FilePositionInformation);
 	if (status != STATUS_SUCCESS)
 	{
 		map_ntstatus_to_errno(status);
@@ -53,7 +56,7 @@ ssize_t wlibc_pwrite(int fd, const void *buf, size_t count, off_t offset)
 	}
 
 	byte_offset.QuadPart = offset;
-	status = NtWriteFile(file, NULL, NULL, NULL, &io, (PVOID)buf, (ULONG)count, &byte_offset, NULL);
+	status = NtWriteFile(handle, NULL, NULL, NULL, &io, (PVOID)buf, (ULONG)count, &byte_offset, NULL);
 	if (status != STATUS_SUCCESS && status != STATUS_PENDING)
 	{
 		map_ntstatus_to_errno(status);
@@ -61,7 +64,7 @@ ssize_t wlibc_pwrite(int fd, const void *buf, size_t count, off_t offset)
 	}
 	result = io.Information;
 
-	status = NtSetInformationFile(file, &io, &pos_info, sizeof(FILE_POSITION_INFORMATION), FilePositionInformation);
+	status = NtSetInformationFile(handle, &io, &pos_info, sizeof(FILE_POSITION_INFORMATION), FilePositionInformation);
 	if (status != STATUS_SUCCESS)
 	{
 		map_ntstatus_to_errno(status);

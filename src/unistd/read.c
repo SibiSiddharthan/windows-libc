@@ -5,32 +5,38 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <unistd.h>
-#include <Windows.h>
+#include <internal/nt.h>
 #include <internal/error.h>
-#include <errno.h>
 #include <internal/fcntl.h>
+#include <errno.h>
 #include <fcntl.h>
+#include <unistd.h>
 
 ssize_t wlibc_read(int fd, void *buf, size_t count)
 {
+	NTSTATUS status;
+	IO_STATUS_BLOCK io;
+	HANDLE handle;
+	fdinfo info;
+
 	if (buf == NULL)
 	{
 		errno = EFAULT;
 		return -1;
 	}
 
-	handle_t _type = get_fd_type(fd);
-	if (_type == DIRECTORY_HANDLE || _type == INVALID_HANDLE)
+	get_fdinfo(fd, &info);
+
+	if (info.type == DIRECTORY_HANDLE || info.type == INVALID_HANDLE)
 	{
-		errno = (_type == DIRECTORY_HANDLE ? EISDIR : EBADF);
+		errno = (info.type == DIRECTORY_HANDLE ? EISDIR : EBADF);
 		return -1;
 	}
 
-	HANDLE file = get_fd_handle(fd);
-	IO_STATUS_BLOCK I;
-	I.Information = 0;
-	NTSTATUS status = NtReadFile(file, NULL, NULL, NULL, &I, buf, (ULONG)count, NULL, NULL);
+	handle = info.handle;
+	io.Information = 0;
+
+	status = NtReadFile(handle, NULL, NULL, NULL, &io, buf, (ULONG)count, NULL, NULL);
 	if (status != STATUS_SUCCESS && status != STATUS_PENDING && status != STATUS_END_OF_FILE && status != STATUS_PIPE_BROKEN)
 	{
 		// When status is set to STATUS_PIPE_BROKEN , it is not treated as an error.
@@ -43,5 +49,5 @@ ssize_t wlibc_read(int fd, void *buf, size_t count)
 	// writes will be read in.
 	// `read` on linux reads all the data, even from the duplicated write ends in one shot(provided the given buffer is big enough).
 	// We strictly don't have to conform to this as applications will check for the result of read, if 0 it means no more data is left.
-	return I.Information;
+	return io.Information;
 }

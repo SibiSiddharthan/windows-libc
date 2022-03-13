@@ -12,15 +12,20 @@
 
 int common_sync(int fd, int sync_all)
 {
-	if (get_fd_type(fd) != FILE_HANDLE)
+	NTSTATUS status;
+	IO_STATUS_BLOCK io;
+	HANDLE handle;
+	fdinfo info;
+
+	get_fdinfo(fd, &info);
+
+	if (info.type != FILE_HANDLE)
 	{
 		errno = EROFS;
 		return -1;
 	}
 
-	IO_STATUS_BLOCK io;
-	NTSTATUS status;
-	HANDLE handle = get_fd_handle(fd);
+	handle = info.handle;
 
 	status = NtFlushBuffersFileEx(handle, sync_all == 1 ? 0 : FLUSH_FLAGS_FILE_DATA_SYNC_ONLY, NULL, 0, &io);
 	if (status != STATUS_SUCCESS)

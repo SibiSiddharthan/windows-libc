@@ -5,16 +5,16 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <unistd.h>
-#include <fcntl.h>
 #include <internal/fcntl.h>
-#include <internal/error.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 int wlibc_close(int fd)
 {
 	if(fd == AT_FDCWD)
 	{
-		// We do
+		// Special fd value.
 		return 0;
 	}
 
