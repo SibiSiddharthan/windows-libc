@@ -6,7 +6,7 @@
 */
 
 #include <internal/fcntl.h>
-#include <test-macros.h>
+#include <tests/test.h>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <unistd.h>

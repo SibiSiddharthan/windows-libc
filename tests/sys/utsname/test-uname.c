@@ -5,7 +5,7 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <test-macros.h>
+#include <tests/test.h>
 #include <sys/utsname.h>
 
 // Not really a test, just see if it works

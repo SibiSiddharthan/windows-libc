@@ -6,7 +6,7 @@
 */
 
 #include <internal/stdio.h>
-#include <test-macros.h>
+#include <tests/test.h>
 #include <stdio.h>
 
 // fclose is also tested here

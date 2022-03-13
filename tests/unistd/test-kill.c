@@ -6,7 +6,7 @@
 */
 
 #include <unistd.h>
-#include <test-macros.h>
+#include <tests/test.h>
 #include <errno.h>
 #include <signal.h>
 #include <sys/wait.h>

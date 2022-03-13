@@ -7,7 +7,7 @@
 
 #include <fcntl.h>
 #include <unistd.h>
-#include <test-macros.h>
+#include <tests/test.h>
 #include <errno.h>
 
 const char *content = "hello1\nhello2\n";

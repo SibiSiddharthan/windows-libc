@@ -6,7 +6,7 @@
 */
 
 #include <internal/process.h>
-#include <test-macros.h>
+#include <tests/test.h>
 #include <signal.h>
 #include <stdlib.h>
 #include <sys/wait.h>

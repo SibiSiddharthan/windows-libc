@@ -5,7 +5,7 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <test-macros.h>
+#include <tests/test.h>
 #include <stdio.h>
 
 int test_read()

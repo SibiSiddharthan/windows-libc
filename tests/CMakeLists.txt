@@ -6,7 +6,6 @@
 ]]
 
 include(WLIBCTests)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 if(ENABLE_DLFCN)
 	add_subdirectory(dlfcn)
