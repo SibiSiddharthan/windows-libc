@@ -258,7 +258,7 @@ int test_absolute_nt()
 	int fd;
 	UNICODE_STRING *path;
 
-	wcscat(cdrive, L"\\abc");
+	wcscat(cdrive, L"abc");
 
 	path = get_absolute_ntpath(AT_FDCWD, "C:/abc");
 	ASSERT_WSTREQ(path->Buffer, cdrive);
@@ -280,27 +280,22 @@ int test_absolute_nt()
 	ASSERT_WSTREQ(path->Buffer, cdrive);
 	free(path);
 
-	wcscat(cdrive, L"\\");
-
 	path = get_absolute_ntpath(AT_FDCWD, "C:/abc/../");
 	ASSERT_WSTREQ(path->Buffer, cdrive);
 	free(path);
 
 	cdrive[cdrive_length] = L'\0';
-	wcscat(cdrive, L"\\abc");
+	wcscat(cdrive, L"abc");
 
 	path = get_absolute_ntpath(AT_FDCWD, "C:/abc/.");
 	ASSERT_WSTREQ(path->Buffer, cdrive);
 	free(path);
 
 	cdrive[cdrive_length] = L'\0';
-	wcscat(cdrive, L"\\");
 
 	path = get_absolute_ntpath(AT_FDCWD, "C:/");
 	ASSERT_WSTREQ(path->Buffer, cdrive);
 	free(path);
-
-	cdrive[cdrive_length] = L'\0';
 
 	path = get_absolute_ntpath(AT_FDCWD, "C:");
 	ASSERT_WSTREQ(path->Buffer, cdrive);
@@ -314,7 +309,7 @@ int test_absolute_nt()
 	fd = open("t-path", O_RDONLY);
 	ASSERT_NOTEQ(fd, -1);
 	// fd should be ignored
-	wcscat(cdrive, L"\\abc\\");
+	wcscat(cdrive, L"abc\\");
 	path = get_absolute_ntpath(fd, "C:/abc/");
 	ASSERT_WSTREQ(path->Buffer, cdrive);
 	free(path);
@@ -343,7 +338,7 @@ int test_absolute_dos()
 	free(path);
 
 	path = get_absolute_dospath(AT_FDCWD, "C:/abc/..");
-	ASSERT_WSTREQ(path->Buffer, L"C:");
+	ASSERT_WSTREQ(path->Buffer, L"C:\\");
 	free(path);
 
 	path = get_absolute_dospath(AT_FDCWD, "C:/abc/../");
@@ -359,7 +354,7 @@ int test_absolute_dos()
 	free(path);
 
 	path = get_absolute_dospath(AT_FDCWD, "C:");
-	ASSERT_WSTREQ(path->Buffer, L"C:");
+	ASSERT_WSTREQ(path->Buffer, L"C:\\");
 	free(path);
 
 	// bad path

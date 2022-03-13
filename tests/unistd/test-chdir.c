@@ -133,7 +133,7 @@ int test_fchdir_cdrive()
 
 	memset(cwd, 0, 256);
 	getcwd(cwd, 256);
-	ASSERT_STREQ(cwd, "C:");
+	ASSERT_STREQ(cwd, "C:/");
 
 	dirfd_new = open(cdrive_with_slash, O_PATH);
 	ASSERT_NOTEQ(dirfd_new, -1);
@@ -144,7 +144,7 @@ int test_fchdir_cdrive()
 
 	memset(cwd, 0, 256);
 	getcwd(cwd, 256);
-	ASSERT_STREQ(cwd, "C:");
+	ASSERT_STREQ(cwd, "C:/");
 
 	status = fchdir(dirfd_old);
 	ASSERT_EQ(status, 0);

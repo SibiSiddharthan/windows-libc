@@ -377,6 +377,14 @@ int do_open(int dirfd, const char *name, int oflags, mode_t perm)
 			FILE_ATTRIBUTE_TAG_INFORMATION tag_info;
 
 			status = NtQueryInformationFile(handle, &io, &tag_info, sizeof(FILE_ATTRIBUTE_TAG_INFORMATION), FileAttributeTagInformation);
+			if(status != STATUS_SUCCESS)
+			{
+				// Getting file attributes as failed. This means that we have not opened file or directory. (Maybe opened a device)
+				// This should not happen at all.
+				map_ntstatus_to_errno(status);
+				NtClose(handle);
+				goto finish;
+			}
 
 			if ((tag_info.FileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) && ((oflags & O_NOFOLLOW) && ((oflags & O_PATH) == 0)))
 			{

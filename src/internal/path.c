@@ -525,6 +525,15 @@ UNICODE_STRING *xget_absolute_ntpath(int dirfd, const char *path)
 			u16_ntpath->Length += 2;
 		}
 	}
+
+	if (index == 1)
+	{
+		// The case where we resolve a volume. eg C:
+		// Always add trailing slash to the volume so that it can be treated as a directory by the NT calls.
+		u16_ntpath->Buffer[u16_ntpath->Length / sizeof(WCHAR)] = L'\\';
+		u16_ntpath->Length += sizeof(WCHAR);
+	}
+
 	u16_ntpath->Buffer[u16_ntpath->Length / sizeof(WCHAR)] = L'\0';
 
 finish:
