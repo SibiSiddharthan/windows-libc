@@ -174,6 +174,28 @@ static bool validate_oflags(int oflags)
 	return true;
 }
 
+HANDLE just_reopen(HANDLE old_handle, ACCESS_MASK access, ULONG options)
+{
+	NTSTATUS status;
+	IO_STATUS_BLOCK io;
+	OBJECT_ATTRIBUTES object;
+	UNICODE_STRING empty = {0, 0, NULL};
+	HANDLE handle = INVALID_HANDLE_VALUE;
+	ULONG share = FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE;
+
+	// NOTE: An empty UNICODE_STRING needs to passed, for this to work.
+	InitializeObjectAttributes(&object, &empty, 0, old_handle, NULL);
+
+	// We can reopen the same file by passing its already open handle to the root parameter of OBJECT_ATTRIBUTES.
+	status = NtCreateFile(&handle, access, &object, &io, NULL, 0, share, FILE_OPEN, options, NULL, 0);
+	if (status != STATUS_SUCCESS)
+	{
+		map_ntstatus_to_errno(status);
+	}
+
+	return handle;
+}
+
 HANDLE really_do_open(OBJECT_ATTRIBUTES *object, ACCESS_MASK access, ULONG attributes, ULONG disposition, ULONG options)
 {
 	NTSTATUS status;
@@ -377,7 +399,7 @@ int do_open(int dirfd, const char *name, int oflags, mode_t perm)
 			FILE_ATTRIBUTE_TAG_INFORMATION tag_info;
 
 			status = NtQueryInformationFile(handle, &io, &tag_info, sizeof(FILE_ATTRIBUTE_TAG_INFORMATION), FileAttributeTagInformation);
-			if(status != STATUS_SUCCESS)
+			if (status != STATUS_SUCCESS)
 			{
 				// Getting file attributes as failed. This means that we have not opened file or directory. (Maybe opened a device)
 				// This should not happen at all.

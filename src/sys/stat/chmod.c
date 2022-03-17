@@ -78,17 +78,17 @@ int wlibc_common_chmod(int dirfd, const char *path, mode_t mode, int flags)
 	}
 	else
 	{
-		handle_t type = get_fd_type(dirfd);
-		if (type == PIPE_HANDLE || type == CONSOLE_HANDLE)
+		fdinfo info;
+
+		get_fdinfo(dirfd, &info);
+		if (info.type != FILE_HANDLE && info.type != DIRECTORY_HANDLE)
 		{
 			errno = EBADF;
 			return -1;
 		}
 
-		// The fd is validated, this call will not fail.
-		UNICODE_STRING *ntpath = xget_fd_ntpath(dirfd);
 		// 'open' does not give WRITE_DAC permission, reopen the file with 'WRITE_DAC'.
-		HANDLE handle = just_open2(ntpath, FILE_READ_ATTRIBUTES | READ_CONTROL | WRITE_DAC, 0);
+		HANDLE handle = just_reopen(info.handle, FILE_READ_ATTRIBUTES | READ_CONTROL | WRITE_DAC, 0);
 		if (handle == INVALID_HANDLE_VALUE)
 		{
 			// errno wil be set by `just_open2`.
@@ -96,7 +96,6 @@ int wlibc_common_chmod(int dirfd, const char *path, mode_t mode, int flags)
 		}
 
 		int result = do_chmod(handle, mode);
-		free(ntpath);
 		NtClose(handle);
 
 		return result;

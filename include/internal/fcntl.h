@@ -84,6 +84,7 @@ bool validate_fd(int _fd);
 // Ignore attributes and disposition here as they will be '0' and 'FILE_OPEN' respectively.
 HANDLE just_open(int dirfd, const char *path, ACCESS_MASK access, ULONG options);
 HANDLE just_open2(UNICODE_STRING *ntpath, ACCESS_MASK access, ULONG options);
+HANDLE just_reopen(HANDLE old_handle, ACCESS_MASK access, ULONG options);
 
 #define SHARED_LOCK_FD_TABLE()      RtlAcquireSRWLockShared(&_wlibc_fd_table_srwlock)
 #define SHARED_UNLOCK_FD_TABLE()    RtlReleaseSRWLockShared(&_wlibc_fd_table_srwlock)
