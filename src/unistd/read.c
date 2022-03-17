@@ -37,7 +37,8 @@ ssize_t wlibc_read(int fd, void *buf, size_t count)
 	io.Information = 0;
 
 	status = NtReadFile(handle, NULL, NULL, NULL, &io, buf, (ULONG)count, NULL, NULL);
-	if (status != STATUS_SUCCESS && status != STATUS_PENDING && status != STATUS_END_OF_FILE && status != STATUS_PIPE_BROKEN)
+	if (status != STATUS_SUCCESS && status != STATUS_PENDING && status != STATUS_END_OF_FILE && status != STATUS_PIPE_BROKEN &&
+		status != STATUS_PIPE_EMPTY)
 	{
 		// When status is set to STATUS_PIPE_BROKEN , it is not treated as an error.
 		// Reading from a pipe with no write end is not an error apparently???.

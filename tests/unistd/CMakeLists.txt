@@ -16,6 +16,7 @@ isatty
 kill
 link
 pio
+pipes
 symlinks
 remove
 truncate

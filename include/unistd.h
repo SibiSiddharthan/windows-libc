@@ -223,16 +223,16 @@ WLIBC_INLINE int getpagesize(void)
 	return wlibc_getpagesize();
 }
 
-WLIBC_API int wlibc_pipe(int pipefd[2]);
+WLIBC_API int wlibc_common_pipe(int pipefd[2], int flags);
+
 WLIBC_INLINE int pipe(int pipefd[2])
 {
-	return wlibc_pipe(pipefd);
+	return wlibc_common_pipe(pipefd, 0);
 }
 
-WLIBC_API int wlibc_pipe2(int pipefd[2], int flags);
 WLIBC_INLINE int pipe2(int pipefd[2], int flags)
 {
-	return wlibc_pipe2(pipefd, flags);
+	return wlibc_common_pipe(pipefd, flags);
 }
 
 WLIBC_API ssize_t wlibc_pread(int fd, void *buf, size_t count, off_t offset);

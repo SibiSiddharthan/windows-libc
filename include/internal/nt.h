@@ -528,6 +528,47 @@ NtFsControlFile(_In_ HANDLE FileHandle, _In_opt_ HANDLE Event, _In_opt_ PIO_APC_
 				_Out_ PIO_STATUS_BLOCK IoStatusBlock, _In_ ULONG FsControlCode, _In_reads_bytes_opt_(InputBufferLength) PVOID InputBuffer,
 				_In_ ULONG InputBufferLength, _Out_writes_bytes_opt_(OutputBufferLength) PVOID OutputBuffer, _In_ ULONG OutputBufferLength);
 
+// NamedPipeType for NtCreateNamedPipeFile
+#define FILE_PIPE_BYTE_STREAM_TYPE      0x00000000
+#define FILE_PIPE_MESSAGE_TYPE          0x00000001
+#define FILE_PIPE_ACCEPT_REMOTE_CLIENTS 0x00000000
+#define FILE_PIPE_REJECT_REMOTE_CLIENTS 0x00000002
+#define FILE_PIPE_TYPE_VALID_MASK       0x00000003
+
+// CompletionMode for NtCreateNamedPipeFile
+#define FILE_PIPE_SYNCHRONOUS_OPERATION    0x00000000
+#define FILE_PIPE_NONBLOCKING_OPERATION    0x00000001
+
+// ReadMode for NtCreateNamedPipeFile
+#define FILE_PIPE_BYTE_STREAM_MODE 0x00000000
+#define FILE_PIPE_MESSAGE_MODE     0x00000001
+
+// NamedPipeConfiguration for NtQueryInformationFile
+#define FILE_PIPE_INBOUND     0x00000000
+#define FILE_PIPE_OUTBOUND    0x00000001
+#define FILE_PIPE_FULL_DUPLEX 0x00000002
+
+// NamedPipeState for NtQueryInformationFile
+#define FILE_PIPE_DISCONNECTED_STATE 0x00000001
+#define FILE_PIPE_LISTENING_STATE    0x00000002
+#define FILE_PIPE_CONNECTED_STATE    0x00000003
+#define FILE_PIPE_CLOSING_STATE      0x00000004
+
+// NamedPipeEnd for NtQueryInformationFile
+#define FILE_PIPE_CLIENT_END 0x00000000
+#define FILE_PIPE_SERVER_END 0x00000001
+
+// Win32 pipe instance limit (0xff)
+#define FILE_PIPE_UNLIMITED_INSTANCES 0xffffffff
+
+NTSYSCALLAPI
+NTSTATUS
+NTAPI
+NtCreateNamedPipeFile(_Out_ PHANDLE FileHandle, _In_ ULONG DesiredAccess, _In_ POBJECT_ATTRIBUTES ObjectAttributes,
+					  _Out_ PIO_STATUS_BLOCK IoStatusBlock, _In_ ULONG ShareAccess, _In_ ULONG CreateDisposition, _In_ ULONG CreateOptions,
+					  _In_ ULONG NamedPipeType, _In_ ULONG ReadMode, _In_ ULONG CompletionMode, _In_ ULONG MaximumInstances,
+					  _In_ ULONG InboundQuota, _In_ ULONG OutboundQuota, _In_ PLARGE_INTEGER DefaultTimeout);
+
 NTSYSCALLAPI
 NTSTATUS
 NTAPI
