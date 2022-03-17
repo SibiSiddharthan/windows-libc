@@ -27,7 +27,7 @@ int parse_mode(const char *mode)
 			flags |= O_RDWR;
 			break;
 		case 'a':
-			flags |= O_APPEND | O_CREAT;
+			flags |= O_WRONLY | O_APPEND | O_CREAT;
 			break;
 		// GNU Extenstions
 		case 'x':
@@ -78,7 +78,7 @@ int get_buf_mode(int flags)
 	{
 		return _IOBUFFER_WRONLY;
 	}
-	else //(flags & O_RDONLY)
+	else //(flags == O_RDONLY)
 	{
 		return _IOBUFFER_RDONLY;
 	}

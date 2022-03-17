@@ -16,6 +16,14 @@ size_t common_fwrite(const void *restrict buffer, size_t size, size_t count, FIL
 {
 	ssize_t result = 0;
 
+	// Stream was opened for reading only.
+	if (stream->buf_mode & _IOBUFFER_RDONLY)
+	{
+		errno = EACCES;
+		stream->error = _IOERROR;
+		return 0;
+	}
+
 	// unbuffered stream
 	if ((stream->buf_mode & _IONBF))
 	{

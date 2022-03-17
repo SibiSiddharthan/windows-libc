@@ -50,7 +50,6 @@ typedef struct _WLIBC_FILE
 #define _IOBUFFER_RDONLY 0x100 // reads are buffered
 #define _IOBUFFER_WRONLY 0x200 // writes are buffered
 #define _IOBUFFER_RDWR   0x400 // both reads and writes are unbuffered
-//#define _IOBUFFER_WRRD   0x800 // writes are buffered, reads are unbuffered
 
 // Same as public stdio.h
 #define _IOFBF 0x0010 // Full buffering

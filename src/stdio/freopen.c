@@ -6,6 +6,7 @@
 */
 
 #include <internal/nt.h>
+#include <internal/error.h>
 #include <internal/fcntl.h>
 #include <internal/stdio.h>
 #include <errno.h>
@@ -18,36 +19,114 @@ int get_buf_mode(int flags);
 int common_fflush(FILE *stream);
 int do_open(int dirfd, const char *name, int oflags, mode_t perm);
 
+HANDLE reopen_file(HANDLE old_handle, int flags)
+{
+	NTSTATUS status;
+	IO_STATUS_BLOCK io;
+	OBJECT_ATTRIBUTES object;
+	UNICODE_STRING empty = {0, 0, NULL};
+	HANDLE new_handle = INVALID_HANDLE_VALUE;
+	ACCESS_MASK access = SYNCHRONIZE | FILE_READ_ATTRIBUTES | FILE_READ_EA | READ_CONTROL | FILE_WRITE_ATTRIBUTES;
+	ULONG share = FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE;
+	ULONG options = FILE_NON_DIRECTORY_FILE | FILE_SYNCHRONOUS_IO_NONALERT;
+	ULONG disposition;
+
+	// TODO move this to open.c itself.
+	// From open.c
+	// access
+	if (flags & O_WRONLY)
+	{
+		access |= FILE_WRITE_DATA | FILE_WRITE_EA;
+	}
+	else if (flags & O_RDWR)
+	{
+		access |= FILE_READ_DATA | FILE_WRITE_DATA | FILE_WRITE_EA;
+	}
+	else // nothing is given i.e O_RDONLY by default
+	{
+		access |= FILE_READ_DATA;
+	}
+
+	if (flags & O_APPEND)
+	{
+		access |= FILE_APPEND_DATA;
+	}
+
+	// options
+	if (flags & O_RANDOM)
+	{
+		options |= FILE_RANDOM_ACCESS;
+	}
+	if (flags & O_SEQUENTIAL)
+	{
+		options |= FILE_SEQUENTIAL_ONLY;
+	}
+
+	// disposition
+	switch ((flags & (O_CREAT | O_EXCL | O_TRUNC)))
+	{
+	case 0x0:
+	case O_EXCL:
+		disposition = FILE_OPEN;
+	case O_CREAT:
+		disposition = FILE_OPEN_IF;
+	case O_TRUNC:
+	case O_TRUNC | O_EXCL:
+		disposition = FILE_OVERWRITE;
+	case O_CREAT | O_EXCL:
+	case O_CREAT | O_TRUNC | O_EXCL:
+		disposition = FILE_CREATE;
+	case O_CREAT | O_TRUNC:
+		disposition = FILE_OVERWRITE_IF;
+	}
+
+	InitializeObjectAttributes(&object, &empty, (flags & O_NOINHERIT) == 0 ? OBJ_INHERIT : 0, old_handle, NULL);
+	status = NtCreateFile(&new_handle, access, &object, &io, NULL, 0, share, FILE_OPEN, options, NULL, 0);
+	if (status != STATUS_SUCCESS)
+	{
+		map_ntstatus_to_errno(status);
+	}
+
+	return new_handle;
+}
+
 FILE *wlibc_freopen(const char *restrict name, const char *restrict mode, FILE *restrict stream)
 {
 	VALIDATE_FILE_STREAM(stream, NULL);
 
-	// Treat name = NULL as an error for now
-	VALIDATE_PATH(name, EINVAL, NULL);
-
-	// const wchar_t *oldname = get_fd_path(stream->fd);
 	int new_fd;
+	int flags = parse_mode(mode);
 
 	// Flush the stream first
 	common_fflush(stream);
 
-	// Close the underlying file handle
-	close_fd(stream->fd);
-
-	int flags = parse_mode(mode);
-#if 0
 	if (name == NULL)
 	{
-		UTF8_STRING u8_oldname;
-		UNICODE_STRING u16_oldname;
-		RtlInitUnicodeString(&u16_oldname, oldname);
-		RtlUnicodeStringToUTF8String(&u8_oldname, &u16_oldname, TRUE);
-		new_fd = do_open(AT_FDCWD, u8_oldname.Buffer, flags | O_NOTDIR, 0700);
-		RtlFreeUTF8String(&u8_oldname);
+		HANDLE new_handle;
+		fdinfo info;
+
+		get_fdinfo(stream->fd, &info);
+
+		if (info.type != FILE_HANDLE)
+		{
+			errno = EBADF;
+			goto reopen_same_file_fail;
+		}
+
+		new_handle = reopen_file(info.handle, flags);
+		if (new_handle == INVALID_HANDLE_VALUE)
+		{
+			goto reopen_same_file_fail;
+		}
+
+		// It is safe to close the streams handle now.
+		close_fd(stream->fd);
+		new_fd = register_to_fd_table(new_handle, FILE_HANDLE, flags | O_NOTDIR);
 	}
 	else
-#endif
 	{
+		// Close the underlying file handle first if name is not NULL.
+		close_fd(stream->fd);
 		new_fd = do_open(AT_FDCWD, name, flags | O_NOTDIR, 0700);
 	}
 
@@ -73,4 +152,8 @@ FILE *wlibc_freopen(const char *restrict name, const char *restrict mode, FILE *
 	stream->buf_mode |= get_buf_mode(flags);
 
 	return stream;
+
+reopen_same_file_fail:
+	close_fd(stream->fd);
+	return NULL;
 }

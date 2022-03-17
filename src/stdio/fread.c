@@ -32,6 +32,14 @@ size_t common_fread(void *restrict buffer, size_t size, size_t count, FILE *rest
 {
 	ssize_t result = 0;
 
+	// Stream was opened for writing only.
+	if(stream->buf_mode & _IOBUFFER_WRONLY)
+	{
+		errno = EACCES;
+		stream->error = _IOERROR;
+		return 0;
+	}
+
 	// unbuffered read stream
 	if ((stream->buf_mode & _IONBF))
 	{
