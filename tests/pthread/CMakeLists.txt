@@ -8,6 +8,7 @@
 wlibc_add_tests(
 barrier
 cond
+key
 mutex
 once
 rwlock

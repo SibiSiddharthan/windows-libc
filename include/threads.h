@@ -96,33 +96,33 @@ WLIBC_INLINE void call_once(once_flag *flag, void (*func)(void))
 }
 
 // Mutex functions.
-WLIBC_API int mtx_init(mtx_t *mutex, int type)
+WLIBC_INLINE int mtx_init(mtx_t *mutex, int type)
 {
 	struct _wlibc_mutex_attr_t mutex_attr = {WLIBC_PROCESS_PRIVATE, type};
 	return wlibc_mutex_init(mutex, &mutex_attr);
 }
 
-WLIBC_API int mtx_lock(mtx_t *mutex)
+WLIBC_INLINE int mtx_lock(mtx_t *mutex)
 {
 	return wlibc_mutex_lock(mutex);
 }
 
-WLIBC_API int mtx_timedlock(mtx_t *restrict mutex, const struct timespec *restrict abstime)
+WLIBC_INLINE int mtx_timedlock(mtx_t *restrict mutex, const struct timespec *restrict abstime)
 {
 	return wlibc_mutex_timedlock(mutex, abstime);
 }
 
-WLIBC_API int mtx_trylock(mtx_t *mutex)
+WLIBC_INLINE int mtx_trylock(mtx_t *mutex)
 {
 	return wlibc_mutex_trylock(mutex);
 }
 
-WLIBC_API int mtx_unlock(mtx_t *mutex)
+WLIBC_INLINE int mtx_unlock(mtx_t *mutex)
 {
 	return wlibc_mutex_unlock(mutex);
 }
 
-WLIBC_API void mtx_destroy(mtx_t *mutex)
+WLIBC_INLINE void mtx_destroy(mtx_t *mutex)
 {
 	wlibc_mutex_destroy(mutex);
 }

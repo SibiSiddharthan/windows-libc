@@ -361,22 +361,22 @@ WLIBC_INLINE int pthread_condattr_setpshared(pthread_condattr_t *attributes, int
 }
 
 // Thread specific storage functions.
-WLIBC_API int pthread_key_create(pthread_key_t *key, void (*destructor)(void *))
+WLIBC_INLINE int pthread_key_create(pthread_key_t *key, void (*destructor)(void *))
 {
 	return wlibc_tss_create(key, destructor);
 }
 
-WLIBC_API int pthread_key_delete(pthread_key_t key)
+WLIBC_INLINE int pthread_key_delete(pthread_key_t key)
 {
 	return wlibc_tss_delete(key);
 }
 
-WLIBC_API void *pthread_getspecific(pthread_key_t key)
+WLIBC_INLINE void *pthread_getspecific(pthread_key_t key)
 {
 	return wlibc_tss_get(key);
 }
 
-WLIBC_API int pthread_setspecific(pthread_key_t key, const void *data)
+WLIBC_INLINE int pthread_setspecific(pthread_key_t key, const void *data)
 {
 	return wlibc_tss_set(key, data);
 }
