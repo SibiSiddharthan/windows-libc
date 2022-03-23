@@ -108,7 +108,7 @@ static void give_inherit_information_to_startupinfo(inherit_information *inherit
 	// First 4 bytes denote number of handles inherited (say N).      4
 	// Then for each handle 1 byte is use to denote the flag values.  N
 	// Then each of the handles are listed as DWORDs.                4N
-	startup_info->cbReserved2 = sizeof(DWORD) + 5 * (real_max_fd + 1);
+	startup_info->cbReserved2 = (WORD)(sizeof(DWORD) + 5 * (real_max_fd + 1));
 	startup_info->lpReserved2 = malloc(startup_info->cbReserved2);
 
 	*(DWORD *)startup_info->lpReserved2 = real_max_fd;
@@ -204,7 +204,7 @@ finish:
 
 static UNICODE_STRING *search_for_program(const char *path)
 {
-	int length;
+	size_t length;
 	char *program = NULL;
 	UNICODE_STRING *dospath = NULL;
 	bool executable_extension_given = false;
@@ -237,7 +237,7 @@ static UNICODE_STRING *search_for_program(const char *path)
 	// To speed up performing shebang execution, search for the program as is after
 	// appending ".exe".
 	// The rationale behind this is that most programs in Windows are .exes.
-	// Preferring exes over any other extension makes more sense. 
+	// Preferring exes over any other extension makes more sense.
 	// Shebang scripts are more widely used than cmd or bat scripts I assume.
 
 	// '.exe'
@@ -329,10 +329,15 @@ UNICODE_STRING *search_path_for_program(const char *path)
 			}
 
 			// Append program to path. Eg PATH\PROGRAM
-			memcpy(program, PATH + j, i - j - 1); // Exclude ';'
-			program[i - j - 1] = '\\';
+			memcpy(program, PATH + j, i - j); // Exclude ';'
+			if (*(PATH + i - 1) != '\\')
+			{
+				// Append a slash if path component does not have one.
+				program[i - j] = '\\';
+				--j;
+			}
 			memcpy(program + (i - j), path, length + 1);
-			j = i;
+			j = i + 1;
 
 			// Check if the program exists in this particular directory.
 			dospath = search_for_program(program);
@@ -394,7 +399,7 @@ static WCHAR *convert_argv_to_wargv(char *const argv[])
 	for (int i = 0; i < argc; ++i)
 	{
 		u16_args[i].Buffer = (WCHAR *)((char *)wargv + argv_used);
-		u16_args[i].Length = argv_size - argv_used;
+		u16_args[i].Length = (USHORT)(argv_size - argv_used);
 		u16_args[i].MaximumLength = u16_args[i].Length;
 
 		RtlUTF8StringToUnicodeString(&u16_args[i], &u8_args[i], FALSE);
@@ -449,7 +454,7 @@ static WCHAR *convert_env_to_wenv(char *const env[])
 	for (int i = 0; i < envc; ++i)
 	{
 		u16_envs[i].Buffer = (WCHAR *)((char *)wenv + env_used);
-		u16_envs[i].Length = env_size - env_used;
+		u16_envs[i].Length = (USHORT)(env_size - env_used);
 		u16_envs[i].MaximumLength = u16_envs[i].Length;
 
 		RtlUTF8StringToUnicodeString(&u16_envs[i], &u8_envs[i], FALSE);
@@ -495,7 +500,7 @@ int wlibc_spawn(pid_t *restrict pid, const char *restrict path, const spawn_acti
 	if (u16_path == NULL)
 	{
 		// Appropriate errno will be set by `get_absolute_dospath_of_executable`.
-		goto finish;
+		return -1;
 	}
 	wpath = u16_path->Buffer;
 

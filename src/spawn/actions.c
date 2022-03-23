@@ -78,7 +78,7 @@ int wlibc_spawn_file_actions_addopen(spawn_actions_t *actions, int fd, const cha
 	VALIDATE_PATH(path, EINVAL, -1);
 	DOUBLE_ACTIONS_IF_NEEDED(actions);
 
-	int length = strlen(path);
+	int length = (int)strlen(path);
 	actions->actions[actions->used] = (struct spawn_action){.type = open_action, .open_action = {fd, oflag, mode, length, NULL}};
 	actions->actions[actions->used].open_action.path = (char *)malloc(length + 1);
 	memcpy(actions->actions[actions->used].open_action.path, path, length + 1);
@@ -115,7 +115,7 @@ int wlibc_spawn_file_actions_addchdir(spawn_actions_t *restrict actions, const c
 	VALIDATE_PATH(path, EINVAL, -1);
 	DOUBLE_ACTIONS_IF_NEEDED(actions);
 
-	int length = strlen(path);
+	int length = (int)strlen(path);
 	actions->actions[actions->used] = (struct spawn_action){.type = chdir_action, .chdir_action = {length, NULL}};
 	actions->actions[actions->used].chdir_action.path = (char *)malloc(length + 1);
 	memcpy(actions->actions[actions->used].chdir_action.path, path, length + 1);
