@@ -11,6 +11,7 @@
 #include <internal/security.h>
 #include <internal/signal.h>
 #include <internal/stdio.h>
+#include <internal/thread.h>
 #include <stdlib.h>
 
 extern int main(int argc, char **argv);
@@ -47,6 +48,10 @@ int wmain(int argc, wchar_t **wargv)
 #ifdef WLIBC_SIGNALS
 	signal_init();
 	atexit(signal_cleanup);
+#endif
+#ifdef WLIBC_THREADS
+	threads_init();
+	atexit(threads_cleanup);
 #endif
 #ifdef WLIBC_ACLS
 	initialize_sids();

@@ -7,11 +7,29 @@
 
 #include <internal/nt.h>
 #include <internal/error.h>
+#include <internal/thread.h>
 #include <internal/validate.h>
 #include <errno.h>
+#include <stdlib.h>
 #include <thread.h>
 
 #define VALIDATE_THREAD_ATTR(thread_attr) VALIDATE_PTR(thread_attr, EINVAL, -1)
+
+DWORD wlibc_thread_entry(void *arg)
+{
+	threadinfo *tinfo = (threadinfo *)arg;
+	void *result;
+
+	TlsSetValue(_wlibc_threadinfo_index, (void *)tinfo);
+
+	result = tinfo->routine(tinfo->args);
+	tinfo->result = result;
+
+	cleanup_tls(tinfo);
+	RtlExitUserThread((NTSTATUS)(LONG_PTR)result);
+	// Unreachable
+	return 0;
+}
 
 int wlibc_thread_create(thread_t *thread, thread_attr_t *attributes, thread_start_t routine, void *arg)
 {
@@ -19,6 +37,7 @@ int wlibc_thread_create(thread_t *thread, thread_attr_t *attributes, thread_star
 	HANDLE thread_handle;
 	SIZE_T stacksize = 0;
 	BOOLEAN should_detach = FALSE;
+	threadinfo *tinfo;
 
 	if (thread == NULL)
 	{
@@ -35,23 +54,30 @@ int wlibc_thread_create(thread_t *thread, thread_attr_t *attributes, thread_star
 		}
 	}
 
+	*thread = malloc(sizeof(threadinfo));
+	tinfo = (threadinfo *)*thread;
+	memset(tinfo, 0, sizeof(threadinfo));
+
+	tinfo->routine = routine;
+	tinfo->args = arg;
+
 	thread_handle =
-		CreateRemoteThreadEx(NtCurrentProcess(), NULL, stacksize, (LPTHREAD_START_ROUTINE)routine, arg, CREATE_SUSPENDED, NULL, &thread_id);
+		CreateRemoteThreadEx(NtCurrentProcess(), NULL, stacksize, wlibc_thread_entry, (void *)tinfo, CREATE_SUSPENDED, NULL, &thread_id);
 	if (thread_handle == NULL)
 	{
 		map_doserror_to_errno(GetLastError());
 		return -1;
 	}
 
-	thread->handle = (DWORD)(LONG_PTR)thread_handle;
-	thread->id = thread_id;
+	tinfo->handle = thread_handle;
+	tinfo->id = thread_id;
 
 	NtResumeThread(thread_handle, NULL);
 
 	if (should_detach)
 	{
 		NtClose(thread_handle);
-		thread->handle = 0;
+		tinfo->handle = 0;
 	}
 
 	return 0;
@@ -62,11 +88,23 @@ int wlibc_thread_create(thread_t *thread, thread_attr_t *attributes, thread_star
 int wlibc_thread_detach(thread_t thread)
 {
 	NTSTATUS status;
+	threadinfo *tinfo = (threadinfo *)thread;
 
-	status = NtClose((HANDLE)(LONG_PTR)thread.handle);
-	if (status != STATUS_SUCCESS)
+	if (tinfo->handle != 0)
 	{
-		map_ntstatus_to_errno(status);
+		status = NtClose(tinfo->handle);
+		if (status != STATUS_SUCCESS)
+		{
+			map_ntstatus_to_errno(status);
+			return -1;
+		}
+
+		tinfo->handle = 0;
+	}
+	else
+	{
+		// Already detached thread.
+		errno = EINVAL;
 		return -1;
 	}
 
@@ -77,7 +115,7 @@ int wlibc_common_thread_join(thread_t thread, void **result, const struct timesp
 {
 	NTSTATUS status;
 	LARGE_INTEGER timeout;
-	THREAD_BASIC_INFORMATION basic_info;
+	threadinfo *tinfo = (threadinfo *)thread;
 
 	timeout.QuadPart = 0;
 	// If abstime is null                    -> infinite wait.
@@ -89,21 +127,14 @@ int wlibc_common_thread_join(thread_t thread, void **result, const struct timesp
 		timeout.QuadPart += 116444736000000000LL;
 	}
 
-	status = NtWaitForSingleObject((HANDLE)(LONG_PTR)thread.handle, FALSE, abstime == NULL ? NULL : &timeout);
+	status = NtWaitForSingleObject(tinfo->handle, FALSE, abstime == NULL ? NULL : &timeout);
 	if (status != STATUS_SUCCESS)
 	{
 		map_ntstatus_to_errno(status);
 		return -1;
 	}
 
-	status = NtQueryInformationThread((HANDLE)(LONG_PTR)thread.handle, ThreadBasicInformation, &basic_info, sizeof(basic_info), NULL);
-	if (status != STATUS_SUCCESS)
-	{
-		map_ntstatus_to_errno(status);
-		return -1;
-	}
-
-	status = NtClose((HANDLE)(LONG_PTR)thread.handle);
+	status = NtClose(tinfo->handle);
 	if (status != STATUS_SUCCESS)
 	{
 		map_ntstatus_to_errno(status);
@@ -112,9 +143,11 @@ int wlibc_common_thread_join(thread_t thread, void **result, const struct timesp
 
 	if (result != NULL)
 	{
-		// NOTE: The result will be truncated to 32bits. Nothing can be done about it.
-		*result = (void *)(intptr_t)basic_info.ExitStatus;
+		*result = tinfo->result;
 	}
+
+	// Finally free the thread structure.
+	free(thread);
 
 	return 0;
 }
@@ -138,17 +171,12 @@ int wlibc_thread_timedjoin(thread_t thread, void **result, const struct timespec
 
 int wlibc_thread_equal(thread_t thread_a, thread_t thread_b)
 {
-	return thread_a.id == thread_b.id;
+	return ((threadinfo *)thread_a)->id == ((threadinfo *)thread_b)->id;
 }
 
 thread_t wlibc_thread_self(void)
 {
-	thread_t thread;
-
-	thread.handle = (DWORD)(LONG_PTR)NtCurrentThread();
-	thread.id = GetCurrentThreadId();
-
-	return thread;
+	return (thread_t)TlsGetValue(_wlibc_threadinfo_index);
 }
 
 int wlibc_thread_sleep(const struct timespec *duration, struct timespec *remaining)
@@ -184,15 +212,18 @@ int wlibc_thread_yield(void)
 	return 0;
 }
 
-void wlibc_thread_exit_p(void *retval)
+void wlibc_thread_exit(void *retval)
 {
+	threadinfo *tinfo = TlsGetValue(_wlibc_threadinfo_index);
+
+	// We use this field to determine the result. The parameter for `RtlExitUserThread` is just for backup.
+	tinfo->result = retval;
+
+	// Cleanup
+	cleanup_tls(tinfo);
+
 	// The exit code of thread will be truncated to 32bits.
 	RtlExitUserThread((NTSTATUS)(LONG_PTR)retval);
-}
-
-void wlibc_thread_exit_c11(int result)
-{
-	RtlExitUserThread((NTSTATUS)result);
 }
 
 int wlibc_threadattr_init(thread_attr_t *attributes)

@@ -55,7 +55,13 @@ WLIBC_INLINE int thrd_detach(thrd_t thread)
 
 WLIBC_INLINE int thrd_join(thrd_t thread, int *result)
 {
-	return wlibc_thread_join(thread, (void **)result);
+	int status;
+	void *real_result;
+
+	status = wlibc_thread_join(thread, &real_result);
+	*result = (int)(intptr_t)real_result;
+
+	return status;
 }
 
 WLIBC_INLINE int thrd_equal(thrd_t thread_a, thrd_t thread_b)
@@ -80,7 +86,7 @@ WLIBC_INLINE void thrd_yield(void)
 
 WLIBC_INLINE void thrd_exit(int result)
 {
-	wlibc_thread_exit_c11(result);
+	wlibc_thread_exit((void *)(intptr_t)result);
 }
 
 // One time initialization.

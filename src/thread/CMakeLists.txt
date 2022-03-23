@@ -11,6 +11,7 @@ MODULE thread
 SOURCES
 barrier.c
 cond.c
+internal.c
 key.c
 mutex.c
 once.c

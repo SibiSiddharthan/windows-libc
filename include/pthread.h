@@ -54,7 +54,7 @@ WLIBC_INLINE int pthread_create(pthread_t *thread, pthread_attr_t *attributes, p
 
 WLIBC_INLINE void pthread_exit(void *retval)
 {
-	wlibc_thread_exit_p(retval);
+	wlibc_thread_exit(retval);
 }
 
 WLIBC_INLINE int pthread_detach(pthread_t thread)
