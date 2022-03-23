@@ -24,6 +24,12 @@ void *empty(void *arg)
 	return NULL;
 }
 
+void *bigexit(void *arg)
+{
+	pthread_exit((void *)0xffffffffffffffff);
+	return NULL;
+}
+
 int test_thread_basic()
 {
 	int status;
@@ -93,11 +99,51 @@ int test_attributes()
 	return 0;
 }
 
+int test_64bit_return()
+{
+	int status;
+	void *result;
+	args_struct args;
+	pthread_t thread;
+
+	args.a = 0;
+	args.b = -1;
+
+	status = pthread_create(&thread, NULL, func, (void *)&args);
+	ASSERT_EQ(status, 0);
+
+	status = pthread_join(thread, &result);
+	ASSERT_EQ(status, 0);
+	ASSERT_EQ(result, 0xffffffffffffffff);
+
+	return 0;
+}
+
+int test_64bit_exit()
+{
+	int status;
+	void *result;
+	pthread_t thread;
+
+	status = pthread_create(&thread, NULL, bigexit, NULL);
+	ASSERT_EQ(status, 0);
+
+	status = pthread_join(thread, &result);
+	ASSERT_EQ(status, 0);
+	ASSERT_EQ(result, 0xffffffffffffffff);
+
+	return 0;
+}
+
 int main()
 {
 	INITIAILIZE_TESTS();
+
 	TEST(test_thread_basic());
 	TEST(test_join_detach());
 	TEST(test_attributes());
+	TEST(test_64bit_return());
+	TEST(test_64bit_exit());
+
 	VERIFY_RESULT_AND_EXIT();
 }
