@@ -59,7 +59,10 @@ WLIBC_INLINE int thrd_join(thrd_t thread, int *result)
 	void *real_result;
 
 	status = wlibc_thread_join(thread, &real_result);
-	*result = (int)(intptr_t)real_result;
+	if (result)
+	{
+		*result = (int)(intptr_t)real_result;
+	}
 
 	return status;
 }

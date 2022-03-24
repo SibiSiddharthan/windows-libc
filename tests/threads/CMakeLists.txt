@@ -6,4 +6,8 @@
 ]]
 
 wlibc_add_tests(
-init)
+cnd
+init
+mtx
+thrd
+tss)
