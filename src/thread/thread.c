@@ -133,6 +133,11 @@ int wlibc_common_thread_join(thread_t thread, void **result, const struct timesp
 	if (status != STATUS_SUCCESS)
 	{
 		map_ntstatus_to_errno(status);
+		// If we are doing a try join errno should be set to EBUSY.
+		if (timeout.QuadPart == 0 && errno == ETIMEDOUT)
+		{
+			errno = EBUSY;
+		}
 		return -1;
 	}
 

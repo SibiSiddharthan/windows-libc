@@ -7,6 +7,7 @@
 
 #include <tests/test.h>
 #include <pthread.h>
+#include <sys/time.h>
 #include <unistd.h>
 
 size_t test_variable = 0;
@@ -24,6 +25,13 @@ void *func(void *arg)
 
 void *empty(void *arg)
 {
+	return NULL;
+}
+
+void *join(void *arg)
+{
+	// Sleep for 10 milliseconds.
+	usleep(10000);
 	return NULL;
 }
 
@@ -145,6 +153,45 @@ int test_join_detach()
 	// Repeated detach should also fail.
 	status = pthread_detach(thread);
 	ASSERT_EQ(status, -1);
+
+	return 0;
+}
+
+int test_timedjoin()
+{
+	int status;
+	pthread_t thread;
+	struct timeval current_time;
+	struct timespec abstime;
+
+	status = pthread_create(&thread, NULL, join, NULL);
+	ASSERT_EQ(status, 0);
+
+	errno = 0;
+	status = pthread_tryjoin(thread, NULL);
+	ASSERT_EQ(status, -1);
+	ASSERT_EQ(errno, EBUSY);
+
+	gettimeofday(&current_time, NULL);
+
+	abstime.tv_sec = current_time.tv_sec;
+	abstime.tv_nsec = (current_time.tv_usec * 1000) % 999999999;
+	// Wait for 10 microseconds
+	abstime.tv_nsec += 10000;
+
+	errno = 0;
+	status = pthread_timedjoin(thread, NULL, &abstime);
+	ASSERT_EQ(status, -1);
+	ASSERT_EQ(errno, ETIMEDOUT);
+
+	gettimeofday(&current_time, NULL);
+
+	// Wait for 1 second. This should be sufficient for the thread to exit.
+	abstime.tv_sec = current_time.tv_sec;
+	++abstime.tv_sec;
+
+	status = pthread_timedjoin(thread, NULL, &abstime);
+	ASSERT_EQ(status, 0);
 
 	return 0;
 }
@@ -322,6 +369,7 @@ int main()
 
 	TEST(test_thread_basic());
 	TEST(test_join_detach());
+	TEST(test_timedjoin());
 	TEST(test_attributes());
 	TEST(test_64bit_return());
 	TEST(test_64bit_exit());
