@@ -40,6 +40,7 @@ void threads_cleanup(void)
 	threadinfo *tinfo = (threadinfo *)TlsGetValue(_wlibc_threadinfo_index);
 
 	// Perform cleanup on the main thread.
+	execute_cleanup(tinfo);
 	cleanup_tls(tinfo);
 
 	// Free the main thread's info structure.
@@ -61,7 +62,7 @@ void cleanup_tls(threadinfo *tinfo)
 	for (int i = 0; i < 64; ++i)
 	{
 		// Check if tls slot is active.
-		if (_wlibc_tls_bitmap & (1 << i))
+		if (_wlibc_tls_bitmap & (1ull << i))
 		{
 			// Check if value at slot is non zero (non NULL).
 			if (tinfo->slots[i].value != NULL)
@@ -75,4 +76,21 @@ void cleanup_tls(threadinfo *tinfo)
 			}
 		}
 	}
+}
+
+void execute_cleanup(threadinfo *tinfo)
+{
+	while(tinfo->cleanup_slots_used != 0)
+	{
+		// Only execute the cleanup function if it is non NULL.
+		if (tinfo->cleanup_entries[tinfo->cleanup_slots_used - 1].routine != NULL)
+		{
+			tinfo->cleanup_entries[tinfo->cleanup_slots_used - 1].routine(tinfo->cleanup_entries[tinfo->cleanup_slots_used - 1].arg);
+		}
+
+		--tinfo->cleanup_slots_used;
+	}
+
+	// This will not be double free.
+	free(tinfo->cleanup_entries);
 }

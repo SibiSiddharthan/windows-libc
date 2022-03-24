@@ -33,6 +33,14 @@ typedef rwlock_attr_t pthread_rwlockattr_t;
 
 typedef key_t pthread_key_t;
 
+#define PTHREAD_CANCELED  WLIBC_THREAD_CANCELED
+#define PTHREAD_CANCELLED PTHREAD_CANCELED
+
+#define PTHREAD_CANCEL_ENABLE       WLIBC_THREAD_CANCEL_ENABLE
+#define PTHREAD_CANCEL_DISABLE      WLIBC_THREAD_CANCEL_DISABLE
+#define PTHREAD_CANCEL_DEFERRED     WLIBC_THREAD_CANCEL_DEFERRED
+#define PTHREAD_CANCEL_ASYNCHRONOUS WLIBC_THREAD_CANCEL_ASYNCHRONOUS
+
 #define PTHREAD_ONCE_INIT WLIBC_THREAD_ONCE_INIT
 
 #define PTHREAD_CREATE_JOINABLE WLIBC_THREAD_JOINABLE // Joinable thread.
@@ -94,6 +102,37 @@ WLIBC_INLINE int pthread_timedjoin(pthread_t thread, void **result, const struct
 
 #define pthread_tryjoin_np   pthread_tryjoin
 #define pthread_timedjoin_np pthread_timedjoin
+
+// Cancellations
+WLIBC_INLINE int pthread_setcancelstate(int state, int *oldstate)
+{
+	return wlibc_thread_setcancelstate(state, oldstate);
+}
+
+WLIBC_INLINE int pthread_setcanceltype(int type, int *oldtype)
+{
+	return wlibc_thread_setcanceltype(type, oldtype);
+}
+
+WLIBC_INLINE int pthread_cancel(pthread_t thread)
+{
+	return wlibc_thread_cancel(thread);
+}
+
+WLIBC_INLINE void pthread_testcancel(void)
+{
+	wlibc_thread_testcancel();
+}
+
+WLIBC_INLINE void pthread_cleanup_push(cleanup_t routine, void *arg)
+{
+	wlibc_thread_cleanup_push(routine, arg);
+}
+
+WLIBC_INLINE void pthread_cleanup_pop(int execute)
+{
+	wlibc_thread_cleanup_pop(execute);
+}
 
 // Attributes
 WLIBC_INLINE int pthread_attr_init(pthread_attr_t *attributes)

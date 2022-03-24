@@ -7,6 +7,9 @@
 
 #include <tests/test.h>
 #include <pthread.h>
+#include <unistd.h>
+
+size_t test_variable = 0;
 
 typedef struct _args_struct
 {
@@ -27,6 +30,80 @@ void *empty(void *arg)
 void *bigexit(void *arg)
 {
 	pthread_exit((void *)0xffffffffffffffff);
+	return NULL;
+}
+
+void cleanup_routine(void *arg)
+{
+	test_variable += (intptr_t)arg;
+}
+
+void *cleanup_push(void *arg)
+{
+	pthread_cleanup_push(cleanup_routine, arg);
+	return NULL;
+}
+
+void *cleanup_push_pop_noexecute(void *arg)
+{
+	pthread_cleanup_push(cleanup_routine, arg);
+	pthread_cleanup_pop(0); // Pop the function but don't execute it.
+	return NULL;
+}
+
+void *cleanup_push_pop_execute(void *arg)
+{
+	pthread_cleanup_push(cleanup_routine, arg);
+	pthread_cleanup_pop(1); // Pop the function and execute it.
+	return NULL;
+}
+
+void *bigcleanup(void *arg)
+{
+	// Push more the 8 routines (10 routines pushed)
+	pthread_cleanup_push(cleanup_routine, arg);
+	pthread_cleanup_push(cleanup_routine, arg);
+	pthread_cleanup_push(cleanup_routine, arg);
+	pthread_cleanup_push(cleanup_routine, arg);
+	pthread_cleanup_push(cleanup_routine, arg);
+	pthread_cleanup_push(cleanup_routine, arg);
+	pthread_cleanup_push(cleanup_routine, arg);
+	pthread_cleanup_push(cleanup_routine, arg);
+	pthread_cleanup_push(cleanup_routine, arg);
+	pthread_cleanup_push(cleanup_routine, arg);
+	// Pop three of them
+	pthread_cleanup_pop(1);
+	pthread_cleanup_pop(0);
+	pthread_cleanup_pop(0);
+	return NULL;
+}
+
+void *cancel(void *arg)
+{
+	while (1)
+		;
+	return NULL;
+}
+
+void *cancel_with_cleanup(void *arg)
+{
+	pthread_cleanup_push(cleanup_routine, arg);
+	while (1)
+		;
+	return NULL;
+}
+
+void *testcancel(void *arg)
+{
+	pthread_cleanup_push(cleanup_routine, arg);
+	pthread_testcancel();
+	return NULL;
+}
+
+void *testcancel_disabled(void *arg)
+{
+	pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
+	pthread_testcancel();
 	return NULL;
 }
 
@@ -135,6 +212,110 @@ int test_64bit_exit()
 	return 0;
 }
 
+int test_cleanup()
+{
+	int status;
+	pthread_t thread;
+
+	ASSERT_EQ(test_variable, 0);
+
+	status = pthread_create(&thread, NULL, cleanup_push, (void *)(intptr_t)1);
+	ASSERT_EQ(status, 0);
+
+	status = pthread_join(thread, NULL);
+	ASSERT_EQ(status, 0);
+
+	ASSERT_EQ(test_variable, 1);
+
+	status = pthread_create(&thread, NULL, cleanup_push_pop_noexecute, (void *)(intptr_t)2);
+	ASSERT_EQ(status, 0);
+
+	status = pthread_join(thread, NULL);
+	ASSERT_EQ(status, 0);
+
+	ASSERT_EQ(test_variable, 1);
+
+	status = pthread_create(&thread, NULL, cleanup_push_pop_execute, (void *)(intptr_t)3);
+	ASSERT_EQ(status, 0);
+
+	status = pthread_join(thread, NULL);
+	ASSERT_EQ(status, 0);
+
+	ASSERT_EQ(test_variable, 4);
+
+	test_variable = 0;
+
+	status = pthread_create(&thread, NULL, bigcleanup, (void *)(intptr_t)5);
+	ASSERT_EQ(status, 0);
+
+	status = pthread_join(thread, NULL);
+	ASSERT_EQ(status, 0);
+
+	// 8 of them should be executed.
+	ASSERT_EQ(test_variable, 40);
+
+	return 0;
+}
+
+int test_cancel()
+{
+	int status;
+	void *result;
+	pthread_t thread;
+
+	ASSERT_EQ(test_variable, 0);
+
+	status = pthread_create(&thread, NULL, cancel, (void *)(intptr_t)1);
+	ASSERT_EQ(status, 0);
+
+	// Give some time for the created thread to run.
+	usleep(1000);
+
+	status = pthread_cancel(thread);
+	ASSERT_EQ(status, 0);
+
+	status = pthread_join(thread, &result);
+	ASSERT_EQ(status, 0);
+	ASSERT_EQ(result, PTHREAD_CANCELED);
+
+	ASSERT_EQ(test_variable, 0);
+
+	status = pthread_create(&thread, NULL, cancel_with_cleanup, (void *)(intptr_t)2);
+	ASSERT_EQ(status, 0);
+
+	// Give some time for the created thread to run.
+	usleep(1000);
+
+	status = pthread_cancel(thread);
+	ASSERT_EQ(status, 0);
+
+	status = pthread_join(thread, &result);
+	ASSERT_EQ(status, 0);
+	ASSERT_EQ(result, PTHREAD_CANCELED);
+
+	// ASSERT_EQ(test_variable, 2); TODO
+
+	status = pthread_create(&thread, NULL, testcancel, (void *)(intptr_t)3);
+	ASSERT_EQ(status, 0);
+
+	status = pthread_join(thread, &result);
+	ASSERT_EQ(status, 0);
+	ASSERT_EQ(result, PTHREAD_CANCELED);
+
+	ASSERT_EQ(test_variable, 3);
+
+	status = pthread_create(&thread, NULL, testcancel_disabled, (void *)(intptr_t)4);
+	ASSERT_EQ(status, 0);
+
+	status = pthread_join(thread, &result);
+	ASSERT_EQ(status, 0);
+	ASSERT_EQ(result, NULL);
+
+	ASSERT_EQ(test_variable, 3);
+
+	return 0;
+}
+
 int main()
 {
 	INITIAILIZE_TESTS();
@@ -144,6 +325,9 @@ int main()
 	TEST(test_attributes());
 	TEST(test_64bit_return());
 	TEST(test_64bit_exit());
+	TEST(test_cleanup());
+	test_variable = 0;
+	TEST(test_cancel());
 
 	VERIFY_RESULT_AND_EXIT();
 }

@@ -15,6 +15,7 @@ _WLIBC_BEGIN_DECLS
 
 typedef void *thread_t;
 typedef void *(*thread_start_t)(void *);
+typedef void (*cleanup_t)(void *);
 
 typedef struct _wlibc_thread_attr_t
 {
@@ -79,6 +80,14 @@ typedef struct _wlibc_rwlock_t
 typedef unsigned long key_t;
 typedef void (*dtor_t)(void *);
 
+#define WLIBC_THREAD_CANCEL_ENABLE       0
+#define WLIBC_THREAD_CANCEL_DISABLE      1
+#define WLIBC_THREAD_CANCEL_ASYNCHRONOUS 0 // Immediate cancellation
+#define WLIBC_THREAD_CANCEL_DEFERRED     1 // Deferred cancellation (Same as above in Windows)
+
+#define WLIBC_THREAD_CANCELED  ((void *)(intptr_t)-1)
+#define WLIBC_THREAD_CANCELLED WLIBC_THREAD_CANCELED
+
 #define WLIBC_THREAD_ONCE_INIT {0}
 #define WLIBC_DTOR_ITERATIONS 1
 
@@ -103,6 +112,12 @@ WLIBC_API thread_t wlibc_thread_self(void);
 WLIBC_API int wlibc_thread_sleep(const struct timespec *duration, struct timespec *remaining);
 WLIBC_API int wlibc_thread_yield(void);
 WLIBC_API void wlibc_thread_exit(void *retval); // notreturn TODO.
+WLIBC_API int wlibc_thread_setcancelstate(int state, int *oldstate);
+WLIBC_API int wlibc_thread_setcanceltype(int type, int *oldtype);
+WLIBC_API int wlibc_thread_cancel(thread_t thread);
+WLIBC_API void wlibc_thread_testcancel(void);
+WLIBC_API void wlibc_thread_cleanup_push(cleanup_t routine, void *arg);
+WLIBC_API void wlibc_thread_cleanup_pop(int execute);
 WLIBC_API int wlibc_threadattr_init(thread_attr_t *attributes);
 WLIBC_API int wlibc_threadattr_getdetachstate(const thread_attr_t *attributes, int *detachstate);
 WLIBC_API int wlibc_threadattr_setdetachstate(thread_attr_t *attributes, int detachstate);

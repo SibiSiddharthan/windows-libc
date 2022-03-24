@@ -53,7 +53,7 @@ int wlibc_tss_delete(key_t index)
 {
 	VALIDATE_TLS_ENTRY(index, -1);
 
-	_wlibc_tls_bitmap &= ~(1 << index);
+	_wlibc_tls_bitmap &= ~(1ull << index);
 	_wlibc_tls_destructors[index] = NULL;
 	return 0;
 }

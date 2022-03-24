@@ -1957,7 +1957,30 @@ NtResumeThread(_In_ HANDLE ThreadHandle, _Out_opt_ PULONG PreviousSuspendCount);
 NTSYSCALLAPI
 NTSTATUS
 NTAPI
+NtAlertThread(_In_ HANDLE ThreadHandle);
+
+NTSYSCALLAPI
+NTSTATUS
+NTAPI
+NtAlertResumeThread(_In_ HANDLE ThreadHandle, _Out_opt_ PULONG PreviousSuspendCount);
+
+NTSYSCALLAPI
+NTSTATUS
+NTAPI
+NtTestAlert(VOID);
+
+NTSYSCALLAPI
+NTSTATUS
+NTAPI
 NtYieldExecution(VOID);
+
+typedef VOID (*PPS_APC_ROUTINE)(_In_opt_ PVOID ApcArgument1, _In_opt_ PVOID ApcArgument2, _In_opt_ PVOID ApcArgument3);
+
+NTSYSCALLAPI
+NTSTATUS
+NTAPI
+NtQueueApcThread(_In_ HANDLE ThreadHandle, _In_ PPS_APC_ROUTINE ApcRoutine, _In_opt_ PVOID ApcArgument1, _In_opt_ PVOID ApcArgument2,
+				 _In_opt_ PVOID ApcArgument3);
 
 NTSYSCALLAPI
 NTSTATUS

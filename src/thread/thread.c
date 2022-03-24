@@ -25,6 +25,8 @@ DWORD wlibc_thread_entry(void *arg)
 	result = tinfo->routine(tinfo->args);
 	tinfo->result = result;
 
+	// Cleanup
+	execute_cleanup(tinfo);
 	cleanup_tls(tinfo);
 	RtlExitUserThread((NTSTATUS)(LONG_PTR)result);
 	// Unreachable
@@ -220,10 +222,154 @@ void wlibc_thread_exit(void *retval)
 	tinfo->result = retval;
 
 	// Cleanup
+	execute_cleanup(tinfo);
 	cleanup_tls(tinfo);
 
 	// The exit code of thread will be truncated to 32bits.
 	RtlExitUserThread((NTSTATUS)(LONG_PTR)retval);
+}
+
+int wlibc_thread_setcancelstate(int state, int *oldstate)
+{
+	if (state != WLIBC_THREAD_CANCEL_ENABLE && state != WLIBC_THREAD_CANCEL_DISABLE)
+	{
+		errno = EINVAL;
+		return -1;
+	}
+
+	threadinfo *tinfo = TlsGetValue(_wlibc_threadinfo_index);
+
+	if (oldstate)
+	{
+		*oldstate = tinfo->cancelstate;
+	}
+
+	tinfo->cancelstate = state;
+
+	return 0;
+}
+
+int wlibc_thread_setcanceltype(int type, int *oldtype)
+{
+	if (type != WLIBC_THREAD_CANCEL_ASYNCHRONOUS && type != WLIBC_THREAD_CANCEL_DEFERRED)
+	{
+		errno = EINVAL;
+		return -1;
+	}
+
+	threadinfo *tinfo = TlsGetValue(_wlibc_threadinfo_index);
+
+	if (oldtype)
+	{
+		*oldtype = tinfo->canceltype;
+	}
+
+	tinfo->cancelstate = type;
+
+	return 0;
+}
+
+#if 0
+static void execute_thread_cancellation(threadinfo *tinfo)
+{
+	if (tinfo->cancelstate == WLIBC_THREAD_CANCEL_DISABLE)
+	{
+		// Cancellations for this thread are disabled, just return.
+		return;
+	}
+
+	execute_cleanup(tinfo);
+	cleanup_tls(tinfo);
+	tinfo->result = WLIBC_THREAD_CANCELED;
+	RtlExitUserThread((NTSTATUS)(LONG_PTR)WLIBC_THREAD_CANCELED);
+}
+
+static void cancel_apc(void *arg1, void *arg2, void *arg3)
+{
+	execute_thread_cancellation(arg1);
+}
+#endif
+
+WLIBC_API int wlibc_thread_cancel(thread_t thread)
+{
+	threadinfo *tinfo = (threadinfo *)thread;
+
+	if (tinfo->cancelstate == WLIBC_THREAD_CANCEL_DISABLE)
+	{
+		// Cancellations for this thread are disabled.
+		return -1;
+	}
+
+	tinfo->result = WLIBC_THREAD_CANCELED;
+	// TODO The thread is not cleaned up when cancelled.
+	// In Windows 11 there is NtQueueApcThreadEx2 where we can presumably queue special APCs
+	// that prempt execution.
+	NtTerminateThread(tinfo->handle, (NTSTATUS)(LONG_PTR)WLIBC_THREAD_CANCELED);
+
+	return 0;
+}
+
+WLIBC_API void wlibc_thread_testcancel(void)
+{
+	threadinfo *tinfo = TlsGetValue(_wlibc_threadinfo_index);
+
+	if (tinfo->cancelstate == WLIBC_THREAD_CANCEL_DISABLE)
+	{
+		// Cancellations for this thread are disabled, just return.
+		return;
+	}
+
+	execute_cleanup(tinfo);
+	cleanup_tls(tinfo);
+	tinfo->result = WLIBC_THREAD_CANCELED;
+	RtlExitUserThread((NTSTATUS)(LONG_PTR)WLIBC_THREAD_CANCELED);
+}
+
+void wlibc_thread_cleanup_push(cleanup_t routine, void *arg)
+{
+	threadinfo *tinfo = TlsGetValue(_wlibc_threadinfo_index);
+
+	if (tinfo->cleanup_slots_allocated == 0)
+	{
+		tinfo->cleanup_entries = (cleanup_entry *)malloc(sizeof(cleanup_entry) * 8);
+		tinfo->cleanup_slots_allocated = 8;
+	}
+
+	// Double the cleanup routine list
+	if (tinfo->cleanup_slots_allocated == tinfo->cleanup_slots_used)
+	{
+		cleanup_entry *temp = (cleanup_entry *)malloc(sizeof(cleanup_entry) * tinfo->cleanup_slots_allocated * 2);
+		memcpy(temp, tinfo->cleanup_entries, sizeof(cleanup_entry) * tinfo->cleanup_slots_allocated);
+		free(tinfo->cleanup_entries);
+		tinfo->cleanup_entries = temp;
+		tinfo->cleanup_slots_allocated *= 2;
+	}
+
+	tinfo->cleanup_entries[tinfo->cleanup_slots_used].routine = routine;
+	tinfo->cleanup_entries[tinfo->cleanup_slots_used].arg = arg;
+	++tinfo->cleanup_slots_used;
+}
+
+void wlibc_thread_cleanup_pop(int execute)
+{
+	threadinfo *tinfo = TlsGetValue(_wlibc_threadinfo_index);
+
+	if (tinfo->cleanup_slots_used == 0)
+	{
+		// No cleanup functions registered or all of them have been executed.
+		return;
+	}
+
+	if (execute)
+	{
+		// Only execute the cleanup function if it is non NULL.
+		if (tinfo->cleanup_entries[tinfo->cleanup_slots_used - 1].routine != NULL)
+		{
+			tinfo->cleanup_entries[tinfo->cleanup_slots_used - 1].routine(tinfo->cleanup_entries[tinfo->cleanup_slots_used - 1].arg);
+		}
+	}
+
+	--tinfo->cleanup_slots_used;
 }
 
 int wlibc_threadattr_init(thread_attr_t *attributes)
