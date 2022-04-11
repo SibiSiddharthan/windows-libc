@@ -1875,6 +1875,10 @@ NtWaitForMultipleObjects(_In_ ULONG Count, _In_reads_(Count) HANDLE Handles[], _
 typedef enum _PROCESSINFOCLASS
 {
 	ProcessBasicInformation,
+	ProcessBasePriority = 5,
+	ProcessRaisePriority = 6,
+	ProcessPriorityClass = 18,
+	ProcessDefaultCpuSetsInformation = 66,
 	MaxProcessInfoClass = 103
 } PROCESSINFOCLASS;
 
@@ -1894,6 +1898,22 @@ typedef struct _CLIENT_ID
 	HANDLE UniqueProcess;
 	HANDLE UniqueThread;
 } CLIENT_ID, *PCLIENT_ID;
+
+typedef struct _PROCESS_PRIORITY_CLASS
+{
+	BOOLEAN Foreground;
+	UCHAR PriorityClass;
+} PROCESS_PRIORITY_CLASS, *PPROCESS_PRIORITY_CLASS;
+
+typedef struct _PROCESS_BASIC_INFORMATION
+{
+	NTSTATUS ExitStatus;
+	PPEB PebBaseAddress;
+	ULONG_PTR AffinityMask;
+	KPRIORITY BasePriority;
+	HANDLE UniqueProcessId;
+	HANDLE InheritedFromUniqueProcessId;
+} PROCESS_BASIC_INFORMATION, *PPROCESS_BASIC_INFORMATION;
 
 typedef struct _THREAD_BASIC_INFORMATION
 {
@@ -1926,12 +1946,26 @@ NTSTATUS
 NTAPI
 NtResumeProcess(_In_ HANDLE ProcessHandle);
 
+#define PROCESS_PRIORITY_CLASS_UNKNOWN      0
+#define PROCESS_PRIORITY_CLASS_IDLE         1
+#define PROCESS_PRIORITY_CLASS_NORMAL       2
+#define PROCESS_PRIORITY_CLASS_HIGH         3
+#define PROCESS_PRIORITY_CLASS_REALTIME     4
+#define PROCESS_PRIORITY_CLASS_BELOW_NORMAL 5
+#define PROCESS_PRIORITY_CLASS_ABOVE_NORMAL 6
+
 NTSYSCALLAPI
 NTSTATUS
 NTAPI
 NtQueryInformationProcess(_In_ HANDLE ProcessHandle, _In_ PROCESSINFOCLASS ProcessInformationClass,
 						  _Out_writes_bytes_(ProcessInformationLength) PVOID ProcessInformation, _In_ ULONG ProcessInformationLength,
 						  _Out_opt_ PULONG ReturnLength);
+
+NTSYSCALLAPI
+NTSTATUS
+NTAPI
+NtSetInformationProcess(_In_ HANDLE ProcessHandle, _In_ PROCESSINFOCLASS ProcessInformationClass,
+						_In_reads_bytes_(ProcessInformationLength) PVOID ProcessInformation, _In_ ULONG ProcessInformationLength);
 
 NTSYSCALLAPI
 NTSTATUS

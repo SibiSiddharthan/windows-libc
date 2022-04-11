@@ -76,6 +76,10 @@ if(ENABLE_SPAWN)
 	wlibc_add_module(spawn)
 endif()
 
+if(ENABLE_THREADS OR ENABLE_SPAWN)
+	wlibc_add_module(sched)
+endif()
+
 #wlibc_add_module(sys.acl)
 wlibc_add_module(sys.utsname)
 

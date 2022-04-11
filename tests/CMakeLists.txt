@@ -68,3 +68,6 @@ if(ENABLE_SPAWN)
 	add_subdirectory(spawn)
 endif()
 
+if(ENABLE_THREADS OR ENABLE_SPAWN)
+	add_subdirectory(sched)
+endif()
