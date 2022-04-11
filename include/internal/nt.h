@@ -2010,11 +2010,15 @@ NtYieldExecution(VOID);
 
 typedef VOID (*PPS_APC_ROUTINE)(_In_opt_ PVOID ApcArgument1, _In_opt_ PVOID ApcArgument2, _In_opt_ PVOID ApcArgument3);
 
+#define QUEUE_USER_NORMAL_APC  ((HANDLE)0)
+#define QUEUE_USER_SPECIAL_APC ((HANDLE)1)
+
 NTSYSCALLAPI
 NTSTATUS
 NTAPI
-NtQueueApcThread(_In_ HANDLE ThreadHandle, _In_ PPS_APC_ROUTINE ApcRoutine, _In_opt_ PVOID ApcArgument1, _In_opt_ PVOID ApcArgument2,
-				 _In_opt_ PVOID ApcArgument3);
+NtQueueApcThreadEx(_In_ HANDLE ThreadHandle, _In_opt_ HANDLE ReserveHandle, _In_ PPS_APC_ROUTINE ApcRoutine,
+				   _In_opt_ PVOID ApcArgument1, _In_opt_ PVOID ApcArgument2, _In_opt_ PVOID ApcArgument3);
+
 
 NTSYSCALLAPI
 NTSTATUS

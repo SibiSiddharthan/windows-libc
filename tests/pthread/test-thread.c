@@ -340,7 +340,7 @@ int test_cancel()
 	ASSERT_EQ(status, 0);
 	ASSERT_EQ(result, PTHREAD_CANCELED);
 
-	// ASSERT_EQ(test_variable, 2); TODO
+	ASSERT_EQ(test_variable, 2);
 
 	status = pthread_create(&thread, NULL, testcancel, (void *)(intptr_t)3);
 	ASSERT_EQ(status, 0);
@@ -349,7 +349,7 @@ int test_cancel()
 	ASSERT_EQ(status, 0);
 	ASSERT_EQ(result, PTHREAD_CANCELED);
 
-	ASSERT_EQ(test_variable, 3);
+	ASSERT_EQ(test_variable, 5);
 
 	status = pthread_create(&thread, NULL, testcancel_disabled, (void *)(intptr_t)4);
 	ASSERT_EQ(status, 0);
@@ -358,7 +358,7 @@ int test_cancel()
 	ASSERT_EQ(status, 0);
 	ASSERT_EQ(result, NULL);
 
-	ASSERT_EQ(test_variable, 3);
+	ASSERT_EQ(test_variable, 5);
 
 	return 0;
 }

@@ -274,7 +274,6 @@ int wlibc_thread_setcanceltype(int type, int *oldtype)
 	return 0;
 }
 
-#if 0
 static void execute_thread_cancellation(threadinfo *tinfo)
 {
 	if (tinfo->cancelstate == WLIBC_THREAD_CANCEL_DISABLE)
@@ -289,27 +288,23 @@ static void execute_thread_cancellation(threadinfo *tinfo)
 	RtlExitUserThread((NTSTATUS)(LONG_PTR)WLIBC_THREAD_CANCELED);
 }
 
-static void cancel_apc(void *arg1, void *arg2, void *arg3)
+static void cancel_apc(void *arg1, void *arg2 /*unused*/, void *arg3 /*unused*/)
 {
 	execute_thread_cancellation(arg1);
 }
-#endif
 
 WLIBC_API int wlibc_thread_cancel(thread_t thread)
 {
+	NTSTATUS status;
 	threadinfo *tinfo = (threadinfo *)thread;
 
-	if (tinfo->cancelstate == WLIBC_THREAD_CANCEL_DISABLE)
+	// NOTE: The apc we queue will prempt execution of the thread.
+	status = NtQueueApcThreadEx(tinfo->handle, QUEUE_USER_SPECIAL_APC, cancel_apc, (void *)tinfo, NULL, NULL);
+	if (status != STATUS_SUCCESS)
 	{
-		// Cancellations for this thread are disabled.
+		map_ntstatus_to_errno(status);
 		return -1;
 	}
-
-	tinfo->result = WLIBC_THREAD_CANCELED;
-	// TODO The thread is not cleaned up when cancelled.
-	// In Windows 11 there is NtQueueApcThreadEx2 where we can presumably queue special APCs
-	// that prempt execution.
-	NtTerminateThread(tinfo->handle, (NTSTATUS)(LONG_PTR)WLIBC_THREAD_CANCELED);
 
 	return 0;
 }
@@ -317,17 +312,7 @@ WLIBC_API int wlibc_thread_cancel(thread_t thread)
 WLIBC_API void wlibc_thread_testcancel(void)
 {
 	threadinfo *tinfo = TlsGetValue(_wlibc_threadinfo_index);
-
-	if (tinfo->cancelstate == WLIBC_THREAD_CANCEL_DISABLE)
-	{
-		// Cancellations for this thread are disabled, just return.
-		return;
-	}
-
-	execute_cleanup(tinfo);
-	cleanup_tls(tinfo);
-	tinfo->result = WLIBC_THREAD_CANCELED;
-	RtlExitUserThread((NTSTATUS)(LONG_PTR)WLIBC_THREAD_CANCELED);
+	execute_thread_cancellation(tinfo);
 }
 
 void wlibc_thread_cleanup_push(cleanup_t routine, void *arg)
