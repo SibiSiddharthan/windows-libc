@@ -10,12 +10,13 @@
 #include <errno.h>
 #include <sched.h>
 
+HANDLE open_process(DWORD pid, ACCESS_MASK access);
+
 int wlibc_sched_getparam(pid_t pid, struct sched_param *param)
 {
+	int result = -1;
 	NTSTATUS status;
-	OBJECT_ATTRIBUTES object;
 	HANDLE handle;
-	CLIENT_ID client_id;
 	PROCESS_BASIC_INFORMATION basic_info;
 	PROCESS_PRIORITY_CLASS priority_class;
 
@@ -25,53 +26,25 @@ int wlibc_sched_getparam(pid_t pid, struct sched_param *param)
 		return -1;
 	}
 
-	if (pid != 0)
+	handle = open_process(pid, PROCESS_QUERY_INFORMATION);
+	if (handle == 0)
 	{
-		InitializeObjectAttributes(&object, NULL, 0, NULL, NULL);
-		client_id.UniqueProcess = (HANDLE)(LONG_PTR)pid;
-		client_id.UniqueThread = 0;
-
-		status = NtOpenProcess(&handle, PROCESS_QUERY_INFORMATION, &object, &client_id);
-		if (status != STATUS_SUCCESS)
-		{
-			map_ntstatus_to_errno(status);
-			return -1;
-		}
-
-		status = NtQueryInformationProcess(handle, ProcessBasicInformation, &basic_info, sizeof(PROCESS_BASIC_INFORMATION), NULL);
-		if (status != STATUS_SUCCESS)
-		{
-			map_ntstatus_to_errno(status);
-			NtClose(handle);
-			return -1;
-		}
-
-		status = NtQueryInformationProcess(handle, ProcessPriorityClass, &priority_class, sizeof(PROCESS_PRIORITY_CLASS), NULL);
-		if (status != STATUS_SUCCESS)
-		{
-			map_ntstatus_to_errno(status);
-			NtClose(handle);
-			return -1;
-		}
-
-		NtClose(handle);
+		// errno will be set by `open_process`.
+		return -1;
 	}
-	else // pid == 0 -> Current process
-	{
-		status =
-			NtQueryInformationProcess(NtCurrentProcess(), ProcessBasicInformation, &basic_info, sizeof(PROCESS_BASIC_INFORMATION), NULL);
-		if (status != STATUS_SUCCESS)
-		{
-			map_ntstatus_to_errno(status);
-			return -1;
-		}
 
-		status = NtQueryInformationProcess(NtCurrentProcess(), ProcessPriorityClass, &priority_class, sizeof(PROCESS_PRIORITY_CLASS), NULL);
-		if (status != STATUS_SUCCESS)
-		{
-			map_ntstatus_to_errno(status);
-			return -1;
-		}
+	status = NtQueryInformationProcess(handle, ProcessBasicInformation, &basic_info, sizeof(PROCESS_BASIC_INFORMATION), NULL);
+	if (status != STATUS_SUCCESS)
+	{
+		map_ntstatus_to_errno(status);
+		goto finish;
+	}
+
+	status = NtQueryInformationProcess(handle, ProcessPriorityClass, &priority_class, sizeof(PROCESS_PRIORITY_CLASS), NULL);
+	if (status != STATUS_SUCCESS)
+	{
+		map_ntstatus_to_errno(status);
+		goto finish;
 	}
 
 	switch (priority_class.PriorityClass)
@@ -106,16 +79,21 @@ int wlibc_sched_getparam(pid_t pid, struct sched_param *param)
 		param->sched_priority = 2;
 	}
 
-	return 0;
+	result = 0;
+
+finish:
+	if (handle != NtCurrentProcess())
+	{
+		NtClose(handle);
+	}
+	return result;
 }
 
 int wlibc_sched_setparam(pid_t pid, const struct sched_param *param)
 {
 	int result = -1;
 	NTSTATUS status;
-	OBJECT_ATTRIBUTES object;
-	HANDLE handle = 0;
-	CLIENT_ID client_id;
+	HANDLE handle;
 	KPRIORITY base_priority;
 	PROCESS_BASIC_INFORMATION basic_info;
 	PROCESS_PRIORITY_CLASS priority_class;
@@ -126,22 +104,11 @@ int wlibc_sched_setparam(pid_t pid, const struct sched_param *param)
 		return -1;
 	}
 
-	if (pid != 0)
+	handle = open_process(pid, PROCESS_QUERY_INFORMATION | PROCESS_SET_INFORMATION);
+	if (handle == 0)
 	{
-		InitializeObjectAttributes(&object, NULL, 0, NULL, NULL);
-		client_id.UniqueProcess = (HANDLE)(LONG_PTR)pid;
-		client_id.UniqueThread = 0;
-
-		status = NtOpenProcess(&handle, PROCESS_QUERY_INFORMATION | PROCESS_SET_INFORMATION, &object, &client_id);
-		if (status != STATUS_SUCCESS)
-		{
-			map_ntstatus_to_errno(status);
-			return -1;
-		}
-	}
-	else // pid == 0 -> Current process
-	{
-		handle = NtCurrentProcess();
+		// errno will be set by `open_process`.
+		return -1;
 	}
 
 	status = NtQueryInformationProcess(handle, ProcessPriorityClass, &priority_class, sizeof(PROCESS_PRIORITY_CLASS), NULL);
@@ -220,7 +187,7 @@ int wlibc_sched_setparam(pid_t pid, const struct sched_param *param)
 	}
 
 finish:
-	if (handle != NtCurrentProcess() && handle != 0)
+	if (handle != NtCurrentProcess())
 	{
 		NtClose(handle);
 	}

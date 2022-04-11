@@ -10,63 +10,50 @@
 #include <errno.h>
 #include <sched.h>
 
+HANDLE open_process(DWORD pid, ACCESS_MASK access);
+
 int wlibc_sched_getscheduler(pid_t pid)
 {
+	int result = -1;
 	NTSTATUS status;
-	OBJECT_ATTRIBUTES object;
 	HANDLE handle;
-	CLIENT_ID client_id;
 	PROCESS_PRIORITY_CLASS priority_class;
 	priority_class.PriorityClass = PROCESS_PRIORITY_CLASS_UNKNOWN;
 
-	if (pid != 0)
+	handle = open_process(pid, PROCESS_QUERY_INFORMATION);
+	if (handle == 0)
 	{
-		InitializeObjectAttributes(&object, NULL, 0, NULL, NULL);
-		client_id.UniqueProcess = (HANDLE)(LONG_PTR)pid;
-		client_id.UniqueThread = 0;
+		// errno will be set by `open_process`.
+		return -1;
+	}
 
-		status = NtOpenProcess(&handle, PROCESS_QUERY_INFORMATION, &object, &client_id);
-		if (status != STATUS_SUCCESS)
-		{
-			map_ntstatus_to_errno(status);
-			return -1;
-		}
+	status = NtQueryInformationProcess(handle, ProcessPriorityClass, &priority_class, sizeof(PROCESS_PRIORITY_CLASS), NULL);
+	if (status != STATUS_SUCCESS)
+	{
+		map_ntstatus_to_errno(status);
+		goto finish;
+	}
 
-		status = NtQueryInformationProcess(handle, ProcessPriorityClass, &priority_class, sizeof(PROCESS_PRIORITY_CLASS), NULL);
-		if (status != STATUS_SUCCESS)
-		{
-			map_ntstatus_to_errno(status);
-			NtClose(handle);
-			return -1;
-		}
+	result = priority_class.PriorityClass;
 
+finish:
+	if (handle != NtCurrentProcess())
+	{
 		NtClose(handle);
 	}
-	else // pid == 0 -> Current process
-	{
-		status = NtQueryInformationProcess(NtCurrentProcess(), ProcessPriorityClass, &priority_class, sizeof(PROCESS_PRIORITY_CLASS), NULL);
-		if (status != STATUS_SUCCESS)
-		{
-			map_ntstatus_to_errno(status);
-			return -1;
-		}
-	}
-
-	return priority_class.PriorityClass;
+	return result;
 }
 
 int wlibc_sched_setscheduler(pid_t pid, int policy, const struct sched_param *param /*unused*/)
 {
-
+	int result = -1;
 	NTSTATUS status;
-	OBJECT_ATTRIBUTES object;
 	HANDLE handle;
-	CLIENT_ID client_id;
 	PROCESS_PRIORITY_CLASS priority_class;
 
 	// To set a process with realtime priority we need 'SeIncreaseBasePriorityPrivilege'.
 	// This is will not be supported here.
-	if((policy < SCHED_IDLE || policy > SCHED_SPORADIC) && policy != PROCESS_PRIORITY_CLASS_REALTIME)
+	if ((policy < SCHED_IDLE || policy > SCHED_SPORADIC) && policy != PROCESS_PRIORITY_CLASS_REALTIME)
 	{
 		errno = EINVAL;
 		return -1;
@@ -74,38 +61,26 @@ int wlibc_sched_setscheduler(pid_t pid, int policy, const struct sched_param *pa
 
 	priority_class.PriorityClass = policy;
 
-	if (pid != 0)
+	handle = open_process(pid, PROCESS_SET_INFORMATION);
+	if (handle == 0)
 	{
-		InitializeObjectAttributes(&object, NULL, 0, NULL, NULL);
-		client_id.UniqueProcess = (HANDLE)(LONG_PTR)pid;
-		client_id.UniqueThread = 0;
+		// errno will be set by `open_process`.
+		return -1;
+	}
 
-		status = NtOpenProcess(&handle, PROCESS_SET_INFORMATION, &object, &client_id);
-		if (status != STATUS_SUCCESS)
-		{
-			map_ntstatus_to_errno(status);
-			return -1;
-		}
+	status = NtSetInformationProcess(handle, ProcessPriorityClass, &priority_class, sizeof(PROCESS_PRIORITY_CLASS));
+	if (status != STATUS_SUCCESS)
+	{
+		map_ntstatus_to_errno(status);
+		goto finish;
+	}
 
-		status = NtSetInformationProcess(handle, ProcessPriorityClass, &priority_class, sizeof(PROCESS_PRIORITY_CLASS));
-		if (status != STATUS_SUCCESS)
-		{
-			map_ntstatus_to_errno(status);
-			NtClose(handle);
-			return -1;
-		}
+	result = 0;
 
+finish:
+	if (handle != NtCurrentProcess())
+	{
 		NtClose(handle);
 	}
-	else // pid == 0 -> Current process
-	{
-		status = NtSetInformationProcess(NtCurrentProcess(), ProcessPriorityClass, &priority_class, sizeof(PROCESS_PRIORITY_CLASS));
-		if (status != STATUS_SUCCESS)
-		{
-			map_ntstatus_to_errno(status);
-			return -1;
-		}
-	}
-
-	return 0;
+	return result;
 }

@@ -10,13 +10,13 @@
 #include <errno.h>
 #include <sched.h>
 
+HANDLE open_process(DWORD pid, ACCESS_MASK access);
+
 int wlibc_sched_getaffinity(pid_t pid, size_t cpusetsize /*unused*/, cpu_set_t *cpuset)
 {
 	int result = -1;
 	NTSTATUS status;
-	OBJECT_ATTRIBUTES object;
-	HANDLE handle = 0;
-	CLIENT_ID client_id;
+	HANDLE handle;
 	LONGLONG mask;
 	// TODO: Scale this beyond 64 cores.
 
@@ -26,22 +26,11 @@ int wlibc_sched_getaffinity(pid_t pid, size_t cpusetsize /*unused*/, cpu_set_t *
 		return -1;
 	}
 
-	if (pid != 0)
+	handle = open_process(pid, PROCESS_QUERY_LIMITED_INFORMATION);
+	if (handle == 0)
 	{
-		InitializeObjectAttributes(&object, NULL, 0, NULL, NULL);
-		client_id.UniqueProcess = (HANDLE)(LONG_PTR)pid;
-		client_id.UniqueThread = 0;
-
-		status = NtOpenProcess(&handle, PROCESS_QUERY_LIMITED_INFORMATION, &object, &client_id);
-		if (status != STATUS_SUCCESS)
-		{
-			map_ntstatus_to_errno(status);
-			return -1;
-		}
-	}
-	else // pid == 0 -> Current process
-	{
-		handle = NtCurrentProcess();
+		// errno will be set by `open_process`.
+		return -1;
 	}
 
 	status = NtQueryInformationProcess(NtCurrentProcess(), ProcessDefaultCpuSetsInformation, &mask, sizeof(LONGLONG), NULL);
@@ -56,7 +45,7 @@ int wlibc_sched_getaffinity(pid_t pid, size_t cpusetsize /*unused*/, cpu_set_t *
 	result = 0;
 
 finish:
-	if (handle != NtCurrentProcess() && handle != 0)
+	if (handle != NtCurrentProcess())
 	{
 		NtClose(handle);
 	}
@@ -65,10 +54,9 @@ finish:
 
 int wlibc_sched_setaffinity(pid_t pid, size_t cpusetsize /*unused*/, const cpu_set_t *cpuset)
 {
+	int result = -1;
 	NTSTATUS status;
-	OBJECT_ATTRIBUTES object;
 	HANDLE handle;
-	CLIENT_ID client_id;
 	LONGLONG mask;
 	// TODO: Scale this beyond 64 cores.
 
@@ -81,38 +69,26 @@ int wlibc_sched_setaffinity(pid_t pid, size_t cpusetsize /*unused*/, const cpu_s
 	// Fill only the information of the first group.
 	mask = cpuset->group_mask[0];
 
-	if (pid != 0)
+	handle = open_process(pid, PROCESS_SET_LIMITED_INFORMATION);
+	if (handle == 0)
 	{
-		InitializeObjectAttributes(&object, NULL, 0, NULL, NULL);
-		client_id.UniqueProcess = (HANDLE)(LONG_PTR)pid;
-		client_id.UniqueThread = 0;
+		// errno will be set by `open_process`.
+		return -1;
+	}
 
-		status = NtOpenProcess(&handle, PROCESS_SET_LIMITED_INFORMATION, &object, &client_id);
-		if (status != STATUS_SUCCESS)
-		{
-			map_ntstatus_to_errno(status);
-			return -1;
-		}
+	status = NtSetInformationProcess(handle, ProcessDefaultCpuSetsInformation, &mask, sizeof(LONGLONG));
+	if (status != STATUS_SUCCESS)
+	{
+		map_ntstatus_to_errno(status);
+		goto finish;
+	}
 
-		status = NtSetInformationProcess(handle, ProcessDefaultCpuSetsInformation, &mask, sizeof(LONGLONG));
-		if (status != STATUS_SUCCESS)
-		{
-			map_ntstatus_to_errno(status);
-			NtClose(handle);
-			return -1;
-		}
+	result = 0;
 
+finish:
+	if (handle != NtCurrentProcess())
+	{
 		NtClose(handle);
 	}
-	else // pid == 0 -> Current process
-	{
-		status = NtSetInformationProcess(NtCurrentProcess(), ProcessDefaultCpuSetsInformation, &mask, sizeof(LONGLONG));
-		if (status != STATUS_SUCCESS)
-		{
-			map_ntstatus_to_errno(status);
-			return -1;
-		}
-	}
-
-	return 0;
+	return result;
 }

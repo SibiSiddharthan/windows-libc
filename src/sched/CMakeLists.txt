@@ -11,6 +11,7 @@ MODULE sched
 SOURCES
 affinity.c
 cpuset.c
+open.c
 param.c
 scheduler.c
 yield.c
