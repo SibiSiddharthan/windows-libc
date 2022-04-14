@@ -11,6 +11,7 @@
 #include <sched.h>
 
 HANDLE open_process(DWORD pid, ACCESS_MASK access);
+int adjust_priority_of_process(HANDLE process, KPRIORITY change);
 
 int wlibc_sched_getscheduler(pid_t pid)
 {
@@ -44,11 +45,12 @@ finish:
 	return result;
 }
 
-int wlibc_sched_setscheduler(pid_t pid, int policy, const struct sched_param *param /*unused*/)
+int wlibc_sched_setscheduler(pid_t pid, int policy, const struct sched_param *param)
 {
 	int result = -1;
 	NTSTATUS status;
 	HANDLE handle;
+	KPRIORITY new_priority;
 	PROCESS_PRIORITY_CLASS priority_class;
 
 	// To set a process with realtime priority we need 'SeIncreaseBasePriorityPrivilege'.
@@ -57,6 +59,15 @@ int wlibc_sched_setscheduler(pid_t pid, int policy, const struct sched_param *pa
 	{
 		errno = EINVAL;
 		return -1;
+	}
+
+	if (param)
+	{
+		if (param->sched_priority < -2 || param->sched_priority > 2)
+		{
+			errno = EINVAL;
+			return -1;
+		}
 	}
 
 	priority_class.PriorityClass = policy;
@@ -73,6 +84,11 @@ int wlibc_sched_setscheduler(pid_t pid, int policy, const struct sched_param *pa
 	{
 		map_ntstatus_to_errno(status);
 		goto finish;
+	}
+
+	if (param && param->sched_priority != 0)
+	{
+		result = adjust_priority_of_process(handle, param->sched_priority);
 	}
 
 	result = 0;

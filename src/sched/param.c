@@ -12,6 +12,28 @@
 
 HANDLE open_process(DWORD pid, ACCESS_MASK access);
 
+static KPRIORITY get_base_priority_of_class(UCHAR priority_class)
+{
+	switch (priority_class)
+	{
+	case PROCESS_PRIORITY_CLASS_IDLE:
+		return 4;
+	case PROCESS_PRIORITY_CLASS_NORMAL:
+		return 8;
+	case PROCESS_PRIORITY_CLASS_HIGH:
+		return 13;
+	case PROCESS_PRIORITY_CLASS_REALTIME:
+		// This should not be possible with this API, but just in case.
+		return 16;
+	case PROCESS_PRIORITY_CLASS_BELOW_NORMAL:
+		return 6;
+	case PROCESS_PRIORITY_CLASS_ABOVE_NORMAL:
+		return 10;
+	default: // Should be unreachable.
+		return 0;
+	}
+}
+
 int wlibc_sched_getparam(pid_t pid, struct sched_param *param)
 {
 	int result = -1;
@@ -47,37 +69,10 @@ int wlibc_sched_getparam(pid_t pid, struct sched_param *param)
 		goto finish;
 	}
 
-	switch (priority_class.PriorityClass)
-	{
-	case PROCESS_PRIORITY_CLASS_IDLE:
-		param->sched_priority = basic_info.BasePriority - 4;
-		break;
-	case PROCESS_PRIORITY_CLASS_NORMAL:
-		param->sched_priority = basic_info.BasePriority - 8;
-		break;
-	case PROCESS_PRIORITY_CLASS_HIGH:
-		param->sched_priority = basic_info.BasePriority - 13;
-		break;
-	case PROCESS_PRIORITY_CLASS_BELOW_NORMAL:
-		param->sched_priority = basic_info.BasePriority - 6;
-		break;
-	case PROCESS_PRIORITY_CLASS_ABOVE_NORMAL:
-		param->sched_priority = basic_info.BasePriority - 10;
-		break;
-	default:
-		param->sched_priority = 0;
-	}
+	param->sched_priority = basic_info.BasePriority - get_base_priority_of_class(priority_class.PriorityClass);
 
 	// Bound the priorities.
-	if (param->sched_priority < -2)
-	{
-		param->sched_priority = -2;
-	}
-
-	if (param->sched_priority > 2)
-	{
-		param->sched_priority = 2;
-	}
+	param->sched_priority = (param->sched_priority < -2 ? -2 : (param->sched_priority > 2 ? 2 : param->sched_priority));
 
 	result = 0;
 
@@ -89,14 +84,90 @@ finish:
 	return result;
 }
 
-int wlibc_sched_setparam(pid_t pid, const struct sched_param *param)
+int adjust_priority_of_process(HANDLE process, KPRIORITY new_priority)
 {
-	int result = -1;
 	NTSTATUS status;
-	HANDLE handle;
-	KPRIORITY base_priority;
+	KPRIORITY new_base_priority;
+	KPRIORITY priority_of_class;
 	PROCESS_BASIC_INFORMATION basic_info;
 	PROCESS_PRIORITY_CLASS priority_class;
+
+	status = NtQueryInformationProcess(process, ProcessPriorityClass, &priority_class, sizeof(PROCESS_PRIORITY_CLASS), NULL);
+	if (status != STATUS_SUCCESS)
+	{
+		map_ntstatus_to_errno(status);
+		return -1;
+	}
+
+	priority_of_class = get_base_priority_of_class(priority_class.PriorityClass);
+
+	status = NtQueryInformationProcess(process, ProcessBasicInformation, &basic_info, sizeof(PROCESS_BASIC_INFORMATION), NULL);
+	if (status != STATUS_SUCCESS)
+	{
+		map_ntstatus_to_errno(status);
+		return -1;
+	}
+
+	if (priority_of_class + new_priority == basic_info.BasePriority)
+	{
+		// No need to increase or decrease in this case.
+		return 0;
+	}
+
+	if (priority_of_class + new_priority > basic_info.BasePriority)
+	{
+		// Increasing priority.
+		ULONG privilege = SE_INC_BASE_PRIORITY_PRIVILEGE;
+		PVOID state;
+
+		status = RtlAcquirePrivilege(&privilege, 1, 0, &state);
+		if (status == STATUS_PRIVILEGE_NOT_HELD)
+		{
+			// We don't have 'SeIncreaseBasePriorityPrivilege'. Fallback to using 'ProcessRaisePriority'
+			// to boost the priority of all the threads.
+			ULONG priority_increase = (ULONG)(priority_of_class + new_priority - basic_info.BasePriority);
+
+			status = NtSetInformationProcess(process, ProcessRaisePriority, &priority_increase, sizeof(ULONG));
+			if (status != STATUS_SUCCESS)
+			{
+				map_ntstatus_to_errno(status);
+				return -1;
+			}
+		}
+		else // (status == STATUS_SUCCESS)
+		{
+			new_base_priority = priority_of_class + new_priority;
+
+			status = NtSetInformationProcess(process, ProcessBasePriority, &new_base_priority, sizeof(KPRIORITY));
+			RtlReleasePrivilege(state);
+
+			if (status != STATUS_SUCCESS)
+			{
+				map_ntstatus_to_errno(status);
+				return -1;
+			}
+		}
+	}
+
+	if (priority_of_class + new_priority < basic_info.BasePriority)
+	{
+		// Decreasing priority.
+		new_base_priority = priority_of_class + new_priority;
+
+		status = NtSetInformationProcess(process, ProcessBasePriority, &new_base_priority, sizeof(KPRIORITY));
+		if (status != STATUS_SUCCESS)
+		{
+			map_ntstatus_to_errno(status);
+			return -1;
+		}
+	}
+
+	return 0;
+}
+
+int wlibc_sched_setparam(pid_t pid, const struct sched_param *param)
+{
+	HANDLE handle;
 
 	if (param == NULL || param->sched_priority < -2 || param->sched_priority > 2)
 	{
@@ -111,85 +182,12 @@ int wlibc_sched_setparam(pid_t pid, const struct sched_param *param)
 		return -1;
 	}
 
-	status = NtQueryInformationProcess(handle, ProcessPriorityClass, &priority_class, sizeof(PROCESS_PRIORITY_CLASS), NULL);
-	if (status != STATUS_SUCCESS)
-	{
-		map_ntstatus_to_errno(status);
-		goto finish;
-	}
+	int result = adjust_priority_of_process(handle, param->sched_priority);
 
-	switch (priority_class.PriorityClass)
-	{
-	case PROCESS_PRIORITY_CLASS_IDLE:
-		base_priority = 4;
-		break;
-	case PROCESS_PRIORITY_CLASS_NORMAL:
-		base_priority = 8;
-		break;
-	case PROCESS_PRIORITY_CLASS_HIGH:
-		base_priority = 13;
-		break;
-	case PROCESS_PRIORITY_CLASS_BELOW_NORMAL:
-		base_priority = 6;
-		break;
-	case PROCESS_PRIORITY_CLASS_ABOVE_NORMAL:
-		base_priority = 10;
-		break;
-	default:
-		// Should be unreachable.
-		goto finish;
-	}
-
-	status = NtQueryInformationProcess(handle, ProcessBasicInformation, &basic_info, sizeof(PROCESS_BASIC_INFORMATION), NULL);
-	if (status != STATUS_SUCCESS)
-	{
-		map_ntstatus_to_errno(status);
-		goto finish;
-	}
-
-	if (base_priority + param->sched_priority == basic_info.BasePriority)
-	{
-		// No need to increase or decrease in this case.
-		result = 0;
-		goto finish;
-	}
-
-	if (base_priority + param->sched_priority > basic_info.BasePriority)
-	{
-		// Increasing priority.
-		ULONG priority_increase = (ULONG)(base_priority + param->sched_priority - basic_info.BasePriority);
-
-		status = NtSetInformationProcess(handle, ProcessRaisePriority, &priority_increase, sizeof(ULONG));
-		if (status != STATUS_SUCCESS)
-		{
-			map_ntstatus_to_errno(status);
-			goto finish;
-		}
-
-		result = 0;
-		goto finish;
-	}
-
-	if (base_priority + param->sched_priority < basic_info.BasePriority)
-	{
-		// Decreasing priority.
-		base_priority += param->sched_priority;
-
-		status = NtSetInformationProcess(handle, ProcessBasePriority, &base_priority, sizeof(KPRIORITY));
-		if (status != STATUS_SUCCESS)
-		{
-			map_ntstatus_to_errno(status);
-			goto finish;
-		}
-
-		result = 0;
-		goto finish;
-	}
-
-finish:
 	if (handle != NtCurrentProcess())
 	{
 		NtClose(handle);
 	}
+
 	return result;
 }
