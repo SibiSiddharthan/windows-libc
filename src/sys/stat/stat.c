@@ -51,10 +51,10 @@ mode_t get_permissions(ACCESS_MASK access)
 int do_stat(HANDLE handle, struct stat *restrict statbuf)
 {
 	NTSTATUS status;
-	IO_STATUS_BLOCK I;
+	IO_STATUS_BLOCK io;
 
 	FILE_FS_DEVICE_INFORMATION device_info;
-	status = NtQueryVolumeInformationFile(handle, &I, &device_info, sizeof(FILE_FS_DEVICE_INFORMATION), FileFsDeviceInformation);
+	status = NtQueryVolumeInformationFile(handle, &io, &device_info, sizeof(FILE_FS_DEVICE_INFORMATION), FileFsDeviceInformation);
 	// This is important
 	if (status != STATUS_SUCCESS)
 	{
@@ -68,7 +68,7 @@ int do_stat(HANDLE handle, struct stat *restrict statbuf)
 	if (type == FILE_DEVICE_DISK)
 	{
 		FILE_STAT_INFORMATION stat_info;
-		status = NtQueryInformationFile(handle, &I, &stat_info, sizeof(FILE_STAT_INFORMATION), FileStatInformation);
+		status = NtQueryInformationFile(handle, &io, &stat_info, sizeof(FILE_STAT_INFORMATION), FileStatInformation);
 		if (status != STATUS_SUCCESS)
 		{
 			map_ntstatus_to_errno(status);
@@ -214,7 +214,7 @@ int do_stat(HANDLE handle, struct stat *restrict statbuf)
 		{
 			statbuf->st_size = -1;
 			PREPARSE_DATA_BUFFER reparse_buffer = (PREPARSE_DATA_BUFFER)malloc(MAXIMUM_REPARSE_DATA_BUFFER_SIZE);
-			status = NtFsControlFile(handle, NULL, NULL, NULL, &I, FSCTL_GET_REPARSE_POINT, NULL, 0, reparse_buffer,
+			status = NtFsControlFile(handle, NULL, NULL, NULL, &io, FSCTL_GET_REPARSE_POINT, NULL, 0, reparse_buffer,
 									 MAXIMUM_REPARSE_DATA_BUFFER_SIZE);
 			if (status != STATUS_SUCCESS)
 			{
@@ -249,7 +249,7 @@ int do_stat(HANDLE handle, struct stat *restrict statbuf)
 		}
 
 		FILE_FS_SIZE_INFORMATION size_info;
-		status = NtQueryVolumeInformationFile(handle, &I, &size_info, sizeof(FILE_FS_SIZE_INFORMATION), FileFsSizeInformation);
+		status = NtQueryVolumeInformationFile(handle, &io, &size_info, sizeof(FILE_FS_SIZE_INFORMATION), FileFsSizeInformation);
 		if (status == STATUS_SUCCESS)
 		{
 			statbuf->st_blksize = (blksize_t)(size_info.BytesPerSector * size_info.SectorsPerAllocationUnit);
@@ -267,7 +267,7 @@ int do_stat(HANDLE handle, struct stat *restrict statbuf)
 
 		char volume_info_buffer[128]; // Max label length is 32(WCHAR) or 64 bytes
 		PFILE_FS_VOLUME_INFORMATION volume_info = (PFILE_FS_VOLUME_INFORMATION)volume_info_buffer;
-		status = NtQueryVolumeInformationFile(handle, &I, volume_info, 1024, FileFsVolumeInformation);
+		status = NtQueryVolumeInformationFile(handle, &io, volume_info, 128, FileFsVolumeInformation);
 		if (status == STATUS_SUCCESS)
 		{
 			statbuf->st_dev = volume_info->VolumeSerialNumber;

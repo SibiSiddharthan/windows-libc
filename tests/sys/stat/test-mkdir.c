@@ -75,6 +75,7 @@ void cleanup()
 int main()
 {
 	INITIAILIZE_TESTS();
+	CLEANUP(cleanup);
 
 	TEST(test_ENOENT());
 	TEST(test_mkdir());

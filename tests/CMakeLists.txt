@@ -17,6 +17,7 @@ if(ENABLE_POSIX_IO)
 	add_subdirectory(stdio)
 	add_subdirectory(sys/file)
 	add_subdirectory(sys/stat)
+	add_subdirectory(sys/statvfs)
 	add_subdirectory(unistd)
 endif()
 
