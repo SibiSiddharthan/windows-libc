@@ -82,6 +82,7 @@ endif()
 
 #wlibc_add_module(sys.acl)
 wlibc_add_module(sys.utsname)
+wlibc_add_module(sys.times)
 
 add_subdirectory(internal)
 

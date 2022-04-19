@@ -1594,7 +1594,8 @@ RtlGetVersion(PRTL_OSVERSIONINFOEXW VersionInformation);
 typedef enum _SYSTEM_INFORMATION_CLASS
 {
 	SystemBasicInformation,
-	SystemProcessorInformation,
+	SystemProcessorInformation = 1,
+	SystemTimeOfDayInformation = 3,
 	MaxSystemInfoClass = 228
 } SYSTEM_INFORMATION_CLASS;
 
@@ -1621,6 +1622,17 @@ typedef struct _SYSTEM_PROCESSOR_INFORMATION
     USHORT MaximumProcessors;
     ULONG ProcessorFeatureBits;
 } SYSTEM_PROCESSOR_INFORMATION, *PSYSTEM_PROCESSOR_INFORMATION;
+
+typedef struct _SYSTEM_TIMEOFDAY_INFORMATION
+{
+	LARGE_INTEGER BootTime;
+	LARGE_INTEGER CurrentTime;
+	LARGE_INTEGER TimeZoneBias;
+	ULONG TimeZoneId;
+	ULONG Reserved;
+	ULONGLONG BootTimeBias;
+	ULONGLONG SleepTimeBias;
+} SYSTEM_TIMEOFDAY_INFORMATION, *PSYSTEM_TIMEOFDAY_INFORMATION;
 
 NTSYSAPI
 NTSTATUS
@@ -1875,6 +1887,7 @@ NtWaitForMultipleObjects(_In_ ULONG Count, _In_reads_(Count) HANDLE Handles[], _
 typedef enum _PROCESSINFOCLASS
 {
 	ProcessBasicInformation,
+	ProcessTimes = 4,
 	ProcessBasePriority = 5,
 	ProcessRaisePriority = 6,
 	ProcessPriorityClass = 18,
@@ -1898,6 +1911,14 @@ typedef struct _CLIENT_ID
 	HANDLE UniqueProcess;
 	HANDLE UniqueThread;
 } CLIENT_ID, *PCLIENT_ID;
+
+typedef struct _KERNEL_USER_TIMES
+{
+	LARGE_INTEGER CreateTime;
+	LARGE_INTEGER ExitTime;
+	LARGE_INTEGER KernelTime;
+	LARGE_INTEGER UserTime;
+} KERNEL_USER_TIMES, *PKERNEL_USER_TIMES;
 
 typedef struct _PROCESS_PRIORITY_CLASS
 {

@@ -50,6 +50,7 @@ if(ENABLE_EXTENDED_ATTRIBUTES)
 endif()
 
 add_subdirectory(sys/utsname)
+add_subdirectory(sys/times)
 
 if(ENABLE_ACCOUNTS)
 	add_subdirectory(grp)
