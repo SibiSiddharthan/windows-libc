@@ -361,7 +361,9 @@ UNICODE_STRING *xget_absolute_ntpath(int dirfd, const char *path)
 			short cwd_length_without_drive_letter = pu16_cwd->Length - 2 * sizeof(WCHAR);
 			rootdir_buffer = (char *)malloc(1024);
 
-			// No need to check return value here as RTL_USER_PROCESS_PARAMETERS can be trusted
+			// No need to check return value here as RTL_USER_PROCESS_PARAMETERS can be trusted.
+			// UTF-16LE is just zero extended ASCII for the english alphabet.
+			// char truncation will get the volume label.
 			device = dos_device_to_nt_device((char)pu16_cwd->Buffer[0]);
 
 			memcpy(rootdir_buffer, device->name, device->length);
@@ -573,7 +575,7 @@ typedef struct _dos_device
 
 dos_device dos_device_cache[2] = {{-1, 0}, {-1, 0}};
 
-UNICODE_STRING *ntpath_to_dospath(UNICODE_STRING *ntpath)
+UNICODE_STRING *ntpath_to_dospath(const UNICODE_STRING *ntpath)
 {
 	UNICODE_STRING *dospath = NULL;
 	nt_device *device = NULL;
@@ -670,6 +672,28 @@ UNICODE_STRING *ntpath_to_dospath(UNICODE_STRING *ntpath)
 	}
 
 	return dospath;
+}
+
+UNICODE_STRING *dospath_to_ntpath(const UNICODE_STRING *dospath)
+{
+	nt_device *device = NULL;
+	UNICODE_STRING *ntpath = NULL;
+
+	device = dos_device_to_nt_device((char)dospath->Buffer[0]);
+	if (device == NULL)
+	{
+		return NULL;
+	}
+
+	ntpath = (UNICODE_STRING *)malloc(sizeof(UNICODE_STRING) + device->length + dospath->MaximumLength - 4);
+	memcpy((CHAR *)ntpath + sizeof(UNICODE_STRING), device->name, device->length);
+	memcpy((CHAR *)ntpath + sizeof(UNICODE_STRING) + device->length, (CHAR *)dospath->Buffer + 4, dospath->MaximumLength - 4);
+
+	ntpath->Buffer = (WCHAR *)((CHAR *)ntpath + sizeof(UNICODE_STRING));
+	ntpath->Length = device->length + dospath->Length - 4;
+	ntpath->MaximumLength = ntpath->Length + sizeof(WCHAR);
+
+	return ntpath;
 }
 
 UNICODE_STRING *xget_absolute_dospath(int dirfd, const char *path)

@@ -539,6 +539,27 @@ int test_spawn_path()
 	return 0;
 }
 
+int test_spawn_shebang()
+{
+	int status;
+	int wstatus;
+	pid_t pid;
+
+	const char *program = "shebang.1";
+	char *argv[] = {(char *)program, NULL};
+
+	setenv("PATH", getenv("WLIBC_AUXILARY_LOCATION"), 1);
+
+	status = posix_spawn(&pid, program, NULL, NULL, argv, NULL);
+	ASSERT_EQ(status, 0);
+
+	status = waitpid(pid, &wstatus, 0);
+	ASSERT_EQ(status, pid);
+	ASSERT_EQ(wstatus, 4096);
+
+	return 0;
+}
+
 void cleanup()
 {
 	remove("input.txt");
@@ -570,6 +591,7 @@ int main()
 	TEST(test_spawn_inherit_msvcrt());
 	TEST(test_spawn_inherit_msvcrt_extra());
 	TEST(test_spawn_path());
+	TEST(test_spawn_shebang());
 
 	VERIFY_RESULT_AND_EXIT();
 }
