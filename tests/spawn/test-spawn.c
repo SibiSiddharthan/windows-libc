@@ -450,6 +450,95 @@ int test_spawn_inherit_msvcrt_extra()
 	return 0;
 }
 
+int test_spawn_path()
+{
+	int status;
+	int wstatus;
+	pid_t pid;
+	size_t PATH_length, AUXILARY_length;
+	char *oldpath;
+	char *oldpath_dup;
+	char *newpath;
+	char *auxilary_location;
+	const char *program = "path.exe";
+	char *argv[] = {(char *)program, NULL};
+
+	// The program executable won't be found.
+	status = posix_spawn(&pid, program, NULL, NULL, argv, NULL);
+	ASSERT_EQ(status, -1);
+
+	status = posix_spawnp(&pid, program, NULL, NULL, argv, NULL);
+	ASSERT_EQ(status, -1);
+
+	auxilary_location = getenv("WLIBC_AUXILARY_LOCATION");
+	ASSERT_NOTNULL(auxilary_location);
+
+	oldpath = getenv("PATH");
+	ASSERT_NOTNULL(oldpath);
+
+	PATH_length = strlen(oldpath);
+	AUXILARY_length = strlen(auxilary_location);
+
+	oldpath_dup = (char *)malloc(PATH_length + 1);
+	memcpy(oldpath_dup, oldpath, PATH_length + 1);
+
+	newpath = (char *)malloc(PATH_length + AUXILARY_length + 4); // ';' + '\0' + extra.
+
+	// Prepend the PATH with path.exe's location.
+	memset(newpath, 0, PATH_length + AUXILARY_length + 4);
+	memcpy(newpath, auxilary_location, AUXILARY_length);
+	newpath[AUXILARY_length] = ';';
+	memcpy(newpath + AUXILARY_length + 1, oldpath_dup, PATH_length + 1);
+
+	setenv("PATH", newpath, 1);
+
+	// We have updated the PATH with the location of the program. This should work.
+	status = posix_spawnp(&pid, program, NULL, NULL, argv, NULL);
+	ASSERT_EQ(status, 0);
+
+	status = waitpid(pid, &wstatus, 0);
+	ASSERT_EQ(status, pid);
+	ASSERT_EQ(wstatus, 4096);
+
+	// Append the PATH with path.exe's location.
+	memset(newpath, 0, PATH_length + AUXILARY_length + 4);
+	memcpy(newpath, oldpath_dup, PATH_length);
+	newpath[PATH_length] = ';';
+	memcpy(newpath + PATH_length + 1, auxilary_location, AUXILARY_length + 1);
+
+	setenv("PATH", newpath, 1);
+
+	status = posix_spawnp(&pid, program, NULL, NULL, argv, NULL);
+	ASSERT_EQ(status, 0);
+
+	status = waitpid(pid, &wstatus, 0);
+	ASSERT_EQ(status, pid);
+	ASSERT_EQ(wstatus, 4096);
+
+	// Append the PATH with path.exe's location. This time add an empty path separator. i.e ";;"
+	memset(newpath, 0, PATH_length + AUXILARY_length + 4);
+	memcpy(newpath, oldpath_dup, PATH_length);
+	newpath[PATH_length] = ';';
+	newpath[PATH_length + 1] = ';';
+	memcpy(newpath + PATH_length + 2, auxilary_location, AUXILARY_length + 1);
+
+	setenv("PATH", newpath, 1);
+
+	status = posix_spawnp(&pid, program, NULL, NULL, argv, NULL);
+	ASSERT_EQ(status, 0);
+
+	status = waitpid(pid, &wstatus, 0);
+	ASSERT_EQ(status, pid);
+	ASSERT_EQ(wstatus, 4096);
+
+	setenv("PATH", oldpath_dup, 1);
+
+	free(oldpath_dup);
+	free(newpath);
+
+	return 0;
+}
+
 void cleanup()
 {
 	remove("input.txt");
@@ -480,6 +569,7 @@ int main()
 	TEST(test_spawn_inherit_wlibc_extra());
 	TEST(test_spawn_inherit_msvcrt());
 	TEST(test_spawn_inherit_msvcrt_extra());
+	TEST(test_spawn_path());
 
 	VERIFY_RESULT_AND_EXIT();
 }

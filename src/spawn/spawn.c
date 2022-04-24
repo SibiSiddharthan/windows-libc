@@ -314,9 +314,9 @@ UNICODE_STRING *search_path_for_program(const char *path)
 	length = strlen(path);
 
 	size_t i = 0, j = 0;
-	while (PATH[i] != '\0')
+	while (1)
 	{
-		if (PATH[i] == path_separator)
+		if (PATH[i] == path_separator || PATH[i] == '\0')
 		{
 			if (i - j + length >= buffer_size) // (+) '\', (-) ';'
 			{
@@ -348,6 +348,11 @@ UNICODE_STRING *search_path_for_program(const char *path)
 			{
 				goto finish;
 			}
+		}
+
+		if (PATH[i] == '\0')
+		{
+			break;
 		}
 
 		++i;

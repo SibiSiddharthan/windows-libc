@@ -21,3 +21,11 @@ target_compile_definitions(inherit-msvcrt PRIVATE TESTING_MSVCRT)
 
 set_target_properties(basic env inherit-wlibc inherit-msvcrt PROPERTIES RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_CURRENT_BINARY_DIR})
 set_target_properties(basic env inherit-wlibc inherit-msvcrt PROPERTIES RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_CURRENT_BINARY_DIR})
+
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/auxilary)
+
+add_executable(path path.c)
+set_target_properties(path PROPERTIES RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_CURRENT_BINARY_DIR}/auxilary)
+set_target_properties(path PROPERTIES RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_CURRENT_BINARY_DIR}/auxilary)
+
+set_tests_properties(test-spawn PROPERTIES ENVIRONMENT "WLIBC_AUXILARY_LOCATION=${CMAKE_CURRENT_BINARY_DIR}/auxilary")
