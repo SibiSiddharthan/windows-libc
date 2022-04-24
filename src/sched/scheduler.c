@@ -50,7 +50,6 @@ int wlibc_sched_setscheduler(pid_t pid, int policy, const struct sched_param *pa
 	int result = -1;
 	NTSTATUS status;
 	HANDLE handle;
-	KPRIORITY new_priority;
 	PROCESS_PRIORITY_CLASS priority_class;
 
 	// To set a process with realtime priority we need 'SeIncreaseBasePriorityPrivilege'.
