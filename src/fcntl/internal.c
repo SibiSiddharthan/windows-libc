@@ -96,7 +96,7 @@ int determine_handle_flags(HANDLE handle)
 	// Check for append flag.
 	if (access_info.AccessFlags & FILE_APPEND_DATA)
 	{
-		flags |= O_APPEND;
+		flags |= O_APPEND | O_WRONLY;
 	}
 
 	// Do the generic permissions first.
@@ -128,6 +128,12 @@ int determine_handle_flags(HANDLE handle)
 	else if (access_info.AccessFlags & FILE_READ_DATA)
 	{
 		flags |= O_RDONLY;
+	}
+
+	// Remove O_WRONLY if O_RDWR is present.
+	if ((flags & (O_WRONLY | O_RDWR)) == (O_WRONLY | O_RDWR))
+	{
+		flags &= ~O_WRONLY;
 	}
 
 	return flags;
@@ -315,6 +321,22 @@ static int internal_insert_fd(int index, HANDLE _h, handle_t _type, int _flags)
 	_wlibc_fd_table[index].flags = _flags;
 	_wlibc_fd_table[index].type = _type;
 	_wlibc_fd_table[index].sequence = ++_wlibc_fd_sequence;
+
+	switch (index)
+	{
+	case 0:
+		NtCurrentPeb()->ProcessParameters->StandardInput = _h;
+		break;
+	case 1:
+		NtCurrentPeb()->ProcessParameters->StandardOutput = _h;
+		break;
+	case 2:
+		NtCurrentPeb()->ProcessParameters->StandardError = _h;
+		break;
+	default:
+		break;
+	}
+
 	return index;
 }
 
