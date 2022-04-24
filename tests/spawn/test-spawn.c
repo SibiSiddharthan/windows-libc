@@ -8,6 +8,7 @@
 #include <tests/test.h>
 #include <spawn.h>
 #include <stdlib.h>
+#include <stdlib-ext.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
@@ -154,6 +155,43 @@ int test_spawn_pipe()
 
 	status = posix_spawn_file_actions_destroy(&actions);
 	ASSERT_EQ(status, 0);
+
+	return 0;
+}
+
+int test_spawn_env()
+{
+	int status;
+	int wstatus;
+	pid_t pid;
+	const char *program = "env.exe";
+	char *argv[] = {(char *)program, NULL};
+	char *env[] = {"TEST_ENV=Hello World", NULL};
+
+	status = posix_spawn(&pid, program, NULL, NULL, argv, environ);
+	ASSERT_EQ(status, 0);
+
+	status = waitpid(pid, &wstatus, 0);
+	ASSERT_EQ(status, pid);
+	ASSERT_EQ(wstatus, 1);
+
+	// Pass the environment variable directly to the child process.
+	status = posix_spawn(&pid, program, NULL, NULL, argv, env);
+	ASSERT_EQ(status, 0);
+
+	status = waitpid(pid, &wstatus, 0);
+	ASSERT_EQ(status, pid);
+	ASSERT_EQ(wstatus, 0);
+
+	// Set the environment of the parent process, which is then inherited.
+	setenv("TEST_ENV", "Hello World", 0);
+
+	status = posix_spawn(&pid, program, NULL, NULL, argv, environ);
+	ASSERT_EQ(status, 0);
+
+	status = waitpid(pid, &wstatus, 0);
+	ASSERT_EQ(status, pid);
+	ASSERT_EQ(wstatus, 0);
 
 	return 0;
 }
@@ -437,6 +475,7 @@ int main()
 
 	TEST(test_spawn_basic());
 	TEST(test_spawn_pipe());
+	TEST(test_spawn_env());
 	TEST(test_spawn_inherit_wlibc());
 	TEST(test_spawn_inherit_wlibc_extra());
 	TEST(test_spawn_inherit_msvcrt());
