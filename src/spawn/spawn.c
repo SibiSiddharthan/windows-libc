@@ -81,15 +81,17 @@ static void cleanup_inherit_information(inherit_information *restrict info, cons
 	free(info->fdinfo);
 }
 
+// osfile values from corecrt_internal_lowio.h.
 #define FOPEN_FLAG      0x01 // file handle open
 #define FEOFLAG_FLAG    0x02 // end of file has been encountered
 #define FCRLF_FLAG      0x04 // CR-LF across read buffer (in text mode)
 #define FPIPE_FLAG      0x08 // file handle refers to a pipe
-#define FNOINHERIT_FLAG 0x10 // file handle opened _O_NOINHERIT
+#define FNOINHERIT_FLAG 0x10 // file handle opened O_NOINHERIT
 #define FAPPEND_FLAG    0x20 // file handle opened O_APPEND
-#define FNULL_FLAG      0x40 // file handle refers to a device (Originally FDEV)
-#define FCONSOLE_FLAG   0x80 // file handle is in text mode  (Originally FTEXT)
+#define FDEV_FLAG       0x40 // file handle refers to a device
+#define FTEXT_FLAG      0x80 // file handle is in text mode
 
+// Processes spawned by wlibc should be compatible with the initialization routine of msvcrt.
 static void give_inherit_information_to_startupinfo(inherit_information *inherit_info, STARTUPINFOW *startup_info)
 {
 	// First count the maximum fd that is to be inherited.
@@ -111,16 +113,17 @@ static void give_inherit_information_to_startupinfo(inherit_information *inherit
 	startup_info->cbReserved2 = (WORD)(sizeof(DWORD) + 5 * (real_max_fd + 1));
 	startup_info->lpReserved2 = malloc(startup_info->cbReserved2);
 
-	*(DWORD *)startup_info->lpReserved2 = real_max_fd;
-	off_t handle_start = 4 + real_max_fd + 1;
+	*(DWORD *)startup_info->lpReserved2 = real_max_fd + 1;
+	off_t handle_start = sizeof(DWORD) + real_max_fd + 1;
 
 	for (int i = 0; i <= real_max_fd; ++i)
 	{
 		if (i > 2)
 		{
+			// We only make use of FOPEN_FLAG, FAPPEND_FLAG, FPIPE_FLAG, FDEV_FLAG.
 			unsigned char flag = FOPEN_FLAG;
 
-			if (inherit_info->fdinfo[i].flags & O_APPEND) // This is tricky. CHECK
+			if (inherit_info->fdinfo[i].flags & O_APPEND)
 			{
 				flag |= FAPPEND_FLAG;
 			}
@@ -129,16 +132,12 @@ static void give_inherit_information_to_startupinfo(inherit_information *inherit
 			{
 				flag |= FPIPE_FLAG;
 			}
-			else if (inherit_info->fdinfo[i].type == CONSOLE_HANDLE)
+			else if (inherit_info->fdinfo[i].type == CONSOLE_HANDLE || inherit_info->fdinfo[i].type == NULL_HANDLE)
 			{
-				flag |= FCONSOLE_FLAG;
-			}
-			else if (inherit_info->fdinfo[i].type == NULL_HANDLE)
-			{
-				flag |= FNULL_FLAG;
+				flag |= FDEV_FLAG;
 			}
 
-			((UCHAR *)(startup_info->lpReserved2 + 4))[i] = flag;
+			((UCHAR *)(startup_info->lpReserved2 + sizeof(DWORD)))[i] = flag;
 			((DWORD *)(startup_info->lpReserved2 + handle_start))[i] = (DWORD)(LONG_PTR)inherit_info->fdinfo[i].handle;
 		}
 		// Always give the std handles in startupinfo itself
@@ -153,17 +152,17 @@ static void give_inherit_information_to_startupinfo(inherit_information *inherit
 			case 0:
 				startup_info->hStdInput = inherit_info->fdinfo[0].handle;
 				((DWORD *)(startup_info->lpReserved2 + handle_start))[0] = -1;
-				((UCHAR *)(startup_info->lpReserved2 + 4))[0] = 0;
+				((UCHAR *)(startup_info->lpReserved2 + sizeof(DWORD)))[0] = 0;
 				break;
 			case 1:
 				startup_info->hStdOutput = inherit_info->fdinfo[1].handle;
 				((DWORD *)(startup_info->lpReserved2 + handle_start))[1] = -1;
-				((UCHAR *)(startup_info->lpReserved2 + 4))[1] = 0;
+				((UCHAR *)(startup_info->lpReserved2 + sizeof(DWORD)))[1] = 0;
 				break;
 			case 2:
 				startup_info->hStdError = inherit_info->fdinfo[2].handle;
 				((DWORD *)(startup_info->lpReserved2 + handle_start))[2] = -1;
-				((UCHAR *)(startup_info->lpReserved2 + 4))[2] = 0;
+				((UCHAR *)(startup_info->lpReserved2 + sizeof(DWORD)))[2] = 0;
 				break;
 			}
 		}
@@ -234,24 +233,23 @@ static UNICODE_STRING *search_for_program(const char *path)
 
 	// Given a program without an executable extension append the possible
 	// ".exe", ".cmd", ".bat" in this order.
-	// To speed up performing shebang execution, search for the program as is after
-	// appending ".exe".
+	// First try to execute what the user wants then try appending ".exe".
 	// The rationale behind this is that most programs in Windows are .exes.
 	// Preferring exes over any other extension makes more sense.
-	// Shebang scripts are more widely used than cmd or bat scripts I assume.
 
-	// '.exe'
-	memcpy(program + length, ".exe", 5);
-	dospath = get_absolute_dospath_of_executable(program);
+	// No extension
+	// This maybe for shebang execution.
+	// NOTE: In Windows it is possible to have execute a non exe file.
+	program[length] = '\0';
+	dospath = get_absolute_dospath_of_executable(path);
 	if (dospath != NULL)
 	{
 		goto finish;
 	}
 
-	// No extension
-	// This is for shebang execution.
-	program[length] = '\0';
-	dospath = get_absolute_dospath_of_executable(path);
+	// '.exe'
+	memcpy(program + length, ".exe", 5);
+	dospath = get_absolute_dospath_of_executable(program);
 	if (dospath != NULL)
 	{
 		goto finish;
@@ -406,12 +404,12 @@ static WCHAR *convert_argv_to_wargv(char *const argv[])
 
 		// In Windows program arguments are separated by a ' '.
 		// Change the terminating NULL to a L' '.
-		wargv[u16_args[i].Length / sizeof(WCHAR)] = L' ';
-		argv_used += u16_args[i].Length + 1;
+		wargv[(argv_used + u16_args[i].Length) / sizeof(WCHAR)] = L' ';
+		argv_used += u16_args[i].Length + sizeof(WCHAR);
 	}
 
 	// Finally put in the terminating NULL
-	wargv[(argv_used - 1) / sizeof(WCHAR)] = L'\0';
+	wargv[(argv_used - sizeof(WCHAR)) / sizeof(WCHAR)] = L'\0';
 
 	free(u16_args);
 	free(u8_args);
@@ -459,7 +457,7 @@ static WCHAR *convert_env_to_wenv(char *const env[])
 
 		RtlUTF8StringToUnicodeString(&u16_envs[i], &u8_envs[i], FALSE);
 
-		env_used += u16_envs[i].Length + 1;
+		env_used += u16_envs[i].Length + sizeof(WCHAR);
 	}
 
 	// Finally put in the terminating NULL.
@@ -514,14 +512,20 @@ int wlibc_spawn(pid_t *restrict pid, const char *restrict path, const spawn_acti
 	}
 
 	// Perform the actions.
+	int max_fd_requested = 0;
+	int number_of_actions = 0;
 	int num_of_open_actions = 0;
 	int num_of_close_actions = 0;
 	int num_of_dup2_actions = 0;
 	int num_of_chdir_actions = 0;
 	int num_of_fchdir_actions = 0;
-	int max_fd_requested = 0;
 
-	for (int i = 0; i < actions->used; ++i)
+	if (actions)
+	{
+		number_of_actions = actions->used;
+	}
+
+	for (int i = 0; i < number_of_actions; ++i)
 	{
 		switch (actions->actions[i].type)
 		{
@@ -551,14 +555,14 @@ int wlibc_spawn(pid_t *restrict pid, const char *restrict path, const spawn_acti
 		}
 	}
 
-	max_fd_requested = __max(max_fd_requested, (int)_wlibc_fd_table_size);
+	max_fd_requested = __max(max_fd_requested, (int)(_wlibc_fd_table_size - 1));
 	inherit_information inherit_info;
 
 	initialize_inherit_information(&inherit_info, max_fd_requested);
 
 	NTSTATUS ntstatus;
 
-	for (int i = 0; i < actions->used; ++i)
+	for (int i = 0; i < number_of_actions; ++i)
 	{
 		switch (actions->actions[i].type)
 		{
@@ -695,8 +699,8 @@ int wlibc_spawn(pid_t *restrict pid, const char *restrict path, const spawn_acti
 	}
 
 	give_inherit_information_to_startupinfo(&inherit_info, &SINFO);
-	// Do the spawn.
 
+	// Do the spawn.
 	BOOL status = CreateProcessW(wpath, wargv, NULL, NULL, TRUE, CREATE_UNICODE_ENVIRONMENT, wenv, wcwd, &SINFO, &PINFO);
 	if (status == 0)
 	{

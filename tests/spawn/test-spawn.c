@@ -40,9 +40,10 @@ int check_output(const char *filename, const char *content)
 	length = strlen(content);
 	result = read(fd, buf, 32);
 
+	ASSERT_SUCCESS(close(fd));
+
 	ASSERT_EQ(result, length);
 	ASSERT_MEMEQ(buf, content, (int)length);
-	ASSERT_SUCCESS(close(fd));
 
 	return 0;
 }
@@ -113,7 +114,7 @@ int test_spawn_pipe()
 
 	const char *program = "basic.exe";
 	const char *content = "Hello World!!!";
-	char *const argv[] = {"basic.exe", NULL};
+	char *const argv[] = {(char *)program, NULL};
 
 	length = strlen(content);
 
@@ -157,10 +158,226 @@ int test_spawn_pipe()
 	return 0;
 }
 
+int test_spawn_inherit_wlibc()
+{
+	int status, wstatus;
+	int fd_r, fd_w, fd_a, fd_rw, fd_ra;
+	pid_t pid;
+	const char *program = "inherit-wlibc.exe";
+	const char *content = "Hello World From wlibc!!!";
+	const char *file_r = "inherit-wlibc-file-r";
+	const char *file_w = "inherit-wlibc-file-w";
+	const char *file_a = "inherit-wlibc-file-a";
+	const char *file_rw = "inherit-wlibc-file-rw";
+	const char *file_ra = "inherit-wlibc-file-ra";
+
+	char *argv[] = {(char *)program, NULL, NULL, NULL, NULL, NULL, NULL, NULL};
+	char br[4], bw[4], ba[4], brw[4], bra[4];
+
+	ASSERT_SUCCESS(prepare_input(file_r, content));
+	ASSERT_SUCCESS(prepare_input(file_w, content));
+	ASSERT_SUCCESS(prepare_input(file_a, content));
+	ASSERT_SUCCESS(prepare_input(file_rw, content));
+	ASSERT_SUCCESS(prepare_input(file_ra, content));
+
+	fd_r = open(file_r, O_RDONLY);
+	ASSERT_NOTEQ(fd_r, -1);
+
+	fd_w = open(file_w, O_WRONLY);
+	ASSERT_NOTEQ(fd_w, -1);
+
+	fd_a = open(file_a, O_WRONLY | O_APPEND);
+	ASSERT_NOTEQ(fd_a, -1);
+
+	fd_rw = open(file_rw, O_RDWR);
+	ASSERT_NOTEQ(fd_rw, -1);
+
+	fd_ra = open(file_ra, O_RDWR | O_APPEND);
+	ASSERT_NOTEQ(fd_ra, -1);
+
+	itoa(fd_r, br, 10);
+	itoa(fd_w, bw, 10);
+	itoa(fd_a, ba, 10);
+	itoa(fd_rw, brw, 10);
+	itoa(fd_ra, bra, 10);
+
+	argv[1] = "5";
+	argv[2] = br;
+	argv[3] = bw;
+	argv[4] = ba;
+	argv[5] = brw;
+	argv[6] = bra;
+
+	status = posix_spawn(&pid, program, NULL, NULL, argv, NULL);
+	ASSERT_EQ(status, 0);
+
+	status = waitpid(pid, &wstatus, 0);
+	ASSERT_EQ(status, pid);
+	ASSERT_EQ(wstatus, 0);
+
+	ASSERT_SUCCESS(close(fd_r));
+	ASSERT_SUCCESS(close(fd_w));
+	ASSERT_SUCCESS(close(fd_a));
+	ASSERT_SUCCESS(close(fd_rw));
+	ASSERT_SUCCESS(close(fd_ra));
+
+	ASSERT_SUCCESS(check_output(file_w, "@@@@@ World From wlibc!!!"));
+	ASSERT_SUCCESS(check_output(file_a, "Hello World From wlibc!!!@@@@@"));
+	ASSERT_SUCCESS(check_output(file_rw, "Hello@@@@@d From wlibc!!!"));
+	ASSERT_SUCCESS(check_output(file_ra, "Hello World From wlibc!!!@@@@@"));
+
+	ASSERT_SUCCESS(remove(file_r));
+	ASSERT_SUCCESS(remove(file_w));
+	ASSERT_SUCCESS(remove(file_a));
+	ASSERT_SUCCESS(remove(file_rw));
+	ASSERT_SUCCESS(remove(file_ra));
+
+	return 0;
+}
+
+int test_spawn_inherit_wlibc_extra()
+{
+	int status, wstatus;
+	int fd_p[2], fd_n;
+	pid_t pid;
+	const char *program = "inherit-wlibc.exe";
+	char *argv[] = {(char *)program, NULL, NULL, NULL, NULL};
+	char bpr[4], bpw[4], bn[4];
+
+	status = pipe(fd_p);
+	ASSERT_EQ(status, 0);
+
+	fd_n = open("/dev/null", O_RDWR);
+	ASSERT_NOTEQ(fd_n, -1);
+
+	itoa(fd_n, bn, 10);
+	itoa(fd_p[0], bpr, 10);
+	itoa(fd_p[1], bpw, 10);
+
+	// Test pipe inheritance.
+	argv[1] = "2";
+	argv[2] = bpr;
+	argv[3] = bpw;
+
+	status = posix_spawn(&pid, program, NULL, NULL, argv, NULL);
+	ASSERT_EQ(status, 0);
+
+	status = waitpid(pid, &wstatus, 0);
+	ASSERT_EQ(status, pid);
+	ASSERT_EQ(wstatus, 0);
+
+	// // Test dev(console, null) inheritance.
+	argv[1] = "1";
+	argv[2] = bn;
+	argv[3] = NULL;
+
+	status = posix_spawn(&pid, program, NULL, NULL, argv, NULL);
+	ASSERT_EQ(status, 0);
+
+	status = waitpid(pid, &wstatus, 0);
+	ASSERT_EQ(status, pid);
+	ASSERT_EQ(wstatus, 0);
+
+	ASSERT_SUCCESS(close(fd_n));
+	ASSERT_SUCCESS(close(fd_p[0]));
+	ASSERT_SUCCESS(close(fd_p[1]));
+
+	return 0;
+}
+
+int test_spawn_inherit_msvcrt()
+{
+	int status, wstatus;
+	int fd_r, fd_w, fd_a, fd_rw, fd_ra;
+	pid_t pid;
+	const char *program = "inherit-msvcrt.exe";
+	const char *content = "Hello World From wlibc!!!";
+	const char *file_r = "inherit-msvcrt-file-r";
+	const char *file_w = "inherit-msvcrt-file-w";
+	const char *file_a = "inherit-msvcrt-file-a";
+	const char *file_rw = "inherit-msvcrt-file-rw";
+	const char *file_ra = "inherit-msvcrt-file-ra";
+
+	char *argv[] = {(char *)program, NULL, NULL, NULL, NULL, NULL, NULL, NULL};
+	char br[4], bw[4], ba[4], brw[4], bra[4];
+
+	ASSERT_SUCCESS(prepare_input(file_r, content));
+	ASSERT_SUCCESS(prepare_input(file_w, content));
+	ASSERT_SUCCESS(prepare_input(file_a, content));
+	ASSERT_SUCCESS(prepare_input(file_rw, content));
+	ASSERT_SUCCESS(prepare_input(file_ra, content));
+
+	fd_r = open(file_r, O_RDONLY);
+	ASSERT_NOTEQ(fd_r, -1);
+
+	fd_w = open(file_w, O_WRONLY);
+	ASSERT_NOTEQ(fd_w, -1);
+
+	fd_a = open(file_a, O_WRONLY | O_APPEND);
+	ASSERT_NOTEQ(fd_a, -1);
+
+	fd_rw = open(file_rw, O_RDWR);
+	ASSERT_NOTEQ(fd_rw, -1);
+
+	fd_ra = open(file_ra, O_RDWR | O_APPEND);
+	ASSERT_NOTEQ(fd_ra, -1);
+
+	itoa(fd_r, br, 10);
+	itoa(fd_w, bw, 10);
+	itoa(fd_a, ba, 10);
+	itoa(fd_rw, brw, 10);
+	itoa(fd_ra, bra, 10);
+
+	argv[1] = "5";
+	argv[2] = br;
+	argv[3] = bw;
+	argv[4] = ba;
+	argv[5] = brw;
+	argv[6] = bra;
+
+	status = posix_spawn(&pid, program, NULL, NULL, argv, NULL);
+	ASSERT_EQ(status, 0);
+
+	status = waitpid(pid, &wstatus, 0);
+	ASSERT_EQ(status, pid);
+	ASSERT_EQ(wstatus, 0);
+
+	ASSERT_SUCCESS(close(fd_r));
+	ASSERT_SUCCESS(close(fd_w));
+	ASSERT_SUCCESS(close(fd_a));
+	ASSERT_SUCCESS(close(fd_rw));
+	ASSERT_SUCCESS(close(fd_ra));
+
+	ASSERT_SUCCESS(check_output(file_w, "##### World From wlibc!!!"));
+	ASSERT_SUCCESS(check_output(file_a, "Hello World From wlibc!!!#####"));
+	ASSERT_SUCCESS(check_output(file_rw, "Hello#####d From wlibc!!!"));
+	ASSERT_SUCCESS(check_output(file_ra, "Hello World From wlibc!!!#####"));
+
+	ASSERT_SUCCESS(remove(file_r));
+	ASSERT_SUCCESS(remove(file_w));
+	ASSERT_SUCCESS(remove(file_a));
+	ASSERT_SUCCESS(remove(file_rw));
+	ASSERT_SUCCESS(remove(file_ra));
+
+	return 0;
+}
+
 void cleanup()
 {
 	remove("input.txt");
 	remove("output.txt");
+
+	remove("inherit-wlibc-file-r");
+	remove("inherit-wlibc-file-w");
+	remove("inherit-wlibc-file-a");
+	remove("inherit-wlibc-file-rw");
+	remove("inherit-wlibc-file-ra");
+
+	remove("inherit-msvcrt-file-r");
+	remove("inherit-msvcrt-file-w");
+	remove("inherit-msvcrt-file-a");
+	remove("inherit-msvcrt-file-rw");
+	remove("inherit-msvcrt-file-ra");
 }
 
 int main()
@@ -170,6 +387,9 @@ int main()
 
 	TEST(test_spawn_basic());
 	TEST(test_spawn_pipe());
+	TEST(test_spawn_inherit_wlibc());
+	TEST(test_spawn_inherit_wlibc_extra());
+	// TEST(test_spawn_inherit_msvcrt());
 
 	VERIFY_RESULT_AND_EXIT();
 }

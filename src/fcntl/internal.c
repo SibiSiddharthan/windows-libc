@@ -36,21 +36,101 @@ static void add_fd_flags_internal(int _fd, int _flags);
 
 static bool validate_fd_internal(int _fd);
 
-handle_t determine_type(DEVICE_TYPE type)
+handle_t determine_handle_type(HANDLE handle)
 {
-	switch (type)
+	NTSTATUS status;
+	IO_STATUS_BLOCK io;
+	FILE_FS_DEVICE_INFORMATION device_info;
+
+	status = NtQueryVolumeInformationFile(handle, &io, &device_info, sizeof(FILE_FS_DEVICE_INFORMATION), FileFsDeviceInformation);
+	if (status != STATUS_SUCCESS)
+	{
+		return INVALID_HANDLE;
+	}
+
+	switch (device_info.DeviceType)
 	{
 	case FILE_DEVICE_NULL:
 		return NULL_HANDLE;
 	case FILE_DEVICE_CONSOLE:
 		return CONSOLE_HANDLE;
-	case FILE_DEVICE_DISK: // Assume no one is going to give a directory handle as a std stream
+	case FILE_DEVICE_DISK:
+	{
+		// Check whether the inherited handle is a directory or a file.
+		FILE_ATTRIBUTE_TAG_INFORMATION tag_info;
+
+		status = NtQueryInformationFile(handle, &io, &tag_info, sizeof(FILE_ATTRIBUTE_TAG_INFORMATION), FileAttributeTagInformation);
+		if (status != STATUS_SUCCESS)
+		{
+			// Assume a file handle in case of failure.
+			return FILE_HANDLE;
+		}
+
+		if (tag_info.FileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+		{
+			return DIRECTORY_HANDLE;
+		}
+
 		return FILE_HANDLE;
+	}
 	case FILE_DEVICE_NAMED_PIPE:
 		return PIPE_HANDLE;
 	default:
 		return INVALID_HANDLE;
 	}
+}
+
+int determine_handle_flags(HANDLE handle)
+{
+	NTSTATUS status;
+	IO_STATUS_BLOCK io;
+	FILE_ACCESS_INFORMATION access_info;
+	int flags = 0;
+
+	status = NtQueryInformationFile(handle, &io, &access_info, sizeof(FILE_ACCESS_INFORMATION), FileAccessInformation);
+	if (status != STATUS_SUCCESS)
+	{
+		return O_RDONLY; // Can't say anything about the access, assume O_RDONLY.
+	}
+
+	// Check for append flag.
+	if (access_info.AccessFlags & FILE_APPEND_DATA)
+	{
+		flags |= O_APPEND;
+	}
+
+	// Do the generic permissions first.
+	if (access_info.AccessFlags & (GENERIC_READ | GENERIC_WRITE | GENERIC_EXECUTE | GENERIC_ALL))
+	{
+		if ((access_info.AccessFlags & GENERIC_ALL) ||
+			(access_info.AccessFlags & (GENERIC_READ | GENERIC_WRITE)) == (GENERIC_READ | GENERIC_WRITE))
+		{
+			flags |= O_RDWR;
+		}
+		else if (access_info.AccessFlags & GENERIC_WRITE)
+		{
+			flags |= O_WRONLY;
+		}
+		else if (access_info.AccessFlags & GENERIC_READ)
+		{
+			flags |= O_RDONLY;
+		}
+	}
+
+	if ((access_info.AccessFlags & (FILE_READ_DATA | FILE_WRITE_DATA)) == (FILE_READ_DATA | FILE_WRITE_DATA))
+	{
+		flags |= O_RDWR;
+	}
+	else if (access_info.AccessFlags & FILE_WRITE_DATA)
+	{
+		flags |= O_WRONLY;
+	}
+	else if (access_info.AccessFlags & FILE_READ_DATA)
+	{
+		flags |= O_RDONLY;
+	}
+
+	return flags;
 }
 
 // Opening the console handle should not fail as we are only doing it if there is a console attached.
@@ -88,97 +168,95 @@ HANDLE open_conout(void)
 	return handle;
 }
 
+void initialize_std_handles(HANDLE handle, int index, bool console_subsystem, bool output)
+{
+	handle_t inherited_handle_type;
+
+	inherited_handle_type = determine_handle_type(handle);
+	if (inherited_handle_type != INVALID_HANDLE)
+	{
+		_wlibc_fd_table[index].handle = handle;
+		_wlibc_fd_table[index].type = inherited_handle_type;
+		_wlibc_fd_table[index].flags = determine_handle_flags(handle);
+		_wlibc_fd_table[index].sequence = ++_wlibc_fd_sequence;
+	}
+	else if (console_subsystem)
+	{
+		_wlibc_fd_table[index].handle = output == true ? open_conout() : open_conin();
+		if (_wlibc_fd_table[index].handle != INVALID_HANDLE_VALUE)
+		{
+			_wlibc_fd_table[index].type = CONSOLE_HANDLE;
+			_wlibc_fd_table[index].flags = output == true ? O_WRONLY : O_RDONLY;
+			_wlibc_fd_table[index].sequence = ++_wlibc_fd_sequence;
+		}
+		else
+		{
+			_wlibc_fd_table[index].handle = INVALID_HANDLE_VALUE;
+		}
+	}
+}
+
+#define FOPEN_FLAG      0x01 // file handle open
+#define FEOFLAG_FLAG    0x02 // end of file has been encountered
+#define FCRLF_FLAG      0x04 // CR-LF across read buffer (in text mode)
+#define FPIPE_FLAG      0x08 // file handle refers to a pipe
+#define FNOINHERIT_FLAG 0x10 // file handle opened O_NOINHERIT
+#define FAPPEND_FLAG    0x20 // file handle opened O_APPEND
+#define FNULL_FLAG      0x40 // file handle refers to a device (Originally FDEV)
+#define FCONSOLE_FLAG   0x80 // file handle is in text mode  (Originally FTEXT)
+
 ///////////////////////////////////////
 // Initialization and cleanup functions
 ///////////////////////////////////////
 void init_fd_table(void)
 {
-	RtlInitializeSRWLock(&_wlibc_fd_table_srwlock);
+	UNICODE_STRING *data;
 	bool console_subsystem = true;
+
+	RtlInitializeSRWLock(&_wlibc_fd_table_srwlock);
+
 	if (NtCurrentPeb()->ProcessParameters->ConsoleHandle == 0 || NtCurrentPeb()->ProcessParameters->ConsoleHandle == (HANDLE)-1)
 	{
 		console_subsystem = false;
 	}
+
+	// Always inherit the standard handles from these parameters.
 	HANDLE hin = NtCurrentPeb()->ProcessParameters->StandardInput;
 	HANDLE hout = NtCurrentPeb()->ProcessParameters->StandardOutput;
 	HANDLE herr = NtCurrentPeb()->ProcessParameters->StandardError;
+	// For the rest use the 'RuntimeData' parameter of 'RTL_USER_PROCESS_PARAMETERS'.
+	// This is the same as the 'lpReserved2' and 'cbReserved2' parameter of STARTUPINFO.
+	data = &NtCurrentPeb()->ProcessParameters->RuntimeData;
 
-	NTSTATUS status;
-	IO_STATUS_BLOCK io;
-	FILE_FS_DEVICE_INFORMATION device_info;
+	// This first 4 bytes say the number of handles inherited.
+	DWORD number_of_handles_inherited = data->Buffer == NULL ? 0 : *(DWORD *)data->Buffer;
 
 	_wlibc_fd_table_size = 4;
+	// Set the initial size of the fd tables to be the nearest 2 power enough to fit in all the handles.
+	while (_wlibc_fd_table_size < number_of_handles_inherited)
+	{
+		_wlibc_fd_table_size *= 2;
+	}
 	_wlibc_fd_table = (fdinfo *)malloc(sizeof(fdinfo) * _wlibc_fd_table_size);
 
-	status = NtQueryVolumeInformationFile(hin, &io, &device_info, sizeof(FILE_FS_DEVICE_INFORMATION), FileFsDeviceInformation);
-	if (status == STATUS_SUCCESS)
+	// Mark all handles as invalid at the start.
+	for (size_t i = 0; i < _wlibc_fd_table_size; ++i)
 	{
-		_wlibc_fd_table[0].handle = hin;
-		_wlibc_fd_table[0].type = determine_type(device_info.DeviceType);
-		_wlibc_fd_table[0].flags = O_RDONLY;
-	}
-	else if (console_subsystem)
-	{
-		_wlibc_fd_table[0].handle = open_conin();
-		if (_wlibc_fd_table[0].handle != INVALID_HANDLE_VALUE)
-		{
-			_wlibc_fd_table[0].type = CONSOLE_HANDLE;
-			_wlibc_fd_table[0].flags = O_RDONLY;
-			_wlibc_fd_table[0].sequence = 1;
-		}
-		else
-		{
-			_wlibc_fd_table[0].handle = INVALID_HANDLE_VALUE;
-		}
+		_wlibc_fd_table[i].handle = INVALID_HANDLE_VALUE;
 	}
 
-	status = NtQueryVolumeInformationFile(hout, &io, &device_info, sizeof(FILE_FS_DEVICE_INFORMATION), FileFsDeviceInformation);
-	if (status == STATUS_SUCCESS)
-	{
-		_wlibc_fd_table[1].handle = hout;
-		_wlibc_fd_table[1].type = determine_type(device_info.DeviceType);
-		_wlibc_fd_table[1].flags = O_WRONLY | (device_info.DeviceType == FILE_DEVICE_NAMED_PIPE ? O_APPEND : 0);
-	}
-	else if (console_subsystem)
-	{
-		_wlibc_fd_table[1].handle = open_conout();
-		if (_wlibc_fd_table[1].handle != INVALID_HANDLE_VALUE)
-		{
-			_wlibc_fd_table[1].type = CONSOLE_HANDLE;
-			_wlibc_fd_table[1].flags = O_RDONLY;
-		}
-		else
-		{
-			_wlibc_fd_table[1].handle = INVALID_HANDLE_VALUE;
-		}
-	}
+	// Standard Input,Output,Error.
+	initialize_std_handles(hin, 0, console_subsystem, false);
+	initialize_std_handles(hout, 1, console_subsystem, true);
+	initialize_std_handles(herr, 2, console_subsystem, true);
 
-	status = NtQueryVolumeInformationFile(herr, &io, &device_info, sizeof(FILE_FS_DEVICE_INFORMATION), FileFsDeviceInformation);
-	if (status == STATUS_SUCCESS)
-	{
-		_wlibc_fd_table[2].handle = herr;
-		_wlibc_fd_table[2].type = determine_type(device_info.DeviceType);
-		_wlibc_fd_table[2].flags = O_WRONLY | (device_info.DeviceType == FILE_DEVICE_NAMED_PIPE ? O_APPEND : 0);
-	}
-	else if (console_subsystem)
-	{
-		_wlibc_fd_table[2].handle = open_conout();
-		if (_wlibc_fd_table[2].handle != INVALID_HANDLE_VALUE)
-		{
-			_wlibc_fd_table[2].type = CONSOLE_HANDLE;
-			_wlibc_fd_table[2].flags = O_RDONLY;
-		}
-		else
-		{
-			_wlibc_fd_table[2].handle = INVALID_HANDLE_VALUE;
-		}
-	}
-
-	// Cygwin/MSYS gives the same handle as stdout and stderr, duplicate the handle
+	// Cygwin/MSYS gives the same handle as stdout and stderr, duplicate the handle.
 	if ((_wlibc_fd_table[1].handle != INVALID_HANDLE_VALUE && _wlibc_fd_table[2].handle != INVALID_HANDLE_VALUE) &&
 		_wlibc_fd_table[1].handle == _wlibc_fd_table[2].handle)
 	{
+		NTSTATUS status;
 		HANDLE new_stderr;
+
 		status = NtDuplicateObject(NtCurrentProcess(), _wlibc_fd_table[1].handle, NtCurrentProcess(), &new_stderr, 0, 0,
 								   DUPLICATE_SAME_ACCESS | DUPLICATE_SAME_ATTRIBUTES);
 		if (status == STATUS_SUCCESS)
@@ -188,14 +266,37 @@ void init_fd_table(void)
 		}
 	}
 
-	// Initialize the sequence numbers for the std handles.
-	// Don't worry if the handles are uninitialized.
-	_wlibc_fd_table[0].sequence = ++_wlibc_fd_sequence;
-	_wlibc_fd_table[1].sequence = ++_wlibc_fd_sequence;
-	_wlibc_fd_table[2].sequence = ++_wlibc_fd_sequence;
+	// Initialize the remaining inherited file descriptors if any.
+	if (number_of_handles_inherited != 0)
+	{
+		for (DWORD i = 3; i < number_of_handles_inherited; ++i)
+		{
+			handle_t inherited_handle_type;
+			// For each of the handles a handle flag is passed as an UCHAR after the first 4 bytes.
+			UCHAR handle_flag = *(UCHAR *)((CHAR *)data->Buffer + sizeof(DWORD) + i);
+			// After all the handle flags the handles values are passed as DWORDs.
+			DWORD inherited_handle = *(DWORD *)((CHAR *)data->Buffer + sizeof(DWORD) + number_of_handles_inherited + i * sizeof(DWORD));
 
-	// set the remaining file descriptors as free, since we are allocating in powers of 2
-	_wlibc_fd_table[3].handle = INVALID_HANDLE_VALUE;
+			if ((handle_flag & FOPEN_FLAG) == 0 || (HANDLE)(LONG_PTR)inherited_handle == INVALID_HANDLE_VALUE)
+			{
+				_wlibc_fd_table[i].handle = INVALID_HANDLE_VALUE;
+				continue;
+			}
+
+			inherited_handle_type = determine_handle_type((HANDLE)(LONG_PTR)inherited_handle);
+			if (inherited_handle_type == INVALID_HANDLE)
+			{
+				_wlibc_fd_table[i].handle = INVALID_HANDLE_VALUE;
+				continue;
+			}
+
+			// Valid handle. Don't trust the other flags that are passed, query the kernel for the actual values.
+			_wlibc_fd_table[i].handle = (HANDLE)(LONG_PTR)inherited_handle;
+			_wlibc_fd_table[i].flags = determine_handle_flags((HANDLE)(LONG_PTR)inherited_handle);
+			_wlibc_fd_table[i].type = inherited_handle_type;
+			_wlibc_fd_table[i].sequence = ++_wlibc_fd_sequence;
+		}
+	}
 }
 
 // Not worrying about open handles (not closed by the user)
