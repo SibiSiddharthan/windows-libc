@@ -274,16 +274,16 @@ void init_fd_table(void)
 			handle_t inherited_handle_type;
 			// For each of the handles a handle flag is passed as an UCHAR after the first 4 bytes.
 			UCHAR handle_flag = *(UCHAR *)((CHAR *)data->Buffer + sizeof(DWORD) + i);
-			// After all the handle flags the handles values are passed as DWORDs.
-			DWORD inherited_handle = *(DWORD *)((CHAR *)data->Buffer + sizeof(DWORD) + number_of_handles_inherited + i * sizeof(DWORD));
+			// After all the handle flags the handles values are passed.
+			HANDLE inherited_handle = *(HANDLE *)((CHAR *)data->Buffer + sizeof(DWORD) + number_of_handles_inherited + i * sizeof(HANDLE));
 
-			if ((handle_flag & FOPEN_FLAG) == 0 || (HANDLE)(LONG_PTR)inherited_handle == INVALID_HANDLE_VALUE)
+			if ((handle_flag & FOPEN_FLAG) == 0 || inherited_handle == INVALID_HANDLE_VALUE)
 			{
 				_wlibc_fd_table[i].handle = INVALID_HANDLE_VALUE;
 				continue;
 			}
 
-			inherited_handle_type = determine_handle_type((HANDLE)(LONG_PTR)inherited_handle);
+			inherited_handle_type = determine_handle_type(inherited_handle);
 			if (inherited_handle_type == INVALID_HANDLE)
 			{
 				_wlibc_fd_table[i].handle = INVALID_HANDLE_VALUE;
@@ -291,8 +291,8 @@ void init_fd_table(void)
 			}
 
 			// Valid handle. Don't trust the other flags that are passed, query the kernel for the actual values.
-			_wlibc_fd_table[i].handle = (HANDLE)(LONG_PTR)inherited_handle;
-			_wlibc_fd_table[i].flags = determine_handle_flags((HANDLE)(LONG_PTR)inherited_handle);
+			_wlibc_fd_table[i].handle = inherited_handle;
+			_wlibc_fd_table[i].flags = determine_handle_flags(inherited_handle);
 			_wlibc_fd_table[i].type = inherited_handle_type;
 			_wlibc_fd_table[i].sequence = ++_wlibc_fd_sequence;
 		}

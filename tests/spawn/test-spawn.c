@@ -291,7 +291,7 @@ int test_spawn_inherit_msvcrt()
 	int fd_r, fd_w, fd_a, fd_rw, fd_ra;
 	pid_t pid;
 	const char *program = "inherit-msvcrt.exe";
-	const char *content = "Hello World From wlibc!!!";
+	const char *content = "Hello World From msvcrt!!!";
 	const char *file_r = "inherit-msvcrt-file-r";
 	const char *file_w = "inherit-msvcrt-file-w";
 	const char *file_a = "inherit-msvcrt-file-a";
@@ -348,16 +348,66 @@ int test_spawn_inherit_msvcrt()
 	ASSERT_SUCCESS(close(fd_rw));
 	ASSERT_SUCCESS(close(fd_ra));
 
-	ASSERT_SUCCESS(check_output(file_w, "##### World From wlibc!!!"));
-	ASSERT_SUCCESS(check_output(file_a, "Hello World From wlibc!!!#####"));
-	ASSERT_SUCCESS(check_output(file_rw, "Hello#####d From wlibc!!!"));
-	ASSERT_SUCCESS(check_output(file_ra, "Hello World From wlibc!!!#####"));
+	ASSERT_SUCCESS(check_output(file_w, "##### World From msvcrt!!!"));
+	ASSERT_SUCCESS(check_output(file_a, "Hello World From msvcrt!!!#####"));
+	ASSERT_SUCCESS(check_output(file_rw, "Hello#####d From msvcrt!!!"));
+	ASSERT_SUCCESS(check_output(file_ra, "Hello World From msvcrt!!!#####"));
 
 	ASSERT_SUCCESS(remove(file_r));
 	ASSERT_SUCCESS(remove(file_w));
 	ASSERT_SUCCESS(remove(file_a));
 	ASSERT_SUCCESS(remove(file_rw));
 	ASSERT_SUCCESS(remove(file_ra));
+
+	return 0;
+}
+
+int test_spawn_inherit_msvcrt_extra()
+{
+	int status, wstatus;
+	int fd_p[2], fd_n;
+	pid_t pid;
+	const char *program = "inherit-msvcrt.exe";
+	char *argv[] = {(char *)program, NULL, NULL, NULL, NULL};
+	char bpr[4], bpw[4], bn[4];
+
+	status = pipe(fd_p);
+	ASSERT_EQ(status, 0);
+
+	fd_n = open("NUL", O_RDWR);
+	ASSERT_NOTEQ(fd_n, -1);
+
+	itoa(fd_n, bn, 10);
+	itoa(fd_p[0], bpr, 10);
+	itoa(fd_p[1], bpw, 10);
+
+	// Test pipe inheritance.
+	argv[1] = "2";
+	argv[2] = bpr;
+	argv[3] = bpw;
+
+	status = posix_spawn(&pid, program, NULL, NULL, argv, NULL);
+	ASSERT_EQ(status, 0);
+
+	status = waitpid(pid, &wstatus, 0);
+	ASSERT_EQ(status, pid);
+	ASSERT_EQ(wstatus, 0);
+
+	// // Test dev(console, null) inheritance.
+	argv[1] = "1";
+	argv[2] = bn;
+	argv[3] = NULL;
+
+	status = posix_spawn(&pid, program, NULL, NULL, argv, NULL);
+	ASSERT_EQ(status, 0);
+
+	status = waitpid(pid, &wstatus, 0);
+	ASSERT_EQ(status, pid);
+	ASSERT_EQ(wstatus, 0);
+
+	ASSERT_SUCCESS(close(fd_n));
+	ASSERT_SUCCESS(close(fd_p[0]));
+	ASSERT_SUCCESS(close(fd_p[1]));
 
 	return 0;
 }
@@ -389,7 +439,8 @@ int main()
 	TEST(test_spawn_pipe());
 	TEST(test_spawn_inherit_wlibc());
 	TEST(test_spawn_inherit_wlibc_extra());
-	// TEST(test_spawn_inherit_msvcrt());
+	TEST(test_spawn_inherit_msvcrt());
+	TEST(test_spawn_inherit_msvcrt_extra());
 
 	VERIFY_RESULT_AND_EXIT();
 }

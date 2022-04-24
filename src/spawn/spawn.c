@@ -95,6 +95,7 @@ static void cleanup_inherit_information(inherit_information *restrict info, cons
 static void give_inherit_information_to_startupinfo(inherit_information *inherit_info, STARTUPINFOW *startup_info)
 {
 	// First count the maximum fd that is to be inherited.
+	int number_of_fds_to_inherit = 0;
 	int real_max_fd = 0;
 
 	for (int i = 0; i <= inherit_info->fds; ++i)
@@ -105,18 +106,22 @@ static void give_inherit_information_to_startupinfo(inherit_information *inherit
 		}
 	}
 
+	number_of_fds_to_inherit = real_max_fd + 1;
+
 	startup_info->dwFlags |= STARTF_USESTDHANDLES;
 
 	// First 4 bytes denote number of handles inherited (say N).      4
 	// Then for each handle 1 byte is use to denote the flag values.  N
-	// Then each of the handles are listed as DWORDs.                4N
-	startup_info->cbReserved2 = (WORD)(sizeof(DWORD) + 5 * (real_max_fd + 1));
+	// Then each of the handles are listed.                          8N
+	// NOTE: The documentation in lowio/ioinit.cpp says the HANDLES are passed as DWORDS.
+	// This is incorrect.
+	startup_info->cbReserved2 = (WORD)(sizeof(DWORD) + (sizeof(HANDLE) + sizeof(UCHAR)) * number_of_fds_to_inherit);
 	startup_info->lpReserved2 = malloc(startup_info->cbReserved2);
 
-	*(DWORD *)startup_info->lpReserved2 = real_max_fd + 1;
-	off_t handle_start = sizeof(DWORD) + real_max_fd + 1;
+	*(DWORD *)startup_info->lpReserved2 = number_of_fds_to_inherit;
+	off_t handle_start = sizeof(DWORD) + number_of_fds_to_inherit;
 
-	for (int i = 0; i <= real_max_fd; ++i)
+	for (int i = 0; i < number_of_fds_to_inherit; ++i)
 	{
 		if (i > 2)
 		{
@@ -138,7 +143,7 @@ static void give_inherit_information_to_startupinfo(inherit_information *inherit
 			}
 
 			((UCHAR *)(startup_info->lpReserved2 + sizeof(DWORD)))[i] = flag;
-			((DWORD *)(startup_info->lpReserved2 + handle_start))[i] = (DWORD)(LONG_PTR)inherit_info->fdinfo[i].handle;
+			((HANDLE *)(startup_info->lpReserved2 + handle_start))[i] = inherit_info->fdinfo[i].handle;
 		}
 		// Always give the std handles in startupinfo itself
 		// Mark the handles as invalid in the lpReserved2.
@@ -151,17 +156,17 @@ static void give_inherit_information_to_startupinfo(inherit_information *inherit
 			// CRT's lowio initialization routine.
 			case 0:
 				startup_info->hStdInput = inherit_info->fdinfo[0].handle;
-				((DWORD *)(startup_info->lpReserved2 + handle_start))[0] = -1;
+				((HANDLE *)(startup_info->lpReserved2 + handle_start))[0] = INVALID_HANDLE_VALUE;
 				((UCHAR *)(startup_info->lpReserved2 + sizeof(DWORD)))[0] = 0;
 				break;
 			case 1:
 				startup_info->hStdOutput = inherit_info->fdinfo[1].handle;
-				((DWORD *)(startup_info->lpReserved2 + handle_start))[1] = -1;
+				((HANDLE *)(startup_info->lpReserved2 + handle_start))[1] = INVALID_HANDLE_VALUE;
 				((UCHAR *)(startup_info->lpReserved2 + sizeof(DWORD)))[1] = 0;
 				break;
 			case 2:
 				startup_info->hStdError = inherit_info->fdinfo[2].handle;
-				((DWORD *)(startup_info->lpReserved2 + handle_start))[2] = -1;
+				((HANDLE *)(startup_info->lpReserved2 + handle_start))[2] = INVALID_HANDLE_VALUE;
 				((UCHAR *)(startup_info->lpReserved2 + sizeof(DWORD)))[2] = 0;
 				break;
 			}

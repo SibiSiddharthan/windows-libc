@@ -9,7 +9,7 @@
 #include <string.h>
 
 #ifdef TESTING_MSVCRT
-#	define TEST_CONTENT "Hello World From mscvrt!!!"
+#	define TEST_CONTENT "Hello World From msvcrt!!!"
 #	define read         _read
 #	define write        _write
 
