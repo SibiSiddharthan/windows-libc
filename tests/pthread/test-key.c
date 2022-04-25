@@ -34,7 +34,6 @@ void *simple2(void *arg)
 	key_args *args = (key_args *)arg;
 	pthread_setspecific(args->key, args->value);
 	pthread_exit(NULL);
-	return NULL;
 }
 
 int test_key()

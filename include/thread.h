@@ -111,7 +111,7 @@ WLIBC_API int wlibc_thread_equal(thread_t thread_a, thread_t thread_b);
 WLIBC_API thread_t wlibc_thread_self(void);
 WLIBC_API int wlibc_thread_sleep(const struct timespec *duration, struct timespec *remaining);
 WLIBC_API int wlibc_thread_yield(void);
-WLIBC_API void wlibc_thread_exit(void *retval); // notreturn TODO.
+WLIBC_API WLIBC_NORETURN void wlibc_thread_exit(void *retval);
 WLIBC_API int wlibc_thread_setcancelstate(int state, int *oldstate);
 WLIBC_API int wlibc_thread_setcanceltype(int type, int *oldtype);
 WLIBC_API int wlibc_thread_cancel(thread_t thread);

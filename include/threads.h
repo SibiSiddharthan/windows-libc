@@ -87,7 +87,7 @@ WLIBC_INLINE void thrd_yield(void)
 	wlibc_thread_yield();
 }
 
-WLIBC_INLINE void thrd_exit(int result)
+WLIBC_INLINE WLIBC_NORETURN void thrd_exit(int result)
 {
 	wlibc_thread_exit((void *)(intptr_t)result);
 }

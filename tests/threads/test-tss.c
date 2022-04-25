@@ -34,7 +34,6 @@ int simple2(void *arg)
 	tss_args *args = (tss_args *)arg;
 	tss_set(args->key, args->value);
 	thrd_exit(0);
-	return 0;
 }
 
 int test_key()

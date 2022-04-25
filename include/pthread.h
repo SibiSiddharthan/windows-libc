@@ -60,7 +60,7 @@ WLIBC_INLINE int pthread_create(pthread_t *thread, pthread_attr_t *attributes, p
 	return wlibc_thread_create(thread, attributes, routine, arg);
 }
 
-WLIBC_INLINE void pthread_exit(void *retval)
+WLIBC_INLINE WLIBC_NORETURN void pthread_exit(void *retval)
 {
 	wlibc_thread_exit(retval);
 }

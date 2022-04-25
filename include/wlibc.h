@@ -33,5 +33,6 @@
 #endif
 
 #define WLIBC_INLINE __forceinline
+#define WLIBC_NORETURN __declspec(noreturn)
 
 #endif

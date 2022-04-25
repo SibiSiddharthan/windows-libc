@@ -29,8 +29,8 @@ DWORD wlibc_thread_entry(void *arg)
 	execute_cleanup(tinfo);
 	cleanup_tls(tinfo);
 	RtlExitUserThread((NTSTATUS)(LONG_PTR)result);
-	// Unreachable
-	return 0;
+
+	// The End.
 }
 
 int wlibc_thread_create(thread_t *thread, thread_attr_t *attributes, thread_start_t routine, void *arg)
