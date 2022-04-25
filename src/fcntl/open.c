@@ -326,8 +326,8 @@ int do_open(int dirfd, const char *name, int oflags, mode_t perm)
 		rand_s(&rn);
 		wchar_t rbuf[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 		_ultow_s(rn, rbuf, 8, 36);
+
 		// Append the string to u16_ntpath.
-		// Remember the 'Length' should always be less than 'MaximumLength' so that `free` will free the memory.
 		memcpy((char *)u16_temppath->Buffer + u16_temppath->Length, rbuf,
 			   u16_temppath->MaximumLength - u16_temppath->Length - sizeof(WCHAR));
 		u16_ntpath->Length = u16_temppath->MaximumLength - sizeof(WCHAR);

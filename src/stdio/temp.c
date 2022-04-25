@@ -6,6 +6,7 @@
 */
 
 #define _CRT_RAND_S
+
 #include <internal/nt.h>
 #include <internal/registry.h>
 #include <internal/security.h>
@@ -65,7 +66,9 @@ char *wlibc_tmpdir(void)
 			u8_localdir.MaximumLength = L_tmpnam;
 			RtlUnicodeStringToUTF8String(&u8_localdir, &u16_localdir, FALSE);
 
-			// There will be plenty of space left in the buffer.
+			// The directory will be of the form "C:\Users\XXXXX\AppData\Local\Temp".
+			// In Windows the user name for the home directory will be truncated to 5 characters.(Don't ask me why.)
+			// As a result there will be plenty of space left in the buffer.
 			strcat(tmpdir, "\\Temp\\");
 			free(localdir);
 			tmpdir_initialized = 1;

@@ -6,13 +6,14 @@
 */
 
 #define _CRT_RAND_S
+
+#include <internal/fcntl.h>
+#include <errno.h>
+#include <fcntl.h>
 #include <stdlib-ext.h>
 #include <stdlib.h>
 #include <stdbool.h>
-#include <fcntl.h>
 #include <sys/stat.h>
-#include <errno.h>
-#include <internal/fcntl.h>
 
 static bool validate_template(const char *template, int suffixlen, int *length)
 {
