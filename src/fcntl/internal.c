@@ -468,6 +468,7 @@ static int close_fd_internal(int _fd)
 	}
 	// Closing the file descriptor. Mark the handle as invalid, so we can reuse the same fd again.
 	_wlibc_fd_table[_fd].handle = INVALID_HANDLE_VALUE;
+	_wlibc_fd_table[_fd].type = INVALID_HANDLE;
 	return 0;
 }
 
