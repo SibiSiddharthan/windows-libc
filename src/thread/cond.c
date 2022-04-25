@@ -6,6 +6,7 @@
 */
 
 #include <internal/nt.h>
+#include <internal/convert.h>
 #include <internal/error.h>
 #include <internal/validate.h>
 #include <errno.h>
@@ -165,9 +166,7 @@ int wlibc_cond_common_wait(cond_t *restrict cond, mutex_t *restrict mutex, const
 	// Do the wait.
 	if (abstime != NULL)
 	{
-		// From utimens.c. TODO
-		timeout.QuadPart = abstime->tv_sec * 10000000 + abstime->tv_nsec / 100;
-		timeout.QuadPart += 116444736000000000LL;
+		timeout = timespec_to_LARGE_INTEGER(abstime);
 	}
 
 	// Insert self in the queue.

@@ -6,19 +6,12 @@
 */
 
 #include <internal/nt.h>
+#include <internal/convert.h>
 #include <internal/error.h>
 #include <internal/fcntl.h>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <time.h>
-
-LARGE_INTEGER timespec_to_LARGE_INTEGER(const struct timespec time)
-{
-	LARGE_INTEGER L;
-	L.QuadPart = time.tv_sec * 10000000 + time.tv_nsec / 100;
-	L.QuadPart += 116444736000000000LL;
-	return L;
-}
 
 int do_utimens(HANDLE handle, const struct timespec times[2])
 {
@@ -54,7 +47,7 @@ int do_utimens(HANDLE handle, const struct timespec times[2])
 		}
 		else if (times[0].tv_nsec != UTIME_OMIT)
 		{
-			info.LastAccessTime.QuadPart = timespec_to_LARGE_INTEGER(times[0]).QuadPart;
+			info.LastAccessTime.QuadPart = timespec_to_LARGE_INTEGER(&times[0]).QuadPart;
 		}
 
 		if (times[1].tv_nsec == UTIME_NOW)
@@ -63,7 +56,7 @@ int do_utimens(HANDLE handle, const struct timespec times[2])
 		}
 		else if (times[1].tv_nsec != UTIME_OMIT)
 		{
-			info.LastWriteTime.QuadPart = timespec_to_LARGE_INTEGER(times[1]).QuadPart;
+			info.LastWriteTime.QuadPart = timespec_to_LARGE_INTEGER(&times[1]).QuadPart;
 		}
 	}
 

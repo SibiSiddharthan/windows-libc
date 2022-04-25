@@ -6,6 +6,7 @@
 */
 
 #include <internal/nt.h>
+#include <internal/convert.h>
 #include <internal/error.h>
 #include <internal/fcntl.h>
 #include <internal/security.h>
@@ -13,18 +14,6 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <time.h>
-
-/* 116444736000000000 is the number of 100 nanosecond intervals from
-   January 1st 1601 to January 1st 1970 (UTC)
-*/
-static struct timespec LARGE_INTEGER_to_timespec(LARGE_INTEGER LT)
-{
-	struct timespec result;
-	time_t epoch = LT.QuadPart - 116444736000000000LL;
-	result.tv_sec = epoch / 10000000;
-	result.tv_nsec = (epoch % 10000000) * 100;
-	return result;
-}
 
 #define WLIBC_ACCEPTABLE_READ_PERMISSIONS    (FILE_READ_DATA | FILE_READ_EA)
 #define WLIBC_ACCEPTABLE_WRITE_PERMISSIONS   (FILE_WRITE_DATA | FILE_APPEND_DATA | FILE_WRITE_EA)

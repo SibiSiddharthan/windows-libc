@@ -6,6 +6,7 @@
 */
 
 #include <internal/nt.h>
+#include <internal/convert.h>
 #include <internal/validate.h>
 #include <errno.h>
 #include <thread.h>
@@ -69,9 +70,7 @@ int wlibc_rwlock_timedrdlock(rwlock_t *restrict rwlock, const struct timespec *r
 
 	LARGE_INTEGER duetime, current;
 
-	// From utimens.c. TODO
-	duetime.QuadPart = abstime->tv_sec * 10000000 + abstime->tv_nsec / 100;
-	duetime.QuadPart += 116444736000000000LL;
+	duetime = timespec_to_LARGE_INTEGER(abstime);
 
 	// Perform a gentle spin till we acquire the lock.
 	do
@@ -120,9 +119,7 @@ int wlibc_rwlock_timedwrlock(rwlock_t *restrict rwlock, const struct timespec *r
 
 	LARGE_INTEGER duetime, current;
 
-	// From utimens.c. TODO
-	duetime.QuadPart = abstime->tv_sec * 10000000 + abstime->tv_nsec / 100;
-	duetime.QuadPart += 116444736000000000LL;
+	duetime = timespec_to_LARGE_INTEGER(abstime);
 
 	// Perform a gentle spin till we acquire the lock.
 	do

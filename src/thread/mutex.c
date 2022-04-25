@@ -6,6 +6,7 @@
 */
 
 #include <internal/nt.h>
+#include <internal/convert.h>
 #include <internal/error.h>
 #include <internal/validate.h>
 #include <errno.h>
@@ -116,9 +117,7 @@ int wlibc_mutex_common_lock(mutex_t *restrict mutex, const struct timespec *rest
 		// If abstime is 0(tv_sec, tv_nsec is 0) -> try lock.
 		if (abstime != NULL && abstime->tv_sec != 0 && abstime->tv_nsec != 0)
 		{
-			// From utimens.c. TODO
-			timeout.QuadPart = abstime->tv_sec * 10000000 + abstime->tv_nsec / 100;
-			timeout.QuadPart += 116444736000000000LL;
+			timeout = timespec_to_LARGE_INTEGER(abstime);
 		}
 	}
 

@@ -6,6 +6,7 @@
 ]]
 
 set(internal_SOURCES
+convert.c
 error.c
 misc.c
 path.c

@@ -6,6 +6,7 @@
 */
 
 #include <internal/nt.h>
+#include <internal/convert.h>
 #include <internal/error.h>
 #include <internal/thread.h>
 #include <internal/validate.h>
@@ -124,9 +125,7 @@ int wlibc_common_thread_join(thread_t thread, void **result, const struct timesp
 	// If abstime is 0(tv_sec, tv_nsec is 0) -> try wait.
 	if (abstime != NULL && abstime->tv_sec != 0 && abstime->tv_nsec != 0)
 	{
-		// From utimens.c. TODO
-		timeout.QuadPart = abstime->tv_sec * 10000000 + abstime->tv_nsec / 100;
-		timeout.QuadPart += 116444736000000000LL;
+		timeout = timespec_to_LARGE_INTEGER(abstime);
 	}
 
 	status = NtWaitForSingleObject(tinfo->handle, FALSE, abstime == NULL ? NULL : &timeout);
