@@ -123,53 +123,40 @@ static void give_inherit_information_to_startupinfo(inherit_information *inherit
 
 	for (int i = 0; i < number_of_fds_to_inherit; ++i)
 	{
-		if (i > 2)
+		// We only make use of FOPEN_FLAG, FAPPEND_FLAG, FPIPE_FLAG, FDEV_FLAG.
+		unsigned char flag = FOPEN_FLAG;
+
+		if (inherit_info->fdinfo[i].flags & O_APPEND)
 		{
-			// We only make use of FOPEN_FLAG, FAPPEND_FLAG, FPIPE_FLAG, FDEV_FLAG.
-			unsigned char flag = FOPEN_FLAG;
-
-			if (inherit_info->fdinfo[i].flags & O_APPEND)
-			{
-				flag |= FAPPEND_FLAG;
-			}
-
-			if (inherit_info->fdinfo[i].type == PIPE_HANDLE)
-			{
-				flag |= FPIPE_FLAG;
-			}
-			else if (inherit_info->fdinfo[i].type == CONSOLE_HANDLE || inherit_info->fdinfo[i].type == NULL_HANDLE)
-			{
-				flag |= FDEV_FLAG;
-			}
-
-			((UCHAR *)(startup_info->lpReserved2 + sizeof(DWORD)))[i] = flag;
-			((HANDLE *)(startup_info->lpReserved2 + handle_start))[i] = inherit_info->fdinfo[i].handle;
+			flag |= FAPPEND_FLAG;
 		}
-		// Always give the std handles in startupinfo itself
-		// Mark the handles as invalid in the lpReserved2.
-		else
+
+		if (inherit_info->fdinfo[i].type == PIPE_HANDLE)
 		{
-			switch (i)
-			{
-			// Instead of marking these handles as invalid we can use this to store sigset, sigdefault and one more thing.
-			// Mark the flag as not open as well, so that these values will be treated as invalid by the
-			// CRT's lowio initialization routine.
-			case 0:
-				startup_info->hStdInput = inherit_info->fdinfo[0].handle;
-				((HANDLE *)(startup_info->lpReserved2 + handle_start))[0] = INVALID_HANDLE_VALUE;
-				((UCHAR *)(startup_info->lpReserved2 + sizeof(DWORD)))[0] = 0;
-				break;
-			case 1:
-				startup_info->hStdOutput = inherit_info->fdinfo[1].handle;
-				((HANDLE *)(startup_info->lpReserved2 + handle_start))[1] = INVALID_HANDLE_VALUE;
-				((UCHAR *)(startup_info->lpReserved2 + sizeof(DWORD)))[1] = 0;
-				break;
-			case 2:
-				startup_info->hStdError = inherit_info->fdinfo[2].handle;
-				((HANDLE *)(startup_info->lpReserved2 + handle_start))[2] = INVALID_HANDLE_VALUE;
-				((UCHAR *)(startup_info->lpReserved2 + sizeof(DWORD)))[2] = 0;
-				break;
-			}
+			flag |= FPIPE_FLAG;
+		}
+		else if (inherit_info->fdinfo[i].type == CONSOLE_HANDLE || inherit_info->fdinfo[i].type == NULL_HANDLE)
+		{
+			flag |= FDEV_FLAG;
+		}
+
+		((UCHAR *)(startup_info->lpReserved2 + sizeof(DWORD)))[i] = flag;
+		((HANDLE *)(startup_info->lpReserved2 + handle_start))[i] = inherit_info->fdinfo[i].handle;
+
+		// Give the std handles to startupinfo also.
+		switch (i)
+		{
+		case 0:
+			startup_info->hStdInput = inherit_info->fdinfo[i].handle;
+			break;
+		case 1:
+			startup_info->hStdOutput = inherit_info->fdinfo[i].handle;
+			break;
+		case 2:
+			startup_info->hStdError = inherit_info->fdinfo[i].handle;
+			break;
+		default:
+			break;
 		}
 	}
 }
