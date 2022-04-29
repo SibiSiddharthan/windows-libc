@@ -197,7 +197,7 @@ UNICODE_STRING *xget_fd_ntpath_internal(int fd)
 	return path;
 }
 
-UNICODE_STRING *xget_absolute_ntpath(int dirfd, const char *path)
+UNICODE_STRING *xget_absolute_ntpath2(int dirfd, const char *path, handle_t *type)
 {
 	UTF8_STRING u8_path;
 	UNICODE_STRING u16_path, u16_rootdir = {0};
@@ -215,6 +215,13 @@ UNICODE_STRING *xget_absolute_ntpath(int dirfd, const char *path)
 	bool cygwin_path = false;
 	bool rootdir_has_trailing_slash = false;
 
+	handle_t unused;
+
+	if (type == NULL)
+	{
+		type = &unused;
+	}
+
 	// For all these predefined devices we set MaximumLength to be same as Length (omitting the terminating NULL).
 	// This enables us to use the static storage an avoids needless memory allocation.
 
@@ -227,6 +234,7 @@ UNICODE_STRING *xget_absolute_ntpath(int dirfd, const char *path)
 			u16_ntpath->Length = 24;
 			u16_ntpath->MaximumLength = u16_ntpath->Length;
 			u16_ntpath->Buffer = L"\\Device\\Null";
+			*type = NULL_HANDLE;
 			return u16_ntpath;
 		}
 		if (strncmp(path + 5, "tty", 4) == 0)
@@ -235,6 +243,7 @@ UNICODE_STRING *xget_absolute_ntpath(int dirfd, const char *path)
 			u16_ntpath->Length = 44;
 			u16_ntpath->MaximumLength = u16_ntpath->Length;
 			u16_ntpath->Buffer = L"\\Device\\ConDrv\\Console";
+			*type = CONSOLE_HANDLE;
 			return u16_ntpath;
 		}
 		if (strncmp(path + 5, "stdin", 6) == 0)
@@ -243,6 +252,7 @@ UNICODE_STRING *xget_absolute_ntpath(int dirfd, const char *path)
 			u16_ntpath->Length = 48;
 			u16_ntpath->MaximumLength = u16_ntpath->Length;
 			u16_ntpath->Buffer = L"\\Device\\ConDrv\\CurrentIn";
+			*type = CONSOLE_HANDLE;
 			return u16_ntpath;
 		}
 		if (strncmp(path + 5, "stdout", 7) == 0)
@@ -251,6 +261,7 @@ UNICODE_STRING *xget_absolute_ntpath(int dirfd, const char *path)
 			u16_ntpath->Length = 50;
 			u16_ntpath->MaximumLength = u16_ntpath->Length;
 			u16_ntpath->Buffer = L"\\Device\\ConDrv\\CurrentOut";
+			*type = CONSOLE_HANDLE;
 			return u16_ntpath;
 		}
 		if (strncmp(path + 5, "stderr", 7) == 0)
@@ -259,6 +270,7 @@ UNICODE_STRING *xget_absolute_ntpath(int dirfd, const char *path)
 			u16_ntpath->Length = 50;
 			u16_ntpath->MaximumLength = u16_ntpath->Length;
 			u16_ntpath->Buffer = L"\\Device\\ConDrv\\CurrentOut";
+			*type = CONSOLE_HANDLE;
 			return u16_ntpath;
 		}
 		// Other devices to be implemented via drivers. TODO
@@ -268,6 +280,7 @@ UNICODE_STRING *xget_absolute_ntpath(int dirfd, const char *path)
 			u16_ntpath->Length = 24;
 			u16_ntpath->MaximumLength = u16_ntpath->Length;
 			u16_ntpath->Buffer = L"\\Device\\Zero";
+			*type = NULL_HANDLE;
 			return u16_ntpath;
 		}
 		if (strncmp(path + 5, "full", 5) == 0)
@@ -275,6 +288,7 @@ UNICODE_STRING *xget_absolute_ntpath(int dirfd, const char *path)
 			u16_ntpath->Length = 24;
 			u16_ntpath->MaximumLength = u16_ntpath->Length;
 			u16_ntpath->Buffer = L"\\Device\\Full";
+			*type = NULL_HANDLE;
 			return u16_ntpath;
 		}
 		if (strncmp(path + 5, "random", 7) == 0)
@@ -283,6 +297,7 @@ UNICODE_STRING *xget_absolute_ntpath(int dirfd, const char *path)
 			u16_ntpath->Length = 28;
 			u16_ntpath->MaximumLength = u16_ntpath->Length;
 			u16_ntpath->Buffer = L"\\Device\\Random";
+			*type = NULL_HANDLE;
 			return u16_ntpath;
 		}
 		if (strncmp(path + 5, "urandom", 8) == 0)
@@ -291,6 +306,7 @@ UNICODE_STRING *xget_absolute_ntpath(int dirfd, const char *path)
 			u16_ntpath->Length = 28;
 			u16_ntpath->MaximumLength = u16_ntpath->Length;
 			u16_ntpath->Buffer = L"\\Device\\Random";
+			*type = NULL_HANDLE;
 			return u16_ntpath;
 		}
 	}
@@ -302,6 +318,7 @@ UNICODE_STRING *xget_absolute_ntpath(int dirfd, const char *path)
 		u16_ntpath->Length = 24;
 		u16_ntpath->MaximumLength = u16_ntpath->Length;
 		u16_ntpath->Buffer = L"\\Device\\Null";
+		*type = NULL_HANDLE;
 		return u16_ntpath;
 	}
 	if (strnicmp(path, "CON", 3) == 0)
@@ -312,6 +329,7 @@ UNICODE_STRING *xget_absolute_ntpath(int dirfd, const char *path)
 			u16_ntpath->Length = 44;
 			u16_ntpath->MaximumLength = u16_ntpath->Length;
 			u16_ntpath->Buffer = L"\\Device\\ConDrv\\Console";
+			*type = CONSOLE_HANDLE;
 			return u16_ntpath;
 		}
 		if (strnicmp(path + 3, "IN$", 4) == 0)
@@ -320,6 +338,7 @@ UNICODE_STRING *xget_absolute_ntpath(int dirfd, const char *path)
 			u16_ntpath->Length = 48;
 			u16_ntpath->MaximumLength = u16_ntpath->Length;
 			u16_ntpath->Buffer = L"\\Device\\ConDrv\\CurrentIn";
+			*type = CONSOLE_HANDLE;
 			return u16_ntpath;
 		}
 		if (strnicmp(path + 3, "OUT$", 5) == 0)
@@ -328,9 +347,13 @@ UNICODE_STRING *xget_absolute_ntpath(int dirfd, const char *path)
 			u16_ntpath->Length = 50;
 			u16_ntpath->MaximumLength = u16_ntpath->Length;
 			u16_ntpath->Buffer = L"\\Device\\ConDrv\\CurrentOut";
+			*type = CONSOLE_HANDLE;
 			return u16_ntpath;
 		}
 	}
+
+	// After this point the path will be either a FILE_HANDLE or DIRECTORY_HANDLE. Set it to FILE_HANDLE.
+	*type = FILE_HANDLE;
 
 	if ( // Normal Windows way -> C:
 		(isalpha(path[0]) && path[1] == ':') ||
@@ -544,6 +567,11 @@ finish:
 	free(ntpath_buffer);
 
 	return u16_ntpath;
+}
+
+UNICODE_STRING *xget_absolute_ntpath(int dirfd, const char *path)
+{
+	return xget_absolute_ntpath2(dirfd, path, NULL);
 }
 
 UNICODE_STRING *xget_fd_ntpath(int fd)

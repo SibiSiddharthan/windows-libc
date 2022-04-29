@@ -233,33 +233,34 @@ HANDLE just_open2(UNICODE_STRING *ntpath, ACCESS_MASK access, ULONG options)
 {
 	OBJECT_ATTRIBUTES object;
 
-	// Opening the console requires either FILE_GENERIC_READ or FILE_GENERIC_WRITE
-	if (memcmp(ntpath->Buffer + 8, L"ConDrv", 12) == 0) // skip "\Device\"
-	{
-		options = FILE_SYNCHRONOUS_IO_NONALERT;
-		if (access & (FILE_WRITE_DATA | FILE_WRITE_ATTRIBUTES | FILE_WRITE_EA))
-		{
-			access = FILE_GENERIC_WRITE;
-		}
-		else
-		{
-			access = FILE_GENERIC_READ;
-		}
-	}
-
 	InitializeObjectAttributes(&object, ntpath, OBJ_CASE_INSENSITIVE, NULL, NULL);
 	return really_do_open(&object, access, 0, FILE_OPEN, options);
 }
 
 HANDLE just_open(int dirfd, const char *path, ACCESS_MASK access, ULONG options)
 {
+	handle_t type;
 	HANDLE handle = INVALID_HANDLE_VALUE;
-	UNICODE_STRING *u16_ntpath = xget_absolute_ntpath(dirfd, path);
+	UNICODE_STRING *u16_ntpath = xget_absolute_ntpath2(dirfd, path, &type);
 
 	if (u16_ntpath == NULL)
 	{
-		// errno will be set by `get_absolute_ntpath`.
+		// errno will be set by `get_absolute_ntpath2`.
 		return handle;
+	}
+
+	// Opening the console requires either FILE_GENERIC_READ or FILE_GENERIC_WRITE
+	if (type == CONSOLE_HANDLE)
+	{
+		options = FILE_SYNCHRONOUS_IO_NONALERT;
+		if (access & (FILE_WRITE_DATA | FILE_APPEND_DATA | FILE_WRITE_ATTRIBUTES | FILE_WRITE_EA))
+		{
+			access = FILE_GENERIC_WRITE;
+		}
+		else //(access & (FILE_READ_DATA | FILE_READ_ATTRIBUTES | FILE_READ_EA))
+		{
+			access = FILE_GENERIC_READ;
+		}
 	}
 
 	handle = just_open2(u16_ntpath, access, options);
@@ -272,16 +273,15 @@ int do_open(int dirfd, const char *name, int oflags, mode_t perm)
 {
 	HANDLE handle;
 	OBJECT_ATTRIBUTES object;
+	handle_t type;
 	ACCESS_MASK access_rights = determine_access_rights(oflags);
 	ULONG attributes = 0;
 	ULONG disposition = determine_create_dispostion(oflags);
 	ULONG options = determine_create_options(oflags);
 	PSECURITY_DESCRIPTOR security_descriptor = NULL;
-	UNICODE_STRING *u16_ntpath = xget_absolute_ntpath(dirfd, name);
+	UNICODE_STRING *u16_ntpath = xget_absolute_ntpath2(dirfd, name, &type);
 
 	int fd = -1;
-	bool is_console = false;
-	bool is_null = false;
 
 	if (u16_ntpath == NULL)
 	{
@@ -344,18 +344,15 @@ int do_open(int dirfd, const char *name, int oflags, mode_t perm)
 		object.Attributes &= ~OBJ_INHERIT;
 	}
 
-	if (memcmp(u16_ntpath->Buffer + 8, L"Null", 10) == 0) // Include the NULL in comparison as well.
+	if (type == NULL_HANDLE) // Include the NULL in comparison as well.
 	{
-		// NOTE: NtCreateFile on 'NUL' fails with STATUS_ACCESS_DENIED if requesting WRITE_DAC or WRITE_OWNER accesses.
-		is_null = true;
 		attributes = 0;
 		options = FILE_SYNCHRONOUS_IO_NONALERT;
 	}
 
-	// opening console requires these
-	if (memcmp(u16_ntpath->Buffer + 8, L"ConDrv", 12) == 0) // skip "\Device\"
+	// Opening console requires these.
+	if (type == CONSOLE_HANDLE) // skip "\Device\"
 	{
-		is_console = true;
 		attributes = 0;
 		options = FILE_SYNCHRONOUS_IO_NONALERT;
 
@@ -378,20 +375,7 @@ int do_open(int dirfd, const char *name, int oflags, mode_t perm)
 
 	if (handle != INVALID_HANDLE_VALUE)
 	{
-		handle_t type;
-		// Check the pathname for identifying these, otherwise we would need to NtQueryVolumeInformationFIle
-		if (is_console || is_null)
-		{
-			if (is_console)
-			{
-				type = CONSOLE_HANDLE;
-			}
-			else // is_null
-			{
-				type = NULL_HANDLE;
-			}
-		}
-		else
+		if (type == FILE_HANDLE) // Type set by `get_absolute_ntpath2` when file to be opened is on disk.
 		{
 			// Handle belongs to a disk file, find out whether it is a file or directory
 			NTSTATUS status;
@@ -427,10 +411,6 @@ int do_open(int dirfd, const char *name, int oflags, mode_t perm)
 			if (tag_info.FileAttributes & FILE_ATTRIBUTE_DIRECTORY)
 			{
 				type = DIRECTORY_HANDLE;
-			}
-			else
-			{
-				type = FILE_HANDLE;
 			}
 
 			if (oflags & O_NOATIME && (oflags & O_PATH) == 0)

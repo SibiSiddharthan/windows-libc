@@ -9,9 +9,11 @@
 #define WLIBC_PATH_INTERNAL_H
 
 #include <internal/nt.h>
+#include <internal/fcntl.h>
 #include <sys/types.h>
 
 // \Device\HarddiskVolume1\Windows\System32
+UNICODE_STRING *xget_absolute_ntpath2(int dirfd, const char *path, handle_t *type);
 UNICODE_STRING *xget_absolute_ntpath(int dirfd, const char *path);
 UNICODE_STRING *xget_fd_ntpath(int fd);
 

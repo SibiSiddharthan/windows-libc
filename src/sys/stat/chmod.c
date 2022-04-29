@@ -91,7 +91,7 @@ int wlibc_common_chmod(int dirfd, const char *path, mode_t mode, int flags)
 		HANDLE handle = just_reopen(info.handle, FILE_READ_ATTRIBUTES | READ_CONTROL | WRITE_DAC, 0);
 		if (handle == INVALID_HANDLE_VALUE)
 		{
-			// errno wil be set by `just_open2`.
+			// errno wil be set by `just_reopen`.
 			return -1;
 		}
 
