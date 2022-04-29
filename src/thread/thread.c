@@ -212,12 +212,6 @@ int wlibc_thread_sleep(const struct timespec *duration, struct timespec *remaini
 	return 0;
 }
 
-int wlibc_thread_yield(void)
-{
-	NtYieldExecution();
-	return 0;
-}
-
 void wlibc_thread_exit(void *retval)
 {
 	threadinfo *tinfo = TlsGetValue(_wlibc_threadinfo_index);

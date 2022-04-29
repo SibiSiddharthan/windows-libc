@@ -9,6 +9,7 @@
 #define WLIBC_THREAD_H
 
 #include <wlibc.h>
+#include <sched.h>
 #include <time.h>
 
 _WLIBC_BEGIN_DECLS
@@ -110,7 +111,6 @@ WLIBC_API int wlibc_thread_timedjoin(thread_t thread, void **result, const struc
 WLIBC_API int wlibc_thread_equal(thread_t thread_a, thread_t thread_b);
 WLIBC_API thread_t wlibc_thread_self(void);
 WLIBC_API int wlibc_thread_sleep(const struct timespec *duration, struct timespec *remaining);
-WLIBC_API int wlibc_thread_yield(void);
 WLIBC_API WLIBC_NORETURN void wlibc_thread_exit(void *retval);
 WLIBC_API int wlibc_thread_setcancelstate(int state, int *oldstate);
 WLIBC_API int wlibc_thread_setcanceltype(int type, int *oldtype);
@@ -123,6 +123,11 @@ WLIBC_API int wlibc_threadattr_getdetachstate(const thread_attr_t *attributes, i
 WLIBC_API int wlibc_threadattr_setdetachstate(thread_attr_t *attributes, int detachstate);
 WLIBC_API int wlibc_threadattr_getstacksize(const thread_attr_t *restrict attributes, size_t *restrict stacksize);
 WLIBC_API int wlibc_threadattr_setstacksize(thread_attr_t *attributes, size_t stacksize);
+
+WLIBC_INLINE int wlibc_thread_yield(void)
+{
+	return wlibc_sched_yield();
+}
 
 // One time initialization.
 WLIBC_API int wlibc_thread_once(once_t *control, void (*init)(void));
