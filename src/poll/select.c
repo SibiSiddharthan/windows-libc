@@ -18,10 +18,11 @@
 int wlibc_common_select(int nfds, fd_set *restrict readfds, fd_set *restrict writefds, fd_set *restrict exceptfds,
 						const struct timespec *restrict timeout, const sigset_t *restrict sigmask)
 {
-
 	struct pollfd *pollfds = NULL;
-	fd_set setfds;
+	fd_set setfds, zerofds;
 	nfds_t countfds = 0;
+
+	memset(&zerofds, 0, sizeof(fd_set));
 
 	if (nfds < 0 || nfds > FD_SETSIZE)
 	{
@@ -33,6 +34,22 @@ int wlibc_common_select(int nfds, fd_set *restrict readfds, fd_set *restrict wri
 	{
 		// Nothing to do.
 		return 0;
+	}
+
+	// Assigning the null fd sets to the zerofd set avoids needless branching for the FAST_FD* macros.
+	if (readfds == NULL)
+	{
+		readfds = &zerofds;
+	}
+
+	if (writefds == NULL)
+	{
+		writefds = &zerofds;
+	}
+
+	if (exceptfds == NULL)
+	{
+		exceptfds = &zerofds;
 	}
 
 	for (int i = 0; i < nfds; ++i)
@@ -82,6 +99,7 @@ int wlibc_common_select(int nfds, fd_set *restrict readfds, fd_set *restrict wri
 
 	int poll_result;
 	int select_result = 0;
+	int error;
 
 	poll_result = wlibc_common_poll(pollfds, countfds, timeout, sigmask);
 	if (poll_result == -1)
@@ -98,9 +116,14 @@ int wlibc_common_select(int nfds, fd_set *restrict readfds, fd_set *restrict wri
 	// Fill the fd sets according to revents.
 	for (nfds_t i = 0; i < countfds; ++i)
 	{
-		if (pollfds[i].revents == 0 || pollfds[i].revents & POLLERR)
+		if (pollfds[i].revents == 0 || pollfds[i].revents & (POLLERR | POLLHUP))
 		{
 			continue;
+		}
+
+		if (pollfds[i].revents & POLLNVAL)
+		{
+			error = 1;
 		}
 
 		if (pollfds[i].revents & POLLIN)
@@ -123,6 +146,12 @@ int wlibc_common_select(int nfds, fd_set *restrict readfds, fd_set *restrict wri
 	}
 
 	free(pollfds);
+
+	if (error == 1)
+	{
+		errno = EBADF;
+		return -1;
+	}
 
 	return select_result;
 }
