@@ -52,10 +52,13 @@ WLIBC_INLINE int select(int nfds, fd_set *restrict readfds, fd_set *restrict wri
 						struct timeval *restrict timeout)
 {
 	struct timespec timespec_timeout;
-	timespec_timeout.tv_sec = timeout->tv_sec;
-	timespec_timeout.tv_nsec = timeout->tv_usec * 1000;
+	if (timeout)
+	{
+		timespec_timeout.tv_sec = timeout->tv_sec;
+		timespec_timeout.tv_nsec = timeout->tv_usec * 1000;
+	}
 
-	return wlibc_common_select(nfds, readfds, writefds, exceptfds, &timespec_timeout, NULL);
+	return wlibc_common_select(nfds, readfds, writefds, exceptfds, timeout == NULL ? NULL : &timespec_timeout, NULL);
 }
 
 WLIBC_INLINE int pselect(int nfds, fd_set *restrict readfds, fd_set *restrict writefds, fd_set *restrict exceptfds,

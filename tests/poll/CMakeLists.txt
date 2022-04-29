@@ -6,5 +6,5 @@
 ]]
 
 wlibc_add_tests(
-cpuset
-sched)
+select
+poll)

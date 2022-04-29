@@ -11,52 +11,163 @@
 #include <fcntl.h>
 #include <poll.h>
 #include <stdlib.h>
+#include <intrin.h>
 
-int do_poll(const fdinfo *pinfo, struct pollfd *fds, nfds_t nfds, const struct timespec *timeout, const sigset_t *sigmask)
+int do_poll(const fdinfo *pinfo, struct pollfd *fds, nfds_t nfds, const struct timespec *timeout)
 {
+	LARGE_INTEGER duetime = {0}, current = {0};
 	int result = 0;
-	// TODO make use of sigmask.
-	for (nfds_t i = 0; i < nfds; ++i)
+
+	if (timeout != NULL)
 	{
-		switch (pinfo[i].type)
+		GetSystemTimeAsFileTime((LPFILETIME)&current);
+		duetime.QuadPart = current.QuadPart + timeout->tv_sec * 10000000 + timeout->tv_nsec / 100;
+	}
+
+	while (1)
+	{
+		for (nfds_t i = 0; i < nfds; ++i)
 		{
-		case INVALID_HANDLE:
-		{
-			// Don't set errno to EBADF in this case.
-			fds[i].revents = POLLNVAL;
-			++result;
-			break;
-		}
-		case CONSOLE_HANDLE:
-		{
-			// TODO
-			break;
-		}
-		case NULL_HANDLE:
-		case FILE_HANDLE:
-		case DIRECTORY_HANDLE:
-		{
-			if (pinfo[i].flags & O_RDWR)
+			switch (pinfo[i].type)
 			{
-				fds[i].revents = fds[i].events & (POLLIN | POLLOUT | POLLRDNORM | POLLRDBAND | POLLWRNORM | POLLWRBAND);
-			}
-			else if (pinfo[i].flags & O_WRONLY)
+			case INVALID_HANDLE:
 			{
-				fds[i].revents = fds[i].events & (POLLOUT | POLLWRNORM | POLLWRBAND);
+				// Don't set errno to EBADF in this case.
+				fds[i].revents = POLLNVAL;
+				break;
 			}
-			else // pinfo[i].flags == O_RDONLY
+
+			case CONSOLE_HANDLE:
 			{
-				fds[i].revents = fds[i].events & (POLLIN | POLLRDNORM | POLLRDBAND);
+				BOOL status;
+				DWORD events_read = 0;
+				INPUT_RECORD record[4];
+
+				status = PeekConsoleInputW(pinfo[i].handle, record, 4, &events_read);
+				if (status == 0)
+				{
+					fds[i].revents = POLLNVAL;
+					break;
+				}
+
+				if (pinfo[i].flags & O_RDWR)
+				{
+					fds[i].revents = fds[i].events & (POLLOUT | POLLWRNORM);
+					if (events_read > 0)
+					{
+						fds[i].revents = fds[i].events & (POLLIN | POLLRDNORM);
+					}
+				}
+				else if (pinfo[i].flags & O_WRONLY)
+				{
+					fds[i].revents = fds[i].events & (POLLOUT | POLLWRNORM);
+				}
+				else // pinfo[i].flags == O_RDONLY
+				{
+					if (events_read > 0)
+					{
+						fds[i].revents = fds[i].events & (POLLIN | POLLRDNORM);
+					}
+				}
+				break;
 			}
-			break;
+
+			case NULL_HANDLE:
+			case FILE_HANDLE:
+			case DIRECTORY_HANDLE:
+			{
+				// Don't worry if there is data or not.
+				if (pinfo[i].flags & O_RDWR)
+				{
+					fds[i].revents = fds[i].events & (POLLIN | POLLOUT | POLLRDNORM | POLLWRNORM);
+				}
+				else if (pinfo[i].flags & O_WRONLY)
+				{
+					fds[i].revents = fds[i].events & (POLLOUT | POLLWRNORM);
+				}
+				else // pinfo[i].flags == O_RDONLY
+				{
+					fds[i].revents = fds[i].events & (POLLIN | POLLRDNORM);
+				}
+				break;
+			}
+
+			case PIPE_HANDLE:
+			{
+				NTSTATUS status;
+				IO_STATUS_BLOCK io;
+				FILE_PIPE_LOCAL_INFORMATION pipe_info;
+
+				status =
+					NtQueryInformationFile(pinfo[i].handle, &io, &pipe_info, sizeof(FILE_PIPE_LOCAL_INFORMATION), FilePipeLocalInformation);
+				if (status != STATUS_SUCCESS)
+				{
+					fds[i].revents = POLLNVAL;
+					break;
+				}
+
+				if (pinfo[i].flags & O_RDWR)
+				{
+					if (pipe_info.WriteQuotaAvailable > 0)
+					{
+						fds[i].revents = fds[i].events & (POLLOUT | POLLWRNORM);
+					}
+					if (pipe_info.ReadDataAvailable > 0)
+					{
+						fds[i].revents = fds[i].events & (POLLIN | POLLRDNORM);
+					}
+				}
+				else if (pinfo[i].flags & O_WRONLY)
+				{
+					if (pipe_info.WriteQuotaAvailable > 0)
+					{
+						fds[i].revents = fds[i].events & (POLLOUT | POLLWRNORM);
+					}
+					// Polling a write end of a pipe where the read end is closed.
+					if (pipe_info.NamedPipeState == FILE_PIPE_DISCONNECTED_STATE || pipe_info.NamedPipeState == FILE_PIPE_CLOSING_STATE)
+					{
+						fds[i].revents |= POLLERR;
+					}
+				}
+				else // pinfo[i].flags == O_RDONLY
+				{
+					if (pipe_info.ReadDataAvailable > 0)
+					{
+						fds[i].revents = fds[i].events & (POLLIN | POLLRDNORM);
+					}
+					// Polling a read end of a pipe where the write end is closed.
+					if (pipe_info.NamedPipeState == FILE_PIPE_DISCONNECTED_STATE || pipe_info.NamedPipeState == FILE_PIPE_CLOSING_STATE)
+					{
+						fds[i].revents |= POLLHUP;
+					}
+				}
+
+				break;
+			}
+			}
+
+			if (fds[i].revents != 0)
+			{
+				++result;
+			}
 		}
 
-		case PIPE_HANDLE:
+		if (result == 0)
 		{
-			// TODO
-			break;
+			if (timeout != NULL)
+			{
+				GetSystemTimeAsFileTime((LPFILETIME)&current);
+			}
+
+			if (current.QuadPart <= duetime.QuadPart)
+			{
+				// Retry again.
+				_mm_pause();
+				continue;
+			}
 		}
-		}
+
+		break;
 	}
 
 	return result;
@@ -65,6 +176,7 @@ int do_poll(const fdinfo *pinfo, struct pollfd *fds, nfds_t nfds, const struct t
 int wlibc_common_poll(struct pollfd *fds, nfds_t nfds, const struct timespec *timeout, const sigset_t *sigmask)
 {
 	int result;
+	sigset_t oldmask;
 	fdinfo *pinfo;
 
 	if (fds == NULL)
@@ -75,16 +187,23 @@ int wlibc_common_poll(struct pollfd *fds, nfds_t nfds, const struct timespec *ti
 
 	pinfo = (fdinfo *)malloc(sizeof(fdinfo) * nfds);
 
-	SHARED_LOCK_FD_TABLE();
-
+	// TODO pthread_sigmask.
+	// TODO Avoid locking every single time.
 	for (nfds_t i = 0; i < nfds; ++i)
 	{
+		fds[i].revents = 0;
 		get_fdinfo(fds[i].fd, &pinfo[i]);
 	}
 
-	SHARED_UNLOCK_FD_TABLE();
+	if (sigmask)
+	{
+	}
 
-	result = do_poll(pinfo, fds, nfds, timeout, sigmask);
+	result = do_poll(pinfo, fds, nfds, timeout);
+
+	if (sigmask)
+	{
+	}
 
 	free(pinfo);
 

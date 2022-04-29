@@ -42,10 +42,13 @@ WLIBC_API int wlibc_common_poll(struct pollfd *fds, nfds_t nfds, const struct ti
 WLIBC_INLINE int poll(struct pollfd *fds, nfds_t nfds, int timeout)
 {
 	struct timespec timespec_timeout;
-	timespec_timeout.tv_sec = timeout / 1000;
-	timespec_timeout.tv_nsec = (timeout * 1000000) % 1000000000;
+	if (timeout >= 0)
+	{
+		timespec_timeout.tv_sec = timeout / 1000;
+		timespec_timeout.tv_nsec = ((timeout % 1000) * 1000000) % 1000000000;
+	}
 
-	return wlibc_common_poll(fds, nfds, &timespec_timeout, NULL);
+	return wlibc_common_poll(fds, nfds, timeout < 0 ? NULL : &timespec_timeout, NULL);
 }
 
 WLIBC_INLINE int ppoll(struct pollfd *fds, nfds_t nfds, const struct timespec *timeout, const sigset_t *sigmask)
