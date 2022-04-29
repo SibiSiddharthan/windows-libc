@@ -81,7 +81,7 @@ int common_rename(int olddirfd, const char *restrict oldpath, int newdirfd, cons
 		return -1;
 	}
 
-	UNICODE_STRING *u16_ntnewpath = xget_absolute_ntpath(newdirfd, newpath);
+	UNICODE_STRING *u16_ntnewpath = get_absolute_ntpath(newdirfd, newpath);
 	if (u16_ntnewpath == NULL)
 	{
 		// Bad path

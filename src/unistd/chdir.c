@@ -50,7 +50,7 @@ int wlibc_fchdir(int fd)
 		return -1;
 	}
 
-	UNICODE_STRING *dirpath = xget_fd_dospath(fd);
+	UNICODE_STRING *dirpath = get_fd_dospath(fd);
 	if(dirpath == NULL)
 	{
 		errno = EBADF;

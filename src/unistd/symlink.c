@@ -22,7 +22,7 @@ int common_symlink(const char *restrict source, int dirfd, const char *restrict 
 	OBJECT_ATTRIBUTES object;
 	PSECURITY_DESCRIPTOR security_descriptor = NULL;
 
-	u16_nttarget = xget_absolute_ntpath(dirfd, target);
+	u16_nttarget = get_absolute_ntpath(dirfd, target);
 	if (u16_nttarget == NULL)
 	{
 		// errno will be set by `get_absolute_ntpath`.
@@ -49,7 +49,7 @@ int common_symlink(const char *restrict source, int dirfd, const char *restrict 
 	strcat(normalized_source, "../");
 	strcat(normalized_source, source);
 
-	u16_ntsource = xget_absolute_ntpath(dirfd, normalized_source);
+	u16_ntsource = get_absolute_ntpath(dirfd, normalized_source);
 	free(normalized_source);
 	if (u16_ntsource == NULL)
 	{

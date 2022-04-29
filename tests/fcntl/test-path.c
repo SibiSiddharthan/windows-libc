@@ -12,12 +12,6 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-// UNICODE_STRING *get_absolute_ntpath(int dirfd, const char *path);
-// UNICODE_STRING *xget_absolute_ntpath(int dirfd, const char *path);
-
-#define get_absolute_ntpath  xget_absolute_ntpath
-#define get_absolute_dospath xget_absolute_dospath
-
 static wchar_t cwd_dos[32768]; // MAX_PATH for windows
 static wchar_t cwd_nt[32768];  // MAX_PATH for windows
 static wchar_t cdrive[1024];
@@ -381,17 +375,17 @@ int main()
 
 	getcwd(cwd_buf, 32768);
 
-	pcwd_dos = xget_absolute_dospath(AT_FDCWD, cwd_buf);
+	pcwd_dos = get_absolute_dospath(AT_FDCWD, cwd_buf);
 	printf("Current Working Directory (DOS): %ls\n", pcwd_dos->Buffer);
 	memcpy(cwd_dos, pcwd_dos->Buffer, pcwd_dos->MaximumLength);
 	cwd_dos_length = pcwd_dos->Length / sizeof(wchar_t);
 
-	pcwd_nt = xget_absolute_ntpath(AT_FDCWD, cwd_buf);
+	pcwd_nt = get_absolute_ntpath(AT_FDCWD, cwd_buf);
 	printf("Current Working Directory (NT): %ls\n", pcwd_nt->Buffer);
 	memcpy(cwd_nt, pcwd_nt->Buffer, pcwd_nt->MaximumLength);
 	cwd_nt_length = pcwd_nt->Length / sizeof(wchar_t);
 
-	pcdrive_nt = xget_absolute_ntpath(AT_FDCWD, "C:");
+	pcdrive_nt = get_absolute_ntpath(AT_FDCWD, "C:");
 	printf("C Drive (NT): %ls\n", pcdrive_nt->Buffer);
 	memcpy(cdrive, pcdrive_nt->Buffer, pcdrive_nt->MaximumLength);
 	cdrive_length = pcdrive_nt->Length / sizeof(wchar_t);

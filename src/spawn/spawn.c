@@ -168,7 +168,7 @@ static UNICODE_STRING *get_absolute_dospath_of_executable(const char *path)
 	UNICODE_STRING *dospath = NULL;
 	UNICODE_STRING *ntpath = NULL;
 
-	ntpath = xget_absolute_ntpath(AT_FDCWD, path);
+	ntpath = get_absolute_ntpath(AT_FDCWD, path);
 	if (ntpath == NULL)
 	{
 		goto finish;
@@ -837,7 +837,7 @@ int wlibc_spawn(pid_t *restrict pid, const char *restrict path, const spawn_acti
 		case chdir_action:
 		{
 			// Validate the chdir path given.
-			u16_cwd = xget_absolute_dospath(AT_FDCWD, actions->actions[i].chdir_action.path);
+			u16_cwd = get_absolute_dospath(AT_FDCWD, actions->actions[i].chdir_action.path);
 			if (u16_cwd == NULL)
 			{
 				errno = ENOENT;
@@ -849,7 +849,7 @@ int wlibc_spawn(pid_t *restrict pid, const char *restrict path, const spawn_acti
 
 		case fchdir_action:
 		{
-			u16_cwd = xget_fd_dospath(actions->actions[i].fchdir_action.fd);
+			u16_cwd = get_fd_dospath(actions->actions[i].fchdir_action.fd);
 			if (u16_cwd == NULL)
 			{
 				errno = EBADF;

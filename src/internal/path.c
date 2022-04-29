@@ -156,7 +156,7 @@ void update_fd_path_cache(int fd, int sequence, PUNICODE_STRING nt_path)
 }
 
 // NOTE: The returned pointer should not be freed.
-UNICODE_STRING *xget_fd_ntpath_internal(int fd)
+UNICODE_STRING *get_fd_ntpath_internal(int fd)
 {
 	NTSTATUS status;
 	HANDLE handle;
@@ -197,7 +197,7 @@ UNICODE_STRING *xget_fd_ntpath_internal(int fd)
 	return path;
 }
 
-UNICODE_STRING *xget_absolute_ntpath2(int dirfd, const char *path, handle_t *type)
+UNICODE_STRING *get_absolute_ntpath2(int dirfd, const char *path, handle_t *type)
 {
 	UTF8_STRING u8_path;
 	UNICODE_STRING u16_path, u16_rootdir = {0};
@@ -401,7 +401,7 @@ UNICODE_STRING *xget_absolute_ntpath2(int dirfd, const char *path, handle_t *typ
 		}
 		else
 		{
-			rootdir_buffer = (char *)xget_fd_ntpath_internal(dirfd);
+			rootdir_buffer = (char *)get_fd_ntpath_internal(dirfd);
 			if (rootdir_buffer == NULL)
 			{
 				// Bad file descriptor for directory.
@@ -569,17 +569,12 @@ finish:
 	return u16_ntpath;
 }
 
-UNICODE_STRING *xget_absolute_ntpath(int dirfd, const char *path)
-{
-	return xget_absolute_ntpath2(dirfd, path, NULL);
-}
-
-UNICODE_STRING *xget_fd_ntpath(int fd)
+UNICODE_STRING *get_fd_ntpath(int fd)
 {
 	UNICODE_STRING *ntpath = NULL;
 	UNICODE_STRING *ntpath_copy = NULL;
 
-	ntpath = xget_fd_ntpath_internal(fd);
+	ntpath = get_fd_ntpath_internal(fd);
 	ntpath_copy = (UNICODE_STRING *)malloc(sizeof(UNICODE_STRING) + ntpath->MaximumLength);
 	memcpy(ntpath_copy, ntpath, sizeof(UNICODE_STRING) + ntpath->MaximumLength);
 
@@ -724,13 +719,13 @@ UNICODE_STRING *dospath_to_ntpath(const UNICODE_STRING *dospath)
 	return ntpath;
 }
 
-UNICODE_STRING *xget_absolute_dospath(int dirfd, const char *path)
+UNICODE_STRING *get_absolute_dospath(int dirfd, const char *path)
 {
 	UNICODE_STRING *ntpath = NULL;
 	UNICODE_STRING *dospath = NULL;
 
 	// First get the NT path, then convert it to a DOS path.
-	ntpath = xget_absolute_ntpath(dirfd, path);
+	ntpath = get_absolute_ntpath(dirfd, path);
 	if (ntpath == NULL)
 	{
 		// errno wil be set by 'get_absolute_ntpath'.
@@ -743,9 +738,9 @@ UNICODE_STRING *xget_absolute_dospath(int dirfd, const char *path)
 	return dospath;
 }
 
-UNICODE_STRING *xget_fd_dospath(int fd)
+UNICODE_STRING *get_fd_dospath(int fd)
 {
-	UNICODE_STRING *ntpath = xget_fd_ntpath_internal(fd);
+	UNICODE_STRING *ntpath = get_fd_ntpath_internal(fd);
 	if (ntpath == NULL)
 	{
 		return NULL;

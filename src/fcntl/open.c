@@ -241,7 +241,7 @@ HANDLE just_open(int dirfd, const char *path, ACCESS_MASK access, ULONG options)
 {
 	handle_t type;
 	HANDLE handle = INVALID_HANDLE_VALUE;
-	UNICODE_STRING *u16_ntpath = xget_absolute_ntpath2(dirfd, path, &type);
+	UNICODE_STRING *u16_ntpath = get_absolute_ntpath2(dirfd, path, &type);
 
 	if (u16_ntpath == NULL)
 	{
@@ -279,7 +279,7 @@ int do_open(int dirfd, const char *name, int oflags, mode_t perm)
 	ULONG disposition = determine_create_dispostion(oflags);
 	ULONG options = determine_create_options(oflags);
 	PSECURITY_DESCRIPTOR security_descriptor = NULL;
-	UNICODE_STRING *u16_ntpath = xget_absolute_ntpath2(dirfd, name, &type);
+	UNICODE_STRING *u16_ntpath = get_absolute_ntpath2(dirfd, name, &type);
 
 	int fd = -1;
 

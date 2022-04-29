@@ -30,7 +30,7 @@ int wlibc_common_mkdir(int dirfd, const char *path, mode_t mode)
 	PSECURITY_DESCRIPTOR security_descriptor = (PSECURITY_DESCRIPTOR)get_security_descriptor(mode & 0777, 1);
 	HANDLE handle;
 
-	u16_ntpath = xget_absolute_ntpath(dirfd, path);
+	u16_ntpath = get_absolute_ntpath(dirfd, path);
 	if (u16_ntpath == NULL)
 	{
 		// errno will be set by `get_absolute_ntpath`

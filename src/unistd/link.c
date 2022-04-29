@@ -20,11 +20,11 @@ int do_link(HANDLE handle, int dirfd, const char *restrict target)
 	PFILE_LINK_INFORMATION link_info = NULL;
 	ULONG size_of_link_info;
 
-	u16_nttarget = xget_absolute_ntpath(dirfd, target);
+	u16_nttarget = get_absolute_ntpath(dirfd, target);
 	if (u16_nttarget == NULL)
 	{
 		// Bad path
-		// errno will be set by 'xget_absolute_ntpath'.
+		// errno will be set by 'get_absolute_ntpath'.
 		return -1;
 	}
 
