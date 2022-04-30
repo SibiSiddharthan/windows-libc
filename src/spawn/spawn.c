@@ -360,205 +360,6 @@ static UNICODE_STRING *get_absolute_dospath_of_program(const char *path, int use
 	return search_for_program(path);
 }
 
-static UNICODE_STRING *shebang_get_executable_and_args(const UNICODE_STRING *dospath)
-{
-	NTSTATUS status;
-	IO_STATUS_BLOCK io;
-	HANDLE handle;
-	UNICODE_STRING *ntpath;
-
-	char *line_buffer = NULL;
-	size_t line_buffer_size = 4096;
-	size_t length_of_first_line = 0;
-	size_t position_of_first_character_after_shebang = 0;
-
-	// Execution flow enters here only in the case of a shebang execution.
-	// The dospath will be valid and it will exist.
-	ntpath = dospath_to_ntpath(dospath);
-
-	handle = just_open2(ntpath, FILE_READ_DATA | SYNCHRONIZE, FILE_SYNCHRONOUS_IO_NONALERT);
-	free(ntpath);
-
-	if (handle == INVALID_HANDLE_VALUE)
-	{
-		// This should not happen as the file exists. Just in case.
-		return NULL;
-	}
-
-	line_buffer = malloc(line_buffer_size);
-	memset(line_buffer, 0, line_buffer_size);
-
-	// Read the first line of the file.
-	status = NtReadFile(handle, NULL, NULL, NULL, &io, line_buffer, 4096, NULL, NULL);
-	if (status != STATUS_SUCCESS && status != STATUS_END_OF_FILE)
-	{
-		// No read access.
-		errno = EACCES;
-		return NULL;
-	}
-
-	if (!(line_buffer[0] == '#' && line_buffer[1] == '!'))
-	{
-		// Not shebang.
-		errno = ENOEXEC;
-		return NULL;
-	}
-
-	// Find where the first line ends.
-	for (size_t i = 2; i < io.Information; ++i)
-	{
-		if (line_buffer[i] == '\0' || line_buffer[i] == '\n')
-		{
-			length_of_first_line = i;
-			break;
-		}
-	}
-
-	if (length_of_first_line == 0 && io.Information == 4096)
-	{
-		// Need to read more data.
-		// Read 32768 bytes. This is the command line limit on Windows.
-		char *temp = malloc(32768);
-		memcpy(temp, line_buffer, line_buffer_size);
-		free(line_buffer);
-
-		line_buffer = temp;
-		line_buffer_size = 32768;
-
-		status = NtReadFile(handle, NULL, NULL, NULL, &io, line_buffer + 4096, 32768 - 4096, NULL, NULL);
-		if (status != STATUS_SUCCESS && status != STATUS_END_OF_FILE)
-		{
-			return NULL;
-		}
-
-		// Find where the first line ends.
-		for (size_t i = 4096; i < io.Information + 4096; ++i)
-		{
-			if (line_buffer[i] == '\n' || line_buffer[i] == '\r')
-			{
-				length_of_first_line = i;
-				break;
-			}
-		}
-
-		if (length_of_first_line == 0)
-		{
-			errno = E2BIG;
-			return NULL;
-		}
-	}
-	else
-	{
-		// File has only and line and that line contains "#! ...".
-		length_of_first_line = io.Information;
-	}
-
-	// We don't need the file to open anymore. Close it.
-	NtClose(handle);
-
-	// Get the command line, after "#!".
-	for (size_t i = 2; i < length_of_first_line; ++i)
-	{
-		if (line_buffer[i] == ' ')
-		{
-			// There might be several white spaces after "#!", skip them.
-			continue;
-		}
-
-		if (line_buffer[i] != ' ')
-		{
-			position_of_first_character_after_shebang = i;
-			break;
-		}
-	}
-
-	if (position_of_first_character_after_shebang == 0)
-	{
-		// ERROR ???. Will this even happen.
-		errno = EINVAL;
-		return NULL;
-	}
-
-	// In Unix systems the executables are usually given as /bin/sh, /usr/bin/sh, etc.
-	// In Windows there is no proper root directory, so only consider the last component (sh)
-	// and try to find it in the PATH.
-	char *shebang_exe = NULL;
-	size_t start_of_last_component_of_exe = position_of_first_character_after_shebang;
-	size_t end_of_last_component_of_exe = length_of_first_line - 1;
-
-	for (size_t i = position_of_first_character_after_shebang; i < length_of_first_line; ++i)
-	{
-		if (line_buffer[i] == ' ')
-		{
-			end_of_last_component_of_exe = i - 1;
-			break;
-		}
-
-		if (line_buffer[i] == '/')
-		{
-			start_of_last_component_of_exe = i + 1;
-		}
-	}
-
-	// Copy the last component to the buffer.
-	shebang_exe = (char *)malloc(end_of_last_component_of_exe - start_of_last_component_of_exe + 2);
-	memcpy(shebang_exe, line_buffer + start_of_last_component_of_exe, end_of_last_component_of_exe - start_of_last_component_of_exe + 1);
-	shebang_exe[end_of_last_component_of_exe - start_of_last_component_of_exe + 1] = '\0';
-
-	UNICODE_STRING *dos_shebang_exe, *dos_shebang_exe_with_args;
-	size_t length_of_rest_of_commandline = (length_of_first_line - end_of_last_component_of_exe - 1) * sizeof(WCHAR);
-
-	dos_shebang_exe = search_path_for_program(shebang_exe);
-	if (dos_shebang_exe == NULL)
-	{
-		return NULL;
-	}
-
-	size_t start_of_args = 0;
-	size_t end_of_args = 0;
-
-	for (size_t i = end_of_last_component_of_exe + 2; i < length_of_first_line; ++i)
-	{
-		if (line_buffer[i] != ' ')
-		{
-			start_of_args = i;
-			break;
-		}
-	}
-
-	if (start_of_args != 0)
-	{
-		end_of_args = length_of_first_line - 1;
-	}
-
-	dos_shebang_exe_with_args = (UNICODE_STRING *)malloc(sizeof(UNICODE_STRING) + dos_shebang_exe->MaximumLength +
-														 length_of_rest_of_commandline + dospath->MaximumLength);
-
-	UTF8_STRING u8_shebang_arg;
-	UNICODE_STRING u16_shebang_arg;
-
-	u8_shebang_arg.Buffer = &line_buffer[start_of_args];
-	u8_shebang_arg.Length = end_of_args - start_of_args + 1;
-	u8_shebang_arg.MaximumLength = u8_shebang_arg.Length;
-
-	RtlUTF8StringToUnicodeString(&u16_shebang_arg, &u8_shebang_arg, TRUE);
-
-	memcpy((CHAR *)dos_shebang_exe_with_args + sizeof(UNICODE_STRING), dos_shebang_exe->Buffer, dos_shebang_exe->MaximumLength);
-	memcpy((CHAR *)dos_shebang_exe_with_args + sizeof(UNICODE_STRING) + dos_shebang_exe->MaximumLength, u16_shebang_arg.Buffer,
-		   u16_shebang_arg.MaximumLength);
-	memcpy((CHAR *)dos_shebang_exe_with_args + sizeof(UNICODE_STRING) + dos_shebang_exe->MaximumLength + u16_shebang_arg.MaximumLength,
-		   dospath->Buffer, dospath->MaximumLength);
-
-	RtlFreeUnicodeString(&u16_shebang_arg);
-
-	dos_shebang_exe_with_args->Buffer = (WCHAR *)((CHAR *)dos_shebang_exe_with_args + sizeof(UNICODE_STRING));
-	dos_shebang_exe_with_args->Length = dos_shebang_exe->MaximumLength + u16_shebang_arg.MaximumLength + dospath->MaximumLength;
-	dos_shebang_exe_with_args->MaximumLength = dos_shebang_exe_with_args->Length;
-
-	return dos_shebang_exe;
-}
-
-
 static char *convert_argv_to_windows_cmd(const char *arg, size_t *size)
 {
 	bool has_whitespaces = false;
@@ -697,6 +498,249 @@ static char *convert_argv_to_windows_cmd(const char *arg, size_t *size)
 	return new_arg;
 }
 
+static UNICODE_STRING *shebang_get_executable_and_args(const UNICODE_STRING *dospath)
+{
+	NTSTATUS status;
+	IO_STATUS_BLOCK io;
+	HANDLE handle;
+	UNICODE_STRING *ntpath;
+
+	char *line_buffer = NULL;
+	size_t line_buffer_size = 4096;
+	size_t length_of_first_line = 0;
+	size_t position_of_first_character_after_shebang = 0;
+
+	// Execution flow enters here only in the case of a shebang execution.
+	// The dospath will be valid and it will exist.
+	ntpath = dospath_to_ntpath(dospath);
+
+	handle = just_open2(ntpath, FILE_READ_DATA | SYNCHRONIZE, FILE_SYNCHRONOUS_IO_NONALERT);
+	free(ntpath);
+
+	if (handle == INVALID_HANDLE_VALUE)
+	{
+		// This should not happen as the file exists. Just in case.
+		return NULL;
+	}
+
+	line_buffer = malloc(line_buffer_size);
+	memset(line_buffer, 0, line_buffer_size);
+
+	// Read the first line of the file.
+	status = NtReadFile(handle, NULL, NULL, NULL, &io, line_buffer, 4096, NULL, NULL);
+	if (status != STATUS_SUCCESS && status != STATUS_END_OF_FILE)
+	{
+		// No read access.
+		errno = EACCES;
+		return NULL;
+	}
+
+	if (!(line_buffer[0] == '#' && line_buffer[1] == '!'))
+	{
+		// Not shebang.
+		errno = ENOEXEC;
+		return NULL;
+	}
+
+	// Find where the first line ends.
+	for (size_t i = 2; i < io.Information; ++i)
+	{
+		if (line_buffer[i] == '\n' || line_buffer[i] == '\r')
+		{
+			length_of_first_line = i;
+			break;
+		}
+	}
+
+	if (length_of_first_line == 0 && io.Information == 4096)
+	{
+		// Need to read more data.
+		// Read 32768 bytes. This is the command line limit on Windows.
+		char *temp = malloc(32768);
+		memcpy(temp, line_buffer, line_buffer_size);
+		free(line_buffer);
+
+		line_buffer = temp;
+		line_buffer_size = 32768;
+
+		status = NtReadFile(handle, NULL, NULL, NULL, &io, line_buffer + 4096, 32768 - 4096, NULL, NULL);
+		if (status != STATUS_SUCCESS && status != STATUS_END_OF_FILE)
+		{
+			return NULL;
+		}
+
+		// Find where the first line ends.
+		for (size_t i = 4096; i < io.Information + 4096; ++i)
+		{
+			if (line_buffer[i] == '\n' || line_buffer[i] == '\r')
+			{
+				length_of_first_line = i;
+				break;
+			}
+		}
+
+		if (io.Information == 0)
+		{
+			length_of_first_line = 4096;
+		}
+
+		if (length_of_first_line == 0)
+		{
+			errno = E2BIG;
+			return NULL;
+		}
+	}
+	else
+	{
+		// File has only one line and that line contains "#! ...".
+		length_of_first_line = io.Information;
+	}
+
+	// NULL terminate the line buffer. This will not cause heap corruption.
+	if (length_of_first_line < line_buffer_size)
+	{
+		line_buffer[length_of_first_line] = '\0';
+	}
+	else
+	{
+		// Ignore the last character.
+		line_buffer[length_of_first_line - 1] = '\0';
+	}
+
+	// We don't need the file to open anymore. Close it.
+	NtClose(handle);
+
+	// Get the command line, after "#!".
+	for (size_t i = 2; i < length_of_first_line; ++i)
+	{
+		if (line_buffer[i] == ' ' || line_buffer[i] == '\t')
+		{
+			// There might be several white spaces after "#!", skip them.
+			continue;
+		}
+
+		else
+		{
+			position_of_first_character_after_shebang = i;
+			break;
+		}
+	}
+
+	if (position_of_first_character_after_shebang == 0)
+	{
+		// File only has "#!" in its first line.
+		errno = ENOEXEC;
+		return NULL;
+	}
+
+	// In Unix systems the executables are usually given as /bin/sh, /usr/bin/sh, etc.
+	// In Windows there is no proper root directory, so only consider the last component (sh)
+	// and try to find it in the PATH.
+	char *shebang_exe = NULL;
+	size_t start_of_last_component_of_exe = position_of_first_character_after_shebang;
+	size_t end_of_last_component_of_exe = length_of_first_line - 1;
+
+	for (size_t i = position_of_first_character_after_shebang; i < length_of_first_line; ++i)
+	{
+		if (line_buffer[i] == ' ' || line_buffer[i] == '\t')
+		{
+			end_of_last_component_of_exe = i - 1;
+			break;
+		}
+
+		if (line_buffer[i] == '/')
+		{
+			start_of_last_component_of_exe = i + 1;
+		}
+	}
+
+	// Copy the last component to the buffer.
+	shebang_exe = (char *)malloc(end_of_last_component_of_exe - start_of_last_component_of_exe + 2);
+	memcpy(shebang_exe, line_buffer + start_of_last_component_of_exe, end_of_last_component_of_exe - start_of_last_component_of_exe + 1);
+	shebang_exe[end_of_last_component_of_exe - start_of_last_component_of_exe + 1] = '\0';
+
+	UNICODE_STRING *dos_shebang_exe = search_path_for_program(shebang_exe);
+	if (dos_shebang_exe == NULL)
+	{
+		return NULL;
+	}
+
+	size_t start_of_args = 0;
+	size_t end_of_args = 0;
+
+	for (size_t i = end_of_last_component_of_exe + 2; i < length_of_first_line; ++i)
+	{
+		if (line_buffer[i] != ' ' && line_buffer[i] != '\t')
+		{
+			start_of_args = i;
+			break;
+		}
+	}
+
+	if (start_of_args != 0)
+	{
+		end_of_args = length_of_first_line - 1;
+	}
+
+	size_t shebang_arg_normalized_size = 0;
+	size_t dos_shebang_exe_with_args_used = 0;
+	char *shebang_arg_normalized = NULL;
+	UTF8_STRING u8_shebang_arg = {0, 0, NULL};
+	UNICODE_STRING u16_shebang_arg = {0, 0, NULL};
+	UNICODE_STRING *dos_shebang_exe_with_args = NULL;
+
+	if (start_of_args != 0)
+	{
+		shebang_arg_normalized = convert_argv_to_windows_cmd(line_buffer + start_of_args, &shebang_arg_normalized_size);
+
+		u8_shebang_arg.Buffer = shebang_arg_normalized == NULL ? &line_buffer[start_of_args] : shebang_arg_normalized;
+		u8_shebang_arg.Length = shebang_arg_normalized_size;
+		u8_shebang_arg.MaximumLength = u8_shebang_arg.Length + 1;
+
+		RtlUTF8StringToUnicodeString(&u16_shebang_arg, &u8_shebang_arg, TRUE);
+	}
+
+	dos_shebang_exe_with_args =
+		(UNICODE_STRING *)malloc(sizeof(UNICODE_STRING) + dos_shebang_exe->MaximumLength + u16_shebang_arg.MaximumLength +
+								 dospath->MaximumLength + sizeof(WCHAR)); // For an extra NULL if no args are given.
+
+	// executable
+	memcpy((CHAR *)dos_shebang_exe_with_args + sizeof(UNICODE_STRING), dos_shebang_exe->Buffer, dos_shebang_exe->MaximumLength);
+	dos_shebang_exe_with_args_used += dos_shebang_exe->MaximumLength;
+
+	// args
+	if (u16_shebang_arg.MaximumLength > 0)
+	{
+		memcpy((CHAR *)dos_shebang_exe_with_args + sizeof(UNICODE_STRING) + dos_shebang_exe_with_args_used, u16_shebang_arg.Buffer,
+			   u16_shebang_arg.MaximumLength);
+		dos_shebang_exe_with_args_used += u16_shebang_arg.MaximumLength;
+
+		RtlFreeUnicodeString(&u16_shebang_arg);
+	}
+	else
+	{
+		// Put a NULL if no args are given inside the shebang script.
+		*(WCHAR *)((CHAR *)dos_shebang_exe_with_args + sizeof(UNICODE_STRING) + dos_shebang_exe_with_args_used) = L'\0';
+		dos_shebang_exe_with_args_used += sizeof(WCHAR);
+	}
+
+	// filename
+	memcpy((CHAR *)dos_shebang_exe_with_args + sizeof(UNICODE_STRING) + dos_shebang_exe->MaximumLength + u16_shebang_arg.MaximumLength,
+		   dospath->Buffer, dospath->MaximumLength);
+	dos_shebang_exe_with_args_used += dospath->MaximumLength;
+
+	dos_shebang_exe_with_args->Buffer = (WCHAR *)((CHAR *)dos_shebang_exe_with_args + sizeof(UNICODE_STRING));
+	dos_shebang_exe_with_args->Length = dos_shebang_exe_with_args_used;
+	dos_shebang_exe_with_args->MaximumLength = dos_shebang_exe_with_args_used;
+
+	free(shebang_arg_normalized);
+	free(shebang_exe);
+	free(dos_shebang_exe);
+	free(line_buffer);
+
+	return dos_shebang_exe_with_args;
+}
+
 static WCHAR *convert_argv_to_wargv(char *const argv[], size_t *size)
 {
 	UNICODE_STRING *u16_args = NULL;
@@ -771,6 +815,131 @@ static WCHAR *convert_argv_to_wargv(char *const argv[], size_t *size)
 	*size = argv_size;
 
 	return wargv;
+}
+
+static WCHAR *prepend_shebang_to_wargv(const WCHAR *old_argv, size_t old_size, const WCHAR *shebang_argv, size_t shebang_size,
+									   size_t *new_size)
+{
+	// shebang argv consists of 3 args, the executable, args(normalized), filename. Each of them is separated by a NULL.
+	WCHAR *new_argv = NULL;
+	WCHAR *final_argv = NULL;
+
+	bool quote_executable = false;
+	bool quote_filename = false;
+
+	size_t index = 0;
+	size_t executable_start = 0;
+	size_t executable_end = 0;
+	size_t arg_start = 0;
+	size_t arg_end = 0;
+	size_t filename_start = 0;
+	size_t filename_end = 0;
+	size_t new_argv_used = 0;
+
+	// executable
+	while (shebang_argv[index] != L'\0')
+	{
+		if (shebang_argv[index] == L' ')
+		{
+			quote_executable = true;
+		}
+		++index;
+	}
+	executable_end = index * sizeof(WCHAR);
+	++index;
+
+	// args
+	arg_start = index * sizeof(WCHAR);
+	while (shebang_argv[index] != L'\0')
+	{
+		++index;
+	}
+	arg_end = index * sizeof(WCHAR);
+	++index;
+
+	// filename
+	filename_start = index * sizeof(WCHAR);
+	while (shebang_argv[index] != L'\0')
+	{
+		if (shebang_argv[index] == L' ')
+		{
+			quote_executable = true;
+		}
+		++index;
+	}
+	filename_end = index * sizeof(WCHAR);
+
+	if (quote_executable)
+	{
+		shebang_size += 2 * sizeof(WCHAR);
+	}
+
+	if (quote_filename)
+	{
+		shebang_size += 2 * sizeof(WCHAR);
+	}
+
+	new_argv = (WCHAR *)malloc(shebang_size);
+
+	// executable
+	if (quote_executable)
+	{
+		*new_argv = L'"';
+		new_argv_used += sizeof(WCHAR);
+	}
+
+	memcpy((CHAR *)new_argv + new_argv_used, (CHAR *)shebang_argv + executable_start, executable_end - executable_start);
+	new_argv_used += executable_end - executable_start;
+
+	if (quote_executable)
+	{
+		*(WCHAR *)((CHAR *)new_argv + new_argv_used) = L'"';
+		new_argv_used += sizeof(WCHAR);
+	}
+
+	*(WCHAR *)((CHAR *)new_argv + new_argv_used) = L' ';
+	new_argv_used += sizeof(WCHAR);
+
+	// argv
+	if (arg_end - arg_start > 0)
+	{
+		memcpy((CHAR *)new_argv + new_argv_used, (CHAR *)shebang_argv + arg_start, arg_end - arg_start);
+		new_argv_used += arg_end - arg_start;
+
+		*(WCHAR *)((CHAR *)new_argv + new_argv_used) = L' ';
+		new_argv_used += sizeof(WCHAR);
+	}
+
+	// filename
+	if (quote_filename)
+	{
+		*new_argv = L'"';
+		new_argv_used += sizeof(WCHAR);
+	}
+
+	memcpy((CHAR *)new_argv + new_argv_used, (CHAR *)shebang_argv + filename_start, filename_end - filename_start);
+	new_argv_used += filename_end - filename_start;
+
+	if (quote_filename)
+	{
+		*(WCHAR *)((CHAR *)new_argv + new_argv_used) = L'"';
+		new_argv_used += sizeof(WCHAR);
+	}
+
+	// Append a space always so we can concat straight away.
+	*(WCHAR *)((CHAR *)new_argv + new_argv_used) = L' ';
+	new_argv_used += sizeof(WCHAR);
+
+	final_argv = (WCHAR *)malloc(new_argv_used + old_size);
+
+	memcpy(final_argv, new_argv, new_argv_used);
+	memcpy((CHAR *)final_argv + new_argv_used, old_argv, old_size);
+
+	free(new_argv);
+
+	*new_size = new_argv_used + old_size;
+
+	return final_argv;
 }
 
 static WCHAR *convert_env_to_wenv(char *const env[], size_t *size)
@@ -1073,16 +1242,28 @@ int wlibc_spawn(pid_t *restrict pid, const char *restrict path, const spawn_acti
 		// Recurse till we find a suitable executable.
 		while (status == 0)
 		{
-			UNICODE_STRING *new_u16path = shebang_get_executable_and_args(u16_path);
-			if (new_u16path == NULL)
+			WCHAR *shebang_argv = NULL;
+			UNICODE_STRING *u16_path_and_args = shebang_get_executable_and_args(u16_path);
+			if (u16_path_and_args == NULL)
 			{
 				goto finish;
 			}
 
-			free(u16_path);
-			u16_path = new_u16path;
+			shebang_argv = prepend_shebang_to_wargv(wargv, wargv_size, u16_path_and_args->Buffer, u16_path_and_args->MaximumLength, &wargv_size);
 
-			wpath = u16_path->Buffer;
+			free(u16_path);
+			free(wargv);
+
+			u16_path = u16_path_and_args;
+			wpath = u16_path->Buffer; // The executable will be NULL separated.
+			wargv = shebang_argv;
+
+			// Exceeding the command line limit.
+			if (wargv_size >= 65535)
+			{
+				errno = E2BIG;
+				goto finish;
+			}
 
 			status = CreateProcessW(wpath, wargv, NULL, NULL, TRUE, CREATE_UNICODE_ENVIRONMENT, wenv, wcwd, &sinfo, &pinfo);
 
@@ -1095,6 +1276,11 @@ int wlibc_spawn(pid_t *restrict pid, const char *restrict path, const spawn_acti
 					goto finish;
 				}
 			}
+
+			// In case we recurse set the length paramters properly so that,
+			// `dospath_to_ntpath` called inside `shebang_get_executable_and_args` will work.
+			u16_path->Length = wcslen(u16_path->Buffer);
+			u16_path->MaximumLength = u16_path->Length + sizeof(WCHAR);
 		}
 	}
 

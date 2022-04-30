@@ -7,5 +7,6 @@
 
 int main()
 {
+	// Just a simple program to see whether path searching works.
 	return 4096;
 }
