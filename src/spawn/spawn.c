@@ -434,7 +434,7 @@ static UNICODE_STRING *shebang_get_executable_and_args(const UNICODE_STRING *dos
 		// Find where the first line ends.
 		for (size_t i = 4096; i < io.Information + 4096; ++i)
 		{
-			if (line_buffer[i] == '\0' || line_buffer[i] == '\n')
+			if (line_buffer[i] == '\n' || line_buffer[i] == '\r')
 			{
 				length_of_first_line = i;
 				break;
@@ -514,19 +514,190 @@ static UNICODE_STRING *shebang_get_executable_and_args(const UNICODE_STRING *dos
 		return NULL;
 	}
 
-	dos_shebang_exe_with_args =
-		(UNICODE_STRING *)malloc(sizeof(UNICODE_STRING) + dos_shebang_exe->Length + length_of_rest_of_commandline + dospath->Length + 4);
+	size_t start_of_args = 0;
+	size_t end_of_args = 0;
+
+	for (size_t i = end_of_last_component_of_exe + 2; i < length_of_first_line; ++i)
+	{
+		if (line_buffer[i] != ' ')
+		{
+			start_of_args = i;
+			break;
+		}
+	}
+
+	if (start_of_args != 0)
+	{
+		end_of_args = length_of_first_line - 1;
+	}
+
+	dos_shebang_exe_with_args = (UNICODE_STRING *)malloc(sizeof(UNICODE_STRING) + dos_shebang_exe->MaximumLength +
+														 length_of_rest_of_commandline + dospath->MaximumLength);
+
+	UTF8_STRING u8_shebang_arg;
+	UNICODE_STRING u16_shebang_arg;
+
+	u8_shebang_arg.Buffer = &line_buffer[start_of_args];
+	u8_shebang_arg.Length = end_of_args - start_of_args + 1;
+	u8_shebang_arg.MaximumLength = u8_shebang_arg.Length;
+
+	RtlUTF8StringToUnicodeString(&u16_shebang_arg, &u8_shebang_arg, TRUE);
 
 	memcpy((CHAR *)dos_shebang_exe_with_args + sizeof(UNICODE_STRING), dos_shebang_exe->Buffer, dos_shebang_exe->MaximumLength);
-	memcpy((CHAR *)dos_shebang_exe_with_args + sizeof(UNICODE_STRING) + dos_shebang_exe->MaximumLength, dospath->Buffer,
-		   dospath->MaximumLength);
+	memcpy((CHAR *)dos_shebang_exe_with_args + sizeof(UNICODE_STRING) + dos_shebang_exe->MaximumLength, u16_shebang_arg.Buffer,
+		   u16_shebang_arg.MaximumLength);
+	memcpy((CHAR *)dos_shebang_exe_with_args + sizeof(UNICODE_STRING) + dos_shebang_exe->MaximumLength + u16_shebang_arg.MaximumLength,
+		   dospath->Buffer, dospath->MaximumLength);
+
+	RtlFreeUnicodeString(&u16_shebang_arg);
 
 	dos_shebang_exe_with_args->Buffer = (WCHAR *)((CHAR *)dos_shebang_exe_with_args + sizeof(UNICODE_STRING));
+	dos_shebang_exe_with_args->Length = dos_shebang_exe->MaximumLength + u16_shebang_arg.MaximumLength + dospath->MaximumLength;
+	dos_shebang_exe_with_args->MaximumLength = dos_shebang_exe_with_args->Length;
 
 	return dos_shebang_exe;
 }
 
-static WCHAR *convert_argv_to_wargv(char *const argv[])
+
+static char *convert_argv_to_windows_cmd(const char *arg, size_t *size)
+{
+	bool has_whitespaces = false;
+	bool arg_needs_to_be_modified = false;
+	size_t number_of_double_quotes = 0;
+	size_t number_of_backslashes_before_quote = 0;
+	size_t number_of_backslashes_at_the_end = 0;
+
+	*size = 0;
+
+	for (size_t i = 0; arg[i] != '\0'; ++i)
+	{
+		if (arg[i] == ' ' || arg[i] == '\t')
+		{
+			has_whitespaces = true;
+		}
+
+		if (arg[i] == '"')
+		{
+			++number_of_double_quotes;
+		}
+
+		if (arg[i] == '\\')
+		{
+			size_t count = i;
+			++i;
+
+			while (arg[i] == '\\')
+			{
+				++i;
+			}
+
+			count = i - count;
+			*size += count;
+
+			if (arg[i] == '"')
+			{
+				number_of_backslashes_before_quote += count;
+				++number_of_double_quotes;
+				++(*size);
+				continue;
+			}
+
+			if (arg[i] == '\0')
+			{
+				number_of_backslashes_at_the_end = count;
+				break;
+			}
+
+			--i;
+			continue;
+		}
+
+		++(*size);
+	}
+
+	if (has_whitespaces || number_of_double_quotes > 0)
+	{
+		arg_needs_to_be_modified = true;
+		*size += 2;
+	}
+
+	if (!arg_needs_to_be_modified)
+	{
+		// Given arg can be placed in the command line string without any modification.
+		return NULL;
+	}
+
+	// Each double quote in arg needs to be preceded by a backslash.
+	*size += number_of_double_quotes;
+
+	// Each consecutive backslash before a double quote needs to be escaped as well. (N backslashes + " -> 2N + 1 backslashes + ")
+	*size += number_of_backslashes_before_quote;
+
+	// If we are quoting the arg and there happens to be a backslash(es) at the end they need to be escaped.
+	*size += number_of_backslashes_at_the_end;
+
+	size_t new_arg_index = 0;
+	char *new_arg = NULL;
+
+	new_arg = (char *)malloc(*size + 1);
+
+	new_arg[new_arg_index++] = '"';
+	for (size_t i = 0; arg[i] != '\0'; ++i)
+	{
+		if (arg[i] == '"')
+		{
+			new_arg[new_arg_index++] = '\\';
+			new_arg[new_arg_index++] = '"';
+			continue;
+		}
+
+		if (arg[i] == '\\')
+		{
+			size_t count = i;
+
+			new_arg[new_arg_index++] = '\\';
+			++i;
+
+			while (arg[i] == '\\')
+			{
+				++i;
+				new_arg[new_arg_index++] = '\\';
+			}
+
+			count = i - count;
+
+			if (arg[i] == '"')
+			{
+				for (size_t j = 0; j < count; ++j)
+				{
+					new_arg[new_arg_index++] = '\\';
+				}
+
+				new_arg[new_arg_index++] = '\\';
+				new_arg[new_arg_index++] = '"';
+
+				continue;
+			}
+
+			--i;
+			continue;
+		}
+
+		new_arg[new_arg_index++] = arg[i];
+	}
+
+	for (size_t i = 0; i < number_of_backslashes_at_the_end; ++i)
+	{
+		new_arg[new_arg_index++] = '\\';
+	}
+
+	new_arg[new_arg_index++] = '"';
+	new_arg[new_arg_index++] = '\0';
+
+	return new_arg;
+}
+
+static WCHAR *convert_argv_to_wargv(char *const argv[], size_t *size)
 {
 	UNICODE_STRING *u16_args = NULL;
 	UTF8_STRING *u8_args = NULL;
@@ -536,6 +707,7 @@ static WCHAR *convert_argv_to_wargv(char *const argv[])
 	size_t argv_size = 0;
 	size_t argv_used = 0;
 	char *const *pargv = argv;
+	char **argv_normalized = NULL;
 
 	// Count the number of elements in argv.
 	while (*argv)
@@ -548,9 +720,21 @@ static WCHAR *convert_argv_to_wargv(char *const argv[])
 	u8_args = (UTF8_STRING *)malloc(sizeof(UTF8_STRING) * argc);
 	u16_args = (UNICODE_STRING *)malloc(sizeof(UNICODE_STRING) * argc);
 
+	argv_normalized = (char **)malloc(sizeof(char *) * argc);
+	memset(argv_normalized, 0, sizeof(char *) * argc);
+
 	for (int i = 0; i < argc; ++i)
 	{
-		RtlInitUTF8String(&u8_args[i], argv[i]);
+		char *new_arg;
+		size_t arg_size;
+
+		new_arg = convert_argv_to_windows_cmd(argv[i], &arg_size);
+		argv_normalized[i] = new_arg;
+
+		u8_args[i].Buffer = new_arg == NULL ? argv[i] : argv_normalized[i];
+		u8_args[i].Length = arg_size;
+		u8_args[i].MaximumLength = u8_args[i].Length + 1;
+
 		argv_size += u8_args[i].MaximumLength;
 	}
 
@@ -577,10 +761,19 @@ static WCHAR *convert_argv_to_wargv(char *const argv[])
 	free(u16_args);
 	free(u8_args);
 
+	for (int i = 0; i < argc; ++i)
+	{
+		// Some pointers may be NULL here.
+		// NOTE: free(NULL) -> nop.
+		free(argv_normalized[i]);
+	}
+
+	*size = argv_size;
+
 	return wargv;
 }
 
-static WCHAR *convert_env_to_wenv(char *const env[])
+static WCHAR *convert_env_to_wenv(char *const env[], size_t *size)
 {
 	UNICODE_STRING *u16_envs = NULL;
 	UTF8_STRING *u8_envs = NULL;
@@ -631,6 +824,8 @@ static WCHAR *convert_env_to_wenv(char *const env[])
 	free(u16_envs);
 	free(u8_envs);
 
+	*size = env_size;
+
 	return wenv;
 }
 
@@ -644,17 +839,18 @@ int wlibc_spawn(pid_t *restrict pid, const char *restrict path, const spawn_acti
 	// Ignore spawn attributes for now.
 	int result = -1;
 
-	STARTUPINFOW SINFO;
-	PROCESS_INFORMATION PINFO;
+	STARTUPINFOW sinfo;
+	PROCESS_INFORMATION pinfo;
 	UNICODE_STRING *u16_path = NULL, *u16_cwd = NULL;
 	WCHAR *wpath = NULL;
 	WCHAR *wargv = NULL;
 	WCHAR *wenv = NULL;
 	WCHAR *wcwd = NULL;
+	size_t wargv_size, wenv_size;
 
-	memset(&SINFO, 0, sizeof(SINFO));
-	SINFO.cb = sizeof(SINFO);
-	memset(&PINFO, 0, sizeof(PINFO));
+	memset(&sinfo, 0, sizeof(STARTUPINFOW));
+	sinfo.cb = sizeof(STARTUPINFOW);
+	memset(&pinfo, 0, sizeof(PROCESS_INFORMATION));
 
 	// Convert path to UTF-16
 	u16_path = get_absolute_dospath_of_program(path, use_path);
@@ -666,12 +862,12 @@ int wlibc_spawn(pid_t *restrict pid, const char *restrict path, const spawn_acti
 	wpath = u16_path->Buffer;
 
 	// Convert args to UTF-16
-	wargv = convert_argv_to_wargv((char *const *)argv);
+	wargv = convert_argv_to_wargv((char *const *)argv, &wargv_size);
 
 	// Convert env to UTF-16
 	if (env)
 	{
-		wenv = convert_env_to_wenv((char *const *)env);
+		wenv = convert_env_to_wenv((char *const *)env, &wenv_size);
 	}
 
 	// Perform the actions.
@@ -861,10 +1057,10 @@ int wlibc_spawn(pid_t *restrict pid, const char *restrict path, const spawn_acti
 		}
 	}
 
-	give_inherit_information_to_startupinfo(&inherit_info, &SINFO);
+	give_inherit_information_to_startupinfo(&inherit_info, &sinfo);
 
 	// Do the spawn.
-	BOOL status = CreateProcessW(wpath, wargv, NULL, NULL, TRUE, CREATE_UNICODE_ENVIRONMENT, wenv, wcwd, &SINFO, &PINFO);
+	BOOL status = CreateProcessW(wpath, wargv, NULL, NULL, TRUE, CREATE_UNICODE_ENVIRONMENT, wenv, wcwd, &sinfo, &pinfo);
 	if (status == 0)
 	{
 		DWORD error = GetLastError();
@@ -888,7 +1084,7 @@ int wlibc_spawn(pid_t *restrict pid, const char *restrict path, const spawn_acti
 
 			wpath = u16_path->Buffer;
 
-			status = CreateProcessW(wpath, wargv, NULL, NULL, TRUE, CREATE_UNICODE_ENVIRONMENT, wenv, wcwd, &SINFO, &PINFO);
+			status = CreateProcessW(wpath, wargv, NULL, NULL, TRUE, CREATE_UNICODE_ENVIRONMENT, wenv, wcwd, &sinfo, &pinfo);
 
 			if (status == 0)
 			{
@@ -903,8 +1099,8 @@ int wlibc_spawn(pid_t *restrict pid, const char *restrict path, const spawn_acti
 	}
 
 	// Add the child information to our process table.
-	add_child(PINFO.dwProcessId, PINFO.hProcess);
-	*pid = PINFO.dwProcessId;
+	add_child(pinfo.dwProcessId, pinfo.hProcess);
+	*pid = pinfo.dwProcessId;
 	result = 0;
 
 finish:
@@ -912,7 +1108,7 @@ finish:
 	free(wargv);
 	free(wenv);
 	free(u16_cwd);
-	free(SINFO.lpReserved2);
+	free(sinfo.lpReserved2);
 	cleanup_inherit_information(&inherit_info, actions);
 
 	return result;

@@ -119,10 +119,8 @@ int test_spawn_pipe()
 
 	length = strlen(content);
 
-	status = pipe(input_fds);
-	ASSERT_EQ(status, 0);
-	status = pipe(output_fds);
-	ASSERT_EQ(status, 0);
+	ASSERT_SUCCESS(pipe(input_fds));
+	ASSERT_SUCCESS(pipe(output_fds));
 
 	status = posix_spawn_file_actions_init(&actions);
 	ASSERT_EQ(status, 0);
@@ -282,8 +280,7 @@ int test_spawn_inherit_wlibc_extra()
 	char *argv[] = {(char *)program, NULL, NULL, NULL, NULL};
 	char bpr[4], bpw[4], bn[4];
 
-	status = pipe(fd_p);
-	ASSERT_EQ(status, 0);
+	ASSERT_SUCCESS(pipe(fd_p));
 
 	fd_n = open("/dev/null", O_RDWR);
 	ASSERT_NOTEQ(fd_n, -1);
@@ -409,8 +406,7 @@ int test_spawn_inherit_msvcrt_extra()
 	char *argv[] = {(char *)program, NULL, NULL, NULL, NULL};
 	char bpr[4], bpw[4], bn[4];
 
-	status = pipe(fd_p);
-	ASSERT_EQ(status, 0);
+	ASSERT_SUCCESS(pipe(fd_p));
 
 	fd_n = open("NUL", O_RDWR);
 	ASSERT_NOTEQ(fd_n, -1);
@@ -560,6 +556,116 @@ int test_spawn_shebang()
 	return 0;
 }
 
+int test_spawn_args()
+{
+	int status;
+	int fds[2];
+	char buffer[4096];
+	char *bufp = buffer;
+	pid_t pid;
+	posix_spawn_file_actions_t actions;
+
+	const char *program = "arg.exe";
+	const char *normal_arg = "normal-arg";
+	const char *arg_with_spaces = "arg with spaces";
+	const char *quoted_arg = "\"quoted-arg\"";
+	const char *quoted_arg_with_spaces = "\"quoted arg\"";
+	const char *arg_with_slashes = "arg\\";
+	const char *arg_with_slashes_in_between = "arg\\arg";
+	const char *arg_with_slashes_and_spaces = "arg\\ space ";
+	const char *arg_with_end_slash_and_spaces = "arg slash at end\\";
+	const char *arg_with_end_slashes_and_spaces = "arg slash at end\\\\";
+	const char *arg_with_quotes = "arg\"";
+	const char *arg_with_quotes_and_spaces = "arg\" space\"";
+	const char *arg_with_quotes_and_slashes = "arg\\\"";
+	const char *arg_with_quotes_and_slashes_many = "arg\\\\ space\\\\\" \\\\\\\" \" \\";
+
+	const char *argv[] = {program,
+						  normal_arg,
+						  arg_with_spaces,
+						  quoted_arg,
+						  quoted_arg_with_spaces,
+						  arg_with_slashes,
+						  arg_with_slashes_in_between,
+						  arg_with_slashes_and_spaces,
+						  arg_with_end_slash_and_spaces,
+						  arg_with_end_slashes_and_spaces,
+						  arg_with_quotes,
+						  arg_with_quotes_and_spaces,
+						  arg_with_quotes_and_slashes,
+						  arg_with_quotes_and_slashes_many,
+						  NULL};
+
+	ASSERT_SUCCESS(pipe(fds));
+
+	status = posix_spawn_file_actions_init(&actions);
+	ASSERT_EQ(status, 0);
+
+	status = posix_spawn_file_actions_adddup2(&actions, fds[1], STDOUT_FILENO);
+	ASSERT_EQ(status, 0);
+
+	status = posix_spawn(&pid, program, &actions, NULL, (char *const *)argv, NULL);
+	ASSERT_EQ(status, 0);
+
+	status = posix_spawn_file_actions_destroy(&actions);
+	ASSERT_EQ(status, 0);
+
+	ASSERT_SUCCESS(close(fds[1]));
+
+	status = waitpid(pid, NULL, 0);
+	ASSERT_EQ(status, pid);
+
+	// All of argv will be written to stdout by the child.
+	// Each argv will be separated by NULL.
+	read(fds[0], bufp, 4096);
+
+	ASSERT_STREQ(bufp, program);
+	bufp += strlen(program) + 1;
+
+	ASSERT_STREQ(bufp, normal_arg);
+	bufp += strlen(normal_arg) + 1;
+
+	ASSERT_STREQ(bufp, arg_with_spaces);
+	bufp += strlen(arg_with_spaces) + 1;
+
+	ASSERT_STREQ(bufp, quoted_arg);
+	bufp += strlen(quoted_arg) + 1;
+
+	ASSERT_STREQ(bufp, quoted_arg_with_spaces);
+	bufp += strlen(quoted_arg_with_spaces) + 1;
+
+	ASSERT_STREQ(bufp, arg_with_slashes);
+	bufp += strlen(arg_with_slashes) + 1;
+
+	ASSERT_STREQ(bufp, arg_with_slashes_in_between);
+	bufp += strlen(arg_with_slashes_in_between) + 1;
+
+	ASSERT_STREQ(bufp, arg_with_slashes_and_spaces);
+	bufp += strlen(arg_with_slashes_and_spaces) + 1;
+
+	ASSERT_STREQ(bufp, arg_with_end_slash_and_spaces);
+	bufp += strlen(arg_with_end_slash_and_spaces) + 1;
+
+	ASSERT_STREQ(bufp, arg_with_end_slashes_and_spaces);
+	bufp += strlen(arg_with_end_slashes_and_spaces) + 1;
+
+	ASSERT_STREQ(bufp, arg_with_quotes);
+	bufp += strlen(arg_with_quotes) + 1;
+
+	ASSERT_STREQ(bufp, arg_with_quotes_and_spaces);
+	bufp += strlen(arg_with_quotes_and_spaces) + 1;
+
+	ASSERT_STREQ(bufp, arg_with_quotes_and_slashes);
+	bufp += strlen(arg_with_quotes_and_slashes) + 1;
+
+	ASSERT_STREQ(bufp, arg_with_quotes_and_slashes_many);
+	bufp += strlen(arg_with_quotes_and_slashes_many) + 1;
+
+	ASSERT_SUCCESS(close(fds[0]));
+
+	return 0;
+}
+
 void cleanup()
 {
 	remove("input.txt");
@@ -591,6 +697,7 @@ int main()
 	TEST(test_spawn_inherit_msvcrt());
 	TEST(test_spawn_inherit_msvcrt_extra());
 	TEST(test_spawn_path());
+	TEST(test_spawn_args());
 	TEST(test_spawn_shebang());
 
 	VERIFY_RESULT_AND_EXIT();
