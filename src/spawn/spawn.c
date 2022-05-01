@@ -10,6 +10,7 @@
 #include <internal/fcntl.h>
 #include <internal/path.h>
 #include <internal/process.h>
+#include <internal/validate.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <spawn.h>
@@ -92,7 +93,7 @@ static void cleanup_inherit_information(inherit_information *restrict info, cons
 #define FTEXT_FLAG      0x80 // file handle is in text mode
 
 // Processes spawned by wlibc should be compatible with the initialization routine of msvcrt.
-static void give_inherit_information_to_startupinfo(inherit_information *inherit_info, STARTUPINFOW *startup_info)
+static void give_inherit_information_to_startupinfo(inherit_information *inherit_info, STARTUPINFOW *startup_info, VOID **buffer)
 {
 	// First count the maximum fd that is to be inherited.
 	int number_of_fds_to_inherit = 0;
@@ -116,7 +117,8 @@ static void give_inherit_information_to_startupinfo(inherit_information *inherit
 	// NOTE: The documentation in lowio/ioinit.cpp says the HANDLES are passed as DWORDS.
 	// This is incorrect.
 	startup_info->cbReserved2 = (WORD)(sizeof(DWORD) + (sizeof(HANDLE) + sizeof(UCHAR)) * number_of_fds_to_inherit);
-	startup_info->lpReserved2 = malloc(startup_info->cbReserved2);
+	*buffer = malloc(startup_info->cbReserved2);
+	startup_info->lpReserved2 = *buffer;
 
 	*(DWORD *)startup_info->lpReserved2 = number_of_fds_to_inherit;
 	off_t handle_start = sizeof(DWORD) + number_of_fds_to_inherit;
@@ -552,48 +554,51 @@ static UNICODE_STRING *shebang_get_executable_and_args(const UNICODE_STRING *dos
 		}
 	}
 
-	if (length_of_first_line == 0 && io.Information == 4096)
+	if (length_of_first_line == 0)
 	{
-		// Need to read more data.
-		// Read 32768 bytes. This is the command line limit on Windows.
-		char *temp = malloc(32768);
-		memcpy(temp, line_buffer, line_buffer_size);
-		free(line_buffer);
-
-		line_buffer = temp;
-		line_buffer_size = 32768;
-
-		status = NtReadFile(handle, NULL, NULL, NULL, &io, line_buffer + 4096, 32768 - 4096, NULL, NULL);
-		if (status != STATUS_SUCCESS && status != STATUS_END_OF_FILE)
+		if (io.Information == 4096)
 		{
-			return NULL;
-		}
+			// Need to read more data.
+			// Read 32768 bytes. This is the command line limit on Windows.
+			char *temp = malloc(32768);
+			memcpy(temp, line_buffer, line_buffer_size);
+			free(line_buffer);
 
-		// Find where the first line ends.
-		for (size_t i = 4096; i < io.Information + 4096; ++i)
-		{
-			if (line_buffer[i] == '\n' || line_buffer[i] == '\r')
+			line_buffer = temp;
+			line_buffer_size = 32768;
+
+			status = NtReadFile(handle, NULL, NULL, NULL, &io, line_buffer + 4096, 32768 - 4096, NULL, NULL);
+			if (status != STATUS_SUCCESS && status != STATUS_END_OF_FILE)
 			{
-				length_of_first_line = i;
-				break;
+				return NULL;
+			}
+
+			// Find where the first line ends.
+			for (size_t i = 4096; i < io.Information + 4096; ++i)
+			{
+				if (line_buffer[i] == '\n' || line_buffer[i] == '\r')
+				{
+					length_of_first_line = i;
+					break;
+				}
+			}
+
+			if (io.Information == 0)
+			{
+				length_of_first_line = 4096;
+			}
+
+			if (length_of_first_line == 0)
+			{
+				errno = E2BIG;
+				return NULL;
 			}
 		}
-
-		if (io.Information == 0)
+		else
 		{
-			length_of_first_line = 4096;
+			// File has only one line and that line contains "#! ...".
+			length_of_first_line = io.Information;
 		}
-
-		if (length_of_first_line == 0)
-		{
-			errno = E2BIG;
-			return NULL;
-		}
-	}
-	else
-	{
-		// File has only one line and that line contains "#! ...".
-		length_of_first_line = io.Information;
 	}
 
 	// NULL terminate the line buffer. This will not cause heap corruption.
@@ -628,7 +633,7 @@ static UNICODE_STRING *shebang_get_executable_and_args(const UNICODE_STRING *dos
 
 	if (position_of_first_character_after_shebang == 0)
 	{
-		// File only has "#!" in its first line.
+		// File only has "#!" plus zero or more whitespaces in its first line.
 		errno = ENOEXEC;
 		return NULL;
 	}
@@ -639,6 +644,7 @@ static UNICODE_STRING *shebang_get_executable_and_args(const UNICODE_STRING *dos
 	char *shebang_exe = NULL;
 	size_t start_of_last_component_of_exe = position_of_first_character_after_shebang;
 	size_t end_of_last_component_of_exe = length_of_first_line - 1;
+	// bool shebang_exe_is_quoted = line_buffer[position_of_first_character_after_shebang] == '"';
 
 	for (size_t i = position_of_first_character_after_shebang; i < length_of_first_line; ++i)
 	{
@@ -659,10 +665,27 @@ static UNICODE_STRING *shebang_get_executable_and_args(const UNICODE_STRING *dos
 	memcpy(shebang_exe, line_buffer + start_of_last_component_of_exe, end_of_last_component_of_exe - start_of_last_component_of_exe + 1);
 	shebang_exe[end_of_last_component_of_exe - start_of_last_component_of_exe + 1] = '\0';
 
-	UNICODE_STRING *dos_shebang_exe = search_path_for_program(shebang_exe);
+	UNICODE_STRING *dos_shebang_exe = NULL;
+
+	dos_shebang_exe = search_path_for_program(shebang_exe);
 	if (dos_shebang_exe == NULL)
 	{
-		return NULL;
+		if (errno != ENOENT)
+		{
+			free(shebang_exe);
+			return NULL;
+		}
+
+		// If we can't find the specified program in the path, search for it in the
+		// cuurent working directory.
+		errno = 0;
+		dos_shebang_exe = search_for_program(shebang_exe);
+
+		if (dos_shebang_exe == NULL)
+		{
+			free(shebang_exe);
+			return NULL;
+		}
 	}
 
 	size_t start_of_args = 0;
@@ -725,8 +748,8 @@ static UNICODE_STRING *shebang_get_executable_and_args(const UNICODE_STRING *dos
 	}
 
 	// filename
-	memcpy((CHAR *)dos_shebang_exe_with_args + sizeof(UNICODE_STRING) + dos_shebang_exe->MaximumLength + u16_shebang_arg.MaximumLength,
-		   dospath->Buffer, dospath->MaximumLength);
+	memcpy((CHAR *)dos_shebang_exe_with_args + sizeof(UNICODE_STRING) + dos_shebang_exe_with_args_used, dospath->Buffer,
+		   dospath->MaximumLength);
 	dos_shebang_exe_with_args_used += dospath->MaximumLength;
 
 	dos_shebang_exe_with_args->Buffer = (WCHAR *)((CHAR *)dos_shebang_exe_with_args + sizeof(UNICODE_STRING));
@@ -760,6 +783,13 @@ static WCHAR *convert_argv_to_wargv(char *const argv[], size_t *size)
 		++argv;
 	}
 	argv = pargv;
+
+	if (argc == 0)
+	{
+		// Highly unlikely, but not an error.
+		*size = 0;
+		return NULL;
+	}
 
 	u8_args = (UTF8_STRING *)malloc(sizeof(UTF8_STRING) * argc);
 	u16_args = (UNICODE_STRING *)malloc(sizeof(UNICODE_STRING) * argc);
@@ -801,6 +831,7 @@ static WCHAR *convert_argv_to_wargv(char *const argv[], size_t *size)
 
 	// Finally put in the terminating NULL
 	wargv[(argv_used - sizeof(WCHAR)) / sizeof(WCHAR)] = L'\0';
+	argv_used += sizeof(WCHAR);
 
 	free(u16_args);
 	free(u8_args);
@@ -930,14 +961,89 @@ static WCHAR *prepend_shebang_to_wargv(const WCHAR *old_argv, size_t old_size, c
 	*(WCHAR *)((CHAR *)new_argv + new_argv_used) = L' ';
 	new_argv_used += sizeof(WCHAR);
 
-	final_argv = (WCHAR *)malloc(new_argv_used + old_size);
+	// When prepending we need to skip arg0.
+	size_t start_of_arg1 = 0;
+	size_t old_argv_needed = old_size;
+	short quote_count = 0;
+	bool quoted_arg0 = false;
+
+	if (old_argv != NULL)
+	{
+		for (size_t i = 0; old_argv[i] != L'\0'; ++i)
+		{
+			if (i == 0)
+			{
+				if (old_argv[i] == L'"')
+				{
+					quoted_arg0 = true;
+					++quote_count;
+				}
+
+				continue;
+			}
+
+			if (quoted_arg0)
+			{
+				// This is a bit involved.
+				// We have already read the first '"'. If we read another bare '"'. The start will be i+2 (after a space).
+				// If we read a '\' followed by a '"', do not count that.
+
+				if (old_argv[i] == L'"')
+				{
+					// When only one arg is given, this assignment will exceed old_size. We are constraining after the loop.
+					start_of_arg1 = i + 2;
+					break;
+				}
+
+				if (old_argv[i] == L'\\' && old_argv[i + 1] == L'"')
+				{
+					++i;
+					continue;
+				}
+			}
+			else
+			{
+				// Easy. Just find the first ' '.
+				if (old_argv[i] == L' ')
+				{
+					start_of_arg1 = i + 1;
+					break;
+				}
+			}
+		}
+	}
+
+	start_of_arg1 *= sizeof(WCHAR);
+
+	// Sanity constraint.
+	if (start_of_arg1 > old_size)
+	{
+		start_of_arg1 = 0;
+	}
+
+	if (old_size > 0) // old_argv is not NULL.
+	{
+		old_argv_needed = start_of_arg1 == 0 ? 0 : old_size - start_of_arg1;
+	}
+
+	final_argv = (WCHAR *)malloc(new_argv_used + old_argv_needed + sizeof(WCHAR)); // Terminating NULL if needed.
 
 	memcpy(final_argv, new_argv, new_argv_used);
-	memcpy((CHAR *)final_argv + new_argv_used, old_argv, old_size);
+
+	if (old_argv_needed > 0)
+	{
+		// This will copy the terminating NULL of old_argv.
+		memcpy((CHAR *)final_argv + new_argv_used, (CHAR *)old_argv + start_of_arg1, old_argv_needed);
+	}
+	else
+	{
+		// Put the NULL if we don't use old_argv at all.
+		*(WCHAR *)((CHAR *)final_argv + new_argv_used) = L'\0';
+	}
 
 	free(new_argv);
 
-	*new_size = new_argv_used + old_size;
+	*new_size = new_argv_used + old_argv_needed;
 
 	return final_argv;
 }
@@ -1001,39 +1107,44 @@ static WCHAR *convert_env_to_wenv(char *const env[], size_t *size)
 int wlibc_spawn(pid_t *restrict pid, const char *restrict path, const spawn_actions_t *restrict actions,
 				const spawnattr_t *restrict attributes, int use_path, char *restrict const argv[], char *restrict const env[])
 {
-
-	VALIDATE_PATH(path, ENOENT, -1);
-
-	// TODO
-	// Ignore spawn attributes for now.
+	// TODO Ignore spawn attributes for now.
 	int result = -1;
 
-	STARTUPINFOW sinfo;
-	PROCESS_INFORMATION pinfo;
 	UNICODE_STRING *u16_path = NULL, *u16_cwd = NULL;
 	WCHAR *wpath = NULL;
 	WCHAR *wargv = NULL;
 	WCHAR *wenv = NULL;
 	WCHAR *wcwd = NULL;
+	VOID *inherit_info_buffer = NULL;
 	size_t wargv_size, wenv_size;
 
-	memset(&sinfo, 0, sizeof(STARTUPINFOW));
-	sinfo.cb = sizeof(STARTUPINFOW);
-	memset(&pinfo, 0, sizeof(PROCESS_INFORMATION));
+	// Initialize this first as the cleanup label 'finish' requires it.
+	inherit_information inherit_info = {0, NULL};
+
+	// Validations.
+	VALIDATE_PATH(path, ENOENT, -1);
+	VALIDATE_PTR(argv, EINVAL, -1);
 
 	// Convert path to UTF-16
 	u16_path = get_absolute_dospath_of_program(path, use_path);
 	if (u16_path == NULL)
 	{
 		// Appropriate errno will be set by `get_absolute_dospath_of_executable`.
-		return -1;
+		goto finish;
 	}
 	wpath = u16_path->Buffer;
 
-	// Convert args to UTF-16
+	// Convert args to UTF-16.
 	wargv = convert_argv_to_wargv((char *const *)argv, &wargv_size);
 
-	// Convert env to UTF-16
+	// The arguments have exceeded the command line limit on Windows.
+	if (wargv_size >= 65536)
+	{
+		errno = E2BIG;
+		goto finish;
+	}
+
+	// Convert env to UTF-16.
 	if (env)
 	{
 		wenv = convert_env_to_wenv((char *const *)env, &wenv_size);
@@ -1075,16 +1186,15 @@ int wlibc_spawn(pid_t *restrict pid, const char *restrict path, const spawn_acti
 			break;
 		}
 
-		if (num_of_chdir_actions + num_of_fchdir_actions > 1)
+		if (num_of_chdir_actions + num_of_fchdir_actions > 2)
 		{
-			// More than directory change requested.
+			// More than one directory change requested.
 			errno = EINVAL;
 			goto finish;
 		}
 	}
 
 	max_fd_requested = __max(max_fd_requested, (int)(_wlibc_fd_table_size - 1));
-	inherit_information inherit_info;
 
 	initialize_inherit_information(&inherit_info, max_fd_requested);
 
@@ -1097,6 +1207,7 @@ int wlibc_spawn(pid_t *restrict pid, const char *restrict path, const spawn_acti
 
 		case open_action:
 		{
+			// TODO make this more efficient.
 			int fd = do_open(AT_FDCWD, actions->actions[i].open_action.path, actions->actions[i].open_action.oflag,
 							 actions->actions[i].open_action.mode);
 			if (fd < 0)
@@ -1131,6 +1242,7 @@ int wlibc_spawn(pid_t *restrict pid, const char *restrict path, const spawn_acti
 
 		case close_action:
 		{
+			// TODO make this more efficient.
 			int fd = actions->actions[i].close_action.fd;
 			OBJECT_HANDLE_FLAG_INFORMATION flag_info;
 
@@ -1165,6 +1277,7 @@ int wlibc_spawn(pid_t *restrict pid, const char *restrict path, const spawn_acti
 
 		case dup2_action:
 		{
+			// TODO make this more efficient.
 			int oldfd = actions->actions[i].dup2_action.oldfd;
 			int newfd = actions->actions[i].dup2_action.newfd;
 
@@ -1208,7 +1321,7 @@ int wlibc_spawn(pid_t *restrict pid, const char *restrict path, const spawn_acti
 				errno = ENOENT;
 				goto finish;
 			}
-			wenv = u16_cwd->Buffer;
+			wcwd = u16_cwd->Buffer;
 		}
 		break;
 
@@ -1220,13 +1333,19 @@ int wlibc_spawn(pid_t *restrict pid, const char *restrict path, const spawn_acti
 				errno = EBADF;
 				goto finish;
 			}
-			wenv = u16_cwd->Buffer;
+			wcwd = u16_cwd->Buffer;
 		}
 		break;
 		}
 	}
 
-	give_inherit_information_to_startupinfo(&inherit_info, &sinfo);
+	STARTUPINFOW sinfo;
+	PROCESS_INFORMATION pinfo = {0};
+
+	memset(&sinfo, 0, sizeof(STARTUPINFOW));
+	sinfo.cb = sizeof(STARTUPINFOW);
+
+	give_inherit_information_to_startupinfo(&inherit_info, &sinfo, &inherit_info_buffer);
 
 	// Do the spawn.
 	BOOL status = CreateProcessW(wpath, wargv, NULL, NULL, TRUE, CREATE_UNICODE_ENVIRONMENT, wenv, wcwd, &sinfo, &pinfo);
@@ -1239,48 +1358,38 @@ int wlibc_spawn(pid_t *restrict pid, const char *restrict path, const spawn_acti
 			goto finish;
 		}
 
-		// Recurse till we find a suitable executable.
-		while (status == 0)
+		// Perform a shebang spawn.
+		WCHAR *shebang_argv = NULL;
+		UNICODE_STRING *u16_path_and_args = shebang_get_executable_and_args(u16_path);
+		if (u16_path_and_args == NULL)
 		{
-			WCHAR *shebang_argv = NULL;
-			UNICODE_STRING *u16_path_and_args = shebang_get_executable_and_args(u16_path);
-			if (u16_path_and_args == NULL)
-			{
-				goto finish;
-			}
+			goto finish;
+		}
 
-			shebang_argv = prepend_shebang_to_wargv(wargv, wargv_size, u16_path_and_args->Buffer, u16_path_and_args->MaximumLength, &wargv_size);
+		shebang_argv =
+			prepend_shebang_to_wargv(wargv, wargv_size, u16_path_and_args->Buffer, u16_path_and_args->MaximumLength, &wargv_size);
 
-			free(u16_path);
-			free(wargv);
+		free(u16_path);
+		free(wargv);
 
-			u16_path = u16_path_and_args;
-			wpath = u16_path->Buffer; // The executable will be NULL separated.
-			wargv = shebang_argv;
+		u16_path = u16_path_and_args;
+		wpath = u16_path->Buffer; // The executable will be NULL separated.
+		wargv = shebang_argv;
 
-			// Exceeding the command line limit.
-			if (wargv_size >= 65535)
-			{
-				errno = E2BIG;
-				goto finish;
-			}
+		// Exceeding the command line limit.
+		if (wargv_size >= 65535)
+		{
+			errno = E2BIG;
+			goto finish;
+		}
 
-			status = CreateProcessW(wpath, wargv, NULL, NULL, TRUE, CREATE_UNICODE_ENVIRONMENT, wenv, wcwd, &sinfo, &pinfo);
+		status = CreateProcessW(wpath, wargv, NULL, NULL, TRUE, CREATE_UNICODE_ENVIRONMENT, wenv, wcwd, &sinfo, &pinfo);
 
-			if (status == 0)
-			{
-				error = GetLastError();
-				if (error != ERROR_BAD_EXE_FORMAT)
-				{
-					map_doserror_to_errno(error);
-					goto finish;
-				}
-			}
-
-			// In case we recurse set the length paramters properly so that,
-			// `dospath_to_ntpath` called inside `shebang_get_executable_and_args` will work.
-			u16_path->Length = wcslen(u16_path->Buffer);
-			u16_path->MaximumLength = u16_path->Length + sizeof(WCHAR);
+		// Shebang spawn failed.
+		if (status == 0)
+		{
+			map_doserror_to_errno(GetLastError());
+			goto finish;
 		}
 	}
 
@@ -1294,7 +1403,7 @@ finish:
 	free(wargv);
 	free(wenv);
 	free(u16_cwd);
-	free(sinfo.lpReserved2);
+	free(inherit_info_buffer);
 	cleanup_inherit_information(&inherit_info, actions);
 
 	return result;

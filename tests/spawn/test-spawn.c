@@ -13,6 +13,8 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+const char *auxilary_dir = "auxilary";
+
 int prepare_input(const char *filename, const char *content)
 {
 	int fd;
@@ -50,6 +52,38 @@ int check_output(const char *filename, const char *content)
 	return 0;
 }
 
+void convert_forward_slashes_to_backward_slashes(char *str)
+{
+	for (int i = 0; str[i] != '\0'; ++i)
+	{
+		if (str[i] == '/')
+		{
+			str[i] = '\\';
+		}
+	}
+}
+
+int test_spawn_error()
+{
+	int status;
+	pid_t pid;
+
+	const char *program = "non-existent.exe";
+	char *const argv[] = {(char *)program, NULL};
+
+	errno = 0;
+	status = posix_spawn(&pid, program, NULL, NULL, argv, NULL);
+	ASSERT_EQ(status, -1);
+	ASSERT_ERRNO(ENOENT);
+
+	errno = 0;
+	status = posix_spawnp(&pid, "cmd", NULL, NULL, NULL, NULL);
+	ASSERT_EQ(status, -1);
+	ASSERT_ERRNO(EINVAL);
+
+	return 0;
+}
+
 int test_spawn_basic()
 {
 	int status;
@@ -62,6 +96,7 @@ int test_spawn_basic()
 	const char *output = "output.txt";
 	const char *content = "Hello World";
 	char *const argv[] = {"basic.exe", NULL};
+	char *const null_argv[] = {NULL};
 
 	// Prepare the input.
 	ASSERT_SUCCESS(prepare_input(input, content));
@@ -87,6 +122,17 @@ int test_spawn_basic()
 
 	// Spawn the process again but this time give a program with no extension.
 	status = posix_spawn(&pid, program_noext, &actions, NULL, argv, NULL);
+	ASSERT_EQ(status, 0);
+
+	status = waitpid(pid, NULL, 0);
+	ASSERT_EQ(status, pid);
+
+	// Check output
+	ASSERT_SUCCESS(check_output(output, content));
+	ASSERT_SUCCESS(remove(output));
+
+	// Spawn the process again but this time give no arguments.
+	status = posix_spawn(&pid, program, &actions, NULL, null_argv, NULL);
 	ASSERT_EQ(status, 0);
 
 	status = waitpid(pid, NULL, 0);
@@ -557,6 +603,7 @@ int test_spawn_path()
 	char *oldpath_dup;
 	char *newpath;
 	char *auxilary_location;
+	char auxilary_dir_buffer[256];
 	const char *program = "path.exe";
 	char *argv[] = {(char *)program, NULL};
 
@@ -567,8 +614,11 @@ int test_spawn_path()
 	status = posix_spawnp(&pid, program, NULL, NULL, argv, NULL);
 	ASSERT_EQ(status, -1);
 
-	auxilary_location = getenv("WLIBC_AUXILARY_LOCATION");
-	ASSERT_NOTNULL(auxilary_location);
+	getcwd(auxilary_dir_buffer, 256);
+	strcat(auxilary_dir_buffer, "/");
+	strcat(auxilary_dir_buffer, auxilary_dir);
+
+	auxilary_location = auxilary_dir_buffer;
 
 	oldpath = getenv("PATH");
 	ASSERT_NOTNULL(oldpath);
@@ -746,19 +796,446 @@ int test_spawn_args()
 	return 0;
 }
 
-int test_spawn_shebang()
+int test_spawn_shebang_error()
+{
+	int status;
+	pid_t pid;
+	const char *program_cmd = "shebang.error";
+	char *argv[] = {"shebang", NULL};
+
+	ASSERT_SUCCESS(prepare_input(program_cmd, "#!"));
+
+	errno = 0;
+	status = posix_spawn(&pid, program_cmd, NULL, NULL, argv, NULL);
+	ASSERT_EQ(status, -1);
+	ASSERT_ERRNO(ENOEXEC);
+
+	ASSERT_SUCCESS(prepare_input(program_cmd, "#!   "));
+
+	errno = 0;
+	status = posix_spawn(&pid, program_cmd, NULL, NULL, argv, NULL);
+	ASSERT_EQ(status, -1);
+	ASSERT_ERRNO(ENOEXEC);
+
+	ASSERT_SUCCESS(prepare_input(program_cmd, "#!   \n"));
+
+	errno = 0;
+	status = posix_spawn(&pid, program_cmd, NULL, NULL, argv, NULL);
+	ASSERT_EQ(status, -1);
+	ASSERT_ERRNO(ENOEXEC);
+
+	ASSERT_SUCCESS(prepare_input(program_cmd, "hello"));
+
+	errno = 0;
+	status = posix_spawn(&pid, program_cmd, NULL, NULL, argv, NULL);
+	ASSERT_EQ(status, -1);
+	ASSERT_ERRNO(ENOEXEC);
+
+	ASSERT_SUCCESS(prepare_input(program_cmd, "#! non-existent.exe"));
+
+	errno = 0;
+	status = posix_spawn(&pid, program_cmd, NULL, NULL, argv, NULL);
+	ASSERT_EQ(status, -1);
+	ASSERT_ERRNO(ENOENT);
+
+	ASSERT_SUCCESS(remove(program_cmd));
+
+	return 0;
+}
+
+int test_spawn_shebang_basic()
 {
 	int status;
 	int fds[2];
+	char arg0[4096];
+	char arg1[4096];
+	char content[4096];
 	char buffer[4096];
+	char *bufp;
 	pid_t pid;
 	posix_spawn_file_actions_t actions;
 
-	const char *program = "shebang.1";
-	char *argv[] = {(char *)program, NULL};
+	const char *program_arg = "arg.exe";
+	const char *program_arg_noext = "arg";
+	const char *program_cmd = "shebang.basic";
+	char *argv[] = {"shebang", NULL};
+	char *null_argv[] = {"shebang", NULL};
+
+	ASSERT_SUCCESS(pipe(fds));
+
+	getcwd(arg0, 4096);
+	strcat(arg0, "/");
+	strcat(arg0, program_arg);
+	convert_forward_slashes_to_backward_slashes(arg0);
+
+	getcwd(arg1, 4096);
+	strcat(arg1, "/");
+	strcat(arg1, program_cmd);
+	convert_forward_slashes_to_backward_slashes(arg1);
+
+	status = posix_spawn_file_actions_init(&actions);
+	ASSERT_EQ(status, 0);
+
+	status = posix_spawn_file_actions_adddup2(&actions, fds[1], STDOUT_FILENO);
+	ASSERT_EQ(status, 0);
 
 	// Prepare the shebang file.
-	ASSERT_SUCCESS(prepare_input(program, "#! path.exe"));
+	bufp = buffer;
+
+	snprintf(content, 4096, "#! %s", program_arg);
+	ASSERT_SUCCESS(prepare_input(program_cmd, content));
+
+	status = posix_spawn(&pid, program_cmd, &actions, NULL, argv, NULL);
+	ASSERT_EQ(status, 0);
+
+	status = waitpid(pid, NULL, 0);
+	ASSERT_EQ(status, pid);
+
+	read(fds[0], buffer, 4096);
+
+	ASSERT_STREQ(bufp, arg0);
+	bufp += strlen(arg0) + 1;
+
+	ASSERT_STREQ(bufp, arg1);
+	bufp += strlen(arg1) + 1;
+
+	// Do the test again, no executable extension given.
+	bufp = buffer;
+
+	snprintf(content, 4096, "#! %s", program_arg_noext);
+	ASSERT_SUCCESS(prepare_input(program_cmd, content));
+
+	status = posix_spawn(&pid, program_cmd, &actions, NULL, argv, NULL);
+	ASSERT_EQ(status, 0);
+
+	status = waitpid(pid, NULL, 0);
+	ASSERT_EQ(status, pid);
+
+	read(fds[0], buffer, 4096);
+
+	ASSERT_STREQ(bufp, arg0);
+	bufp += strlen(arg0) + 1;
+
+	ASSERT_STREQ(bufp, arg1);
+	bufp += strlen(arg1) + 1;
+
+	// Do the test again, try different line terminators.
+	bufp = buffer;
+
+	snprintf(content, 4096, "#! %s\n", program_arg);
+	ASSERT_SUCCESS(prepare_input(program_cmd, content));
+
+	status = posix_spawn(&pid, program_cmd, &actions, NULL, argv, NULL);
+	ASSERT_EQ(status, 0);
+
+	status = waitpid(pid, NULL, 0);
+	ASSERT_EQ(status, pid);
+
+	read(fds[0], buffer, 4096);
+
+	ASSERT_STREQ(bufp, arg0);
+	bufp += strlen(arg0) + 1;
+
+	ASSERT_STREQ(bufp, arg1);
+	bufp += strlen(arg1) + 1;
+
+	// Do the test again, try with null_argv.
+	bufp = buffer;
+
+	snprintf(content, 4096, "#! %s\r\n", program_arg);
+	ASSERT_SUCCESS(prepare_input(program_cmd, content));
+
+	status = posix_spawn(&pid, program_cmd, &actions, NULL, null_argv, NULL);
+	ASSERT_EQ(status, 0);
+
+	status = waitpid(pid, NULL, 0);
+	ASSERT_EQ(status, pid);
+
+	read(fds[0], buffer, 4096);
+
+	ASSERT_STREQ(bufp, arg0);
+	bufp += strlen(arg0) + 1;
+
+	ASSERT_STREQ(bufp, arg1);
+	bufp += strlen(arg1) + 1;
+
+	// Do the test again, more whitespaces at the beginning.
+	bufp = buffer;
+
+	snprintf(content, 4096, "#!   \t %s\n", program_arg);
+	ASSERT_SUCCESS(prepare_input(program_cmd, content));
+
+	status = posix_spawn(&pid, program_cmd, &actions, NULL, argv, NULL);
+	ASSERT_EQ(status, 0);
+
+	status = waitpid(pid, NULL, 0);
+	ASSERT_EQ(status, pid);
+
+	read(fds[0], buffer, 4096);
+
+	ASSERT_STREQ(bufp, arg0);
+	bufp += strlen(arg0) + 1;
+
+	ASSERT_STREQ(bufp, arg1);
+	bufp += strlen(arg1) + 1;
+
+	// Do the test again, more whitespaces at the end.
+	bufp = buffer;
+
+	snprintf(content, 4096, "#!%s   \n", program_arg);
+	ASSERT_SUCCESS(prepare_input(program_cmd, content));
+
+	status = posix_spawn(&pid, program_cmd, &actions, NULL, argv, NULL);
+	ASSERT_EQ(status, 0);
+
+	status = waitpid(pid, NULL, 0);
+	ASSERT_EQ(status, pid);
+
+	read(fds[0], buffer, 4096);
+
+	ASSERT_STREQ(bufp, arg0);
+	bufp += strlen(arg0) + 1;
+
+	ASSERT_STREQ(bufp, arg1);
+	bufp += strlen(arg1) + 1;
+
+	status = posix_spawn_file_actions_destroy(&actions);
+	ASSERT_EQ(status, 0);
+
+	ASSERT_SUCCESS(close(fds[0]));
+	ASSERT_SUCCESS(close(fds[1]));
+	ASSERT_SUCCESS(remove(program_cmd));
+
+	return 0;
+}
+
+int test_spawn_shebang_args()
+{
+	int status;
+	int fds[2];
+	char executable[4096];
+	char filename[4096];
+	char content[4096];
+	char buffer[4096];
+	char *bufp;
+	pid_t pid;
+	posix_spawn_file_actions_t actions;
+
+	const char *program_arg = "arg.exe";
+	const char *program_cmd = "shebang.args";
+
+	ASSERT_SUCCESS(pipe(fds));
+
+	getcwd(executable, 4096);
+	strcat(executable, "/");
+	strcat(executable, program_arg);
+	convert_forward_slashes_to_backward_slashes(executable);
+
+	getcwd(filename, 4096);
+	strcat(filename, "/");
+	strcat(filename, program_cmd);
+	convert_forward_slashes_to_backward_slashes(filename);
+
+	status = posix_spawn_file_actions_init(&actions);
+	ASSERT_EQ(status, 0);
+
+	status = posix_spawn_file_actions_adddup2(&actions, fds[1], STDOUT_FILENO);
+	ASSERT_EQ(status, 0);
+
+	// Basic arg check.
+	bufp = buffer;
+	char *argt1 = "hello";
+	char *argv1[] = {"shebang", "args", NULL};
+
+	snprintf(content, 4096, "#! %s %s", program_arg, argt1);
+	ASSERT_SUCCESS(prepare_input(program_cmd, content));
+
+	status = posix_spawn(&pid, program_cmd, &actions, NULL, argv1, NULL);
+	ASSERT_EQ(status, 0);
+
+	status = waitpid(pid, NULL, 0);
+	ASSERT_EQ(status, pid);
+
+	read(fds[0], buffer, 4096);
+
+	ASSERT_STREQ(bufp, executable);
+	bufp += strlen(executable) + 1;
+
+	ASSERT_STREQ(bufp, argt1);
+	bufp += strlen(argt1) + 1;
+
+	ASSERT_STREQ(bufp, filename);
+	bufp += strlen(filename) + 1;
+
+	ASSERT_STREQ(bufp, argv1[1]);
+	bufp += strlen(argv1[1]) + 1;
+
+	// Multiple args check.
+	bufp = buffer;
+	char *argt2 = "hello world";
+	char *argv2[] = {"shebang", "arg1", "arg2", NULL};
+
+	snprintf(content, 4096, "#! %s %s", program_arg, argt2);
+	ASSERT_SUCCESS(prepare_input(program_cmd, content));
+
+	status = posix_spawn(&pid, program_cmd, &actions, NULL, argv2, NULL);
+	ASSERT_EQ(status, 0);
+
+	status = waitpid(pid, NULL, 0);
+	ASSERT_EQ(status, pid);
+
+	read(fds[0], buffer, 4096);
+
+	ASSERT_STREQ(bufp, executable);
+	bufp += strlen(executable) + 1;
+
+	ASSERT_STREQ(bufp, argt2);
+	bufp += strlen(argt2) + 1;
+
+	ASSERT_STREQ(bufp, filename);
+	bufp += strlen(filename) + 1;
+
+	ASSERT_STREQ(bufp, argv2[1]);
+	bufp += strlen(argv2[1]) + 1;
+
+	ASSERT_STREQ(bufp, argv2[2]);
+	bufp += strlen(argv2[2]) + 1;
+
+	// Quoted args check.
+	bufp = buffer;
+	char *argt3 = "\"hello world\"";
+	char *argv3[] = {"shebang", "arg1", "ar\"g2", NULL};
+
+	snprintf(content, 4096, "#! %s %s", program_arg, argt3);
+	ASSERT_SUCCESS(prepare_input(program_cmd, content));
+
+	status = posix_spawn(&pid, program_cmd, &actions, NULL, argv3, NULL);
+	ASSERT_EQ(status, 0);
+
+	status = waitpid(pid, NULL, 0);
+	ASSERT_EQ(status, pid);
+
+	read(fds[0], buffer, 4096);
+
+	ASSERT_STREQ(bufp, executable);
+	bufp += strlen(executable) + 1;
+
+	ASSERT_STREQ(bufp, argt3);
+	bufp += strlen(argt3) + 1;
+
+	ASSERT_STREQ(bufp, filename);
+	bufp += strlen(filename) + 1;
+
+	ASSERT_STREQ(bufp, argv3[1]);
+	bufp += strlen(argv3[1]) + 1;
+
+	ASSERT_STREQ(bufp, argv3[2]);
+	bufp += strlen(argv3[2]) + 1;
+
+	// Bizzare args check 1.
+	bufp = buffer;
+	char *argt4 = "hello\"world";
+	char *argv4[] = {"shebang", "arg1", NULL};
+
+	snprintf(content, 4096, "#! %s %s", program_arg, argt4);
+	ASSERT_SUCCESS(prepare_input(program_cmd, content));
+
+	status = posix_spawn(&pid, program_cmd, &actions, NULL, argv4, NULL);
+	ASSERT_EQ(status, 0);
+
+	status = waitpid(pid, NULL, 0);
+	ASSERT_EQ(status, pid);
+
+	read(fds[0], buffer, 4096);
+
+	ASSERT_STREQ(bufp, executable);
+	bufp += strlen(executable) + 1;
+
+	ASSERT_STREQ(bufp, argt4);
+	bufp += strlen(argt4) + 1;
+
+	ASSERT_STREQ(bufp, filename);
+	bufp += strlen(filename) + 1;
+
+	ASSERT_STREQ(bufp, argv4[1]);
+	bufp += strlen(argv4[1]) + 1;
+
+	// Bizzare args check 2.
+	bufp = buffer;
+	char *argt5 = "\\\\ \\\"hello\"world\\\\";
+	char *argv5[] = {"shebang", "arg1", NULL};
+
+	snprintf(content, 4096, "#! %s %s", program_arg, argt5);
+	ASSERT_SUCCESS(prepare_input(program_cmd, content));
+
+	status = posix_spawn(&pid, program_cmd, &actions, NULL, argv5, NULL);
+	ASSERT_EQ(status, 0);
+
+	status = waitpid(pid, NULL, 0);
+	ASSERT_EQ(status, pid);
+
+	read(fds[0], buffer, 4096);
+
+	ASSERT_STREQ(bufp, executable);
+	bufp += strlen(executable) + 1;
+
+	ASSERT_STREQ(bufp, argt5);
+	bufp += strlen(argt5) + 1;
+
+	ASSERT_STREQ(bufp, filename);
+	bufp += strlen(filename) + 1;
+
+	ASSERT_STREQ(bufp, argv5[1]);
+	bufp += strlen(argv5[1]) + 1;
+
+	status = posix_spawn_file_actions_destroy(&actions);
+	ASSERT_EQ(status, 0);
+
+	ASSERT_SUCCESS(close(fds[0]));
+	ASSERT_SUCCESS(close(fds[1]));
+	ASSERT_SUCCESS(remove(program_cmd));
+
+	return 0;
+}
+
+int test_spawn_shebang_path()
+{
+	int status;
+	int fds[2];
+	char arg0[4096];
+	char arg1[4096];
+	char content[4096];
+	char buffer[4096];
+	char auxilary_dir_buffer[256];
+	char *bufp = buffer;
+	pid_t pid;
+	posix_spawn_file_actions_t actions;
+
+	const char *program_arg = "arg-shebang.exe";
+	const char *program_cmd = "shebang.path";
+	char *argv[] = {"shebang", NULL};
+
+	getcwd(auxilary_dir_buffer, 256);
+	strcat(auxilary_dir_buffer, "/");
+	strcat(auxilary_dir_buffer, auxilary_dir);
+
+	setenv("PATH", auxilary_dir_buffer, 1);
+
+	// Prepare the shebang file.
+	snprintf(content, 4096, "#! %s", program_arg);
+	ASSERT_SUCCESS(prepare_input(program_cmd, content));
+
+	getcwd(arg0, 4096);
+	strcat(arg0, "/");
+	strcat(arg0, auxilary_dir);
+	strcat(arg0, "/");
+	strcat(arg0, program_arg);
+	convert_forward_slashes_to_backward_slashes(arg0);
+
+	getcwd(arg1, 4096);
+	strcat(arg1, "/");
+	strcat(arg1, program_cmd);
+	convert_forward_slashes_to_backward_slashes(arg1);
 
 	ASSERT_SUCCESS(pipe(fds));
 
@@ -768,18 +1245,26 @@ int test_spawn_shebang()
 	status = posix_spawn_file_actions_adddup2(&actions, fds[1], STDOUT_FILENO);
 	ASSERT_EQ(status, 0);
 
-	status = posix_spawn(&pid, program, NULL, NULL, argv, NULL);
+	status = posix_spawn(&pid, program_cmd, &actions, NULL, argv, NULL);
 	ASSERT_EQ(status, 0);
-
-	status = posix_spawn_file_actions_destroy(&actions);
-	ASSERT_EQ(status, 0);
-
-	ASSERT_SUCCESS(close(fds[1]));
 
 	status = waitpid(pid, NULL, 0);
 	ASSERT_EQ(status, pid);
 
-	// ASSERT_SUCCESS(remove(program));
+	read(fds[0], buffer, 4096);
+
+	ASSERT_STREQ(bufp, arg0);
+	bufp += strlen(arg0) + 1;
+
+	ASSERT_STREQ(bufp, arg1);
+	bufp += strlen(arg1) + 1;
+
+	status = posix_spawn_file_actions_destroy(&actions);
+	ASSERT_EQ(status, 0);
+
+	ASSERT_SUCCESS(close(fds[0]));
+	ASSERT_SUCCESS(close(fds[1]));
+	ASSERT_SUCCESS(remove(program_cmd));
 
 	return 0;
 }
@@ -803,7 +1288,10 @@ void cleanup()
 	remove("inherit-msvcrt-file-rw");
 	remove("inherit-msvcrt-file-ra");
 
-	remove("shebang.1");
+	remove("shebang.error");
+	remove("shebang.basic");
+	remove("shebang.args");
+	remove("shebang.path");
 }
 
 int main()
@@ -811,6 +1299,7 @@ int main()
 	INITIAILIZE_TESTS();
 	CLEANUP(cleanup);
 
+	TEST(test_spawn_error());
 	TEST(test_spawn_basic());
 	TEST(test_spawn_pipe());
 	TEST(test_spawn_env());
@@ -822,11 +1311,10 @@ int main()
 	TEST(test_spawn_inherit_msvcrt_extra());
 	TEST(test_spawn_path());
 	TEST(test_spawn_args());
-
-	// Below tests require setting the path variable.
-	setenv("PATH", getenv("WLIBC_AUXILARY_LOCATION"), 1);
-
-	// TEST(test_spawn_shebang());
+	TEST(test_spawn_shebang_error());
+	TEST(test_spawn_shebang_basic());
+	TEST(test_spawn_shebang_args());
+	TEST(test_spawn_shebang_path());
 
 	VERIFY_RESULT_AND_EXIT();
 }

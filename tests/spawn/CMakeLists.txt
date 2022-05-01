@@ -39,5 +39,3 @@ set_target_properties(arg-shebang-spaces PROPERTIES RUNTIME_OUTPUT_NAME "arg she
 
 set_target_properties(path arg-shebang arg-shebang-spaces PROPERTIES RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_CURRENT_BINARY_DIR}/auxilary)
 set_target_properties(path arg-shebang arg-shebang-spaces PROPERTIES RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_CURRENT_BINARY_DIR}/auxilary)
-
-set_tests_properties(test-spawn PROPERTIES ENVIRONMENT "WLIBC_AUXILARY_LOCATION=${CMAKE_CURRENT_BINARY_DIR}/auxilary")
