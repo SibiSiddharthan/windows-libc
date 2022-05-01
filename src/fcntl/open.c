@@ -209,7 +209,7 @@ HANDLE really_do_open(OBJECT_ATTRIBUTES *object, ACCESS_MASK access, ULONG attri
 		if (status == STATUS_OBJECT_NAME_INVALID)
 		{
 			int i;
-			for (i = 6; object->ObjectName->Buffer[i] != L'\0'; i++) // skip \??\C:
+			for (i = 22; object->ObjectName->Buffer[i] != L'\0'; i++) // skip "\Device\HarddiskVolume"
 			{
 				wchar_t wc = object->ObjectName->Buffer[i];
 				if (wc == L':' || wc == L'<' || wc == L'>' || wc == L'*' || wc == L'|' || wc == L'?' || wc == L'\"')

@@ -35,14 +35,14 @@ int main(int argc, char **argv)
 	}
 
 	// We are only going inherit fd < 10. This makes writing a simple stoi.
-	int number_of_fds = (int)(argv[1][0] - '0');
+	int number_of_fds = strtol(argv[1], NULL, 10);
 	if (number_of_fds == 5) // Files.
 	{
-		int fd_r = (int)(argv[2][0] - '0');
-		int fd_w = (int)(argv[3][0] - '0');
-		int fd_a = (int)(argv[4][0] - '0');
-		int fd_rw = (int)(argv[5][0] - '0');
-		int fd_ra = (int)(argv[6][0] - '0');
+		int fd_r = strtol(argv[2], NULL, 10);
+		int fd_w = strtol(argv[3], NULL, 10);
+		int fd_a = strtol(argv[4], NULL, 10);
+		int fd_rw = strtol(argv[5], NULL, 10);
+		int fd_ra = strtol(argv[6], NULL, 10);
 
 		char buf[64];
 		ssize_t length;
@@ -111,8 +111,8 @@ int main(int argc, char **argv)
 	}
 	if (number_of_fds == 2) // Pipes.
 	{
-		int fd_r = (int)(argv[2][0] - '0');
-		int fd_w = (int)(argv[3][0] - '0');
+		int fd_r = strtol(argv[2], NULL, 10);
+		int fd_w = strtol(argv[3], NULL, 10);
 
 		char buf[64];
 		ssize_t length;
@@ -137,7 +137,7 @@ int main(int argc, char **argv)
 	}
 	if (number_of_fds == 1) // Dev.
 	{
-		int fd = (int)(argv[2][0] - '0');
+		int fd = strtol(argv[2], NULL, 10);
 		ssize_t length;
 
 		// Just check whether writing to NULL works.

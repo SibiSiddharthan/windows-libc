@@ -9,6 +9,7 @@
 #include <spawn.h>
 #include <stdlib.h>
 #include <stdlib-ext.h>
+#include <sys/stat.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
@@ -190,6 +191,106 @@ int test_spawn_env()
 	status = waitpid(pid, &wstatus, 0);
 	ASSERT_EQ(status, pid);
 	ASSERT_EQ(wstatus, 0);
+
+	return 0;
+}
+
+int test_spawn_chdir()
+{
+	int status;
+	int fds[2];
+	char buffer[4096];
+	char cwd[256];
+	pid_t pid;
+	posix_spawn_file_actions_t actions;
+	const char *directory = "t-spawn-chdir";
+	const char *program = "cwd.exe";
+	char *argv[] = {(char *)program, NULL};
+
+	ASSERT_SUCCESS(mkdir(directory, 0700));
+	ASSERT_SUCCESS(pipe(fds));
+
+	status = posix_spawn_file_actions_init(&actions);
+	ASSERT_EQ(status, 0);
+
+	status = posix_spawn_file_actions_adddup2(&actions, fds[1], STDOUT_FILENO);
+	ASSERT_EQ(status, 0);
+
+	status = posix_spawn_file_actions_addchdir(&actions, directory);
+	ASSERT_EQ(status, 0);
+
+	status = posix_spawn(&pid, program, &actions, NULL, argv, NULL);
+	ASSERT_EQ(status, 0);
+
+	status = posix_spawn_file_actions_destroy(&actions);
+	ASSERT_EQ(status, 0);
+
+	ASSERT_SUCCESS(close(fds[1]));
+
+	status = waitpid(pid, NULL, 0);
+	ASSERT_EQ(status, pid);
+
+	getcwd(cwd, 256);
+	strcat(cwd, "/");
+	strcat(cwd, directory);
+
+	read(fds[0], buffer, 4096);
+	ASSERT_STREQ(buffer, cwd);
+
+	ASSERT_SUCCESS(close(fds[0]));
+	ASSERT_SUCCESS(rmdir(directory));
+
+	return 0;
+}
+
+int test_spawn_fchdir()
+{
+	int status;
+	int dirfd, fds[2];
+	char buffer[4096];
+	char cwd[256];
+	pid_t pid;
+	posix_spawn_file_actions_t actions;
+	const char *directory = "t-spawn-fchdir";
+	const char *program = "cwd.exe";
+	char *argv[] = {(char *)program, NULL};
+
+	ASSERT_SUCCESS(mkdir(directory, 0700));
+	ASSERT_SUCCESS(pipe(fds));
+
+	dirfd = open(directory, O_DIRECTORY);
+	ASSERT_NOTEQ(dirfd, -1);
+
+	status = posix_spawn_file_actions_init(&actions);
+	ASSERT_EQ(status, 0);
+
+	status = posix_spawn_file_actions_adddup2(&actions, fds[1], STDOUT_FILENO);
+	ASSERT_EQ(status, 0);
+
+	status = posix_spawn_file_actions_addfchdir(&actions, dirfd);
+	ASSERT_EQ(status, 0);
+
+	status = posix_spawn(&pid, program, &actions, NULL, argv, NULL);
+	ASSERT_EQ(status, 0);
+
+	status = posix_spawn_file_actions_destroy(&actions);
+	ASSERT_EQ(status, 0);
+
+	ASSERT_SUCCESS(close(fds[1]));
+
+	status = waitpid(pid, NULL, 0);
+	ASSERT_EQ(status, pid);
+
+	getcwd(cwd, 256);
+	strcat(cwd, "/");
+	strcat(cwd, directory);
+
+	read(fds[0], buffer, 4096);
+	ASSERT_STREQ(buffer, cwd);
+
+	ASSERT_SUCCESS(close(fds[0]));
+	ASSERT_SUCCESS(close(dirfd))
+	ASSERT_SUCCESS(rmdir(directory));
 
 	return 0;
 }
@@ -678,7 +779,7 @@ int test_spawn_shebang()
 	status = waitpid(pid, NULL, 0);
 	ASSERT_EQ(status, pid);
 
-	//ASSERT_SUCCESS(remove(program));
+	// ASSERT_SUCCESS(remove(program));
 
 	return 0;
 }
@@ -687,6 +788,8 @@ void cleanup()
 {
 	remove("input.txt");
 	remove("output.txt");
+	remove("t-spawn-chdir");
+	remove("t-spawn-fchdir");
 
 	remove("inherit-wlibc-file-r");
 	remove("inherit-wlibc-file-w");
@@ -711,6 +814,8 @@ int main()
 	TEST(test_spawn_basic());
 	TEST(test_spawn_pipe());
 	TEST(test_spawn_env());
+	TEST(test_spawn_chdir());
+	TEST(test_spawn_fchdir());
 	TEST(test_spawn_inherit_wlibc());
 	TEST(test_spawn_inherit_wlibc_extra());
 	TEST(test_spawn_inherit_msvcrt());
@@ -721,7 +826,7 @@ int main()
 	// Below tests require setting the path variable.
 	setenv("PATH", getenv("WLIBC_AUXILARY_LOCATION"), 1);
 
-	//TEST(test_spawn_shebang());
+	// TEST(test_spawn_shebang());
 
 	VERIFY_RESULT_AND_EXIT();
 }
