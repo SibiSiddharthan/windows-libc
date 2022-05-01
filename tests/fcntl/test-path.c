@@ -368,6 +368,104 @@ int test_absolute_dos()
 	return 0;
 }
 
+int test_absolute_cygwin_path()
+{
+
+	int fd;
+	UNICODE_STRING *dospath, *ntpath;
+
+	wcscat(cdrive, L"abc");
+
+	ntpath = get_absolute_ntpath(AT_FDCWD, "/c/abc");
+	dospath = get_absolute_dospath(AT_FDCWD, "/c/abc");
+	ASSERT_WSTREQ(ntpath->Buffer, cdrive);
+	ASSERT_WSTREQ(dospath->Buffer, L"C:\\abc");
+	free(ntpath);
+	free(dospath);
+
+	ntpath = get_absolute_ntpath(AT_FDCWD, "/c\\abc");
+	dospath = get_absolute_dospath(AT_FDCWD, "/c\\abc");
+	ASSERT_WSTREQ(ntpath->Buffer, cdrive);
+	ASSERT_WSTREQ(dospath->Buffer, L"C:\\abc");
+	free(ntpath);
+	free(dospath);
+
+	wcscat(cdrive, L"\\");
+
+	ntpath = get_absolute_ntpath(AT_FDCWD, "/c/abc/");
+	dospath = get_absolute_dospath(AT_FDCWD, "/c/abc/");
+	ASSERT_WSTREQ(ntpath->Buffer, cdrive);
+	ASSERT_WSTREQ(dospath->Buffer, L"C:\\abc\\");
+	free(ntpath);
+	free(dospath);
+
+	cdrive[cdrive_length] = L'\0';
+
+	ntpath = get_absolute_ntpath(AT_FDCWD, "/c/abc/..");
+	dospath = get_absolute_dospath(AT_FDCWD, "/c/abc/..");
+	ASSERT_WSTREQ(ntpath->Buffer, cdrive);
+	ASSERT_WSTREQ(dospath->Buffer, L"C:\\");
+	free(ntpath);
+	free(dospath);
+
+	ntpath = get_absolute_ntpath(AT_FDCWD, "/c/abc/../");
+	dospath = get_absolute_dospath(AT_FDCWD, "/c/abc/../");
+	ASSERT_WSTREQ(ntpath->Buffer, cdrive);
+	ASSERT_WSTREQ(dospath->Buffer, L"C:\\");
+	free(ntpath);
+	free(dospath);
+
+	cdrive[cdrive_length] = L'\0';
+	wcscat(cdrive, L"abc");
+
+	ntpath = get_absolute_ntpath(AT_FDCWD, "/c/abc/.");
+	dospath = get_absolute_dospath(AT_FDCWD, "/c/abc/.");
+	ASSERT_WSTREQ(ntpath->Buffer, cdrive);
+	ASSERT_WSTREQ(dospath->Buffer, L"C:\\abc");
+	free(ntpath);
+	free(dospath);
+
+	cdrive[cdrive_length] = L'\0';
+
+	ntpath = get_absolute_ntpath(AT_FDCWD, "/c/");
+	dospath = get_absolute_dospath(AT_FDCWD, "/c/");
+	ASSERT_WSTREQ(ntpath->Buffer, cdrive);
+	ASSERT_WSTREQ(dospath->Buffer, L"C:\\");
+	free(ntpath);
+	free(dospath);
+
+	ntpath = get_absolute_ntpath(AT_FDCWD, "/c");
+	dospath = get_absolute_dospath(AT_FDCWD, "/c");
+	ASSERT_WSTREQ(ntpath->Buffer, cdrive);
+	ASSERT_WSTREQ(dospath->Buffer, L"C:\\");
+	free(ntpath);
+	free(dospath);
+
+	// bad path
+	ntpath = get_absolute_ntpath(AT_FDCWD, "/c/..");
+	dospath = get_absolute_dospath(AT_FDCWD, "/c/..");
+	ASSERT_NULL(ntpath);
+	ASSERT_NULL(dospath);
+	free(ntpath);  // should be a nop
+	free(dospath); // should be a nop
+
+	fd = open("t-path", O_RDONLY);
+	ASSERT_NOTEQ(fd, -1);
+
+	// fd should be ignored
+	wcscat(cdrive, L"abc\\");
+	ntpath = get_absolute_ntpath(AT_FDCWD, "/c/abc/");
+	dospath = get_absolute_dospath(fd, "/c/abc/");
+	ASSERT_WSTREQ(ntpath->Buffer, cdrive);
+	ASSERT_WSTREQ(dospath->Buffer, L"C:\\abc\\");
+	free(ntpath);
+	free(dospath);
+
+	ASSERT_SUCCESS(close(fd));
+
+	return 0;
+}
+
 int main()
 {
 	char cwd_buf[32768];
@@ -407,6 +505,9 @@ int main()
 	TEST(test_at());
 	TEST(test_absolute_nt());
 	TEST(test_absolute_dos());
+
+	cdrive[cdrive_length] = L'\0';
+	TEST(test_absolute_cygwin_path());
 
 	rmdir("t-path");
 
