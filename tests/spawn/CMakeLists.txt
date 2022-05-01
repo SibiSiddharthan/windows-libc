@@ -28,7 +28,7 @@ target_compile_definitions(inherit-msvcrt PRIVATE TESTING_MSVCRT)
 set_target_properties(basic env cwd arg inherit-wlibc inherit-msvcrt PROPERTIES RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_CURRENT_BINARY_DIR})
 set_target_properties(basic env cwd arg inherit-wlibc inherit-msvcrt PROPERTIES RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_CURRENT_BINARY_DIR})
 
-add_executable(path path.c)
+add_executable(simple simple.c)
 
 add_executable(arg-shebang arg.c)
 target_link_libraries(arg-shebang wlibc)
@@ -37,5 +37,5 @@ add_executable(arg-shebang-spaces arg.c)
 target_link_libraries(arg-shebang-spaces wlibc)
 set_target_properties(arg-shebang-spaces PROPERTIES RUNTIME_OUTPUT_NAME "arg shebang")
 
-set_target_properties(path arg-shebang arg-shebang-spaces PROPERTIES RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_CURRENT_BINARY_DIR}/auxilary)
-set_target_properties(path arg-shebang arg-shebang-spaces PROPERTIES RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_CURRENT_BINARY_DIR}/auxilary)
+set_target_properties(simple arg-shebang arg-shebang-spaces PROPERTIES RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_CURRENT_BINARY_DIR}/auxilary)
+set_target_properties(simple arg-shebang arg-shebang-spaces PROPERTIES RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_CURRENT_BINARY_DIR}/auxilary)

@@ -604,7 +604,7 @@ int test_spawn_path()
 	char *newpath;
 	char *auxilary_location;
 	char auxilary_dir_buffer[256];
-	const char *program = "path.exe";
+	const char *program = "simple.exe";
 	char *argv[] = {(char *)program, NULL};
 
 	// The program executable won't be found.
