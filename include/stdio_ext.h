@@ -19,118 +19,105 @@ typedef struct _WLIBC_FILE FILE;
 #define FSETLOCKING_INTERNAL 1
 #define FSETLOCKING_BYCALLER 2
 
-typedef enum _WLIBC_FILE_STREAM_OPERATIONS
-{
-	bufsize = 0,
-	bufmode,
-	reading,
-	writing,
-	readable,
-	writeable,
-	pending_read,
-	pending_write,
-	purge,
-	increment,
-	locking,
-	buffer,
-	seterr,
-	maxop
-} WLIBC_FILE_STREAM_OPERATIONS;
-
-WLIBC_API size_t wlibc_fileops(FILE *stream, WLIBC_FILE_STREAM_OPERATIONS operation, void *arg);
+// Buffer queries
+WLIBC_API int wlibc_fbufmode(FILE *stream);
+WLIBC_API size_t wlibc_fbufsize(FILE *stream);
+WLIBC_API const char *wlibc_freadptr(FILE *stream, size_t *bufsize);
 
 WLIBC_INLINE size_t __fbufsize(FILE *stream)
 {
-	return wlibc_fileops(stream, bufsize, NULL);
+	return wlibc_fbufsize(stream);
 }
 
 WLIBC_INLINE size_t __fbufmode(FILE *stream)
 {
-	return wlibc_fileops(stream, bufmode, NULL);
-}
-
-WLIBC_INLINE int __freading(FILE *stream)
-{
-	return (int)wlibc_fileops(stream, reading, NULL);
-}
-
-WLIBC_INLINE int __fwriting(FILE *stream)
-{
-	return (int)wlibc_fileops(stream, writing, NULL);
-}
-
-WLIBC_INLINE int __freadable(FILE *stream)
-{
-	return (int)wlibc_fileops(stream, readable, NULL);
-}
-
-WLIBC_INLINE int __fwritable(FILE *stream)
-{
-	return (int)wlibc_fileops(stream, writeable, NULL);
+	return wlibc_fbufmode(stream);
 }
 
 WLIBC_INLINE int __ffbf(FILE *stream)
 {
-	if (wlibc_fileops(stream, bufmode, NULL) == _IOFBF)
-	{
-		return 1;
-	}
-	return 0;
+	return wlibc_fbufmode(stream) == _IOFBF;
 }
 
 WLIBC_INLINE int __flbf(FILE *stream)
 {
-	if (wlibc_fileops(stream, bufmode, NULL) == _IOLBF)
-	{
-		return 1;
-	}
-	return 0;
+	return wlibc_fbufmode(stream) == _IOLBF;
 }
 
 WLIBC_INLINE int __fnbf(FILE *stream)
 {
-	if (wlibc_fileops(stream, bufmode, NULL) == _IONBF)
-	{
-		return 1;
-	}
-	return 0;
-}
-
-WLIBC_INLINE size_t __freadahead(FILE *stream)
-{
-	return wlibc_fileops(stream, pending_read, NULL);
-}
-
-WLIBC_INLINE size_t __fpending(FILE *stream)
-{
-	return wlibc_fileops(stream, pending_write, NULL);
-}
-
-WLIBC_INLINE void __fpurge(FILE *stream)
-{
-	wlibc_fileops(stream, purge, NULL);
-}
-
-WLIBC_INLINE void __freadptrinc(FILE *stream, size_t size)
-{
-	wlibc_fileops(stream, increment, &size);
-}
-
-WLIBC_INLINE int __fsetlocking(FILE *stream, int type /*unused*/)
-{
-	return (int)wlibc_fileops(stream, locking, NULL);
+	return wlibc_fbufmode(stream) == _IONBF;
 }
 
 WLIBC_INLINE const char *__freadptr(FILE *stream, size_t *bufsize)
 {
-	// Cast the size_t into a pointer.
-	// CHECK 32bit
-	return (const char *)wlibc_fileops(stream, buffer, bufsize);
+	return wlibc_freadptr(stream, bufsize);
 }
+
+// Mode query
+WLIBC_API int wlibc_freading(FILE *stream);
+WLIBC_API int wlibc_fwriting(FILE *stream);
+WLIBC_API int wlibc_freadable(FILE *stream);
+WLIBC_API int wlibc_fwritable(FILE *stream);
+WLIBC_API size_t wlibc_freadahead(FILE *stream);
+WLIBC_API size_t wlibc_fpending(FILE *stream);
+
+WLIBC_INLINE int __freading(FILE *stream)
+{
+	return wlibc_freading(stream);
+}
+
+WLIBC_INLINE int __fwriting(FILE *stream)
+{
+	return wlibc_fwriting(stream);
+}
+
+WLIBC_INLINE int __freadable(FILE *stream)
+{
+	return wlibc_freadable(stream);
+}
+
+WLIBC_INLINE int __fwritable(FILE *stream)
+{
+	return wlibc_fwritable(stream);
+}
+
+WLIBC_INLINE size_t __freadahead(FILE *stream)
+{
+	return wlibc_freadahead(stream);
+}
+
+WLIBC_INLINE size_t __fpending(FILE *stream)
+{
+	return wlibc_fpending(stream);
+}
+
+// Buffer operations
+WLIBC_API void wlibc_fpurge(FILE *stream);
+WLIBC_API void wlibc_freadptrinc(FILE *stream, size_t size);
+
+WLIBC_INLINE void __fpurge(FILE *stream)
+{
+	wlibc_fpurge(stream);
+}
+
+WLIBC_INLINE void __freadptrinc(FILE *stream, size_t size)
+{
+	wlibc_freadptrinc(stream, size);
+}
+
+// Stream control
+WLIBC_API void wlibc_fseterr(FILE *stream);
+WLIBC_API int wlibc_fsetlocking(FILE *stream, int type /*unused*/);
 
 WLIBC_INLINE void __fseterr(FILE *stream)
 {
-	wlibc_fileops(stream, seterr, NULL);
+	wlibc_fseterr(stream);
+}
+
+WLIBC_INLINE int __fsetlocking(FILE *stream, int type /*unused*/)
+{
+	return wlibc_fsetlocking(stream, type);
 }
 
 _WLIBC_END_DECLS
