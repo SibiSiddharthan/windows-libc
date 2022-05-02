@@ -12,7 +12,7 @@
 #include <unistd.h>
 #include <Windows.h>
 
-// Same as LARGE_INTEGER_to_timespec from stat.c
+// Same as LARGE_INTEGER_to_timespec from convert.c
 struct timespec get_current_timespec(LARGE_INTEGER LT)
 {
 	struct timespec result;

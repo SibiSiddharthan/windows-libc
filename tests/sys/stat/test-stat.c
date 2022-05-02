@@ -7,6 +7,7 @@
 
 #include <tests/test.h>
 #include <fcntl.h>
+#include <stddef.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
@@ -296,6 +297,44 @@ int test_permissions_dir()
 	return 0;
 }
 
+int test_root()
+{
+	int status;
+	char cd[256];
+	struct stat cd_stat, root_stat;
+
+	getcwd(cd, 256);
+	cd[3] = '\0';
+
+	// stat
+	status = stat(cd, &cd_stat);
+	ASSERT_EQ(status, 0);
+
+	status = stat("/", &root_stat);
+	ASSERT_EQ(status, 0);
+
+	if (memcmp(&cd_stat, &root_stat, offsetof(struct stat, st_atim)) != 0)
+	{
+		printf("stat of root failed.\n");
+		return 1;
+	}
+
+	// lstat
+	status = lstat(cd, &cd_stat);
+	ASSERT_EQ(status, 0);
+
+	status = lstat("/", &root_stat);
+	ASSERT_EQ(status, 0);
+
+	if (memcmp(&cd_stat, &root_stat, offsetof(struct stat, st_atim)) != 0)
+	{
+		printf("lstat of root failed.\n");
+		return 1;
+	}
+
+	return 0;
+}
+
 void cleanup()
 {
 	remove("t-stat-rw");
@@ -334,6 +373,8 @@ int main()
 
 	TEST(test_permissions_file());
 	TEST(test_permissions_dir());
+
+	TEST(test_root());
 
 	VERIFY_RESULT_AND_EXIT();
 }

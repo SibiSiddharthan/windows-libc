@@ -383,13 +383,6 @@ int test_absolute_cygwin_path()
 	free(ntpath);
 	free(dospath);
 
-	ntpath = get_absolute_ntpath(AT_FDCWD, "/c\\abc");
-	dospath = get_absolute_dospath(AT_FDCWD, "/c\\abc");
-	ASSERT_WSTREQ(ntpath->Buffer, cdrive);
-	ASSERT_WSTREQ(dospath->Buffer, L"C:\\abc");
-	free(ntpath);
-	free(dospath);
-
 	wcscat(cdrive, L"\\");
 
 	ntpath = get_absolute_ntpath(AT_FDCWD, "/c/abc/");
@@ -466,6 +459,31 @@ int test_absolute_cygwin_path()
 	return 0;
 }
 
+int test_root()
+{
+	UNICODE_STRING *cd_ntpath, *cd_dospath, *root_ntpath, *root_dospath;
+	char cd[256];
+
+	getcwd(cd, 256);
+	cd[3] = '\0';
+
+	cd_ntpath = get_absolute_ntpath(AT_FDCWD, cd);
+	cd_dospath = get_absolute_ntpath(AT_FDCWD, cd);
+
+	root_ntpath = get_absolute_ntpath(AT_FDCWD, "/");
+	root_dospath = get_absolute_ntpath(AT_FDCWD, "\\");
+
+	ASSERT_WSTREQ(root_ntpath->Buffer, cd_ntpath->Buffer);
+	ASSERT_WSTREQ(root_dospath->Buffer, cd_dospath->Buffer);
+
+	free(cd_ntpath);
+	free(cd_dospath);
+	free(root_ntpath);
+	free(root_dospath);
+
+	return 0;
+}
+
 int main()
 {
 	char cwd_buf[32768];
@@ -510,6 +528,8 @@ int main()
 	TEST(test_absolute_cygwin_path());
 
 	rmdir("t-path");
+
+	TEST(test_root());
 
 	VERIFY_RESULT_AND_EXIT();
 }

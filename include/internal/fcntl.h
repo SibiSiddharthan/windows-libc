@@ -104,7 +104,7 @@ HANDLE just_reopen(HANDLE old_handle, ACCESS_MASK access, ULONG options);
 		return ret;                      \
 	}
 
-#define IS_ABSOLUTE_PATH(path) (((isalpha(path[0])) && (path[1] == ':')))
+#define IS_ABSOLUTE_PATH(path) (((isalpha(path[0])) && (path[1] == ':')) || (path[0] == '/'))
 
 #define VALIDATE_DIRFD(dirfd)               \
 	if (dirfd != AT_FDCWD)                  \

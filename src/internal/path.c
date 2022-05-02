@@ -225,6 +225,26 @@ UNICODE_STRING *get_absolute_ntpath2(int dirfd, const char *path, handle_t *type
 	// For all these predefined devices we set MaximumLength to be same as Length (omitting the terminating NULL).
 	// This enables us to use the static storage an avoids needless memory allocation.
 
+	// ROOT
+	if (path[1] == '\0' && (path[0] == '/' || path[0] == '\\'))
+	{
+		// We should be able to stat root as many programs need this.
+		// Here the root will refer to the current drive of the process.
+
+		// UTF-16LE char truncation.
+		device = dos_device_to_nt_device((char)(NtCurrentPeb()->ProcessParameters->CurrentDirectory.DosPath.Buffer[0]));
+		u16_ntpath = (UNICODE_STRING *)malloc(sizeof(UNICODE_STRING) + device->length + 2 * sizeof(WCHAR)); // '\\', '\0'
+
+		u16_ntpath->Buffer = (WCHAR *)((char *)u16_ntpath + sizeof(UNICODE_STRING));
+		u16_ntpath->Length = device->length + sizeof(WCHAR);
+		u16_ntpath->MaximumLength = u16_ntpath->Length + sizeof(WCHAR);
+
+		memcpy(u16_ntpath->Buffer, device->name, device->length);
+		memcpy((char *)u16_ntpath->Buffer + device->length, L"\\\0", 2 * sizeof(WCHAR));
+
+		return u16_ntpath;
+	}
+
 	// POSIX devices
 	if (strncmp(path, "/dev/", 5) == 0)
 	{
@@ -363,7 +383,15 @@ UNICODE_STRING *get_absolute_ntpath2(int dirfd, const char *path, handle_t *type
 		path_is_absolute = true;
 		if (path[0] == '/')
 		{
-			cygwin_path = true;
+			if (isalpha(path[1]) && (path[2] == '/' || path[2] == '\0'))
+			{
+				cygwin_path = true;
+			}
+			else // /abcd (Bad path).
+			{
+				errno = ENOENT;
+				return NULL;
+			}
 		}
 	}
 	else
@@ -390,7 +418,7 @@ UNICODE_STRING *get_absolute_ntpath2(int dirfd, const char *path, handle_t *type
 			device = dos_device_to_nt_device((char)pu16_cwd->Buffer[0]);
 
 			memcpy(rootdir_buffer, device->name, device->length);
-			memcpy(rootdir_buffer + device->length, pu16_cwd->Buffer + 2, cwd_length_without_drive_letter);
+			memcpy(rootdir_buffer + device->length, (char *)pu16_cwd->Buffer + (2 * sizeof(WCHAR)), cwd_length_without_drive_letter);
 
 			u16_rootdir.Length = device->length + cwd_length_without_drive_letter;
 			u16_rootdir.MaximumLength = u16_rootdir.Length;
@@ -483,7 +511,8 @@ UNICODE_STRING *get_absolute_ntpath2(int dirfd, const char *path, handle_t *type
 		}
 
 		memcpy((char *)ntpath_buffer, device->name, device->length);
-		memcpy((char *)ntpath_buffer + device->length, u16_path.Buffer + 2, u16_path.MaximumLength - 2 * sizeof(WCHAR));
+		memcpy((char *)ntpath_buffer + device->length, (char *)u16_path.Buffer + (2 * sizeof(WCHAR)),
+			   u16_path.MaximumLength - (2 * sizeof(WCHAR)));
 	}
 
 	RtlFreeUnicodeString(&u16_path);
