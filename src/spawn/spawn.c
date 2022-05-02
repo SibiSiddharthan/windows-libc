@@ -717,7 +717,7 @@ static UNICODE_STRING *shebang_get_executable_and_args(const UNICODE_STRING *dos
 		shebang_arg_normalized = convert_argv_to_windows_cmd(line_buffer + start_of_args, &shebang_arg_normalized_size);
 
 		u8_shebang_arg.Buffer = shebang_arg_normalized == NULL ? &line_buffer[start_of_args] : shebang_arg_normalized;
-		u8_shebang_arg.Length = shebang_arg_normalized_size;
+		u8_shebang_arg.Length = (USHORT)shebang_arg_normalized_size;
 		u8_shebang_arg.MaximumLength = u8_shebang_arg.Length + 1;
 
 		RtlUTF8StringToUnicodeString(&u16_shebang_arg, &u8_shebang_arg, TRUE);
@@ -753,8 +753,8 @@ static UNICODE_STRING *shebang_get_executable_and_args(const UNICODE_STRING *dos
 	dos_shebang_exe_with_args_used += dospath->MaximumLength;
 
 	dos_shebang_exe_with_args->Buffer = (WCHAR *)((CHAR *)dos_shebang_exe_with_args + sizeof(UNICODE_STRING));
-	dos_shebang_exe_with_args->Length = dos_shebang_exe_with_args_used;
-	dos_shebang_exe_with_args->MaximumLength = dos_shebang_exe_with_args_used;
+	dos_shebang_exe_with_args->Length = (USHORT)dos_shebang_exe_with_args_used;
+	dos_shebang_exe_with_args->MaximumLength = (USHORT)dos_shebang_exe_with_args_used;
 
 	free(shebang_arg_normalized);
 	free(shebang_exe);
@@ -806,7 +806,7 @@ static WCHAR *convert_argv_to_wargv(char *const argv[], size_t *size)
 		argv_normalized[i] = new_arg;
 
 		u8_args[i].Buffer = new_arg == NULL ? argv[i] : argv_normalized[i];
-		u8_args[i].Length = arg_size;
+		u8_args[i].Length = (USHORT)arg_size;
 		u8_args[i].MaximumLength = u8_args[i].Length + 1;
 
 		argv_size += u8_args[i].MaximumLength;

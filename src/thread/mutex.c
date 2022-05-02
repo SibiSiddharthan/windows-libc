@@ -89,7 +89,7 @@ int wlibc_mutex_destroy(mutex_t *mutex)
 int wlibc_mutex_common_lock(mutex_t *restrict mutex, const struct timespec *restrict abstime)
 {
 	NTSTATUS status;
-	LARGE_INTEGER timeout;
+	LARGE_INTEGER timeout = {0};
 
 	// First check if we are trying to acquire a non-recursive mutex recursively.
 	if ((mutex->type & WLIBC_MUTEX_RECURSIVE) != WLIBC_MUTEX_RECURSIVE)

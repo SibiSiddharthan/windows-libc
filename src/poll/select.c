@@ -99,7 +99,7 @@ int wlibc_common_select(int nfds, fd_set *restrict readfds, fd_set *restrict wri
 
 	int poll_result;
 	int select_result = 0;
-	int error;
+	int error = 0;
 
 	poll_result = wlibc_common_poll(pollfds, countfds, timeout, sigmask);
 	if (poll_result == -1)

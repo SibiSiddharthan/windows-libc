@@ -38,7 +38,6 @@ void *join(void *arg)
 void *bigexit(void *arg)
 {
 	pthread_exit((void *)0xffffffffffffffff);
-	return NULL;
 }
 
 void cleanup_routine(void *arg)
