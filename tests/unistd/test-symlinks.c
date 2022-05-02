@@ -382,122 +382,6 @@ int test_multilevel_symlink()
 	return 0;
 }
 
-#if 0
-
-// Redundant tests
-
-void test_sub_directory()
-{
-	mkdir("t-readlink", 0700);
-	int fd = creat("t-readlink/file", 0700);
-	close(fd);
-	int status = symlink("file", "t-readlink/file.sym");
-	ASSERT_EQ(status, 0);
-	char buf[MAX_PATH];
-	ssize_t length = readlink("t-readlink/file.sym", buf, MAX_PATH);
-	buf[length] = '\0';
-	ASSERT_EQ(length, 4);
-	ASSERT_STREQ(buf, "file");
-	unlink("t-readlink/file.sym");
-	unlink("t-readlink/file");
-	rmdir("t-readlink");
-}
-
-void test_parent_directory()
-{
-	int fd = creat("../file", 0700);
-	close(fd);
-	int status = symlink("file", "../file.sym");
-	ASSERT_EQ(status, 0);
-	char buf[MAX_PATH];
-	ssize_t length = readlink("../file.sym", buf, MAX_PATH);
-	buf[length] = '\0';
-	ASSERT_EQ(length, 4);
-	ASSERT_STREQ(buf, "file");
-	unlink("../file.sym");
-	unlink("../file");
-}
-
-// symlink is in subdirectory
-void test_cross_directory1()
-{
-	mkdir("t-readlink", 0700);
-	int fd = creat("file", 0700);
-	close(fd);
-	int status = symlink("../file", "t-readlink/file.sym");
-	ASSERT_EQ(status, 0);
-	char buf[MAX_PATH];
-	ssize_t length = readlink("t-readlink/file.sym", buf, MAX_PATH);
-	buf[length] = '\0';
-	ASSERT_EQ(length, 7);
-	ASSERT_STREQ(buf, "../file");
-	unlink("t-readlink/file.sym");
-	unlink("file");
-	rmdir("t-readlink");
-}
-
-// symlink is in parent directory
-void test_cross_directory2()
-{
-	mkdir("t-readlink", 0700);
-	int fd = creat("t-readlink/file", 0700);
-	close(fd);
-	int status = symlink("t-readlink/file", "file.sym");
-	ASSERT_EQ(status, 0);
-	char buf[MAX_PATH];
-	ssize_t length = readlink("file.sym", buf, MAX_PATH);
-	buf[length] = '\0';
-	ASSERT_EQ(length, 15);
-	ASSERT_STREQ(buf, "t-readlink/file");
-	unlink("t-readlink/file");
-	unlink("file.sym");
-	rmdir("t-readlink");
-}
-
-/* Try to link this way
-   ??/tests/unistd/t-readlink/file.sym -> ??/tests/t-readlink/file
-*/
-void test_cross_directory3()
-{
-	mkdir("t-readlink", 0700);
-	mkdir("../t-readlink", 0700);
-	int fd = creat("../t-readlink/file", 0700);
-	close(fd);
-	int status = symlink("../../t-readlink/file", "t-readlink/file.sym");
-	ASSERT_EQ(status, 0);
-	char buf[MAX_PATH];
-	ssize_t length = readlink("t-readlink/file.sym", buf, MAX_PATH);
-	buf[length] = '\0';
-	ASSERT_EQ(length, 21);
-	ASSERT_STREQ(buf, "../../t-readlink/file");
-	unlink("../t-readlink/file");
-	unlink("t-readlink/file.sym");
-	rmdir("t-readlink");
-	rmdir("../t-readlink");
-}
-
-// reverse of above test
-void test_cross_directory4()
-{
-	mkdir("t-readlink", 0700);
-	mkdir("../t-readlink", 0700);
-	int fd = creat("t-readlink/file", 0700);
-	close(fd);
-	int status = symlink("../unistd/t-readlink/file", "../t-readlink/file.sym");
-	ASSERT_EQ(status, 0);
-	char buf[MAX_PATH];
-	ssize_t length = readlink("../t-readlink/file.sym", buf, MAX_PATH);
-	buf[length] = '\0';
-	ASSERT_EQ(length, 25);
-	ASSERT_STREQ(buf, "../unistd/t-readlink/file");
-	unlink("../t-readlink/file.sym");
-	unlink("t-readlink/file");
-	rmdir("t-readlink");
-	rmdir("../t-readlink");
-}
-
-#endif
-
 int test_readlink_small_buffer()
 {
 	int status;
@@ -612,6 +496,46 @@ int test_at_empty_path()
 	return 0;
 }
 
+int test_cygwin_path()
+{
+	int status;
+	int fd;
+	ssize_t length;
+	char filename_absolute_cygwin[MAX_PATH], filename_absolute[MAX_PATH], buf[MAX_PATH];
+	const char *filename = "t-readlink-abs.cygwin";
+	const char *linkname = "t-readlink-abs.cygwin.sym";
+
+	fd = creat(filename, 0700);
+	ASSERT_SUCCESS(write_file_contents(fd));
+	ASSERT_SUCCESS(close(fd));
+
+	getcwd(filename_absolute_cygwin, MAX_PATH);
+	strcat(filename_absolute_cygwin, "/");
+	strcat(filename_absolute_cygwin, filename);
+
+	// C: -> /C
+	filename_absolute_cygwin[1] = filename_absolute_cygwin[0];
+	filename_absolute_cygwin[0] = '/';
+
+	getcwd(filename_absolute, MAX_PATH);
+	strcat(filename_absolute, "/");
+	strcat(filename_absolute, filename);
+
+	status = symlink(filename_absolute_cygwin, linkname);
+	ASSERT_EQ(status, 0);
+
+	length = readlink(linkname, buf, MAX_PATH);
+	buf[length] = '\0';
+	ASSERT_EQ(length, strlen(filename_absolute));
+	ASSERT_STREQ(buf, filename_absolute);
+
+	ASSERT_SUCCESS(verify_file_contents(AT_FDCWD, linkname));
+	ASSERT_SUCCESS(unlink(linkname));
+	ASSERT_SUCCESS(unlink(filename));
+
+	return 0;
+}
+
 void cleanup()
 {
 	remove("t-symlink-exist");
@@ -647,6 +571,9 @@ void cleanup()
 
 	remove("t-readlinkat-empty-path");
 	remove("t-readlinkat-empty-path.sym");
+
+	remove("t-readlink-abs.cygwin");
+	remove("t-readlink-abs.cygwin.sym");
 }
 
 int main()
@@ -675,6 +602,9 @@ int main()
 	// at tests
 	TEST(test_at());
 	TEST(test_at_empty_path());
+
+	// cygwin compatibility tests.
+	TEST(test_cygwin_path())
 
 	VERIFY_RESULT_AND_EXIT();
 }

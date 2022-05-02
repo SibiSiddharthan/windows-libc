@@ -29,28 +29,38 @@ int common_symlink(const char *restrict source, int dirfd, const char *restrict 
 		return -1;
 	}
 
-	// TODO cygwin shenanigans
+	char *normalized_source = NULL;
+	size_t target_length = strlen(target);
+	size_t source_length = strlen(source);
 	bool is_absolute = false;
-	if (isalpha(source[0]) && source[1] == ':')
+
+	if (IS_ABSOLUTE_PATH(source))
 	{
 		is_absolute = true;
 	}
 
 	// Try opening the source
-	size_t target_length = strlen(target);
-	size_t source_length = strlen(source);
-	char *normalized_source = malloc(target_length + source_length + 5); // '/../' + NULL
-	// This is an easy way of checking whether the link text if it exists is a directory or a file.
-	memcpy(normalized_source, target, target_length + 1); // Including NULL
-	if (target[target_length - 1] != '/' && target[target_length - 1] != '\\')
+	if (!is_absolute)
 	{
-		strcat(normalized_source, "/");
-	}
-	strcat(normalized_source, "../");
-	strcat(normalized_source, source);
+		normalized_source = malloc(target_length + source_length + 5); // '/../' + NULL
+		// This is an easy way of checking whether the link text if it exists is a directory or a file.
+		memcpy(normalized_source, target, target_length + 1); // Including NULL
+		if (target[target_length - 1] != '/' && target[target_length - 1] != '\\')
+		{
+			strcat(normalized_source, "/");
+		}
+		strcat(normalized_source, "../");
+		strcat(normalized_source, source);
 
-	u16_ntsource = get_absolute_ntpath(dirfd, normalized_source);
-	free(normalized_source);
+		u16_ntsource = get_absolute_ntpath(dirfd, normalized_source);
+		free(normalized_source);
+	}
+	else
+	{
+		// Source is an absolute path. Just use it as is.
+		u16_ntsource = get_absolute_ntpath(dirfd, source);
+	}
+
 	if (u16_ntsource == NULL)
 	{
 		// Bad path
@@ -75,7 +85,7 @@ int common_symlink(const char *restrict source, int dirfd, const char *restrict 
 			errno = 0; // clear errno
 		}
 	}
-	else // file exists and is a normal file, close the handle
+	else // file exists and is a normal file, close the handle.
 	{
 		NtClose(source_handle);
 	}
@@ -101,7 +111,21 @@ int common_symlink(const char *restrict source, int dirfd, const char *restrict 
 	u8_source.Buffer = (PCHAR)source;
 	RtlUTF8StringToUnicodeString(&u16_source, &u8_source, TRUE);
 
-	// convert all forward slashes to back slashes
+	// Handle cygwin paths
+	if (u16_source.Buffer[0] == L'/' && isalpha((char)u16_source.Buffer[1]))
+	{
+		// Change /c to C:.
+		u16_source.Buffer[0] = towupper(u16_source.Buffer[1]);
+		u16_source.Buffer[1] = L':';
+	}
+
+	// Convert drive letter to uppercase.
+	if (is_absolute)
+	{
+		u16_source.Buffer[0] = towupper(u16_source.Buffer[0]);
+	}
+
+	// Convert all forward slashes to back slashes.
 	for (int i = 0; u16_source.Buffer[i] != L'\0'; i++)
 	{
 		if (u16_source.Buffer[i] == L'/')
