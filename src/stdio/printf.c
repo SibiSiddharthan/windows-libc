@@ -90,3 +90,28 @@ int wlibc_vsnprintf(char *restrict buffer, size_t size, const char *restrict for
 	return __stdio_common_vsprintf_p(_CRT_INTERNAL_LOCAL_PRINTF_OPTIONS | _CRT_INTERNAL_PRINTF_STANDARD_SNPRINTF_BEHAVIOR, buffer, size,
 									 format, NULL, args);
 }
+
+char *wlibc_vasnprintf(char *restrict buffer, size_t *size, const char *restrict format, va_list args)
+{
+	int count = number_of_chars(format, args);
+	if (count == -1)
+	{
+		return NULL;
+	}
+
+	// Use the buffer provided.
+	if (buffer != NULL && *size >= (size_t)count)
+	{
+		count = print_chars(buffer, *size, format, args);
+		*size = count;
+		return buffer;
+	}
+	else
+	{
+		// Allocate a new buffer.
+		buffer = (char *)malloc(count + 1);
+		count = print_chars(buffer, *size, format, args);
+		*size = count;
+		return buffer;
+	}
+}

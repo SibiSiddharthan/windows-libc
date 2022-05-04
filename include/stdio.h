@@ -278,6 +278,7 @@ WLIBC_API int wlibc_vsnprintf(char *restrict buffer, size_t size, const char *re
 WLIBC_API int wlibc_vdprintf(int fd, const char *restrict format, va_list args);
 WLIBC_API int wlibc_vfprintf(FILE *restrict stream, const char *restrict format, va_list args);
 WLIBC_API int wlibc_vasprintf(char **restrict buffer, const char *restrict format, va_list args);
+WLIBC_API char *wlibc_vasnprintf(char *restrict buffer, size_t *size, const char *restrict format, va_list args);
 
 WLIBC_INLINE int vasprintf(char **restrict buffer, const char *restrict format, va_list args)
 {
@@ -287,6 +288,11 @@ WLIBC_INLINE int vasprintf(char **restrict buffer, const char *restrict format, 
 WLIBC_INLINE int vsnprintf(char *restrict buffer, size_t size, const char *restrict format, va_list args)
 {
 	return wlibc_vsnprintf(buffer, size, format, args);
+}
+
+WLIBC_INLINE char *vasnprintf(char *restrict buffer, size_t *size, const char *restrict format, va_list args)
+{
+	return wlibc_vasnprintf(buffer, size, format, args);
 }
 
 WLIBC_INLINE int vsprintf(char *restrict buffer, const char *restrict format, va_list args)
@@ -359,6 +365,15 @@ WLIBC_INLINE int asprintf(char **restrict buffer, const char *restrict format, .
 	va_list args;
 	va_start(args, format);
 	int result = wlibc_vasprintf(buffer, format, args);
+	va_end(args);
+	return result;
+}
+
+WLIBC_INLINE char *asnprintf(char *restrict buffer, size_t *size, const char *restrict format, ...)
+{
+	va_list args;
+	va_start(args, format);
+	char *result = wlibc_vasnprintf(buffer, size, format, args);
 	va_end(args);
 	return result;
 }
