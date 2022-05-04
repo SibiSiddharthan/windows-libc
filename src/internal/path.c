@@ -226,7 +226,7 @@ UNICODE_STRING *get_absolute_ntpath2(int dirfd, const char *path, handle_t *type
 	// This enables us to use the static storage an avoids needless memory allocation.
 
 	// ROOT
-	if (path[1] == '\0' && (path[0] == '/' || path[0] == '\\'))
+	if (IS_ROOT_PATH(path))
 	{
 		// We should be able to stat root as many programs need this.
 		// Here the root will refer to the current drive of the process.
@@ -375,10 +375,7 @@ UNICODE_STRING *get_absolute_ntpath2(int dirfd, const char *path, handle_t *type
 	// After this point the path will be either a FILE_HANDLE or DIRECTORY_HANDLE. Set it to FILE_HANDLE.
 	*type = FILE_HANDLE;
 
-	if ( // Normal Windows way -> C:
-		(isalpha(path[0]) && path[1] == ':') ||
-		// Cygwin way /c
-		path[0] == '/')
+	if (IS_ABSOLUTE_PATH(path))
 	{
 		path_is_absolute = true;
 		if (path[0] == '/')

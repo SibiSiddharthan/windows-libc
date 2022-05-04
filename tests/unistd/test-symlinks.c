@@ -5,11 +5,12 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <fcntl.h>
 #include <tests/test.h>
+#include <fcntl.h>
 #include <errno.h>
-#include <unistd.h>
+#include <stddef.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 #define MAX_PATH 260
 
@@ -536,6 +537,62 @@ int test_cygwin_path()
 	return 0;
 }
 
+int test_root()
+{
+	int status;
+	ssize_t length;
+	struct stat cd_stat, root_stat, exp_stat;
+	char cd[MAX_PATH], buf[MAX_PATH];
+	const char *linkname_root = "t-readlink-root.sym";
+	const char *linkname_cd = "t-readlink-cd.sym";
+
+	getcwd(cd, MAX_PATH);
+	cd[3] = '\0';
+
+	ASSERT_SUCCESS(stat(cd, &exp_stat));
+
+	// root
+	status = symlink("/", linkname_root);
+	ASSERT_EQ(status, 0);
+
+	length = readlink(linkname_root, buf, MAX_PATH);
+	buf[length] = '\0';
+	ASSERT_EQ(length, strlen(cd));
+	ASSERT_STREQ(buf, cd);
+
+	ASSERT_SUCCESS(stat(linkname_root, &root_stat));
+	if (memcmp(&root_stat, &exp_stat, offsetof(struct stat, st_atim)) != 0)
+	{
+		printf("stat of root symlink failed.\n");
+		return 1;
+	}
+
+	// cd
+	cd[2] = '\0'; // C:/ -> C:
+
+	status = symlink(cd, linkname_cd);
+	ASSERT_EQ(status, 0);
+
+	cd[2] = '/';
+
+	length = readlink(linkname_cd, buf, MAX_PATH);
+	buf[length] = '\0';
+	ASSERT_EQ(length, strlen(cd));
+	ASSERT_STREQ(buf, cd);
+
+	ASSERT_SUCCESS(stat(linkname_cd, &cd_stat));
+	if (memcmp(&cd_stat, &exp_stat, offsetof(struct stat, st_atim)) != 0)
+	{
+		printf("stat of cd symlink failed.\n");
+		return 1;
+	}
+
+	ASSERT_SUCCESS(rmdir(linkname_root));
+	ASSERT_SUCCESS(rmdir(linkname_cd));
+
+	return 0;
+}
+
 void cleanup()
 {
 	remove("t-symlink-exist");
@@ -574,6 +631,9 @@ void cleanup()
 
 	remove("t-readlink-abs.cygwin");
 	remove("t-readlink-abs.cygwin.sym");
+
+	remove("t-readlink-root.sym");
+	remove("t-readlink-cd.sym");
 }
 
 int main()
@@ -604,7 +664,8 @@ int main()
 	TEST(test_at_empty_path());
 
 	// cygwin compatibility tests.
-	TEST(test_cygwin_path())
+	TEST(test_cygwin_path());
+	TEST(test_root());
 
 	VERIFY_RESULT_AND_EXIT();
 }

@@ -92,7 +92,7 @@ HANDLE just_reopen(HANDLE old_handle, ACCESS_MASK access, ULONG options);
 #define EXCLUSIVE_UNLOCK_FD_TABLE() RtlReleaseSRWLockExclusive(&_wlibc_fd_table_srwlock)
 
 #define FD_IN_TABLE(fd)     (fd < _wlibc_fd_table_size)
-#define FD_GET_HANDLE(fd)   ((HANDLE)(INT_PTR)_wlibc_fd_table[fd].handle)
+#define FD_GET_HANDLE(fd)   (_wlibc_fd_table[fd].handle)
 #define FD_GET_TYPE(fd)     (_wlibc_fd_table[fd].type)
 #define FD_GET_FLAGS(fd)    (_wlibc_fd_table[fd].flags)
 #define FD_GET_SEQUENCE(fd) (_wlibc_fd_table[fd].sequence)
@@ -104,7 +104,10 @@ HANDLE just_reopen(HANDLE old_handle, ACCESS_MASK access, ULONG options);
 		return ret;                      \
 	}
 
-#define IS_ABSOLUTE_PATH(path) (((isalpha(path[0])) && (path[1] == ':')) || (path[0] == '/'))
+#define IS_ABSOLUTE_PATH(path) \
+	(/* Normal Windows way -> C: */ ((isalpha(path[0])) && (path[1] == ':')) || /* Cygwin way /c */ (path[0] == '/'))
+
+#define IS_ROOT_PATH(path) ((path[1] == '\0') && ((path[0] == '/') || (path[0] == '\\')))
 
 #define VALIDATE_DIRFD(dirfd)               \
 	if (dirfd != AT_FDCWD)                  \
