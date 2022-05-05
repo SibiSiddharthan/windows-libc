@@ -38,6 +38,10 @@ if(ENABLE_PROCESS)
 	add_subdirectory(sys/wait)
 endif()
 
+if(ENABLE_SYS_RESOURCE)
+	add_subdirectory(sys/resource)
+endif()
+
 if(ENABLE_RANDOM)
 	add_subdirectory(sys/random)
 endif()

@@ -34,56 +34,6 @@ static KPRIORITY get_base_priority_of_class(UCHAR priority_class)
 	}
 }
 
-int wlibc_sched_getparam(pid_t pid, struct sched_param *param)
-{
-	int result = -1;
-	NTSTATUS status;
-	HANDLE handle;
-	PROCESS_BASIC_INFORMATION basic_info;
-	PROCESS_PRIORITY_CLASS priority_class;
-
-	if (param == NULL)
-	{
-		errno = EINVAL;
-		return -1;
-	}
-
-	handle = open_process(pid, PROCESS_QUERY_INFORMATION);
-	if (handle == 0)
-	{
-		// errno will be set by `open_process`.
-		return -1;
-	}
-
-	status = NtQueryInformationProcess(handle, ProcessBasicInformation, &basic_info, sizeof(PROCESS_BASIC_INFORMATION), NULL);
-	if (status != STATUS_SUCCESS)
-	{
-		map_ntstatus_to_errno(status);
-		goto finish;
-	}
-
-	status = NtQueryInformationProcess(handle, ProcessPriorityClass, &priority_class, sizeof(PROCESS_PRIORITY_CLASS), NULL);
-	if (status != STATUS_SUCCESS)
-	{
-		map_ntstatus_to_errno(status);
-		goto finish;
-	}
-
-	param->sched_priority = basic_info.BasePriority - get_base_priority_of_class(priority_class.PriorityClass);
-
-	// Bound the priorities.
-	param->sched_priority = (param->sched_priority < -2 ? -2 : (param->sched_priority > 2 ? 2 : param->sched_priority));
-
-	result = 0;
-
-finish:
-	if (handle != NtCurrentProcess())
-	{
-		NtClose(handle);
-	}
-	return result;
-}
-
 int adjust_priority_of_process(HANDLE process, KPRIORITY new_priority)
 {
 	NTSTATUS status;
@@ -163,6 +113,56 @@ int adjust_priority_of_process(HANDLE process, KPRIORITY new_priority)
 	}
 
 	return 0;
+}
+
+int wlibc_sched_getparam(pid_t pid, struct sched_param *param)
+{
+	int result = -1;
+	NTSTATUS status;
+	HANDLE handle;
+	PROCESS_BASIC_INFORMATION basic_info;
+	PROCESS_PRIORITY_CLASS priority_class;
+
+	if (param == NULL)
+	{
+		errno = EINVAL;
+		return -1;
+	}
+
+	handle = open_process(pid, PROCESS_QUERY_INFORMATION);
+	if (handle == 0)
+	{
+		// errno will be set by `open_process`.
+		return -1;
+	}
+
+	status = NtQueryInformationProcess(handle, ProcessBasicInformation, &basic_info, sizeof(PROCESS_BASIC_INFORMATION), NULL);
+	if (status != STATUS_SUCCESS)
+	{
+		map_ntstatus_to_errno(status);
+		goto finish;
+	}
+
+	status = NtQueryInformationProcess(handle, ProcessPriorityClass, &priority_class, sizeof(PROCESS_PRIORITY_CLASS), NULL);
+	if (status != STATUS_SUCCESS)
+	{
+		map_ntstatus_to_errno(status);
+		goto finish;
+	}
+
+	param->sched_priority = basic_info.BasePriority - get_base_priority_of_class(priority_class.PriorityClass);
+
+	// Bound the priorities.
+	param->sched_priority = (param->sched_priority < -2 ? -2 : (param->sched_priority > 2 ? 2 : param->sched_priority));
+
+	result = 0;
+
+finish:
+	if (handle != NtCurrentProcess())
+	{
+		NtClose(handle);
+	}
+	return result;
 }
 
 int wlibc_sched_setparam(pid_t pid, const struct sched_param *param)

@@ -1886,7 +1886,10 @@ NtWaitForMultipleObjects(_In_ ULONG Count, _In_reads_(Count) HANDLE Handles[], _
 
 typedef enum _PROCESSINFOCLASS
 {
-	ProcessBasicInformation,
+	ProcessBasicInformation = 0,
+	ProcessQuotaLimits = 1,
+	ProcessIoCounters = 2,
+	ProcessVmCounters = 3,
 	ProcessTimes = 4,
 	ProcessBasePriority = 5,
 	ProcessRaisePriority = 6,
@@ -1925,6 +1928,44 @@ typedef struct _PROCESS_PRIORITY_CLASS
 	BOOLEAN Foreground;
 	UCHAR PriorityClass;
 } PROCESS_PRIORITY_CLASS, *PPROCESS_PRIORITY_CLASS;
+
+typedef struct _VM_COUNTERS
+{
+	SIZE_T PeakVirtualSize;
+	SIZE_T VirtualSize;
+	ULONG PageFaultCount;
+	SIZE_T PeakWorkingSetSize;
+	SIZE_T WorkingSetSize;
+	SIZE_T QuotaPeakPagedPoolUsage;
+	SIZE_T QuotaPagedPoolUsage;
+	SIZE_T QuotaPeakNonPagedPoolUsage;
+	SIZE_T QuotaNonPagedPoolUsage;
+	SIZE_T PagefileUsage;
+	SIZE_T PeakPagefileUsage;
+} VM_COUNTERS, *PVM_COUNTERS;
+
+typedef struct _VM_COUNTERS_EX
+{
+	SIZE_T PeakVirtualSize;
+	SIZE_T VirtualSize;
+	ULONG PageFaultCount;
+	SIZE_T PeakWorkingSetSize;
+	SIZE_T WorkingSetSize;
+	SIZE_T QuotaPeakPagedPoolUsage;
+	SIZE_T QuotaPagedPoolUsage;
+	SIZE_T QuotaPeakNonPagedPoolUsage;
+	SIZE_T QuotaNonPagedPoolUsage;
+	SIZE_T PagefileUsage;
+	SIZE_T PeakPagefileUsage;
+	SIZE_T PrivateUsage;
+} VM_COUNTERS_EX, *PVM_COUNTERS_EX;
+
+typedef struct _VM_COUNTERS_EX2
+{
+	VM_COUNTERS_EX CountersEx;
+	SIZE_T PrivateWorkingSetSize;
+	SIZE_T SharedCommitUsage;
+} VM_COUNTERS_EX2, *PVM_COUNTERS_EX2;
 
 typedef struct _PROCESS_BASIC_INFORMATION
 {

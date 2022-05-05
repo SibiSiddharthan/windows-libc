@@ -13,8 +13,9 @@ typedef unsigned long long ino_t; // 64-bit inodes only
 typedef long long int off_t;
 typedef int uid_t;
 typedef int gid_t;
-typedef long long int ssize_t;
 typedef int pid_t;
+typedef int id_t;
+typedef long long int ssize_t;
 typedef unsigned int dev_t;
 typedef unsigned long nlink_t;
 typedef unsigned short blksize_t;

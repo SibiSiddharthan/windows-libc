@@ -5,14 +5,4 @@
    Refer to the LICENSE file at the root directory for details.
 ]]
 
-wlibc_module(
-MODULE sys.resource
-
-SOURCES
-priority.c
-rlimit.c
-rusage.c
-
-HEADERS
-sys/resource.h
-)
+wlibc_add_tests(rusage)
