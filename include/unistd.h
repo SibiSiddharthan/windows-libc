@@ -377,6 +377,47 @@ WLIBC_INLINE ssize_t write(int fd, const void *buf, size_t count)
 	return wlibc_write(fd, buf, count);
 }
 
+// pathconf names
+#define _PC_LINK_MAX         0 // The maximum number of links to the file.
+#define _PC_MAX_CANON        1 // The maximum length of a formatted input line(terminal).
+#define _PC_MAX_INPUT        2 // The maximum length of a input line(terminal).
+#define _PC_NAME_MAX         3 // The maximum length of a filename relative to a directory.
+#define _PC_PATH_MAX         4 // The maximum length of a filename.
+#define _PC_PIPE_BUF         5 // The pipe buffer size(pipes).
+#define _PC_CHOWN_RESTRICTED 6 // Does chown requires privileges.
+#define _PC_NO_TRUNC         7 // Does accessing filenames longers than maximum give error.
+#define _PC_VDISABLE         8 // Can special character processing be disabled(terminal).
+
+WLIBC_API long wlibc_common_pathconf(int fd /*unused*/, const char *path /*unused*/, int name);
+
+WLIBC_INLINE long pathconf(const char *path, int name)
+{
+	return wlibc_common_pathconf(-1, path, name);
+}
+
+WLIBC_INLINE long fpathconf(int fd, int name)
+{
+	return wlibc_common_pathconf(fd, NULL, name);
+}
+
+// sysconf names
+#define _SC_ARG_MAX       0
+#define _SC_CHILD_MAX     1
+#define _SC_CLK_TCK       2
+#define _SC_NGROUPS_MAX   3
+#define _SC_OPEN_MAX      4
+#define _SC_STREAM_MAX    5
+#define _SC_PAGESIZE      6
+#define _SC_SYMLOOP_MAX   7
+#define _SC_HOST_NAME_MAX 8
+#define _SC_PAGE_SIZE     _SC_PAGESIZE
+
+WLIBC_API long wlibc_sysconf(int name);
+WLIBC_INLINE long sysconf(int name)
+{
+	return wlibc_sysconf(name);
+}
+
 _WLIBC_END_DECLS
 
 #endif

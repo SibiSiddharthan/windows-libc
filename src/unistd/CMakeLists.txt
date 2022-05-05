@@ -13,6 +13,7 @@ access.c
 chdir.c
 chown.c
 close.c
+conf.c
 domainname.c
 dup.c
 exec.c
