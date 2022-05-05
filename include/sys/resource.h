@@ -28,8 +28,8 @@ typedef unsigned long long rlim_t;
 #define RLIMIT_STACK  5 // limit on stack size
 #define RLIMIT_AS     6 // limit on address space size
 
-// min/max priorities
-#define PRIO_MIN 1
+// min/max nice values
+#define PRIO_MIN -15
 #define PRIO_MAX 15
 
 // priority which
@@ -84,7 +84,7 @@ WLIBC_INLINE int getpriority(int which, id_t who)
 	return wlibc_getpriority(which, who);
 }
 
-WLIBC_INLINE int setpriority(int which, id_t who, int priority)
+WLIBC_INLINE int setpriority(int which, id_t who, int priority /*actually nice*/)
 {
 	return wlibc_setpriority(which, who, priority);
 }

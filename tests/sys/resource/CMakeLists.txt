@@ -5,4 +5,6 @@
    Refer to the LICENSE file at the root directory for details.
 ]]
 
-wlibc_add_tests(rusage)
+wlibc_add_tests(
+priority
+rusage)
