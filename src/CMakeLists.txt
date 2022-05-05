@@ -95,6 +95,7 @@ endif()
 install(TARGETS wlibc LIBRARY DESTINATION lib)
 install(FILES ${CMAKE_SOURCE_DIR}/include/wlibc.h DESTINATION include)
 install(FILES ${CMAKE_SOURCE_DIR}/include/sys/types.h DESTINATION include/sys)
+install(FILES ${CMAKE_SOURCE_DIR}/include/sys/param.h DESTINATION include/sys)
 install(FILES ${CMAKE_SOURCE_DIR}/include/wchar.h DESTINATION include)
 
 install(FILES ${CMAKE_SOURCE_DIR}/include/io.h DESTINATION include)
