@@ -19,16 +19,14 @@ dup.c
 exec.c
 fsync.c
 getcwd.c
-getgid.c
-getpid.c
-gettid.c
-getuid.c
 getpagesize.c
+gid.c
 hostname.c
 isatty.c
 kill.c
 link.c
 lseek.c
+pid.c
 pipe.c
 pread.c
 pwrite.c
@@ -39,6 +37,7 @@ sleep.c
 symlink.c
 truncate.c
 ttyname.c
+uid.c
 write.c
 
 HEADERS
