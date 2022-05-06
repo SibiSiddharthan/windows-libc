@@ -12,3 +12,9 @@ uid_t wlibc_getuid()
 {
 	return current_uid;
 }
+
+int wlibc_setuid(uid_t uid)
+{
+   // Nop
+	return 0;
+}

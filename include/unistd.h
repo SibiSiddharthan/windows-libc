@@ -158,7 +158,33 @@ WLIBC_INLINE wchar_t *wgetcwd(wchar_t *wbuf, size_t size)
 	return wlibc_wgetcwd(wbuf, size);
 }
 
+WLIBC_API uid_t wlibc_getuid(void);
+WLIBC_API int wlibc_setuid(uid_t uid);
+
+WLIBC_INLINE uid_t getuid(void)
+{
+	return wlibc_getuid();
+}
+
+WLIBC_INLINE uid_t geteuid(void)
+{
+	// Same as getuid
+	return wlibc_getuid();
+}
+
+WLIBC_INLINE int setuid(uid_t uid)
+{
+	return wlibc_setuid(uid);
+}
+
+WLIBC_INLINE int seteuid(uid_t uid)
+{
+	// Same as setuid
+	return wlibc_setuid(uid);
+}
+
 WLIBC_API gid_t wlibc_getgid(void);
+WLIBC_API int wlibc_setgid(gid_t gid);
 
 WLIBC_INLINE gid_t getgid(void)
 {
@@ -169,6 +195,17 @@ WLIBC_INLINE gid_t getegid(void)
 {
 	// Same as getgid
 	return wlibc_getgid();
+}
+
+WLIBC_INLINE int setgid(gid_t gid)
+{
+	return wlibc_setgid(gid);
+}
+
+WLIBC_INLINE int setegid(gid_t gid)
+{
+	// Same as setgid
+	return wlibc_setgid(gid);
 }
 
 WLIBC_API pid_t wlibc_getpid(void);
@@ -189,19 +226,6 @@ WLIBC_API pid_t wlibc_gettid(void);
 WLIBC_INLINE pid_t gettid(void)
 {
 	return wlibc_gettid();
-}
-
-WLIBC_API uid_t wlibc_getuid(void);
-
-WLIBC_INLINE uid_t getuid(void)
-{
-	return wlibc_getuid();
-}
-
-WLIBC_INLINE uid_t geteuid(void)
-{
-	// Same as getuid
-	return wlibc_getuid();
 }
 
 WLIBC_API int wlibc_getdomainname(char *name, size_t length);

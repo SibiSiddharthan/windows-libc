@@ -12,3 +12,9 @@ gid_t wlibc_getgid()
 {
 	return current_gid;
 }
+
+int wlibc_setgid(gid_t gid)
+{
+	// Nop
+	return 0;
+}
