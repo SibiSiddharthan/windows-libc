@@ -29,7 +29,7 @@ void threads_init(void)
 	memset(tinfo, 0, sizeof(threadinfo));
 
 	tinfo->handle = NtCurrentThread();
-	tinfo->id = GetCurrentThreadId();
+	tinfo->id = NtCurrentThreadId();
 
 	// Put the threadinfo in the index we allocated.
 	TlsSetValue(_wlibc_threadinfo_index, tinfo);

@@ -155,7 +155,7 @@ int wlibc_cond_common_wait(cond_t *restrict cond, mutex_t *restrict mutex, const
 {
 	NTSTATUS status;
 	LARGE_INTEGER timeout;
-	DWORD thread_id = GetCurrentThreadId();
+	DWORD thread_id = NtCurrentThreadId();
 
 	// First release the mutex.
 	if (wlibc_mutex_unlock(mutex) == -1)

@@ -1444,6 +1444,14 @@ typedef struct _LDR_DATA_TABLE_ENTRY
 
 typedef VOID(NTAPI *PPS_POST_PROCESS_INIT_ROUTINE)(VOID);
 
+typedef LONG KPRIORITY;
+
+typedef struct _CLIENT_ID
+{
+	HANDLE UniqueProcess;
+	HANDLE UniqueThread;
+} CLIENT_ID, *PCLIENT_ID;
+
 typedef struct _PEB
 {
 	BYTE Reserved1[2];
@@ -1469,7 +1477,11 @@ typedef struct _PEB
 
 typedef struct _TEB
 {
-	PVOID Reserved1[12];
+    NT_TIB NtTib;
+    PVOID EnvironmentPointer;
+    CLIENT_ID ClientId;
+    PVOID ActiveRpcHandle;
+    PVOID ThreadLocalStoragePointer;
 	PPEB ProcessEnvironmentBlock;
 	PVOID Reserved2[399];
 	BYTE Reserved3[1952];
@@ -1487,9 +1499,9 @@ typedef struct _TEB
 #define NtCurrentProcessToken() ((HANDLE)(LONG_PTR)-4)
 #define NtCurrentThreadToken()  ((HANDLE)(LONG_PTR)-5)
 
-#define NtCurrentPeb() (NtCurrentTeb()->ProcessEnvironmentBlock)
-//#define NtCurrentProcessId() (NtCurrentTeb()->ClientId.UniqueProcess)
-//#define NtCurrentThreadId() (NtCurrentTeb()->ClientId.UniqueThread)
+#define NtCurrentPeb()       (NtCurrentTeb()->ProcessEnvironmentBlock)
+#define NtCurrentProcessId() ((DWORD)(INT_PTR)(NtCurrentTeb()->ClientId.UniqueProcess))
+#define NtCurrentThreadId()  ((DWORD)(INT_PTR)(NtCurrentTeb()->ClientId.UniqueThread))
 
 #define CTL_CODE(DeviceType, Function, Method, Access) (((DeviceType) << 16) | ((Access) << 14) | ((Function) << 2) | (Method))
 #define DEVICE_TYPE_FROM_CTL_CODE(ctrlCode)            (((ULONG)(ctrlCode & 0xffff0000)) >> 16)
@@ -1906,14 +1918,6 @@ typedef enum _THREADINFOCLASS
 	ThreadBasePriority,
 	MaxThreadInfoClass = 51
 } THREADINFOCLASS;
-
-typedef LONG KPRIORITY;
-
-typedef struct _CLIENT_ID
-{
-	HANDLE UniqueProcess;
-	HANDLE UniqueThread;
-} CLIENT_ID, *PCLIENT_ID;
 
 typedef struct _KERNEL_USER_TIMES
 {

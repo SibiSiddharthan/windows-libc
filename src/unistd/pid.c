@@ -5,20 +5,20 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
+#include <internal/nt.h>
 #include <unistd.h>
-#include <Windows.h>
 
 pid_t wlibc_getpid()
 {
-	return GetCurrentProcessId();
+	return (pid_t)NtCurrentProcessId();
 }
 
 pid_t wlibc_getppid()
 {
-	return GetCurrentProcessId();
+	return (pid_t)NtCurrentProcessId();
 }
 
 pid_t wlibc_gettid()
 {
-	return GetCurrentThreadId();
+	return (pid_t)NtCurrentThreadId();
 }

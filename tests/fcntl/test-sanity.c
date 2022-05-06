@@ -14,31 +14,30 @@
  * These test the validity of the undocumented API we are using (structure of RTL_USER_PROCESS_PARAMETERS).
  * If something does not work properly in the future, this test should probably fail.
  */
-
-int main()
+int test_rtl_user_process_parameters()
 {
-	int exit_code = 0;
+	int result = 0;
 	PRTL_USER_PROCESS_PARAMETERS process_params = NtCurrentPeb()->ProcessParameters;
 
 	if (process_params->StandardInput != GetStdHandle(STD_INPUT_HANDLE))
 	{
 		printf("Error stdin is different: %zu <-> %zu\n", (intptr_t)process_params->StandardInput,
 			   (intptr_t)GetStdHandle(STD_INPUT_HANDLE));
-		++exit_code;
+		++result;
 	}
 
 	if (process_params->StandardOutput != GetStdHandle(STD_OUTPUT_HANDLE))
 	{
 		printf("Error stdout is different: %zu <-> %zu\n", (intptr_t)process_params->StandardOutput,
 			   (intptr_t)GetStdHandle(STD_OUTPUT_HANDLE));
-		++exit_code;
+		++result;
 	}
 
 	if (process_params->StandardError != GetStdHandle(STD_ERROR_HANDLE))
 	{
 		printf("Error stderr is different: %zu <-> %zu\n", (intptr_t)process_params->StandardError,
 			   (intptr_t)GetStdHandle(STD_ERROR_HANDLE));
-		++exit_code;
+		++result;
 	}
 
 	wchar_t cwd[MAX_PATH];
@@ -49,7 +48,7 @@ int main()
 	if (wcscmp(process_params->CurrentDirectory.DosPath.Buffer, cwd) != 0)
 	{
 		printf("Current directories are different: %ls <-> %ls\n", process_params->CurrentDirectory.DosPath.Buffer, cwd);
-		++exit_code;
+		++result;
 	}
 
 	STARTUPINFOW startupinfo;
@@ -58,7 +57,7 @@ int main()
 	if (process_params->RuntimeData.Length != startupinfo.cbReserved2)
 	{
 		printf("Length of runtime data is different: %hu <-> %hu\n", process_params->RuntimeData.Length, startupinfo.cbReserved2);
-		++exit_code;
+		++result;
 	}
 	else
 	{
@@ -66,9 +65,50 @@ int main()
 		if (memcmp(process_params->RuntimeData.Buffer, startupinfo.lpReserved2, process_params->RuntimeData.Length))
 		{
 			printf("Runtime data is different\n");
-			++exit_code;
+			++result;
 		}
 	}
 
-	return exit_code;
+	return result;
+}
+
+/*
+ * These test the validity of the partially doumented TEB structure we are using.
+ * If something does not work properly in the future, this test should probably fail.
+ */
+int test_peb_teb()
+{
+	int result = 0;
+	DWORD threadid_nt, threadid_k32;
+	DWORD processid_nt, processid_k32;
+
+	threadid_nt = NtCurrentThreadId();
+	processid_nt = NtCurrentProcessId();
+
+	threadid_k32 = GetCurrentThreadId();
+	processid_k32 = GetCurrentProcessId();
+
+	if (threadid_nt != threadid_k32)
+	{
+		printf("Thread ids are different: %lu <-> %lu\n", threadid_nt, threadid_k32);
+		++result;
+	}
+
+	if (threadid_nt != threadid_k32)
+	{
+		printf("Process ids are different: %lu <-> %lu\n", processid_nt, processid_k32);
+		++result;
+	}
+
+	return result;
+}
+
+int main()
+{
+	int result = 0;
+
+	result += test_rtl_user_process_parameters();
+	result += test_peb_teb();
+
+	return result;
 }

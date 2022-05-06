@@ -94,7 +94,7 @@ int wlibc_mutex_common_lock(mutex_t *restrict mutex, const struct timespec *rest
 	// First check if we are trying to acquire a non-recursive mutex recursively.
 	if ((mutex->type & WLIBC_MUTEX_RECURSIVE) != WLIBC_MUTEX_RECURSIVE)
 	{
-		DWORD thread_id = GetCurrentThreadId();
+		DWORD thread_id = NtCurrentThreadId();
 
 		if (_InterlockedCompareExchange((volatile long *)&mutex->owner, thread_id, thread_id) == (LONG)thread_id)
 		{
@@ -133,7 +133,7 @@ int wlibc_mutex_common_lock(mutex_t *restrict mutex, const struct timespec *rest
 		return -1;
 	}
 
-	_InterlockedExchange((volatile long *)&mutex->owner, GetCurrentThreadId());
+	_InterlockedExchange((volatile long *)&mutex->owner, (LONG)NtCurrentThreadId());
 	_InterlockedIncrement((volatile long *)&mutex->count);
 
 	return 0;
