@@ -15,7 +15,10 @@ pid_t wlibc_getpid()
 
 pid_t wlibc_getppid()
 {
-	return (pid_t)NtCurrentProcessId();
+	// This will not fail.
+	PROCESS_BASIC_INFORMATION basic_info;
+	NtQueryInformationProcess(NtCurrentProcess(), ProcessBasicInformation, &basic_info, sizeof(PROCESS_BASIC_INFORMATION), NULL);
+	return (pid_t)(INT_PTR)basic_info.InheritedFromUniqueProcessId;
 }
 
 pid_t wlibc_gettid()
