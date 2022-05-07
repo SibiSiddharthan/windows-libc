@@ -97,18 +97,19 @@ typedef spawn_actions_t posix_spawn_file_actions_t;
 #define POSIX_SPAWN_SETSCHEDPARAM 0x8
 
 // Spawn API.
-WLIBC_API int wlibc_spawn(pid_t *restrict pid, const char *restrict path, const spawn_actions_t *restrict actions,
-						  const spawnattr_t *restrict attributes, int use_path, char *restrict const argv[], char *restrict const env[]);
+WLIBC_API int wlibc_common_spawn(pid_t *restrict pid, const char *restrict path, const spawn_actions_t *restrict actions,
+								 const spawnattr_t *restrict attributes, int use_path, char *restrict const argv[],
+								 char *restrict const env[]);
 
 WLIBC_INLINE int posix_spawn(pid_t *restrict pid, const char *restrict path, const posix_spawn_file_actions_t *restrict actions,
 							 const posix_spawnattr_t *restrict attributes, char *restrict const argv[], char *restrict const env[])
 {
-	return wlibc_spawn(pid, path, actions, attributes, 0, argv, env);
+	return wlibc_common_spawn(pid, path, actions, attributes, 0, argv, env);
 }
 WLIBC_INLINE int posix_spawnp(pid_t *restrict pid, const char *restrict path, const posix_spawn_file_actions_t *restrict actions,
 							  const posix_spawnattr_t *restrict attributes, char *restrict const argv[], char *restrict const env[])
 {
-	return wlibc_spawn(pid, path, actions, attributes, 1, argv, env);
+	return wlibc_common_spawn(pid, path, actions, attributes, 1, argv, env);
 }
 
 // Spawn attributes.

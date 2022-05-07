@@ -25,7 +25,7 @@ int wlibc_execve(int use_path, const char *restrict path, char *restrict const a
 	int status;
 	pid_t pid;
 
-	status = wlibc_spawn(&pid, path, NULL, NULL, use_path, argv, env);
+	status = wlibc_common_spawn(&pid, path, NULL, NULL, use_path, argv, env);
 
 	if (status == 0)
 	{
@@ -107,7 +107,7 @@ int wlibc_spawnve(int use_path, int mode, const char *restrict path, char *restr
 
 	WLIBC_VALIDATE_SPAWN_MODE(mode);
 
-	status = wlibc_spawn(&pid, path, NULL, NULL, use_path, argv, env);
+	status = wlibc_common_spawn(&pid, path, NULL, NULL, use_path, argv, env);
 
 	if (status != 0)
 	{

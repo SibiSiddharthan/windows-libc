@@ -1104,8 +1104,8 @@ static WCHAR *convert_env_to_wenv(char *const env[], size_t *size)
 	return wenv;
 }
 
-int wlibc_spawn(pid_t *restrict pid, const char *restrict path, const spawn_actions_t *restrict actions,
-				const spawnattr_t *restrict attributes, int use_path, char *restrict const argv[], char *restrict const env[])
+int wlibc_common_spawn(pid_t *restrict pid, const char *restrict path, const spawn_actions_t *restrict actions,
+					   const spawnattr_t *restrict attributes, int use_path, char *restrict const argv[], char *restrict const env[])
 {
 	// TODO Ignore spawn attributes for now.
 	int result = -1;
