@@ -42,4 +42,5 @@ write.c
 
 HEADERS
 unistd.h
+process.h
 )
