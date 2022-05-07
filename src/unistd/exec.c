@@ -5,294 +5,191 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
+#include <internal/nt.h>
 #include <errno.h>
-#include <unistd.h>
-#include <internal/error.h>
-#include <Windows.h>
-#include <fcntl.h>
-#include <internal/process.h>
-#include <stdarg.h>
 #include <process.h>
-#include <internal/misc.h>
+#include <spawn.h>
+#include <stdarg.h>
+#include <stdlib.h>
+#include <sys/wait.h>
 
-int common_spawn(int mode, int search_path, const wchar_t *file, wchar_t **argv, wchar_t **env)
+#define WLIBC_VALIDATE_SPAWN_MODE(mode)         \
+	if (mode < _P_OVERLAY || mode > _P_NOWAITO) \
+	{                                           \
+		errno = EINVAL;                         \
+		return -1;                              \
+	}
+
+int wlibc_execve(int use_path, const char *restrict path, char *restrict const argv[], char *restrict const env[])
 {
-	wchar_t *args = NULL, *envp = NULL;
-	size_t args_size = 0, env_size = 0;
+	int status;
+	pid_t pid;
 
-	wchar_t **args_temp = argv;
-	while (*argv)
-	{
-		args_size += wcslen(*argv) + 1;
-		++argv;
-	}
-	argv = args_temp;
+	status = wlibc_spawn(&pid, path, NULL, NULL, use_path, argv, env);
 
-	args = (wchar_t *)malloc(sizeof(wchar_t) * args_size);
-	while (*argv)
-	{
-		wcscat(args, *argv);
-		wcscat(args, L" ");
-		++argv;
-	}
-	argv = args_temp;
-
-	if (env)
-	{
-		wchar_t **env_temp = env;
-		while (*env)
-		{
-			env_size += wcslen(*env) + 1;
-			++env;
-		}
-		env = env_temp;
-
-		envp = (wchar_t *)malloc(sizeof(wchar_t) * (env_size + 1)); // env should end with 2 NULLs
-		while (*env)
-		{
-			wcscat(envp, *env);
-			wcscat(envp, L"\0");
-			++env;
-		}
-		env = env_temp;
-		envp[env_size] = L'\0';
-	}
-
-	DWORD flags = CREATE_UNICODE_ENVIRONMENT;
-	if (mode == _P_DETACH)
-	{
-		flags |= DETACHED_PROCESS;
-	}
-
-	STARTUPINFO SINFO;
-	PROCESS_INFORMATION PINFO;
-	memset(&SINFO, 0, sizeof(SINFO));
-	SINFO.cb = sizeof(SINFO);
-	memset(&PINFO, 0, sizeof(PINFO));
-
-	BOOL status = CreateProcess(file, args, NULL, NULL, TRUE, flags, envp, NULL, &SINFO, &PINFO);
 	if (status == 0)
 	{
-		DWORD error = GetLastError();
-		if (error != ERROR_BAD_EXE_FORMAT)
-		{
-			map_doserror_to_errno(error);
-			free(args);
-			if (env)
-			{
-				free(envp);
-			}
-			return -1;
-		}
-
-		// shebang spawn TODO
-	}
-
-	free(args);
-	if (env)
-	{
-		free(envp);
-	}
-
-	if (mode == _P_OVERLAY)
-	{
-		// do exec
-		// TODO make sure our initializations are cleaned up
-		exit(0);
-	}
-
-	if (mode == _P_WAIT)
-	{
-		WaitForSingleObject(PINFO.hProcess, INFINITE);
-		DWORD exit_code;
-		if (!GetExitCodeProcess(PINFO.hProcess, &exit_code))
-		{
-			map_doserror_to_errno(GetLastError());
-			return -1;
-		}
-
-		return exit_code;
-	}
-
-	if (mode == _P_DETACH || mode == _P_NOWAIT)
-	{
-		add_child(PINFO.dwProcessId, PINFO.hProcess);
-		return PINFO.dwProcessId;
-	}
-
-	// unreachable
-	return -1;
-}
-
-int wlibc_common_spawnl(int mode, int search_path, int argc, int envc, const char *file, const char *arg0, va_list args)
-{
-	if (stricmp(file, arg0) != 0)
-	{
-		errno = EINVAL;
-		return -1;
-	}
-
-	wchar_t **wargv = NULL, **wenv = NULL;
-
-	wargv = (wchar_t **)malloc(sizeof(wchar_t *) * (argc + 2)); // Terminating null + arg0
-	wargv[0] = mb_to_wc(arg0);
-	for (int i = 0; i < argc; i++)
-	{
-		wargv[i + 1] = mb_to_wc(va_arg(args, char *));
-	}
-	wargv[argc + 1] = NULL;
-
-	if (envc)
-	{
-		va_arg(args, char *); // Move past the terminatinfg NULL for argv
-		wenv = (wchar_t **)malloc(sizeof(wchar_t *) * (envc + 1));
-		for (int i = 0; i < envc; i++)
-		{
-			wenv[i + 1] = mb_to_wc(va_arg(args, char *));
-		}
-		wenv[envc] = NULL;
-	}
-
-	wchar_t *wfile = mb_to_wc(file);
-
-	int status = common_spawn(mode, search_path, wfile, wargv, wenv);
-
-	free(wfile);
-
-	// free wargv
-	for (int i = 0; i < argc + 1; i++)
-	{
-		free(wargv[i]);
-	}
-	free(wargv);
-
-	// free wenv
-	if (envc)
-	{
-		for (int i = 0; i < envc; i++)
-		{
-			free(wenv[i]);
-		}
-		free(wenv);
+		RtlExitUserProcess(0);
 	}
 
 	return status;
 }
 
-int wlibc_common_spawnv(int mode, int search_path, const char *file, char const *const *argv, char const *const *env)
+int wlibc_execl(int use_path, int env_given, const char *path, const char *arg0, va_list args)
 {
-	if (argv[0] == NULL || stricmp(file, argv[0]) != 0)
-	{
-		errno = EINVAL;
-		return -1;
-	}
+	int argc = 0, envc = 0;
+	va_list args_copy;
 
-	wchar_t *wfile = mb_to_wc(file);
-	wchar_t **wargv = NULL, **wenv = NULL;
-	int argv_count = 0, env_count = 0;
+	va_copy(args_copy, args);
 
-	char const *const *argv_temp = argv;
-	while (*(argv++))
+	if (arg0 != NULL)
 	{
-		++argv_count;
-	}
-	argv = argv_temp;
-
-	wargv = (wchar_t **)malloc(sizeof(wchar_t *) * (argv_count + 1)); // Include the terminating null as well
-	for (int i = 0; i < argv_count; i++)
-	{
-		wargv[i] = mb_to_wc(argv[i]);
-	}
-	wargv[argv_count] = NULL;
-
-	if (env)
-	{
-		char const *const *env_temp = env;
-		while (*(env++))
+		++argc;
+		while (va_arg(args, void *) != NULL)
 		{
-			++env_count;
+			++argc;
 		}
-		env = env_temp;
+	}
 
-		wenv = (wchar_t **)malloc(sizeof(wchar_t *) * (env_count + 1)); // Include the terminating null as well
-		for (int i = 0; i < env_count; i++)
+	if (env_given)
+	{
+		while (va_arg(args, void *) != NULL)
 		{
-			wenv[i] = mb_to_wc(argv[i]);
+			++envc;
 		}
-		wenv[env_count] = NULL;
 	}
 
-	int status = common_spawn(mode, search_path, wfile, wargv, wenv);
+	char **argv = NULL, **env = NULL;
 
-	free(wfile);
+	argv = (char **)malloc(sizeof(char *) * (argc + 1));
+	env = (char **)malloc(sizeof(char *) * (envc + 1));
 
-	// free wargv
-	for (int i = 0; i < argv_count; i++)
+	// argv
+	for (int i = 0; i < argc; ++i)
 	{
-		free(wargv[i]);
-	}
-	free(wargv);
-
-	// free wenv
-	if (env)
-	{
-		for (int i = 0; i < env_count; i++)
+		if (i == 0)
 		{
-			free(wenv[i]);
+			argv[i] = (char *)arg0;
+			continue;
 		}
-		free(wenv);
+
+		argv[i] = va_arg(args_copy, char *);
 	}
 
-	return status;
-}
+	argv[argc] = va_arg(args_copy, char *); // Should be NULL.
 
-int wlibc_common_wspawnl(int mode, int search_path, int argc, int envc, const wchar_t *file, const wchar_t *arg0, va_list args)
-{
-	if (wcsicmp(file, arg0) != 0)
+	// env
+	if (env_given)
 	{
-		errno = EINVAL;
-		return -1;
-	}
-
-	wchar_t **argv = NULL, **env = NULL;
-
-	argv = (wchar_t **)malloc(sizeof(wchar_t *) * (argc + 2)); // Terminating null + arg0
-	argv[0] = (wchar_t*)arg0;
-	for (int i = 0; i < argc; i++)
-	{
-		argv[i + 1] = va_arg(args, wchar_t *);
-	}
-	argv[argc + 1] = NULL;
-
-	if (envc)
-	{
-		va_arg(args, wchar_t *); // Move past the terminatinfg NULL for argv
-		env = (wchar_t **)malloc(sizeof(wchar_t *) * (envc + 1));
-		for (int i = 0; i < envc; i++)
+		for (int i = 0; i < envc; ++i)
 		{
-			env[i + 1] = va_arg(args, wchar_t *);
+			env[i] = va_arg(args_copy, char *);
 		}
-		env[envc] = NULL;
+
+		env[envc] = va_arg(args_copy, char *); // Should be NULL.
 	}
 
-	int status = common_spawn(mode, search_path, file, argv, env);
+	va_end(args_copy);
+
+	int status = wlibc_execve(use_path, path, argv, env);
 
 	free(argv);
-	if (envc)
-	{
-		free(env);
-	}
+	free(env);
 
 	return status;
 }
 
-int wlibc_common_wspawnv(int mode, int search_path, const wchar_t *file, wchar_t const *const *argv, wchar_t const *const *env)
+int wlibc_spawnve(int use_path, int mode, const char *restrict path, char *restrict const argv[], char *restrict const env[])
 {
-	if (argv[0] == NULL || wcsicmp(file, argv[0]) != 0)
+	// TODO P_DETACH
+	int status;
+	pid_t pid;
+
+	WLIBC_VALIDATE_SPAWN_MODE(mode);
+
+	status = wlibc_spawn(&pid, path, NULL, NULL, use_path, argv, env);
+
+	if (status != 0)
 	{
-		errno = EINVAL;
 		return -1;
 	}
 
-	return common_spawn(mode, search_path, file, (wchar_t**)argv, (wchar_t**)env);
+	if (mode == _P_NOWAIT || mode == _P_DETACH)
+	{
+		return pid;
+	}
+	else if (mode == _P_WAIT)
+	{
+		// We have just added a child and are waiting for it. This call will not fail.
+		waitpid(pid, &status, 0);
+		return status;
+	}
+	else // (mode == _P_OVERLAY)
+	{
+		RtlExitUserProcess(0);
+	}
+}
+
+int wlibc_spawnl(int use_path, int env_given, int mode, const char *path, const char *arg0, va_list args)
+{
+	int argc = 0, envc = 0;
+	va_list args_copy;
+
+	va_copy(args_copy, args);
+
+	if (arg0 != NULL)
+	{
+		++argc;
+		while (va_arg(args, void *) != NULL)
+		{
+			++argc;
+		}
+	}
+
+	if (env_given)
+	{
+		while (va_arg(args, void *) != NULL)
+		{
+			++envc;
+		}
+	}
+
+	char **argv = NULL, **env = NULL;
+
+	argv = (char **)malloc(sizeof(char *) * (argc + 1));
+	env = (char **)malloc(sizeof(char *) * (envc + 1));
+
+	// argv
+	for (int i = 0; i < argc; ++i)
+	{
+		if (i == 0)
+		{
+			argv[i] = (char *)arg0;
+			continue;
+		}
+
+		argv[i] = va_arg(args_copy, char *);
+	}
+
+	argv[argc] = va_arg(args_copy, char *); // Should be NULL.
+
+	// env
+	if (env_given)
+	{
+		for (int i = 0; i < envc; ++i)
+		{
+			env[i] = va_arg(args_copy, char *);
+		}
+
+		env[envc] = va_arg(args_copy, char *); // Should be NULL.
+	}
+
+	va_end(args_copy);
+
+	int status = wlibc_spawnve(use_path, mode, path, argv, env);
+
+	free(argv);
+	free(env);
+
+	return status;
 }

@@ -9,9 +9,10 @@
 #define WLIBC_UNISTD_H
 
 #include <wlibc.h>
-#include <sys/types.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <process.h>
+#include <sys/types.h>
 
 _WLIBC_BEGIN_DECLS
 
