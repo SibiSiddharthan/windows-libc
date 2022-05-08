@@ -10,7 +10,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <Windows.h>
-#include <internal/process.h>
+#include <internal/spawn.h>
 #include <fcntl.h>
 #include <internal/fcntl.h>
 #include <internal/error.h>

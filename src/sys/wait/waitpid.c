@@ -6,7 +6,7 @@
 */
 
 #include <sys/wait.h>
-#include <internal/process.h>
+#include <internal/spawn.h>
 #include <errno.h>
 #include <internal/error.h>
 #include <stdlib.h>

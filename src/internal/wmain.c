@@ -7,7 +7,7 @@
 
 #include <internal/nt.h>
 #include <internal/fcntl.h>
-#include <internal/process.h>
+#include <internal/spawn.h>
 #include <internal/security.h>
 #include <internal/signal.h>
 #include <internal/stdio.h>

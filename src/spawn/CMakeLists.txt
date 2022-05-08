@@ -11,6 +11,7 @@ MODULE spawn
 SOURCES
 actions.c
 attributes.c
+internal.c
 spawn.c
 
 HEADERS

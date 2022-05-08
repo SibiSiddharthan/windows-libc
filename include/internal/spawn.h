@@ -5,8 +5,8 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#ifndef WLIBC_PROCESS_INTERNAL_H
-#define WLIBC_PROCESS_INTERNAL_H
+#ifndef WLIBC_SPAWN_INTERNAL_H
+#define WLIBC_SPAWN_INTERNAL_H
 
 #include <Windows.h>
 #include <stdbool.h>

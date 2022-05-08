@@ -9,7 +9,7 @@
 #include <internal/error.h>
 #include <internal/fcntl.h>
 #include <internal/path.h>
-#include <internal/process.h>
+#include <internal/spawn.h>
 #include <internal/validate.h>
 #include <errno.h>
 #include <fcntl.h>

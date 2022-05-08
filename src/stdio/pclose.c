@@ -6,7 +6,7 @@
 */
 
 #include <internal/error.h>
-#include <internal/process.h>
+#include <internal/spawn.h>
 #include <internal/stdio.h>
 #include <stdio.h>
 

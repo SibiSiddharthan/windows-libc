@@ -9,7 +9,6 @@ wlibc_module(
 MODULE sys.wait
 
 SOURCES
-process_internal.c
 wait.c
 waitpid.c
 

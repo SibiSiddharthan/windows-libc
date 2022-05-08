@@ -5,7 +5,7 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <internal/process.h>
+#include <internal/spawn.h>
 #include <stdlib.h>
 #include <windows.h>
 #include <stdbool.h>
