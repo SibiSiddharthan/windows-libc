@@ -5,14 +5,13 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <sys/wait.h>
+#include <internal/nt.h>
+#include <internal/error.h>
+#include <internal/signal.h>
 #include <internal/spawn.h>
 #include <errno.h>
-#include <internal/error.h>
 #include <stdlib.h>
-#include <Windows.h>
-#include <internal/signal.h>
-#include <stdbool.h>
+#include <sys/wait.h>
 
 pid_t wlibc_waitpid_implementation(pid_t pid, int *wstatus, int options)
 {
@@ -33,12 +32,12 @@ pid_t wlibc_waitpid_implementation(pid_t pid, int *wstatus, int options)
 		DWORD child_count = get_child_process_count();
 		HANDLE *child_handles = (HANDLE *)malloc(sizeof(HANDLE) * child_count);
 
-		EnterCriticalSection(&_wlibc_process_critical);
+		SHARED_LOCK_PROCESS_TABLE();
 		for (DWORD i = 0; i < child_count; i++)
 		{
 			child_handles[i] = _wlibc_process_table[i].process_handle;
 		}
-		LeaveCriticalSection(&_wlibc_process_critical);
+		SHARED_UNLOCK_PROCESS_TABLE();
 
 		DWORD wait_result = WaitForMultipleObjects(child_count, child_handles, FALSE, (options & WNOHANG) ? 0 : INFINITE);
 		if (wait_result == WAIT_FAILED)

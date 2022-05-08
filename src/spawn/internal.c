@@ -5,19 +5,20 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
+#include <internal/nt.h>
 #include <internal/spawn.h>
 #include <stdlib.h>
-#include <windows.h>
-#include <stdbool.h>
 
 process_table *_wlibc_process_table = NULL;
 pid_t _wlibc_process_table_size = 0;
 pid_t _wlibc_child_process_count = 0;
 
-CRITICAL_SECTION _wlibc_process_critical;
+RTL_SRWLOCK _wlibc_process_table_srwlock;
 
 void process_init(void)
 {
+	RtlInitializeSRWLock(&_wlibc_process_table_srwlock);
+
 	_wlibc_process_table = (process_table *)malloc(sizeof(process_table) * 4);
 	_wlibc_process_table_size = 4;
 	_wlibc_child_process_count = 0;
@@ -26,21 +27,18 @@ void process_init(void)
 		_wlibc_process_table[i].process_id = -1;
 		_wlibc_process_table[i].process_handle = INVALID_HANDLE_VALUE;
 	}
-
-	InitializeCriticalSection(&_wlibc_process_critical);
 }
 
 void process_cleanup(void)
 {
 	free(_wlibc_process_table);
-	DeleteCriticalSection(&_wlibc_process_critical);
 }
 
 bool is_child(pid_t pid)
 {
 	bool result = false;
 
-	EnterCriticalSection(&_wlibc_process_critical);
+	SHARED_LOCK_PROCESS_TABLE();
 
 	for (pid_t i = 0; i < _wlibc_process_table_size; i++)
 	{
@@ -51,7 +49,7 @@ bool is_child(pid_t pid)
 		}
 	}
 
-	LeaveCriticalSection(&_wlibc_process_critical);
+	SHARED_UNLOCK_PROCESS_TABLE();
 
 	return result;
 }
@@ -60,7 +58,7 @@ HANDLE get_child_handle(pid_t pid)
 {
 	HANDLE child = INVALID_HANDLE_VALUE;
 
-	EnterCriticalSection(&_wlibc_process_critical);
+	SHARED_LOCK_PROCESS_TABLE();
 
 	for (pid_t i = 0; i < _wlibc_process_table_size; i++)
 	{
@@ -71,22 +69,22 @@ HANDLE get_child_handle(pid_t pid)
 		}
 	}
 
-	LeaveCriticalSection(&_wlibc_process_critical);
+	SHARED_UNLOCK_PROCESS_TABLE();
 	return child;
 }
 
 unsigned int get_child_process_count()
 {
 	unsigned int child_count;
-	EnterCriticalSection(&_wlibc_process_critical);
+	SHARED_LOCK_PROCESS_TABLE();
 	child_count = _wlibc_child_process_count;
-	LeaveCriticalSection(&_wlibc_process_critical);
+	SHARED_UNLOCK_PROCESS_TABLE();
 	return child_count;
 }
 
 void add_child(pid_t pid, HANDLE child)
 {
-	EnterCriticalSection(&_wlibc_process_critical);
+	EXCLUSIVE_LOCK_PROCESS_TABLE();
 
 	pid_t i = 0;
 	for (i = 0; i < _wlibc_process_table_size; i++)
@@ -120,12 +118,12 @@ void add_child(pid_t pid, HANDLE child)
 
 	++_wlibc_child_process_count;
 
-	LeaveCriticalSection(&_wlibc_process_critical);
+	EXCLUSIVE_UNLOCK_PROCESS_TABLE();
 }
 
 void delete_child(HANDLE process_handle)
 {
-	EnterCriticalSection(&_wlibc_process_critical);
+	EXCLUSIVE_LOCK_PROCESS_TABLE();
 
 	for (pid_t i = 0; i < _wlibc_child_process_count; i++)
 	{
@@ -158,5 +156,5 @@ void delete_child(HANDLE process_handle)
 	}
 	--_wlibc_child_process_count;
 
-	LeaveCriticalSection(&_wlibc_process_critical);
+	EXCLUSIVE_UNLOCK_PROCESS_TABLE();
 }

@@ -8,11 +8,11 @@
 #ifndef WLIBC_SPAWN_INTERNAL_H
 #define WLIBC_SPAWN_INTERNAL_H
 
-#include <Windows.h>
+#include <internal/nt.h>
 #include <stdbool.h>
 #include <sys/types.h>
 
-typedef struct
+typedef struct _process_table
 {
 	HANDLE process_handle;
 	pid_t process_id;
@@ -22,7 +22,7 @@ extern process_table *_wlibc_process_table;
 extern pid_t _wlibc_process_table_size;
 extern pid_t _wlibc_child_process_count;
 
-extern CRITICAL_SECTION _wlibc_process_critical;
+extern RTL_SRWLOCK _wlibc_process_table_srwlock;
 
 void process_init(void);
 void process_cleanup(void);
@@ -33,5 +33,10 @@ unsigned int get_child_process_count();
 
 void add_child(pid_t pid, HANDLE child);
 void delete_child(HANDLE process_handle);
+
+#define SHARED_LOCK_PROCESS_TABLE()      RtlAcquireSRWLockShared(&_wlibc_process_table_srwlock)
+#define SHARED_UNLOCK_PROCESS_TABLE()    RtlReleaseSRWLockShared(&_wlibc_process_table_srwlock)
+#define EXCLUSIVE_LOCK_PROCESS_TABLE()   RtlAcquireSRWLockExclusive(&_wlibc_process_table_srwlock)
+#define EXCLUSIVE_UNLOCK_PROCESS_TABLE() RtlReleaseSRWLockExclusive(&_wlibc_process_table_srwlock)
 
 #endif
