@@ -15,6 +15,7 @@ io
 isatty
 kill
 link
+nice
 pio
 pipes
 symlinks

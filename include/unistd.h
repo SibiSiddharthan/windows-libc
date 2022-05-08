@@ -248,6 +248,12 @@ WLIBC_INLINE int getpagesize(void)
 	return wlibc_getpagesize();
 }
 
+WLIBC_API int wlibc_nice(int change);
+WLIBC_INLINE int nice(int change)
+{
+	return wlibc_nice(change);
+}
+
 WLIBC_API int wlibc_common_pipe(int pipefd[2], int flags);
 
 WLIBC_INLINE int pipe(int pipefd[2])

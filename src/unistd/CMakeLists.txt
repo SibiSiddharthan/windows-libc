@@ -26,6 +26,7 @@ isatty.c
 kill.c
 link.c
 lseek.c
+nice.c
 pid.c
 pipe.c
 pread.c

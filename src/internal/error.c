@@ -77,6 +77,7 @@ void map_ntstatus_to_errno(NTSTATUS error)
 		break;
 	case STATUS_CANNOT_DELETE:
 	case STATUS_MUTANT_NOT_OWNED:
+	case STATUS_PRIVILEGE_NOT_HELD:
 		errno = EPERM;
 		break;
 	case STATUS_OBJECT_NAME_NOT_FOUND:
