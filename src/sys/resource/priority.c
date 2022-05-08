@@ -8,6 +8,7 @@
 #include <internal/nt.h>
 #include <internal/error.h>
 #include <errno.h>
+#include <sys/param.h>
 #include <sys/resource.h>
 
 // From sched/open.c
@@ -140,29 +141,19 @@ int wlibc_setpriority(int which, id_t who, int priority /*actually nice*/)
 		PVOID state;
 
 		status = RtlAcquirePrivilege(&privilege, 1, 0, &state);
-		if (status == STATUS_PRIVILEGE_NOT_HELD)
+		if (status != STATUS_SUCCESS)
 		{
-			// We don't have 'SeIncreaseBasePriorityPrivilege'. Fallback to using 'ProcessRaisePriority'
-			// to boost the priority of all the threads.
-			ULONG priority_increase = (ULONG)(new_base_priority - basic_info.BasePriority);
-
-			status = NtSetInformationProcess(process, ProcessRaisePriority, &priority_increase, sizeof(ULONG));
-			if (status != STATUS_SUCCESS)
-			{
-				map_ntstatus_to_errno(status);
-				goto finish;
-			}
+			map_ntstatus_to_errno(status);
+			goto finish;
 		}
-		else // (status == STATUS_SUCCESS)
-		{
-			status = NtSetInformationProcess(process, ProcessBasePriority, &new_base_priority, sizeof(KPRIORITY));
-			RtlReleasePrivilege(state);
 
-			if (status != STATUS_SUCCESS)
-			{
-				map_ntstatus_to_errno(status);
-				goto finish;
-			}
+		status = NtSetInformationProcess(process, ProcessBasePriority, &new_base_priority, sizeof(KPRIORITY));
+		RtlReleasePrivilege(state);
+
+		if (status != STATUS_SUCCESS)
+		{
+			map_ntstatus_to_errno(status);
+			goto finish;
 		}
 	}
 

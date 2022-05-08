@@ -151,6 +151,72 @@ int test_sched()
 	return 0;
 }
 
+int test_error()
+{
+	int status;
+	int policy;
+	struct sched_param param, result;
+
+	param.sched_priority = 0;
+	status = sched_setscheduler(0, SCHED_RR, &param);
+	ASSERT_EQ(status, 0);
+
+	policy = sched_getscheduler(0);
+	ASSERT_EQ(policy, SCHED_RR);
+
+	status = sched_getparam(0, &result);
+	ASSERT_EQ(status, 0);
+	ASSERT_EQ(result.sched_priority, param.sched_priority);
+
+	// Attempting to set priority higher than allowed.
+	errno = 0;
+	param.sched_priority = SCHED_MAX_PRIORITY + 1;
+	status = sched_setscheduler(0, SCHED_FIFO, &param);
+	ASSERT_EQ(status, -1);
+	ASSERT_ERRNO(EINVAL);
+
+	policy = sched_getscheduler(0);
+	ASSERT_EQ(policy, SCHED_RR);
+
+	status = sched_getparam(0, &result);
+	ASSERT_EQ(status, 0);
+	ASSERT_EQ(result.sched_priority, 0);
+
+	errno = 0;
+	status = sched_setparam(0, &param);
+	ASSERT_EQ(status, -1);
+	ASSERT_ERRNO(EINVAL);
+
+	status = sched_getparam(0, &result);
+	ASSERT_EQ(status, 0);
+	ASSERT_EQ(result.sched_priority, 0);
+
+	// Attempting to set priority lower than allowed.
+	errno = 0;
+	param.sched_priority = SCHED_MIN_PRIORITY - 1;
+	status = sched_setscheduler(0, SCHED_IDLE, &param);
+	ASSERT_EQ(status, -1);
+	ASSERT_ERRNO(EINVAL);
+
+	policy = sched_getscheduler(0);
+	ASSERT_EQ(policy, SCHED_RR);
+
+	status = sched_getparam(0, &result);
+	ASSERT_EQ(status, 0);
+	ASSERT_EQ(result.sched_priority, 0);
+
+	errno = 0;
+	status = sched_setparam(0, &param);
+	ASSERT_EQ(status, -1);
+	ASSERT_ERRNO(EINVAL);
+
+	status = sched_getparam(0, &result);
+	ASSERT_EQ(status, 0);
+	ASSERT_EQ(result.sched_priority, 0);
+
+	return 0;
+}
+
 int main()
 {
 	INITIAILIZE_TESTS();
@@ -158,6 +224,7 @@ int main()
 
 	TEST(test_affinity());
 	TEST(test_sched());
+	TEST(test_error());
 
 	VERIFY_RESULT_AND_EXIT();
 }

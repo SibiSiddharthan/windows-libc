@@ -62,7 +62,7 @@ int wlibc_sched_setscheduler(pid_t pid, int policy, const struct sched_param *pa
 
 	if (param)
 	{
-		if (param->sched_priority < -2 || param->sched_priority > 2)
+		if (param->sched_priority < SCHED_MIN_PRIORITY || param->sched_priority > SCHED_MAX_PRIORITY)
 		{
 			errno = EINVAL;
 			return -1;

@@ -34,6 +34,9 @@ typedef struct _cpu_set_t
 #define SCHED_BATCH    5 // PROCESS_PRIORITY_CLASS_BELOW_NORMAL
 #define SCHED_SPORADIC 6 // PROCESS_PRIORITY_CLASS_ABOVE_NORMAL
 
+#define SCHED_MAX_PRIORITY 2
+#define SCHED_MIN_PRIORITY -2
+
 WLIBC_API int wlibc_sched_getparam(pid_t pid, struct sched_param *param);
 WLIBC_API int wlibc_sched_setparam(pid_t pid, const struct sched_param *param);
 
@@ -70,12 +73,12 @@ WLIBC_INLINE int sched_yield(void)
 // of its current priority class.
 WLIBC_INLINE int sched_get_priority_max(int algorithm /*unused*/)
 {
-	return 2;
+	return SCHED_MAX_PRIORITY;
 }
 
 WLIBC_INLINE int sched_get_priority_min(int algorithm /*unused*/)
 {
-	return -2;
+	return SCHED_MIN_PRIORITY;
 }
 
 WLIBC_API int wlibc_sched_getaffinity(pid_t pid, size_t cpusetsize, cpu_set_t *cpuset);

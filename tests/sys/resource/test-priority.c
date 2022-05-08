@@ -10,26 +10,11 @@
 #include <stdbool.h>
 #include <sys/resource.h>
 
-static bool have_increase_base_priority_privilege = false;
-
-static void check_for_increase_base_priority_privilege()
-{
-	NTSTATUS status;
-	ULONG privilege = SE_INC_BASE_PRIORITY_PRIVILEGE;
-	PVOID state;
-
-	status = RtlAcquirePrivilege(&privilege, 1, 0, &state);
-	if (status == STATUS_SUCCESS)
-	{
-		have_increase_base_priority_privilege = true;
-		RtlReleasePrivilege(state);
-	}
-}
-
 int test_priority()
 {
 	int status;
 
+	// As we increasing the nice value of the process, we don't need any special privileges to do so.
 	for (int i = 1; i <= PRIO_MAX; ++i)
 	{
 		status = setpriority(PRIO_PROCESS, 0, i);
@@ -38,11 +23,7 @@ int test_priority()
 		status = getpriority(PRIO_PROCESS, 0);
 		// The status might be negative, make sure errno is 0.
 		ASSERT_ERRNO(0);
-
-		if (have_increase_base_priority_privilege)
-		{
-			ASSERT_EQ(status, i);
-		}
+		ASSERT_EQ(status, i);
 	}
 
 	return 0;
@@ -51,7 +32,6 @@ int test_priority()
 int main()
 {
 	INITIAILIZE_TESTS();
-	check_for_increase_base_priority_privilege();
 	TEST(test_priority());
 	VERIFY_RESULT_AND_EXIT();
 }

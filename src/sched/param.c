@@ -9,6 +9,7 @@
 #include <internal/error.h>
 #include <errno.h>
 #include <sched.h>
+#include <sys/param.h>
 
 HANDLE open_process(DWORD pid, ACCESS_MASK access);
 
@@ -23,7 +24,7 @@ static KPRIORITY get_base_priority_of_class(UCHAR priority_class)
 	case PROCESS_PRIORITY_CLASS_HIGH:
 		return 13;
 	case PROCESS_PRIORITY_CLASS_REALTIME:
-		// This should not be possible with this API, but just in case.
+		// This should not be possible with this API, just list it here.
 		return 16;
 	case PROCESS_PRIORITY_CLASS_BELOW_NORMAL:
 		return 6;
@@ -74,7 +75,8 @@ int adjust_priority_of_process(HANDLE process, KPRIORITY new_priority)
 		if (status == STATUS_PRIVILEGE_NOT_HELD)
 		{
 			// We don't have 'SeIncreaseBasePriorityPrivilege'. Fallback to using 'ProcessRaisePriority'
-			// to boost the priority of all the threads.
+			// to boost the priority of all the threads. This is fine here because we have bounded
+			// the priorities between -2 and 2. (Like `SetThreadPriority`).
 			ULONG priority_increase = (ULONG)(priority_of_class + new_priority - basic_info.BasePriority);
 
 			status = NtSetInformationProcess(process, ProcessRaisePriority, &priority_increase, sizeof(ULONG));
@@ -153,7 +155,7 @@ int wlibc_sched_getparam(pid_t pid, struct sched_param *param)
 	param->sched_priority = basic_info.BasePriority - get_base_priority_of_class(priority_class.PriorityClass);
 
 	// Bound the priorities.
-	param->sched_priority = (param->sched_priority < -2 ? -2 : (param->sched_priority > 2 ? 2 : param->sched_priority));
+	param->sched_priority = MIN(MAX(param->sched_priority, SCHED_MIN_PRIORITY), SCHED_MAX_PRIORITY);
 
 	result = 0;
 
@@ -169,7 +171,7 @@ int wlibc_sched_setparam(pid_t pid, const struct sched_param *param)
 {
 	HANDLE handle;
 
-	if (param == NULL || param->sched_priority < -2 || param->sched_priority > 2)
+	if (param == NULL || param->sched_priority < SCHED_MIN_PRIORITY || param->sched_priority > SCHED_MAX_PRIORITY)
 	{
 		errno = EINVAL;
 		return -1;
