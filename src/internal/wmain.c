@@ -16,6 +16,9 @@
 
 extern int main(int argc, char **argv);
 
+// From errno/program.c
+void init_program_name(void);
+
 int wmain(int argc, wchar_t **wargv)
 {
 	char **argv = NULL;
@@ -56,6 +59,9 @@ int wmain(int argc, wchar_t **wargv)
 #ifdef WLIBC_ACLS
 	initialize_sids();
 	atexit(cleanup_security_decsriptors);
+#endif
+#ifdef WLIBC_ERRNO
+	init_program_name();
 #endif
 
 	int exit_status = main(argc, argv);

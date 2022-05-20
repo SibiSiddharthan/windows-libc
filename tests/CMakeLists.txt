@@ -46,6 +46,10 @@ if(ENABLE_RANDOM)
 	add_subdirectory(sys/random)
 endif()
 
+if(ENABLE_EXTENDED_ERRNO)
+	add_subdirectory(errno)
+endif()
+
 if(ENABLE_ERROR_LOGGING)
 	add_subdirectory(error)
 endif()
