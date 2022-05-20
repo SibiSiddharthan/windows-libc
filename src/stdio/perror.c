@@ -10,7 +10,7 @@
 #include <stdio.h>
 #include <string.h>
 
-const char *get_message(void)
+static const char *get_message(void)
 {
 	switch (errno)
 	{
@@ -37,7 +37,7 @@ const char *get_message(void)
 	case ECHILD:
 		return "No child processes";
 	case EAGAIN:
-		return "Resource temporarily unavailable";
+		return "Operation would block";
 	case ENOMEM:
 		return "Out of memory";
 	case EACCES:
@@ -90,6 +90,76 @@ const char *get_message(void)
 		return "Function not implemented";
 	case ENOTEMPTY:
 		return "Directory not empty";
+	case EILSEQ:
+		return "Invalid byte sequence";
+	case EBADRQC:
+		return "Invalid request code";
+	case EBADSLT:
+		return "Invalid slot";
+	case EBFONT:
+		return "Bad font file format";
+	case ENONET:
+		return "Machine is not on the network";
+	case ENOPKG:
+		return "Package not installed";
+	case EREMOTE:
+		return "Object is remote";
+	case EADV:
+		return "Advertise error";
+	case ESRMNT:
+		return "Srmount error";
+	case ECOMM:
+		return "Communication error";
+	case EMULTIHOP:
+		return "Multihop attempted";
+	case EDOTDOT:
+		return "RFS specific error";
+	case ENOTUNIQ:
+		return "Name not unique on network";
+	case EBADFD:
+		return "File descriptor in bad state";
+	case ESTALE:
+		return "File descriptor is stale";
+	case EREMCHG:
+		return "Remote address changed";
+	case ELIBACC:
+		return "Can not access required DLL";
+	case ELIBBAD:
+		return "DLL is corrupt";
+	case ELIBSCN:
+		return "Corrupted sections";
+	case ELIBMAX:
+		return "Too many DLLs";
+	case ELIBEXEC:
+		return "Cannot exec DLL";
+	case ERESTART:
+		return "Interrupted system call";
+	case ESTRPIPE:
+		return "Streams pipe error";
+	case EUSERS:
+		return "Too many users";
+	case EISNAM:
+		return "Is a named type file";
+	case EREMOTEIO:
+		return "Remote I/O error";
+	case EDQUOT:
+		return " Quota exceeded";
+	case EHOSTDOWN:
+		return "Host is down";
+	case ESHUTDOWN:
+		return "Connection is down";
+	case ESOCKTNOSUPPORT:
+		return "Socket type not supported";
+	case EPFNOSUPPORT:
+		return "Protocol family not supported";
+	case ETOOMANYREFS:
+		return "Too many references";
+	case ENOMEDIUM:
+		return "No medium found";
+	case EMEDIUMTYPE:
+		return "Wrong medium type";
+	case STRUNCATE:
+		return "String truncated";
 	case EADDRINUSE:
 		return "Address in use";
 	case EADDRNOTAVAIL:
@@ -170,7 +240,7 @@ const char *get_message(void)
 		return "Timed out";
 	case ETXTBSY:
 		return "Text file busy";
-	case EWOULDBLOCK:
+	case EWOULDBLOCK_COMPAT:
 		return "Operation would block";
 	default:
 		return "Unknown error";
