@@ -9,9 +9,10 @@
 #define WLIBC_SYS_STAT_H
 
 #include <wlibc.h>
+#include <fcntl.h>
+#include <stdint.h>
 #include <sys/types.h>
 #include <time.h>
-#include <fcntl.h>
 
 _WLIBC_BEGIN_DECLS
 

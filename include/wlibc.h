@@ -9,7 +9,6 @@
 #define WLIBC_H
 
 #include <corecrt.h>
-#include <stdint.h>
 
 #if BUILDING_WLIBC
 #	ifdef WLIBC_DLL

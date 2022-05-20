@@ -9,8 +9,9 @@
 #define WLIBC_DIRENT_H
 
 #include <wlibc.h>
-#include <sys/types.h>
 #include <fcntl.h>
+#include <stdint.h>
+#include <sys/types.h>
 
 _WLIBC_BEGIN_DECLS
 
