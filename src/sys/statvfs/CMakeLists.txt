@@ -13,4 +13,5 @@ statvfs.c
 
 HEADERS
 sys/statvfs.h
+sys/fstypes.h
 )

@@ -330,6 +330,25 @@ typedef struct _FILE_FS_VOLUME_INFORMATION
 	WCHAR VolumeLabel[1];
 } FILE_FS_VOLUME_INFORMATION, *PFILE_FS_VOLUME_INFORMATION;
 
+typedef struct _FILE_FS_ATTRIBUTE_INFORMATION
+{
+	ULONG FileSystemAttributes;
+	LONG MaximumComponentNameLength;
+	ULONG FileSystemNameLength;
+	WCHAR FileSystemName[1];
+} FILE_FS_ATTRIBUTE_INFORMATION, *PFILE_FS_ATTRIBUTE_INFORMATION;
+
+typedef struct _FILE_FS_SECTOR_SIZE_INFORMATION
+{
+	ULONG LogicalBytesPerSector;
+	ULONG PhysicalBytesPerSectorForAtomicity;
+	ULONG PhysicalBytesPerSectorForPerformance;
+	ULONG FileSystemEffectivePhysicalBytesPerSectorForAtomicity;
+	ULONG Flags;
+	ULONG ByteOffsetForSectorAlignment;
+	ULONG ByteOffsetForPartitionAlignment;
+} FILE_FS_SECTOR_SIZE_INFORMATION, *PFILE_FS_SECTOR_SIZE_INFORMATION;
+
 typedef struct _FILE_FS_SIZE_INFORMATION
 {
 	LARGE_INTEGER TotalAllocationUnits;

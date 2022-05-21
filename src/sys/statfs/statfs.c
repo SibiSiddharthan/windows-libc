@@ -8,28 +8,84 @@
 #include <internal/nt.h>
 #include <internal/error.h>
 #include <internal/fcntl.h>
+#include <internal/path.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <stdlib.h>
+#include <sys/param.h>
 #include <sys/statfs.h>
+
+static unsigned long get_fs_flags(DWORD attributes)
+{
+	unsigned long flags = MNT_NOSUID | MNT_STRICTTIME | MNT_ASYNC | MNT_SYNCHRONOUS;
+
+	if (attributes & FILE_READ_ONLY_VOLUME)
+	{
+		flags |= MNT_RDONLY;
+	}
+	if (attributes & FILE_VOLUME_QUOTAS)
+	{
+		flags |= MNT_QUOTA;
+	}
+	if (attributes & FILE_SUPPORTS_USN_JOURNAL)
+	{
+		attributes |= MNT_JOURNALED;
+	}
+
+	return flags;
+}
+
+unsigned long get_fs_type(const char *name)
+{
+	// Put NTFS first as it the most commonly used one.
+	if (stricmp(name, "NTFS") == 0)
+	{
+		return NTFS_FS;
+	}
+	if (stricmp(name, "FAT32") == 0)
+	{
+		return FAT32_FS;
+	}
+	if (stricmp(name, "EXFAT") == 0)
+	{
+		return EXFAT_FS;
+	}
+	if (stricmp(name, "HPFS") == 0)
+	{
+		return HPFS_FS;
+	}
+	if (stricmp(name, "REFS") == 0)
+	{
+		return REFS_FS;
+	}
+
+	return UNKNOWN_FS;
+}
 
 int do_statfs(HANDLE handle, struct statfs *restrict statfsbuf)
 {
 	NTSTATUS status;
 	IO_STATUS_BLOCK io;
 	FILE_FS_FULL_SIZE_INFORMATION fs_info;
+	FILE_FS_SECTOR_SIZE_INFORMATION sector_info;
+	FILE_FS_ATTRIBUTE_INFORMATION *attribute_info;
 	FILE_FS_VOLUME_INFORMATION *volume_info;
+	UNICODE_STRING u16_fstype;
+	UTF8_STRING u8_fstype;
+	UNICODE_STRING *u16_ntpath, *u16_dospath;
+	char attribute_info_buffer[64];
 	char volume_info_buffer[128];
+	char object_name_buffer[1024];
+
+	memset(statfsbuf, 0, sizeof(struct statfs));
 
 	// In Windows there are no inodes. Ignore these fields.
 	statfsbuf->f_files = -1ull;
 	statfsbuf->f_ffree = -1ull;
 	statfsbuf->f_favail = -1ull;
 
-	// Only these flags are valid here.
-	statfsbuf->f_flag = MNT_NOSUID;
-
 	// Max path length on Windows.
-	statfsbuf->f_namemax = 32768;
+	statfsbuf->f_namemax = MAXPATHLEN;
 
 	status = NtQueryVolumeInformationFile(handle, &io, &fs_info, sizeof(FILE_FS_FULL_SIZE_INFORMATION), FileFsFullSizeInformation);
 	if (status != STATUS_SUCCESS)
@@ -39,22 +95,80 @@ int do_statfs(HANDLE handle, struct statfs *restrict statfsbuf)
 	}
 
 	statfsbuf->f_bsize = fs_info.BytesPerSector * fs_info.SectorsPerAllocationUnit;
-	statfsbuf->f_iosize = statfsbuf->f_bsize; // Treate these two fields as the same.
 	statfsbuf->f_blocks = fs_info.TotalAllocationUnits.QuadPart;
 	statfsbuf->f_bfree = fs_info.ActualAvailableAllocationUnits.QuadPart;
 	statfsbuf->f_bavail = fs_info.CallerAvailableAllocationUnits.QuadPart;
 
-	volume_info = (PFILE_FS_VOLUME_INFORMATION)volume_info_buffer;
-	status = NtQueryVolumeInformationFile(handle, &io, volume_info, 128, FileFsVolumeInformation);
+	status = NtQueryVolumeInformationFile(handle, &io, &sector_info, sizeof(FILE_FS_SECTOR_SIZE_INFORMATION), FileFsSectorSizeInformation);
 	if (status != STATUS_SUCCESS)
 	{
 		map_ntstatus_to_errno(status);
 		return -1;
 	}
 
-	statfsbuf->f_fsid.major = volume_info->VolumeSerialNumber;
-	statfsbuf->f_fsid.minor = 0;
+	statfsbuf->f_iosize = sector_info.PhysicalBytesPerSectorForPerformance;
 
+	memset(attribute_info_buffer, 0, sizeof(attribute_info_buffer));
+	attribute_info = (PFILE_FS_ATTRIBUTE_INFORMATION)attribute_info_buffer;
+
+	status = NtQueryVolumeInformationFile(handle, &io, attribute_info, sizeof(attribute_info_buffer), FileFsAttributeInformation);
+	if (status != STATUS_SUCCESS)
+	{
+		map_ntstatus_to_errno(status);
+		return -1;
+	}
+
+	if (attribute_info->FileSystemNameLength != 0)
+	{
+		// Copy the filesystem name to statfsbuf->f_fstypename.
+		u16_fstype.Buffer = attribute_info->FileSystemName;
+		u16_fstype.Length = attribute_info->FileSystemNameLength;
+		u16_fstype.MaximumLength = attribute_info->FileSystemNameLength;
+
+		u8_fstype.Buffer = statfsbuf->f_fstypename;
+		u8_fstype.Length = 0;
+		u8_fstype.MaximumLength = MFSTYPENAMELEN;
+
+		RtlUnicodeStringToUTF8String(&u8_fstype, &u16_fstype, FALSE);
+	}
+
+	statfsbuf->f_flag = get_fs_flags(attribute_info->FileSystemAttributes);
+	statfsbuf->f_type = get_fs_type(statfsbuf->f_fstypename);
+	statfsbuf->f_fssubtype = 0; // We don't have any variations of filesystems.
+
+	volume_info = (PFILE_FS_VOLUME_INFORMATION)volume_info_buffer;
+	status = NtQueryVolumeInformationFile(handle, &io, volume_info, sizeof(volume_info_buffer), FileFsVolumeInformation);
+	if (status != STATUS_SUCCESS)
+	{
+		map_ntstatus_to_errno(status);
+		return -1;
+	}
+
+	statfsbuf->f_fsid.major = (USHORT)(volume_info->VolumeSerialNumber >> 16);
+	statfsbuf->f_fsid.minor = (USHORT)volume_info->VolumeSerialNumber;
+
+	// TODO move this inside path.c. Isufficient buffer also.
+	u16_ntpath = (PUNICODE_STRING)object_name_buffer;
+	status = NtQueryObject(handle, ObjectNameInformation, u16_ntpath, sizeof(object_name_buffer), NULL);
+	if (status != STATUS_SUCCESS)
+	{
+		map_ntstatus_to_errno(status);
+		return -1;
+	}
+
+	memcpy(statfsbuf->f_mntfromname, "\\Device\\HarddiskVolume", 22);
+	for (int i = 22; u16_ntpath->Buffer[i] != L'\0' && u16_ntpath->Buffer[i] != L'\\'; ++i)
+	{
+		statfsbuf->f_mntfromname[i] = (char)u16_ntpath->Buffer[i];
+	}
+
+	// This will not fail.
+	u16_dospath = ntpath_to_dospath(u16_ntpath);
+	statfsbuf->f_mntonname[0] = (char)u16_dospath->Buffer[0];
+	statfsbuf->f_mntonname[1] = ':';
+
+	free(u16_dospath);
+	// TODO removable
 	return 0;
 }
 

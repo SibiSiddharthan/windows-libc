@@ -13,12 +13,16 @@
 void print_statfs(const struct statfs *statfsbuf)
 {
 	printf("f_bsize (Filesystem block size): %lu\n", statfsbuf->f_bsize);
-	printf("f_frsize (Fragment size): %lu\n", statfsbuf->f_iosize);
+	printf("f_iosize (Optimal transfer size): %lu\n", statfsbuf->f_iosize);
+	printf("f_flag (Filesystem attributes): %lu\n", statfsbuf->f_flag);
 	printf("f_blocks (Total number of blocks): %llu\n", statfsbuf->f_blocks);
 	printf("f_bfree (Number of free blocks): %llu\n", statfsbuf->f_bfree);
 	printf("f_bavail (Number of free blocks for unprivileged users): %llu\n", statfsbuf->f_bavail);
-	printf("f_fsid (Filesystem ID): %u %u\n", statfsbuf->f_fsid.major, statfsbuf->f_fsid.minor);
+	printf("f_fsid (Filesystem ID): %u-%u\n", statfsbuf->f_fsid.major, statfsbuf->f_fsid.minor);
 	printf("f_namemax (Maximum path length): %lu\n", statfsbuf->f_namemax);
+	printf("f_fstypename (Filesystem type): %s\n", statfsbuf->f_fstypename);
+	printf("f_mntfromname (Mount from location): %s\n", statfsbuf->f_mntfromname);
+	printf("f_mntonname (Mount to location): %s\n", statfsbuf->f_mntonname);
 }
 
 int test_statfs()
