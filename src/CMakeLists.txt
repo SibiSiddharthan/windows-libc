@@ -100,6 +100,7 @@ install(FILES ${CMAKE_SOURCE_DIR}/include/sys/types.h DESTINATION include/sys)
 install(FILES ${CMAKE_SOURCE_DIR}/include/sys/param.h DESTINATION include/sys)
 
 install(FILES ${CMAKE_SOURCE_DIR}/include/alloca.h DESTINATION include)
+install(FILES ${CMAKE_SOURCE_DIR}/include/byteswap.h DESTINATION include)
 install(FILES ${CMAKE_SOURCE_DIR}/include/io.h DESTINATION include)
 install(FILES ${CMAKE_SOURCE_DIR}/include/limits.h DESTINATION include)
 install(FILES ${CMAKE_SOURCE_DIR}/include/posix/limits.h DESTINATION include/posix)
