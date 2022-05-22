@@ -28,6 +28,14 @@ struct group *common_getgrnam(const char *restrict name, struct group *restrict 
 	grp_entry->gr_passwd = NULL;
 	grp_entry->gr_mem = &(grp_entry->gr_passwd);
 
+	// ROOT hook
+	if (stricmp(name, "root") == 0)
+	{
+		grp_entry->gr_name = "Administrators";
+		grp_entry->gr_gid = 0;
+		return grp_entry;
+	}
+
 	// First check whether they name are part of 'NT AUTHORITY'
 	if (stricmp(name, "DIALUP") == 0)
 	{

@@ -34,6 +34,14 @@ struct group *common_getgrgid(gid_t gid, struct group *restrict grp_entry, char 
 	grp_entry->gr_passwd = NULL;
 	grp_entry->gr_mem = &(grp_entry->gr_passwd);
 
+	// ROOT hook
+	if (gid == 0)
+	{
+		grp_entry->gr_name = "Administrators";
+		grp_entry->gr_gid = 0;
+		return grp_entry;
+	}
+
 	// First check whether they name are part of 'NT AUTHORITY'
 	if (gid < 500)
 	{

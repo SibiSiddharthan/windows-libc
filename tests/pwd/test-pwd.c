@@ -8,6 +8,7 @@
 #include <tests/test.h>
 #include <errno.h>
 #include <pwd.h>
+#include <unistd.h>
 
 int test_getpwent()
 {
@@ -200,6 +201,26 @@ int test_getpwuid()
 	return 0;
 }
 
+int test_root()
+{
+	struct passwd *entry_id = NULL, *entry_name = NULL;
+
+	entry_id = getpwuid(ROOT_UID);
+	ASSERT_NOTNULL(entry_id)
+
+	entry_name = getpwnam("root");
+	ASSERT_NOTNULL(entry_id)
+
+	ASSERT_STREQ(entry_id->pw_name, entry_name->pw_name);
+	ASSERT_EQ(entry_id->pw_uid, entry_name->pw_uid);
+	ASSERT_EQ(entry_id->pw_gid, entry_name->pw_gid);
+	ASSERT_EQ(entry_id->pw_dir, entry_name->pw_dir);
+	ASSERT_EQ(entry_id->pw_gecos, entry_name->pw_gecos);
+	ASSERT_EQ(entry_id->pw_shell, entry_name->pw_shell);
+
+	return 0;
+}
+
 int main()
 {
 	INITIAILIZE_TESTS();
@@ -208,6 +229,7 @@ int main()
 	TEST(test_getpwent_r());
 	TEST(test_getpwnam())
 	TEST(test_getpwuid())
+	TEST(test_root())
 
 	VERIFY_RESULT_AND_EXIT();
 }

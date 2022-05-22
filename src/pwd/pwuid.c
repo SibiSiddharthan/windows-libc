@@ -30,10 +30,23 @@ struct passwd *common_getpwuid(uid_t uid, struct passwd *restrict pwd_entry, cha
 	DWORD name_size = 128, domain_size = 128;
 	SID_NAME_USE use;
 
-	/* Don't handle special cases such as running as admin.
-	   This is because 'Run as Administrator' means running as the current user with an elevated token.
-	   Querying the old 'Administrator' account is not correct.
+	/* 
+	   If uid is 0 return an administrator profile similar to BUILTIN\Adminstrators.
+	   NOTE: When a program is invoked by 'Run as Administrator' it is run as the current user with an elevated token.
+	   Querying the old and disabled 'Administrator' account is not correct.
 	*/
+	if(uid == 0)
+	{
+		pwd_entry->pw_name = "Administrator";
+		pwd_entry->pw_passwd = NULL;
+		pwd_entry->pw_uid = 0;
+		pwd_entry->pw_gid = 0;
+		pwd_entry->pw_gecos = "Local Administrator";
+		pwd_entry->pw_dir = "C:\\Windows\\System32";
+		pwd_entry->pw_shell = "C:\\Windows\\System32\\cmd.exe";
+
+		return result;
+	}
 
 	// All the user ids have the current computer sid as their common prefix.
 	// First copy the computer sid to a buffer.

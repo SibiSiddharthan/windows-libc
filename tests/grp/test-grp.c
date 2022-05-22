@@ -8,6 +8,7 @@
 #include <tests/test.h>
 #include <errno.h>
 #include <grp.h>
+#include <unistd.h>
 
 int test_getgrent()
 {
@@ -199,6 +200,22 @@ int test_getgrgid()
 	return 0;
 }
 
+int test_root()
+{
+	struct group *entry_id = NULL, *entry_name = NULL;
+
+	entry_id = getgrgid(ROOT_UID);
+	ASSERT_NOTNULL(entry_id)
+
+	entry_name = getgrnam("root");
+	ASSERT_NOTNULL(entry_id)
+
+	ASSERT_STREQ(entry_id->gr_name, entry_name->gr_name);
+	ASSERT_EQ(entry_id->gr_gid, entry_name->gr_gid);
+
+	return 0;
+}
+
 int main()
 {
 	INITIAILIZE_TESTS();
@@ -207,6 +224,7 @@ int main()
 	TEST(test_getgrent_r());
 	TEST(test_getgrnam());
 	TEST(test_getgrgid());
+	TEST(test_root());
 
 	VERIFY_RESULT_AND_EXIT();
 }

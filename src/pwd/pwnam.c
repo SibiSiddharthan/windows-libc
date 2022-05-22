@@ -21,6 +21,20 @@ struct passwd *common_getpwnam(const char *restrict name, struct passwd *restric
 	UNICODE_STRING u16_name;
 	struct passwd *result = pwd_entry;
 
+	// ROOT hook
+	if (stricmp(name, "root") == 0)
+	{
+		pwd_entry->pw_name = "Administrator";
+		pwd_entry->pw_passwd = NULL;
+		pwd_entry->pw_uid = 0;
+		pwd_entry->pw_gid = 0;
+		pwd_entry->pw_gecos = "Local Administrator";
+		pwd_entry->pw_dir = "C:\\Windows\\System32";
+		pwd_entry->pw_shell = "C:\\Windows\\System32\\cmd.exe";
+
+		return result;
+	}
+
 	RtlInitUTF8String(&u8_name, name);
 	RtlUTF8StringToUnicodeString(&u16_name, &u8_name, TRUE);
 
