@@ -88,7 +88,7 @@ int do_statvfs(HANDLE handle, struct statvfs *restrict statvfsbuf)
 	statvfsbuf->f_type = get_fs_type(statvfsbuf->f_fstypename);
 
 	volume_info = (PFILE_FS_VOLUME_INFORMATION)volume_info_buffer;
-	status = NtQueryVolumeInformationFile(handle, &io, volume_info, 128, FileFsVolumeInformation);
+	status = NtQueryVolumeInformationFile(handle, &io, volume_info, sizeof(volume_info_buffer), FileFsVolumeInformation);
 	if (status != STATUS_SUCCESS)
 	{
 		map_ntstatus_to_errno(status);

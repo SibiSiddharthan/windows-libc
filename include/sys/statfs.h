@@ -33,6 +33,7 @@ struct statfs
 	fsfilcnt_t f_files;                // Number of inodes
 	fsfilcnt_t f_ffree;                // Number of free inodes
 	fsfilcnt_t f_favail;               // Number of free inodes for unprivileged users
+	uid_t f_owner;                     // User that mounted the filesystem
 	fsid_t f_fsid;                     // Filesystem ID
 	unsigned long f_flag;              // Mount flags
 	unsigned long f_namemax;           // Maximum path length

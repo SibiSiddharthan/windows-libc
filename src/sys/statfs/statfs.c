@@ -87,6 +87,9 @@ int do_statfs(HANDLE handle, struct statfs *restrict statfsbuf)
 	// Max path length on Windows.
 	statfsbuf->f_namemax = MAXPATHLEN;
 
+	// Only Administrator can mount drives.
+	statfsbuf->f_owner = 0;
+
 	status = NtQueryVolumeInformationFile(handle, &io, &fs_info, sizeof(FILE_FS_FULL_SIZE_INFORMATION), FileFsFullSizeInformation);
 	if (status != STATUS_SUCCESS)
 	{
