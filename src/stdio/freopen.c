@@ -14,8 +14,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-int parse_mode(const char *mode);
-int get_buf_mode(int flags);
 int common_fflush(FILE *stream);
 int do_open(int dirfd, const char *name, int oflags, mode_t perm);
 

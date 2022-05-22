@@ -12,9 +12,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-int parse_mode(const char *mode);
-int get_buf_mode(int flags);
-
 FILE *wlibc_fdopen(int fd, const char *mode)
 {
 	fdinfo info;

@@ -5,18 +5,15 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
+#include <internal/nt.h>
+#include <internal/error.h>
+#include <internal/fcntl.h>
+#include <internal/spawn.h>
 #include <internal/stdio.h>
 #include <errno.h>
-#include <string.h>
-#include <stdlib.h>
-#include <Windows.h>
-#include <internal/spawn.h>
 #include <fcntl.h>
-#include <internal/fcntl.h>
-#include <internal/error.h>
-
-int parse_mode(const char *mode);
-int get_buf_mode(int flags);
+#include <stdlib.h>
+#include <string.h>
 
 FILE *wlibc_popen(const char *restrict command, const char *restrict mode)
 {

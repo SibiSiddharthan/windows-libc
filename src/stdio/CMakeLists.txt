@@ -30,7 +30,7 @@ ftell.c
 fwrite.c
 getdelim.c
 internal.c
-parse_mode.c
+mode.c
 pclose.c
 perror.c
 popen.c

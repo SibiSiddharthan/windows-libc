@@ -11,8 +11,6 @@
 #include <fcntl.h>
 #include <stdio.h>
 
-int parse_mode(const char *mode);
-int get_buf_mode(int flags);
 int do_open(int dirfd, const char *name, int oflags, mode_t perm);
 
 FILE *wlibc_fopen(const char *restrict name, const char *restrict mode)

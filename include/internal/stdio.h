@@ -72,4 +72,7 @@ void cleanup_stdio(void);
 FILE *create_stream(int fd, int buf_mode, int buf_size);
 void delete_stream(FILE *stream);
 
+int parse_mode(const char *mode);
+int get_buf_mode(int flags);
+
 #endif
