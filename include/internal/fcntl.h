@@ -86,6 +86,11 @@ HANDLE just_open(int dirfd, const char *path, ACCESS_MASK access, ULONG options)
 HANDLE just_open2(UNICODE_STRING *ntpath, ACCESS_MASK access, ULONG options);
 HANDLE just_reopen(HANDLE old_handle, ACCESS_MASK access, ULONG options);
 
+// Open device handles
+HANDLE open_conin(void);
+HANDLE open_conout(void);
+HANDLE open_mountmgr(void);
+
 #define SHARED_LOCK_FD_TABLE()      RtlAcquireSRWLockShared(&_wlibc_fd_table_srwlock)
 #define SHARED_UNLOCK_FD_TABLE()    RtlReleaseSRWLockShared(&_wlibc_fd_table_srwlock)
 #define EXCLUSIVE_LOCK_FD_TABLE()   RtlAcquireSRWLockExclusive(&_wlibc_fd_table_srwlock)

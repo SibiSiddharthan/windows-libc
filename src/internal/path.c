@@ -45,7 +45,7 @@ static path_component *add_component(path_component *restrict components, int *r
 	return components;
 }
 
-typedef struct
+typedef struct _nt_device
 {
 	uint16_t length;  // Length in bytes
 	wchar_t name[26]; // Name of the device eg. "\Device\HarddiskVolume1"
@@ -99,14 +99,13 @@ nt_device *dos_device_to_nt_device(char volume)
 			realpath.MaximumLength = 26 * sizeof(WCHAR);
 
 			status = NtQuerySymbolicLinkObject(handle, &realpath, NULL);
+			NtClose(handle);
 			if (status != STATUS_SUCCESS)
 			{
 				// Mark the volume as non existent.
 				devices[volume - 'A'].length = -1;
 				return NULL;
 			}
-
-			NtClose(handle);
 
 			devices[volume - 'A'].length = realpath.Length;
 			return &devices[volume - 'A'];
@@ -116,7 +115,48 @@ nt_device *dos_device_to_nt_device(char volume)
 	return NULL;
 }
 
-// void nt_device_to_dos_device();
+typedef struct _dos_device
+{
+	dev_t device_number;
+	char label;
+} dos_device;
+
+// sizeof(dos_device) is equal to 8, just return by value.
+char nt_device_to_dos_device(const UNICODE_STRING *device)
+{
+	NTSTATUS status;
+	IO_STATUS_BLOCK io;
+	HANDLE mountmgr_handle;
+	MOUNTMGR_TARGET_NAME *device_name;
+	MOUNTMGR_VOLUME_PATHS *dos_name;
+	char device_name_buffer[64] = {0};
+	char dos_name_buffer[16] = {0};
+	char label;
+
+	mountmgr_handle = open_mountmgr();
+
+	device_name = (PMOUNTMGR_TARGET_NAME)device_name_buffer;
+	memcpy(device_name->DeviceName, device->Buffer, device->Length);
+	device_name->DeviceNameLength = device->Length;
+
+	dos_name = (PMOUNTMGR_VOLUME_PATHS)dos_name_buffer;
+
+	status = NtDeviceIoControlFile(mountmgr_handle, NULL, NULL, NULL, &io, IOCTL_MOUNTMGR_QUERY_DOS_VOLUME_PATHS, device_name,
+								   sizeof(device_name_buffer), dos_name, sizeof(dos_name_buffer));
+	NtClose(mountmgr_handle);
+
+	if (status == STATUS_SUCCESS)
+	{
+		label = (char)dos_name->MultiSz[0];
+		// Succeed only if it is a drive letter.
+		if (label >= 'A' && label <= 'Z')
+		{
+			return label;
+		}
+	}
+
+	return '\0';
+}
 
 typedef struct _fd_path
 {
@@ -156,12 +196,35 @@ void update_fd_path_cache(int fd, int sequence, PUNICODE_STRING nt_path)
 	fd_path_cache[index].nt_path = nt_path;
 }
 
+UNICODE_STRING *get_handle_ntpath(HANDLE handle)
+{
+	NTSTATUS status;
+	ULONG length;
+	UNICODE_STRING *path = NULL;
+
+	path = malloc(1024);
+	status = NtQueryObject(handle, ObjectNameInformation, path, 1024, &length);
+
+	if (status == STATUS_BUFFER_OVERFLOW)
+	{
+		path = realloc(path, length);
+		status = NtQueryObject(handle, ObjectNameInformation, path, length, &length);
+	}
+
+	// If we have an open handle, this should not fail.
+	if (status != STATUS_SUCCESS)
+	{
+		free(path);
+		return NULL;
+	}
+
+	return path;
+}
+
 // NOTE: The returned pointer should not be freed.
 UNICODE_STRING *get_fd_ntpath_internal(int fd)
 {
-	NTSTATUS status;
 	HANDLE handle;
-	ULONG length;
 	UNICODE_STRING *path = NULL;
 	int sequence;
 
@@ -178,22 +241,12 @@ UNICODE_STRING *get_fd_ntpath_internal(int fd)
 	}
 
 	// Not in cache do the lookup.
-	path = malloc(1024);
-	status = NtQueryObject(handle, ObjectNameInformation, path, 1024, &length);
-
-	if (status == STATUS_BUFFER_OVERFLOW)
+	path = get_handle_ntpath(handle);
+	if (path != NULL)
 	{
-		path = realloc(path, length);
-		status = NtQueryObject(handle, ObjectNameInformation, path, length, &length);
+		// Update the cache.
+		update_fd_path_cache(fd, sequence, path);
 	}
-
-	if (status != STATUS_SUCCESS)
-	{
-		return NULL;
-	}
-
-	// Update the cache.
-	update_fd_path_cache(fd, sequence, path);
 
 	return path;
 }
@@ -617,24 +670,28 @@ UNICODE_STRING *get_fd_ntpath(int fd)
    second cache slot will be promoted to the first slot and the the first slot demoted
    to second.
 */
-typedef struct _dos_device
-{
-	dev_t device_number;
-	char label;
-} dos_device;
-
 dos_device dos_device_cache[2] = {{-1, 0}, {-1, 0}};
 
 UNICODE_STRING *ntpath_to_dospath(const UNICODE_STRING *ntpath)
 {
 	UNICODE_STRING *dospath = NULL;
-	nt_device *device = NULL;
+	UNICODE_STRING nt_device_path;
 	dev_t device_number = 0;
-	char label = 0;
+	char label = '\0';
+	int second_slash_pos = 0;
+	bool second_slash_found = false;
 
 	// Perform a simple 'atoi' (UTF16-LE).
-	for (int i = 22; ntpath->Buffer[i] != L'\\' && ntpath->Buffer[i] != L'\0'; ++i) // skip "\Device\HarddiskVolume"
+	// Find the second slash as well if present.
+	for (int i = 22; ntpath->Buffer[i] != L'\0'; ++i) // skip "\Device\HarddiskVolume"
 	{
+		if (ntpath->Buffer[i] == L'\\')
+		{
+			second_slash_pos = i;
+			second_slash_found = true;
+			break;
+		}
+
 		device_number = device_number * 10 + (dev_t)(ntpath->Buffer[i] - L'0');
 	}
 
@@ -656,37 +713,32 @@ UNICODE_STRING *ntpath_to_dospath(const UNICODE_STRING *ntpath)
 	// Not in cache
 	else
 	{
-		for (int i = 0; i < 26; ++i)
-		{
-			// Iterate from A-Z.
-			device = dos_device_to_nt_device(i + 'A');
-			if (device != NULL)
-			{
-				// skip "\Device\HarddiskVolume"
-				if (memcmp(device->name + 22, ntpath->Buffer + 22, device->length - (22 * sizeof(WCHAR))) == 0)
-				{
-					label = i + 'A';
-					// Put the entry in the cache.
-					// Check if the first slot is populated if not, always put the new entry
-					// in the second slot.
-					if (dos_device_cache[0].device_number == (dev_t)-1)
-					{
-						dos_device_cache[0].device_number = device_number;
-						dos_device_cache[0].label = label;
-					}
-					else
-					{
-						dos_device_cache[1].device_number = device_number;
-						dos_device_cache[1].label = label;
-					}
+		// Only consider "\Device\HarddiskVolumeXXXX" without the next slash.
+		nt_device_path.Buffer = ntpath->Buffer;
+		nt_device_path.Length = second_slash_found ? (USHORT)(second_slash_pos * sizeof(WCHAR)) : ntpath->Length;
+		nt_device_path.MaximumLength = nt_device_path.Length;
 
-					break;
-				}
+		label = nt_device_to_dos_device(&nt_device_path);
+
+		if (label != '\0')
+		{
+			// Put the entry in the cache.
+			// Check if the first slot is populated if not, always put the new entry
+			// in the second slot.
+			if (dos_device_cache[0].device_number == (dev_t)-1)
+			{
+				dos_device_cache[0].device_number = device_number;
+				dos_device_cache[0].label = label;
+			}
+			else
+			{
+				dos_device_cache[1].device_number = device_number;
+				dos_device_cache[1].label = label;
 			}
 		}
 	}
 
-	if (label != 0)
+	if (label != '\0')
 	{
 		// We technically will actually use less than this, but this is close enough. ((-) "\Device\HarddiskVolume" (+) "C:").
 		dospath = (UNICODE_STRING *)malloc(sizeof(UNICODE_STRING) + ntpath->Length - (16 * sizeof(WCHAR)));
@@ -694,22 +746,10 @@ UNICODE_STRING *ntpath_to_dospath(const UNICODE_STRING *ntpath)
 		dospath->Buffer[0] = (WCHAR)label;
 		dospath->Buffer[1] = L':';
 
-		int j;
-		bool second_slash_found = false;
-		// Find the second slash
-		for (j = 22; ntpath->Buffer[j] != L'\0'; ++j) // skip "\Device\HarddiskVolume"
-		{
-			if (ntpath->Buffer[j] == L'\\')
-			{
-				second_slash_found = true;
-				break;
-			}
-		}
-
 		if (second_slash_found)
 		{
-			memcpy(dospath->Buffer + 2, ntpath->Buffer + j, ntpath->Length - (j * sizeof(WCHAR)));
-			dospath->Length = (USHORT)(ntpath->Length - ((j - 2) * sizeof(WCHAR)));
+			memcpy(dospath->Buffer + 2, ntpath->Buffer + second_slash_pos, ntpath->Length - (second_slash_pos * sizeof(WCHAR)));
+			dospath->Length = (USHORT)(ntpath->Length - ((second_slash_pos - 2) * sizeof(WCHAR)));
 			dospath->MaximumLength = dospath->Length + sizeof(WCHAR);
 			dospath->Buffer[dospath->Length / sizeof(WCHAR)] = L'\0';
 		}

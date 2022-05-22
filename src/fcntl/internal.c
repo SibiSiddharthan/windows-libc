@@ -174,6 +174,23 @@ HANDLE open_conout(void)
 	return handle;
 }
 
+// Opening the mount manager should not fail.
+HANDLE open_mountmgr(void)
+{
+	UNICODE_STRING name;
+	OBJECT_ATTRIBUTES object;
+	IO_STATUS_BLOCK io;
+	HANDLE handle = INVALID_HANDLE_VALUE;
+
+	name.Buffer = MOUNTMGR_DEVICE_NAME;
+	name.Length = 50;
+	name.MaximumLength = 52;
+
+	InitializeObjectAttributes(&object, &name, 0, NULL, NULL);
+	NtCreateFile(&handle, SYNCHRONIZE, &object, &io, NULL, 0, FILE_SHARE_READ | FILE_SHARE_WRITE, FILE_OPEN, 0, NULL, 0);
+	return handle;
+}
+
 void initialize_std_handles(HANDLE handle, int index, bool console_subsystem, bool output)
 {
 	handle_t inherited_handle_type;

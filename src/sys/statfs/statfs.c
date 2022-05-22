@@ -72,10 +72,9 @@ int do_statfs(HANDLE handle, struct statfs *restrict statfsbuf)
 	FILE_FS_VOLUME_INFORMATION *volume_info;
 	UNICODE_STRING u16_fstype;
 	UTF8_STRING u8_fstype;
-	UNICODE_STRING *u16_ntpath, *u16_dospath;
+	UNICODE_STRING *u16_ntpath = NULL, *u16_dospath = NULL;
 	char attribute_info_buffer[64];
 	char volume_info_buffer[128];
-	char object_name_buffer[1024];
 
 	memset(statfsbuf, 0, sizeof(struct statfs));
 
@@ -150,15 +149,7 @@ int do_statfs(HANDLE handle, struct statfs *restrict statfsbuf)
 	statfsbuf->f_fsid.major = (USHORT)(volume_info->VolumeSerialNumber >> 16);
 	statfsbuf->f_fsid.minor = (USHORT)volume_info->VolumeSerialNumber;
 
-	// TODO move this inside path.c. Isufficient buffer also.
-	u16_ntpath = (PUNICODE_STRING)object_name_buffer;
-	status = NtQueryObject(handle, ObjectNameInformation, u16_ntpath, sizeof(object_name_buffer), NULL);
-	if (status != STATUS_SUCCESS)
-	{
-		map_ntstatus_to_errno(status);
-		return -1;
-	}
-
+	u16_ntpath = get_handle_ntpath(handle);
 	memcpy(statfsbuf->f_mntfromname, "\\Device\\HarddiskVolume", 22);
 	for (int i = 22; u16_ntpath->Buffer[i] != L'\0' && u16_ntpath->Buffer[i] != L'\\'; ++i)
 	{
@@ -171,6 +162,7 @@ int do_statfs(HANDLE handle, struct statfs *restrict statfsbuf)
 	statfsbuf->f_mntonname[1] = ':';
 
 	free(u16_dospath);
+	free(u16_ntpath);
 	// TODO removable
 	return 0;
 }

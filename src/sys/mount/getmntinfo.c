@@ -18,27 +18,6 @@
 
 int do_statfs(HANDLE handle, struct statfs *restrict statfsbuf);
 
-HANDLE open_mountmgr(void)
-{
-	NTSTATUS status;
-	UNICODE_STRING path;
-	OBJECT_ATTRIBUTES object;
-	IO_STATUS_BLOCK io;
-	HANDLE handle;
-
-	RtlInitUnicodeString(&path, MOUNTMGR_DEVICE_NAME);
-	InitializeObjectAttributes(&object, &path, 0, NULL, NULL);
-
-	status = NtCreateFile(&handle, SYNCHRONIZE, &object, &io, NULL, 0, FILE_SHARE_READ | FILE_SHARE_WRITE, FILE_OPEN, 0, NULL, 0);
-	if (status != STATUS_SUCCESS)
-	{
-		map_ntstatus_to_errno(status);
-		return INVALID_HANDLE_VALUE;
-	}
-
-	return handle;
-}
-
 int wlibc_getmntinfo(struct statfs **mounts, int mode /* unused */)
 {
 	NTSTATUS status;

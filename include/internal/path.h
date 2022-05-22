@@ -29,4 +29,6 @@ UNICODE_STRING *get_fd_dospath(int fd);
 UNICODE_STRING *ntpath_to_dospath(const UNICODE_STRING *ntpath);
 UNICODE_STRING *dospath_to_ntpath(const UNICODE_STRING *dospath);
 
+UNICODE_STRING *get_handle_ntpath(HANDLE handle);
+
 #endif
