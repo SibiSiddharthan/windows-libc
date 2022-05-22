@@ -71,7 +71,7 @@ int do_stat(HANDLE handle, struct stat *restrict statbuf)
 		char security_buffer[512];
 		ULONG length;
 		status = NtQuerySecurityObject(handle, OWNER_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | DACL_SECURITY_INFORMATION,
-									   security_buffer, 512, &length);
+									   security_buffer, sizeof(security_buffer), &length);
 		if (status != STATUS_SUCCESS)
 		{
 			map_ntstatus_to_errno(status);
@@ -79,9 +79,26 @@ int do_stat(HANDLE handle, struct stat *restrict statbuf)
 		}
 
 		PISECURITY_DESCRIPTOR_RELATIVE security_descriptor = (PISECURITY_DESCRIPTOR_RELATIVE)security_buffer;
+		PISID owner = (PISID)(security_buffer + security_descriptor->Owner);
+		PISID group = (PISID)(security_buffer + security_descriptor->Group);
 		PACL acl = (PACL)(security_buffer + security_descriptor->Dacl);
 		size_t acl_read = 0;
 		bool user_ace_present = false;
+
+		// Set the uid, gid as the last subauthority of their respective SIDs.
+		statbuf->st_uid = owner->SubAuthority[owner->SubAuthorityCount - 1];
+		statbuf->st_gid = group->SubAuthority[group->SubAuthorityCount - 1];
+
+		// Treat "NT AUTHORITY\SYSTEM" and "BUILTIN\Administrators" as root.
+		if (RtlEqualSid(owner, adminstrators_sid) || RtlEqualSid(owner, ntsystem_sid))
+		{
+			statbuf->st_uid = 0;
+		}
+		if (RtlEqualSid(group, adminstrators_sid) || RtlEqualSid(group, ntsystem_sid))
+		{
+			statbuf->st_gid = 0;
+		}
+
 		// Iterate through the ACLs
 		// Order should be (NT AUTHORITY\SYSTEM), (BUILTIN\Administrators), Current User ,(BUILTIN\Users), Everyone
 		for (int i = 0; i < acl->AceCount; ++i)

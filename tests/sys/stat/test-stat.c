@@ -237,6 +237,25 @@ int test_fstatat()
 	return 0;
 }
 
+int test_id()
+{
+	int status;
+	struct stat statbuf;
+	const char *filename = "t-stat-id";
+
+	int fd = creat(filename, 0760);
+	ASSERT_SUCCESS(close(fd));
+
+	status = stat(filename, &statbuf);
+	ASSERT_EQ(status, 0);
+
+	ASSERT_EQ(statbuf.st_uid, getuid());
+	ASSERT_EQ(statbuf.st_gid, getgid());
+
+	ASSERT_SUCCESS(unlink(filename));
+	return 0;
+}
+
 int test_permissions_file()
 {
 	int fd;
@@ -349,6 +368,7 @@ void cleanup()
 	remove("t-fstatat.dir/t-fstatat");
 	remove("t-fstatat.dir/t-fstatat.sym");
 	remove("t-fstatat.dir");
+	remove("t-stat-id");
 }
 
 int main()
@@ -370,6 +390,7 @@ int main()
 	TEST(test_lstat());
 	TEST(test_fstat());
 	TEST(test_fstatat());
+	TEST(test_id());
 
 	TEST(test_permissions_file());
 	TEST(test_permissions_dir());

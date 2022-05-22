@@ -88,14 +88,14 @@ void initialize_sids(void)
 	if (elevation.TokenIsElevated)
 	{
 		current_uid = 0; // ROOT_UID
-		current_gid = 0; // ROOT_GID
 	}
 	else
 	{
 		// Use the last SubAuthority.
 		current_uid = current_user_sid->SubAuthority[current_user_sid->SubAuthorityCount - 1];
-		current_gid = current_group_sid->SubAuthority[current_group_sid->SubAuthorityCount - 1];
 	}
+
+	current_gid = current_group_sid->SubAuthority[current_group_sid->SubAuthorityCount - 1];
 }
 
 void cleanup_security_decsriptors(void)
