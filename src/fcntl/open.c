@@ -174,29 +174,44 @@ static bool validate_oflags(int oflags)
 	return true;
 }
 
-HANDLE just_reopen(HANDLE old_handle, ACCESS_MASK access, ULONG options)
+static HANDLE do_reopen(HANDLE old_handle, ACCESS_MASK access, ULONG attributes, ULONG disposition, ULONG options)
 {
 	NTSTATUS status;
 	IO_STATUS_BLOCK io;
 	OBJECT_ATTRIBUTES object;
 	UNICODE_STRING empty = {0, 0, NULL};
-	HANDLE handle = INVALID_HANDLE_VALUE;
+	HANDLE new_handle = INVALID_HANDLE_VALUE;
 	ULONG share = FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE;
 
 	// NOTE: An empty UNICODE_STRING needs to passed, for this to work.
 	InitializeObjectAttributes(&object, &empty, 0, old_handle, NULL);
 
 	// We can reopen the same file by passing its already open handle to the root parameter of OBJECT_ATTRIBUTES.
-	status = NtCreateFile(&handle, access, &object, &io, NULL, 0, share, FILE_OPEN, options, NULL, 0);
+	status = NtCreateFile(&new_handle, access, &object, &io, NULL, 0, share, FILE_OPEN, options, NULL, 0);
 	if (status != STATUS_SUCCESS)
 	{
 		map_ntstatus_to_errno(status);
 	}
 
-	return handle;
+	return new_handle;
 }
 
-HANDLE really_do_open(OBJECT_ATTRIBUTES *object, ACCESS_MASK access, ULONG attributes, ULONG disposition, ULONG options)
+HANDLE just_reopen(HANDLE handle, ACCESS_MASK access, ULONG options)
+{
+	return do_reopen(handle, access, 0, FILE_OPEN, options);
+}
+
+HANDLE reopen_handle(HANDLE handle, int flags)
+{
+	ACCESS_MASK access = determine_access_rights(flags);
+	ULONG options = determine_create_options(flags);
+	ULONG disposition = determine_create_dispostion(flags);
+	ULONG attributes = determine_file_attributes(flags);
+
+	return do_reopen(handle, access, attributes, disposition, options);
+}
+
+static HANDLE really_do_open(OBJECT_ATTRIBUTES *object, ACCESS_MASK access, ULONG attributes, ULONG disposition, ULONG options)
 {
 	NTSTATUS status;
 	IO_STATUS_BLOCK io;

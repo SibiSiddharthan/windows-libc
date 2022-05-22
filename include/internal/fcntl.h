@@ -85,6 +85,7 @@ bool validate_fd(int _fd);
 HANDLE just_open(int dirfd, const char *path, ACCESS_MASK access, ULONG options);
 HANDLE just_open2(UNICODE_STRING *ntpath, ACCESS_MASK access, ULONG options);
 HANDLE just_reopen(HANDLE old_handle, ACCESS_MASK access, ULONG options);
+HANDLE reopen_handle(HANDLE handle, int flags);
 
 // Open device handles
 HANDLE open_conin(void);
