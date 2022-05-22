@@ -54,7 +54,7 @@ int common_chmod(int dirfd, const char *path, mode_t mode, int flags)
 		just_open(dirfd, path, FILE_READ_ATTRIBUTES | READ_CONTROL | WRITE_DAC, flags == AT_SYMLINK_NOFOLLOW ? FILE_OPEN_REPARSE_POINT : 0);
 	if (handle == INVALID_HANDLE_VALUE)
 	{
-		// errno wil be set by just_open
+		// errno will be set by `just_open`.
 		return -1;
 	}
 
