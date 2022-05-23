@@ -214,9 +214,9 @@ int test_root()
 	ASSERT_STREQ(entry_id->pw_name, entry_name->pw_name);
 	ASSERT_EQ(entry_id->pw_uid, entry_name->pw_uid);
 	ASSERT_EQ(entry_id->pw_gid, entry_name->pw_gid);
-	ASSERT_EQ(entry_id->pw_dir, entry_name->pw_dir);
-	ASSERT_EQ(entry_id->pw_gecos, entry_name->pw_gecos);
-	ASSERT_EQ(entry_id->pw_shell, entry_name->pw_shell);
+	ASSERT_STREQ(entry_id->pw_dir, entry_name->pw_dir);
+	ASSERT_STREQ(entry_id->pw_gecos, entry_name->pw_gecos);
+	ASSERT_STREQ(entry_id->pw_shell, entry_name->pw_shell);
 
 	return 0;
 }

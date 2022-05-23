@@ -36,6 +36,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 include_directories(include)
 
 option(BUILD_SHARED_LIBS "Build Shared Libraries" OFF)
+option(ENABLE_ASAN "Use address sanitizer" OFF)
 option(ENABLE_DLFCN "Enable dlfcn module" ON)
 option(ENABLE_POSIX_IO "Enable POSIX-like IO" ON)
 option(ENABLE_SYS_TIME "Enable sys/time.h" ON)
@@ -56,6 +57,14 @@ option(ENABLE_MMAP "Enable POSIX mmap API" ON)
 option(ENABLE_THREADS "Enable pthreads and C11 threads API" ON)
 option(ENABLE_SPAWN "Enable POSIX spawn API" ON)
 #option(ENABLE_SOCKETS "Enable SOCKETS API" ON)
+
+# Only enable the address sanitizer with MSVC.
+if(ENABLE_ASAN)
+	if(CMAKE_C_COMPILER_ID STREQUAL "MSVC")
+		add_compile_options(/fsanitize=address /wd5072)
+		add_link_options(/incremental:no)
+	endif()
+endif()
 
 add_subdirectory(src)
 

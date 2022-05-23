@@ -209,9 +209,11 @@ int test_spawn_env()
 	int status;
 	int wstatus;
 	pid_t pid;
+	size_t path_length;
 	const char *program = "env.exe";
+	char *path_value = NULL, *path_env = NULL;
 	char *argv[] = {(char *)program, NULL};
-	char *env[] = {"TEST_ENV=Hello World", NULL};
+	char *env[] = {"TEST_ENV=Hello World", NULL, NULL};
 
 	status = posix_spawn(&pid, program, NULL, NULL, argv, environ);
 	ASSERT_EQ(status, 0);
@@ -219,6 +221,21 @@ int test_spawn_env()
 	status = waitpid(pid, &wstatus, 0);
 	ASSERT_EQ(status, pid);
 	ASSERT_EQ(wstatus, 1);
+
+	// When running with address sanitizer enabled or a linking with shared library (wlibc.dll),
+	// if we are passing a custom environment to the child process, we need to pass PATH as well.
+	// Otherwise the process load will fail with (STATUS_DLL_NOT_FOUND 0xC0000135).
+	path_value = getenv("PATH");
+	if (path_value != NULL)
+	{
+		path_length = strlen(path_value);
+		path_env = (char *)malloc(5 + 1 + path_length); // "PATH=" + NULL
+		memcpy(path_env, "PATH=", 5);
+		memcpy(path_env + 5, path_value, path_length);
+		*(path_env + 5 + path_length) = '\0';
+
+		env[1] = path_env;
+	}
 
 	// Pass the environment variable directly to the child process.
 	status = posix_spawn(&pid, program, NULL, NULL, argv, env);
@@ -237,6 +254,8 @@ int test_spawn_env()
 	status = waitpid(pid, &wstatus, 0);
 	ASSERT_EQ(status, pid);
 	ASSERT_EQ(wstatus, 0);
+
+	free(path_env);
 
 	return 0;
 }
@@ -1207,7 +1226,9 @@ int test_spawn_shebang_path()
 	char content[4096];
 	char buffer[4096];
 	char auxilary_dir_buffer[256];
-	char *bufp = buffer;
+	size_t PATH_length, AUXILARY_length;
+	char *bufp = buffer, *auxilary_location = auxilary_dir_buffer;
+	char *oldpath = NULL, *newpath = NULL;
 	pid_t pid;
 	posix_spawn_file_actions_t actions;
 
@@ -1219,7 +1240,21 @@ int test_spawn_shebang_path()
 	strcat(auxilary_dir_buffer, "/");
 	strcat(auxilary_dir_buffer, auxilary_dir);
 
-	setenv("PATH", auxilary_dir_buffer, 1);
+	oldpath = getenv("PATH");
+	ASSERT_NOTNULL(oldpath);
+
+	PATH_length = strlen(oldpath);
+	AUXILARY_length = strlen(auxilary_location);
+
+	newpath = (char *)malloc(PATH_length + AUXILARY_length + 4); // ';' + '\0' + extra.
+
+	// Prepend the PATH with path.exe's location.
+	memset(newpath, 0, PATH_length + AUXILARY_length + 4);
+	memcpy(newpath, auxilary_location, AUXILARY_length);
+	newpath[AUXILARY_length] = ';';
+	memcpy(newpath + AUXILARY_length + 1, oldpath, PATH_length + 1);
+
+	setenv("PATH", newpath, 1);
 
 	// Prepare the shebang file.
 	snprintf(content, 4096, "#! %s", program_arg);
@@ -1265,6 +1300,8 @@ int test_spawn_shebang_path()
 	ASSERT_SUCCESS(close(fds[0]));
 	ASSERT_SUCCESS(close(fds[1]));
 	ASSERT_SUCCESS(remove(program_cmd));
+
+	free(newpath);
 
 	return 0;
 }

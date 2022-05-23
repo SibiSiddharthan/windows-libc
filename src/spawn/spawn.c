@@ -205,7 +205,7 @@ static UNICODE_STRING *search_for_program(const char *path)
 	// First scan the path to see if there are any extensions.
 	length = strlen(path);
 	// Check for ".exe", ".cmd", ".bat". In this order.
-	if (length - 4 > 0)
+	if (length > 4)
 	{
 		if (path[length - 4] == '.')
 		{

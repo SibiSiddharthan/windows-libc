@@ -192,6 +192,15 @@ int common_symlink(const char *restrict source, int dirfd, const char *restrict 
 		u16_source.Buffer[1] = L':';
 	}
 
+	// Convert all forward slashes to back slashes.
+	for (int i = 0; u16_source.Buffer[i] != L'\0'; i++)
+	{
+		if (u16_source.Buffer[i] == L'/')
+		{
+			u16_source.Buffer[i] = L'\\';
+		}
+	}
+
 	if (is_absolute)
 	{
 		// Convert drive letter to uppercase.
@@ -206,15 +215,6 @@ int common_symlink(const char *restrict source, int dirfd, const char *restrict 
 			// 2 bytes to insert a '\'.
 			u16_source.Buffer[2] = L'\\';
 			u16_source.Length += sizeof(WCHAR);
-		}
-	}
-
-	// Convert all forward slashes to back slashes.
-	for (int i = 0; u16_source.Buffer[i] != L'\0'; i++)
-	{
-		if (u16_source.Buffer[i] == L'/')
-		{
-			u16_source.Buffer[i] = L'\\';
 		}
 	}
 
