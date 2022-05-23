@@ -187,7 +187,7 @@ static HANDLE do_reopen(HANDLE old_handle, ACCESS_MASK access, ULONG attributes,
 	InitializeObjectAttributes(&object, &empty, 0, old_handle, NULL);
 
 	// We can reopen the same file by passing its already open handle to the root parameter of OBJECT_ATTRIBUTES.
-	status = NtCreateFile(&new_handle, access, &object, &io, NULL, 0, share, FILE_OPEN, options, NULL, 0);
+	status = NtCreateFile(&new_handle, access, &object, &io, NULL, attributes, share, disposition, options, NULL, 0);
 	if (status != STATUS_SUCCESS)
 	{
 		map_ntstatus_to_errno(status);

@@ -20,11 +20,11 @@ struct timeval
 	suseconds_t tv_usec; // microseconds
 };
 
-WLIBC_API int wlibc_gettimeofday(struct timeval *restrict tp, void *restrict tz /*unused*/);
+WLIBC_API int wlibc_gettimeofday(struct timeval *restrict tp);
 
-WLIBC_INLINE int gettimeofday(struct timeval *restrict tp, void *restrict tz /*unused*/)
+WLIBC_INLINE int gettimeofday(struct timeval *restrict tp, void *restrict tz WLIBC_UNUSED)
 {
-	return wlibc_gettimeofday(tp, tz);
+	return wlibc_gettimeofday(tp);
 }
 
 _WLIBC_END_DECLS

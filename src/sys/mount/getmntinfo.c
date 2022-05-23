@@ -18,7 +18,7 @@
 
 int do_statfs(HANDLE handle, struct statfs *restrict statfsbuf);
 
-int wlibc_getmntinfo(struct statfs **mounts, int mode /* unused */)
+int wlibc_getmntinfo(struct statfs **mounts, int mode WLIBC_UNUSED)
 {
 	NTSTATUS status;
 	IO_STATUS_BLOCK io;

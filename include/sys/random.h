@@ -23,7 +23,7 @@ _WLIBC_BEGIN_DECLS
 
 WLIBC_API ssize_t wlibc_generate_random_bytes(void *buffer, size_t length, int source);
 
-WLIBC_INLINE ssize_t getrandom(void *buffer, size_t length, unsigned int flags /*unused*/)
+WLIBC_INLINE ssize_t getrandom(void *buffer, size_t length, unsigned int flags WLIBC_UNUSED)
 {
 	return wlibc_generate_random_bytes(buffer, length, 1);
 }

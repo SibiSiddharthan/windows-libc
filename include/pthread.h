@@ -140,7 +140,7 @@ WLIBC_INLINE int pthread_attr_init(pthread_attr_t *attributes)
 	return wlibc_threadattr_init(attributes);
 }
 
-WLIBC_INLINE int pthread_attr_destroy(pthread_attr_t *attributes)
+WLIBC_INLINE int pthread_attr_destroy(pthread_attr_t *attributes WLIBC_UNUSED)
 {
 	// nop
 	return 0;
@@ -209,7 +209,7 @@ WLIBC_INLINE int pthread_mutexattr_init(pthread_mutexattr_t *attributes)
 	return wlibc_mutexattr_init(attributes);
 }
 
-WLIBC_INLINE int pthread_mutexattr_destroy(pthread_mutexattr_t *attributes)
+WLIBC_INLINE int pthread_mutexattr_destroy(pthread_mutexattr_t *attributes WLIBC_UNUSED)
 {
 	// nop
 	return 0;
@@ -287,7 +287,7 @@ WLIBC_INLINE int pthread_rwlockattr_init(pthread_rwlockattr_t *attributes)
 	return wlibc_rwlockattr_init(attributes);
 }
 
-WLIBC_INLINE int pthread_rwlockattr_destroy(pthread_rwlockattr_t *attributes)
+WLIBC_INLINE int pthread_rwlockattr_destroy(pthread_rwlockattr_t *attributes WLIBC_UNUSED)
 {
 	// nop
 	return 0;
@@ -329,7 +329,7 @@ WLIBC_INLINE int pthread_barrierattr_init(pthread_barrierattr_t *attributes)
 	return wlibc_barrierattr_init(attributes);
 }
 
-WLIBC_INLINE int pthread_barrierattr_destroy(pthread_barrierattr_t *attributes)
+WLIBC_INLINE int pthread_barrierattr_destroy(pthread_barrierattr_t *attributes WLIBC_UNUSED)
 {
 	// nop
 	return 0;
@@ -383,7 +383,7 @@ WLIBC_INLINE int pthread_condattr_init(pthread_condattr_t *attributes)
 	return wlibc_condattr_init(attributes);
 }
 
-WLIBC_INLINE int pthread_condattr_destroy(pthread_condattr_t *attributes)
+WLIBC_INLINE int pthread_condattr_destroy(pthread_condattr_t *attributes WLIBC_UNUSED)
 {
 	// nop
 	return 0;

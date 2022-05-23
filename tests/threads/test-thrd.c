@@ -19,7 +19,7 @@ int func(void *arg)
 	return (args->a + args->b);
 }
 
-int empty(void *arg)
+int empty(void *arg WLIBC_UNUSED)
 {
 	return 0;
 }

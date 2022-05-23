@@ -419,16 +419,16 @@ WLIBC_INLINE ssize_t write(int fd, const void *buf, size_t count)
 #define _PC_NO_TRUNC         7 // Does accessing filenames longers than maximum give error.
 #define _PC_VDISABLE         8 // Can special character processing be disabled(terminal).
 
-WLIBC_API long wlibc_common_pathconf(int fd /*unused*/, const char *path /*unused*/, int name);
+WLIBC_API long wlibc_common_pathconf(int name);
 
-WLIBC_INLINE long pathconf(const char *path, int name)
+WLIBC_INLINE long pathconf(const char *path WLIBC_UNUSED, int name)
 {
-	return wlibc_common_pathconf(-1, path, name);
+	return wlibc_common_pathconf(name);
 }
 
-WLIBC_INLINE long fpathconf(int fd, int name)
+WLIBC_INLINE long fpathconf(int fd WLIBC_UNUSED, int name)
 {
-	return wlibc_common_pathconf(fd, NULL, name);
+	return wlibc_common_pathconf(name);
 }
 
 // sysconf names

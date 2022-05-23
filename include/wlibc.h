@@ -31,7 +31,13 @@
 #	define _WLIBC_END_DECLS
 #endif
 
-#define WLIBC_INLINE __forceinline
+#define WLIBC_INLINE   __forceinline
 #define WLIBC_NORETURN __declspec(noreturn)
+
+#if defined __clang__
+#	define WLIBC_UNUSED __attribute__((unused))
+#elif defined _MSC_VER
+#	define WLIBC_UNUSED
+#endif
 
 #endif

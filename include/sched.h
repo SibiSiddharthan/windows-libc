@@ -71,12 +71,12 @@ WLIBC_INLINE int sched_yield(void)
 
 // In Windows we can change the priority of a process/thread by two levels (increase or decrease)
 // of its current priority class.
-WLIBC_INLINE int sched_get_priority_max(int algorithm /*unused*/)
+WLIBC_INLINE int sched_get_priority_max(int algorithm WLIBC_UNUSED)
 {
 	return SCHED_MAX_PRIORITY;
 }
 
-WLIBC_INLINE int sched_get_priority_min(int algorithm /*unused*/)
+WLIBC_INLINE int sched_get_priority_min(int algorithm WLIBC_UNUSED)
 {
 	return SCHED_MIN_PRIORITY;
 }
@@ -168,47 +168,47 @@ WLIBC_INLINE int CPU_EQUAL(cpu_set_t *set1, cpu_set_t *set2)
 	return wlibc_cpu_equal(set1, set2);
 }
 
-WLIBC_INLINE void CPU_ZERO_S(size_t setsize /*unused*/, cpu_set_t *set)
+WLIBC_INLINE void CPU_ZERO_S(size_t setsize WLIBC_UNUSED, cpu_set_t *set)
 {
 	wlibc_cpu_zero(set);
 }
 
-WLIBC_INLINE void CPU_SET_S(int cpu, size_t setsize /*unused*/, cpu_set_t *set)
+WLIBC_INLINE void CPU_SET_S(int cpu, size_t setsize WLIBC_UNUSED, cpu_set_t *set)
 {
 	wlibc_cpu_set(cpu, set);
 }
 
-WLIBC_INLINE void CPU_CLR_S(int cpu, size_t setsize /*unused*/, cpu_set_t *set)
+WLIBC_INLINE void CPU_CLR_S(int cpu, size_t setsize WLIBC_UNUSED, cpu_set_t *set)
 {
 	wlibc_cpu_clr(cpu, set);
 }
 
-WLIBC_INLINE int CPU_ISSET_S(int cpu, size_t setsize /*unused*/, cpu_set_t *set)
+WLIBC_INLINE int CPU_ISSET_S(int cpu, size_t setsize WLIBC_UNUSED, cpu_set_t *set)
 {
 	return wlibc_cpu_isset(cpu, set);
 }
 
-WLIBC_INLINE int CPU_COUNT_S(size_t setsize /*unused*/, cpu_set_t *set)
+WLIBC_INLINE int CPU_COUNT_S(size_t setsize WLIBC_UNUSED, cpu_set_t *set)
 {
 	return wlibc_cpu_count(set);
 }
 
-WLIBC_INLINE void CPU_AND_S(size_t setsize /*unused*/, cpu_set_t *destset, cpu_set_t *srcset1, cpu_set_t *srcset2)
+WLIBC_INLINE void CPU_AND_S(size_t setsize WLIBC_UNUSED, cpu_set_t *destset, cpu_set_t *srcset1, cpu_set_t *srcset2)
 {
 	wlibc_cpu_and(destset, srcset1, srcset2);
 }
 
-WLIBC_INLINE void CPU_OR_S(size_t setsize /*unused*/, cpu_set_t *destset, cpu_set_t *srcset1, cpu_set_t *srcset2)
+WLIBC_INLINE void CPU_OR_S(size_t setsize WLIBC_UNUSED, cpu_set_t *destset, cpu_set_t *srcset1, cpu_set_t *srcset2)
 {
 	wlibc_cpu_or(destset, srcset1, srcset2);
 }
 
-WLIBC_INLINE void CPU_XOR_S(size_t setsize /*unused*/, cpu_set_t *destset, cpu_set_t *srcset1, cpu_set_t *srcset2)
+WLIBC_INLINE void CPU_XOR_S(size_t setsize WLIBC_UNUSED, cpu_set_t *destset, cpu_set_t *srcset1, cpu_set_t *srcset2)
 {
 	wlibc_cpu_xor(destset, srcset1, srcset2);
 }
 
-WLIBC_INLINE int CPU_EQUAL_S(size_t setsize /*unused*/, cpu_set_t *set1, cpu_set_t *set2)
+WLIBC_INLINE int CPU_EQUAL_S(size_t setsize WLIBC_UNUSED, cpu_set_t *set1, cpu_set_t *set2)
 {
 	return wlibc_cpu_equal(set1, set2);
 }

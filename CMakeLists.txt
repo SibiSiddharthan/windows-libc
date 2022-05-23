@@ -18,7 +18,7 @@ add_compile_definitions(UNICODE _UNICODE
 
 if(CMAKE_C_COMPILER_ID STREQUAL "Clang")
 	add_compile_options(-fcolor-diagnostics -fansi-escape-codes
-						-Wall -Wextra -Wno-unused-parameter
+						-Wall -Wextra
 						-std=c11)
 endif()
 

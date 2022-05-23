@@ -16,6 +16,9 @@ int __cdecl __stdio_common_vsscanf(_In_ unsigned __int64 _Options, _In_reads_(_B
 								   _In_ size_t _BufferCount, _In_z_ _Scanf_format_string_params_(2) char const *_Format,
 								   _In_opt_ _locale_t _Locale, va_list _ArgList);
 
+#pragma warning(push)
+#pragma warning(disable: 4100)
+
 int wlibc_vfscanf(FILE *restrict stream, const char *restrict format, va_list args)
 {
 	if (format == NULL)
@@ -38,6 +41,8 @@ int wlibc_vfscanf(FILE *restrict stream, const char *restrict format, va_list ar
 	return result;
 	// TODO this is hard
 }
+
+#pragma warning(pop)
 
 int wlibc_vsscanf(const char *restrict str, const char *restrict format, va_list args)
 {

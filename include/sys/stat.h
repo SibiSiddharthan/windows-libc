@@ -303,7 +303,7 @@ WLIBC_INLINE int fdutimens(int fd, const char *path, const struct timespec times
 	}
 }
 
-WLIBC_INLINE mode_t umask(mode_t mask /*unused*/)
+WLIBC_INLINE mode_t umask(mode_t mask WLIBC_UNUSED)
 {
 	/*
 	  According to the POSIX documentation, the umask value is ignored if the parent directory has an ACL.

@@ -15,7 +15,7 @@
    January 1st 1601 to January 1st 1970 (UTC)
 */
 
-int wlibc_gettimeofday(struct timeval *restrict tp, void *restrict tz /*unused*/)
+int wlibc_gettimeofday(struct timeval *restrict tp)
 {
 	VALIDATE_PTR(tp, EINVAL, -1);
 

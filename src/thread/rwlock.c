@@ -27,7 +27,7 @@
 #define RWLOCK_EXCLUSIVE_LOCK 2
 #define RWLOCK_DESTROYED      -1
 
-int wlibc_rwlock_init(rwlock_t *restrict rwlock, const rwlock_attr_t *restrict attributes)
+int wlibc_rwlock_init(rwlock_t *restrict rwlock, const rwlock_attr_t *restrict attributes WLIBC_UNUSED)
 {
 	VALIDATE_PTR(rwlock, EINVAL, -1);
 	rwlock->ptr = 0;

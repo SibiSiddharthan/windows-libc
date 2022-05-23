@@ -58,7 +58,7 @@ int test_getentropy()
 	return 0;
 }
 
-void SIGILL_handler(int signum)
+void SIGILL_handler(int signum WLIBC_UNUSED)
 {
 	printf("rdrand, rdseed intrinsics not supported skipping test\n");
 	exit(0);

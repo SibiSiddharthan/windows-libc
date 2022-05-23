@@ -10,7 +10,7 @@
 #include <dlfcn.h>
 #include <errno.h>
 
-void *wlibc_dlopen(const char *filename, int flags /*unused*/)
+void *wlibc_dlopen(const char *filename, int flags WLIBC_UNUSED)
 {
 	NTSTATUS status;
 	UTF8_STRING u8_image;

@@ -8,7 +8,7 @@
 #include <sys/param.h>
 #include <unistd.h>
 
-long wlibc_common_pathconf(int fd /*unused*/, const char *path /*unused*/, int name)
+long wlibc_common_pathconf(int name)
 {
 	switch (name)
 	{

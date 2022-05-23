@@ -18,7 +18,7 @@
 // The Github hosted runner does not have ntdllp.lib yet. For the time being use the kernel32.lib functions.
 // Once ntdll.lib exports these functions we can switch over to using the Rtl functions.
 
-int wlibc_barrier_init(barrier_t *restrict barrier, const barrier_attr_t *restrict attributes, unsigned int count)
+int wlibc_barrier_init(barrier_t *restrict barrier, const barrier_attr_t *restrict attributes WLIBC_UNUSED, unsigned int count)
 {
 	VALIDATE_BARRIER(barrier);
 

@@ -23,19 +23,19 @@ void *func(void *arg)
 	return (void *)(intptr_t)(args->a + args->b);
 }
 
-void *empty(void *arg)
+void *empty(void *arg WLIBC_UNUSED)
 {
 	return NULL;
 }
 
-void *join(void *arg)
+void *join(void *arg WLIBC_UNUSED)
 {
 	// Sleep for 10 milliseconds.
 	usleep(10000);
 	return NULL;
 }
 
-void *bigexit(void *arg)
+void *bigexit(void *arg WLIBC_UNUSED)
 {
 	pthread_exit((void *)0xffffffffffffffff);
 }
@@ -85,7 +85,7 @@ void *bigcleanup(void *arg)
 	return NULL;
 }
 
-void *cancel(void *arg)
+void *cancel(void *arg WLIBC_UNUSED)
 {
 	while (1)
 		;
@@ -107,7 +107,7 @@ void *testcancel(void *arg)
 	return NULL;
 }
 
-void *testcancel_disabled(void *arg)
+void *testcancel_disabled(void *arg WLIBC_UNUSED)
 {
 	pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
 	pthread_testcancel();

@@ -11,6 +11,11 @@
 
 int main(int argc, char **argv)
 {
+	if(argc != 2)
+	{
+		return 1; // Failed
+	}
+
 	int i = atoi(argv[1]);
 	char buf[16];
 	switch (i)

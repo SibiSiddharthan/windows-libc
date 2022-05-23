@@ -10,12 +10,12 @@
 
 static int global_variable = 0;
 
-void handler_1(int sig)
+void handler_1(int sig WLIBC_UNUSED)
 {
 	++global_variable;
 }
 
-void handler_2(int sig)
+void handler_2(int sig WLIBC_UNUSED)
 {
 	--global_variable;
 }

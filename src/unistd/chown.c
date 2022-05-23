@@ -13,11 +13,8 @@
 #include <stdbool.h>
 #include <unistd.h>
 
-PISID lookup_id(int id)
-{
-	// TODO
-	return NULL;
-}
+// TODO
+PISID lookup_id(int id);
 
 int do_chown(HANDLE handle, uid_t owner, gid_t group)
 {

@@ -9,7 +9,7 @@
 #include <internal/error.h>
 #include <sys/mman.h>
 
-int wlibc_munmap(void *address, size_t size /* unused */)
+int wlibc_munmap(void *address, size_t size WLIBC_UNUSED)
 {
 	NTSTATUS status;
 

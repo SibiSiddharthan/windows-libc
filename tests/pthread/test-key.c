@@ -16,7 +16,7 @@ typedef struct _key_args
 
 int test_variable = 0;
 
-void destructor(void *value)
+void destructor(void *value WLIBC_UNUSED)
 {
 	++test_variable;
 }

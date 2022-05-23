@@ -52,13 +52,13 @@ ULONG determine_attibutes(int flags)
 {
 	ULONG attributes = SEC_COMMIT;
 
-#if 0
 	if (flags & MAP_HUGETLB)
 	{
-		//	Requires SeLockMemoryPrivelege. Put this feature on standby for now.
+#if 0
+		//	Requires SeLockMemoryPrivelege. Put this feature on standby for now. TODO
 		attributes |= SEC_LARGE_PAGES;
-	}
 #endif
+	}
 
 	return attributes;
 }

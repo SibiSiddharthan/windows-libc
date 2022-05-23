@@ -134,7 +134,7 @@ WLIBC_INLINE int posix_spawnattr_init(posix_spawnattr_t *attributes)
 	return wlibc_spawnattr_init(attributes);
 }
 
-WLIBC_INLINE int posix_spawnattr_destroy(posix_spawnattr_t *attributes)
+WLIBC_INLINE int posix_spawnattr_destroy(posix_spawnattr_t *attributes WLIBC_UNUSED)
 {
 	// nop
 	return 0;

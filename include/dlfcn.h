@@ -21,9 +21,9 @@ _WLIBC_BEGIN_DECLS
 
 extern unsigned long _wlibc_last_dlfcn_error;
 
-WLIBC_API void *wlibc_dlopen(const char *filename, int flags /* unused */);
+WLIBC_API void *wlibc_dlopen(const char *filename, int flags);
 
-WLIBC_INLINE void *dlopen(const char *filename, int flags /* unused */)
+WLIBC_INLINE void *dlopen(const char *filename, int flags)
 {
 	return wlibc_dlopen(filename, flags);
 }

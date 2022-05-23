@@ -10,6 +10,9 @@
 #include <internal/error.h>
 #include <sys/ioctl.h>
 
+#pragma warning(push)
+#pragma warning(disable: 4100)
+
 int wlibc_ioctl(int fd, unsigned long request, va_list args)
 {
 	// Only support regular files
@@ -23,3 +26,5 @@ int wlibc_ioctl(int fd, unsigned long request, va_list args)
 
 	return 0;
 }
+
+#pragma warning(pop)

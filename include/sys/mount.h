@@ -14,7 +14,7 @@
 #define MNT_WAIT   0
 #define MNT_NOWAIT 0
 
-WLIBC_API int wlibc_getmntinfo(struct statfs **mounts, int mode /* unused */);
+WLIBC_API int wlibc_getmntinfo(struct statfs **mounts, int mode);
 
 WLIBC_INLINE int getmntinfo(struct statfs **mounts, int mode)
 {

@@ -42,7 +42,7 @@ int have_required_access(mode_t given_access, mode_t mode)
 	return 0;
 }
 
-int do_access(HANDLE handle, int mode, int flags)
+int do_access(HANDLE handle, int mode, int flags WLIBC_UNUSED)
 {
 	NTSTATUS status;
 	IO_STATUS_BLOCK io;

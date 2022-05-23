@@ -21,7 +21,7 @@ static struct statx_timestamp timespec_to_timestamp(struct timespec *restrict st
 	return stx_time;
 }
 
-int do_statx(HANDLE handle, unsigned int mask, struct statx *restrict statxbuf)
+int do_statx(HANDLE handle, unsigned int mask WLIBC_UNUSED, struct statx *restrict statxbuf)
 {
 	int result;
 	struct stat statbuf;
@@ -29,7 +29,7 @@ int do_statx(HANDLE handle, unsigned int mask, struct statx *restrict statxbuf)
 	memset(statxbuf, 0, sizeof(struct statx));
 	result = do_stat(handle, &statbuf);
 
-	// For now just call do_stat and call it a day.
+	// For now just call do_stat and call it a day. MAYBE TODO
 	if (result == 0)
 	{
 		statxbuf->stx_attributes = 0;
