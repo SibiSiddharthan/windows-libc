@@ -689,7 +689,6 @@ static UNICODE_STRING *shebang_get_executable_and_args(const UNICODE_STRING *dos
 	}
 
 	size_t start_of_args = 0;
-	size_t end_of_args = 0;
 
 	for (size_t i = end_of_last_component_of_exe + 2; i < length_of_first_line; ++i)
 	{
@@ -698,11 +697,6 @@ static UNICODE_STRING *shebang_get_executable_and_args(const UNICODE_STRING *dos
 			start_of_args = i;
 			break;
 		}
-	}
-
-	if (start_of_args != 0)
-	{
-		end_of_args = length_of_first_line - 1;
 	}
 
 	size_t shebang_arg_normalized_size = 0;

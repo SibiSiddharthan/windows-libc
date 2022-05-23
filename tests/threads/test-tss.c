@@ -18,7 +18,6 @@ int test_variable = 0;
 
 void destructor(void *value)
 {
-	value = NULL;
 	++test_variable;
 }
 

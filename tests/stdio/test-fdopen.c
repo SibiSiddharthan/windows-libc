@@ -75,6 +75,7 @@ int test_correct_access()
 	f = fdopen(fd, "w");
 	ASSERT_EQ(fileno(f), 3);
 	flength = fwrite((void *)"hello", 1, 5, f);
+	ASSERT_EQ(flength, 5);
 	ASSERT_SUCCESS(fclose(f));
 	ASSERT_FAIL(close(fd));
 	ASSERT_ERRNO(EBADF);

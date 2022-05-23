@@ -187,7 +187,6 @@ int wlibc_common_poll(struct pollfd *fds, nfds_t nfds, const struct timespec *ti
 
 	pinfo = (fdinfo *)malloc(sizeof(fdinfo) * nfds);
 
-	// TODO pthread_sigmask.
 	// TODO Avoid locking every single time.
 	for (nfds_t i = 0; i < nfds; ++i)
 	{
@@ -197,12 +196,14 @@ int wlibc_common_poll(struct pollfd *fds, nfds_t nfds, const struct timespec *ti
 
 	if (sigmask)
 	{
+		sigprocmask(SIG_SETMASK, sigmask, &oldmask);
 	}
 
 	result = do_poll(pinfo, fds, nfds, timeout);
 
 	if (sigmask)
 	{
+		sigprocmask(SIG_SETMASK, &oldmask, NULL);
 	}
 
 	free(pinfo);

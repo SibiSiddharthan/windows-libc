@@ -27,7 +27,6 @@ int test_okay()
 {
 	STARTUPINFOA si;
 	PROCESS_INFORMATION pi;
-	BOOL result;
 	int status, wait_status;
 	pid_t child_pid;
 
@@ -35,7 +34,7 @@ int test_okay()
 	si.cb = sizeof(si);
 	memset(&pi, 0, sizeof(pi));
 
-	result = CreateProcessA(NULL, "kill-helper", NULL, NULL, TRUE, 0, NULL, NULL, &si, &pi);
+	CreateProcessA(NULL, "kill-helper", NULL, NULL, TRUE, 0, NULL, NULL, &si, &pi);
 	add_child(pi.dwProcessId, pi.hProcess);
 
 	status = kill(pi.dwProcessId, SIGTERM);

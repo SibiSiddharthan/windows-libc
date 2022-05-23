@@ -70,8 +70,10 @@ void cleanup_tls(threadinfo *tinfo)
 				// Check if a destructor for the slot has been registered.
 				if (_wlibc_tls_destructors[i] != NULL)
 				{
-					// Execute the destructor with the value at slot as its argument.
-					_wlibc_tls_destructors[i](tinfo->slots[i].value);
+					// Set the value to NULL and execute the destructor with the old value at as its argument.
+					void *value = tinfo->slots[i].value;
+					tinfo->slots[i].value = NULL;
+					_wlibc_tls_destructors[i](value);
 				}
 			}
 		}
@@ -80,7 +82,7 @@ void cleanup_tls(threadinfo *tinfo)
 
 void execute_cleanup(threadinfo *tinfo)
 {
-	while(tinfo->cleanup_slots_used != 0)
+	while (tinfo->cleanup_slots_used != 0)
 	{
 		// Only execute the cleanup function if it is non NULL.
 		if (tinfo->cleanup_entries[tinfo->cleanup_slots_used - 1].routine != NULL)

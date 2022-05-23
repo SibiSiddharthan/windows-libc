@@ -49,6 +49,7 @@ int test_getgrent_r()
 	while (1)
 	{
 		status = getgrent_r(&entry, buffer, 1024, &result);
+		ASSERT_EQ(status, 0);
 		if (result == NULL)
 		{
 			break;

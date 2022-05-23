@@ -11,12 +11,12 @@
 
 int wlibc_common_sleep(long long nanoseconds_100)
 {
-	NTSTATUS status;
+	// NTSTATUS status;
 	LARGE_INTEGER interval;
 	interval.QuadPart = -1 * nanoseconds_100; // relative
-	status = NtDelayExecution(TRUE, &interval);
+	/*status =*/NtDelayExecution(TRUE, &interval);
 	// TODO see what to do in case of failure
-	//if(status < 0)
+	// if(status < 0)
 	//{
 	//	map_ntstatus_to_errno(status);
 	//}

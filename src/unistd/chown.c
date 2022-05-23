@@ -24,12 +24,12 @@ int do_chown(HANDLE handle, uid_t owner, gid_t group)
 	NTSTATUS status;
 	SECURITY_INFORMATION security_information = 0;
 	SECURITY_DESCRIPTOR security_descriptor = {SECURITY_DESCRIPTOR_REVISION, 0, 0, NULL, NULL, NULL, NULL};
-	PISID owner_sid = NULL, group_sid = NULL;
-	char owner_sid_buffer[SECURITY_SID_SIZE(SID_MAX_SUB_AUTHORITIES)];
-	char group_sid_buffer[SECURITY_SID_SIZE(SID_MAX_SUB_AUTHORITIES)];
+	//PISID owner_sid = NULL, group_sid = NULL;
+	//char owner_sid_buffer[SECURITY_SID_SIZE(SID_MAX_SUB_AUTHORITIES)];
+	//char group_sid_buffer[SECURITY_SID_SIZE(SID_MAX_SUB_AUTHORITIES)];
 
-	owner_sid = (PISID)owner_sid_buffer;
-	group_sid = (PISID)group_sid_buffer;
+	//owner_sid = (PISID)owner_sid_buffer;
+	//group_sid = (PISID)group_sid_buffer;
 
 	if (owner != -1)
 	{
