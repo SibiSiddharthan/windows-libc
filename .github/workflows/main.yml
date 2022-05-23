@@ -1,18 +1,93 @@
-name: WLIBC Build & Test
+name: WLIBC CI/CD
 
 on: [push, pull_request]
 
 jobs:
-  build_and_test:
+  msvc-asan-debug:
     runs-on: windows-2022
     steps:
-    - uses: actions/checkout@v1
-    - name: configure
+    - uses: actions/checkout@v2
+    - name: Install ninja
       shell: cmd
-      run: cmake .
-    - name: build
+      run: choco install ninja
+    - name: Build & Test
       shell: cmd
-      run: cmake --build . --config Release
-    - name: test
+      run: |
+        CALL "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" AMD64
+        SET CC=cl
+        cmake . -GNinja -DCMAKE_BUILD_TYPE=Debug -DENABLE_ASAN=ON
+        ninja
+        ctest -VV
+  msvc-asan-release:
+    runs-on: windows-2022
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install ninja
       shell: cmd
-      run: ctest -VV -C Release
+      run: choco install ninja
+    - name: Build & Test
+      shell: cmd
+      run: |
+        CALL "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" AMD64
+        SET CC=cl
+        cmake . -GNinja -DCMAKE_BUILD_TYPE=Release -DENABLE_ASAN=ON
+        ninja
+        ctest -VV
+  msvc-debug:
+    runs-on: windows-2022
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install ninja
+      shell: cmd
+      run: choco install ninja
+    - name: Build & Test
+      shell: cmd
+      run: |
+        CALL "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" AMD64
+        SET CC=cl
+        cmake . -GNinja -DCMAKE_BUILD_TYPE=Debug
+        ninja
+        ctest -VV
+  msvc-release:
+    runs-on: windows-2022
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install ninja
+      shell: cmd
+      run: choco install ninja
+    - name: Build & Test
+      shell: cmd
+      run: |
+        CALL "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" AMD64
+        SET CC=cl
+        cmake . -GNinja -DCMAKE_BUILD_TYPE=Release
+        ninja
+        ctest -VV
+  clang-debug:
+    runs-on: windows-2022
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install ninja
+      shell: cmd
+      run: choco install ninja
+    - name: Build & Test
+      shell: cmd
+      run: |
+        SET CC=clang
+        cmake . -GNinja -DCMAKE_BUILD_TYPE=Debug
+        ninja
+        ctest -VV
+  clang-release:
+    runs-on: windows-2022
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install ninja
+      shell: cmd
+      run: choco install ninja
+    - name: Build & Test
+      shell: cmd
+      run: |
+        SET CC=clang
+        cmake . -GNinja -DCMAKE_BUILD_TYPE=Release
+        ninja
+        ctest -VV
