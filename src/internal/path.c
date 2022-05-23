@@ -89,7 +89,7 @@ nt_device *dos_device_to_nt_device(char volume)
 			if (status != STATUS_SUCCESS)
 			{
 				// Mark the volume as non existent.
-				devices[volume - 'A'].length = -1;
+				devices[volume - 'A'].length = (uint16_t)-1;
 				return NULL;
 			}
 
@@ -100,10 +100,11 @@ nt_device *dos_device_to_nt_device(char volume)
 
 			status = NtQuerySymbolicLinkObject(handle, &realpath, NULL);
 			NtClose(handle);
+			// This should not fail.
 			if (status != STATUS_SUCCESS)
 			{
 				// Mark the volume as non existent.
-				devices[volume - 'A'].length = -1;
+				devices[volume - 'A'].length = (uint16_t)-1;
 				return NULL;
 			}
 
@@ -546,11 +547,11 @@ UNICODE_STRING *get_absolute_ntpath2(int dirfd, const char *path, handle_t *type
 		// Get the NT device first
 		if (!cygwin_path)
 		{
-			volume = toupper(path[0]);
+			volume = (char)toupper(path[0]);
 		}
 		else
 		{
-			volume = toupper(path[1]);
+			volume = (char)toupper(path[1]);
 		}
 
 		device = dos_device_to_nt_device(volume);
@@ -623,7 +624,7 @@ UNICODE_STRING *get_absolute_ntpath2(int dirfd, const char *path, handle_t *type
 	for (int i = 0; i < index; i++)
 	{
 		memcpy((char *)u16_ntpath->Buffer + u16_ntpath->Length, ntpath_buffer + components[i].start, components[i].length);
-		u16_ntpath->Length += components[i].length;
+		u16_ntpath->Length += (USHORT)components[i].length;
 		if (i + 1 < index)
 		{
 			u16_ntpath->Buffer[u16_ntpath->Length / sizeof(WCHAR)] = L'\\';
@@ -670,7 +671,7 @@ UNICODE_STRING *get_fd_ntpath(int fd)
    second cache slot will be promoted to the first slot and the the first slot demoted
    to second.
 */
-dos_device dos_device_cache[2] = {{-1, 0}, {-1, 0}};
+dos_device dos_device_cache[2] = {{(dev_t)-1, 0}, {(dev_t)-1, 0}};
 
 UNICODE_STRING *ntpath_to_dospath(const UNICODE_STRING *ntpath)
 {

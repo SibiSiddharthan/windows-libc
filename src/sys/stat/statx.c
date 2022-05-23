@@ -36,7 +36,7 @@ int do_statx(HANDLE handle, unsigned int mask WLIBC_UNUSED, struct statx *restri
 		statxbuf->stx_nlink = statbuf.st_nlink;
 		statxbuf->stx_uid = statbuf.st_uid;
 		statxbuf->stx_gid = statbuf.st_gid;
-		statxbuf->stx_mode = statbuf.st_mode;
+		statxbuf->stx_mode = (uint16_t)statbuf.st_mode;
 		statxbuf->stx_ino = statbuf.st_ino;
 		statxbuf->stx_size = statbuf.st_size;
 		statxbuf->stx_blocks = statbuf.st_blocks;

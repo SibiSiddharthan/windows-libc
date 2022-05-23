@@ -144,7 +144,7 @@ size_t wlibc_fread_unlocked(void *restrict buffer, size_t size, size_t count, FI
 	if (buffer == NULL)
 	{
 		errno = EINVAL;
-		return -1;
+		return 0;
 	}
 
 	if (size * count == 0)
@@ -152,7 +152,7 @@ size_t wlibc_fread_unlocked(void *restrict buffer, size_t size, size_t count, FI
 		return 0;
 	}
 
-	VALIDATE_FILE_STREAM(stream, -1);
+	VALIDATE_FILE_STREAM(stream, 0);
 	return common_fread(buffer, size, count, stream);
 }
 
@@ -161,7 +161,7 @@ size_t wlibc_fread(void *restrict buffer, size_t size, size_t count, FILE *restr
 	if (buffer == NULL)
 	{
 		errno = EINVAL;
-		return -1;
+		return 0;
 	}
 
 	if (size * count == 0)
@@ -169,7 +169,7 @@ size_t wlibc_fread(void *restrict buffer, size_t size, size_t count, FILE *restr
 		return 0;
 	}
 
-	VALIDATE_FILE_STREAM(stream, -1);
+	VALIDATE_FILE_STREAM(stream, 0);
 
 	LOCK_FILE_STREAM(stream);
 	size_t ret = common_fread(buffer, size, count, stream);

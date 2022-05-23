@@ -35,7 +35,7 @@ ssize_t common_getdelim(char **restrict buffer, size_t *restrict size, int delim
 	*/
 	while (1)
 	{
-		ch = common_fgetc(stream);
+		ch = (char)common_fgetc(stream);
 		if (ch == EOF)
 		{
 			result = -1;

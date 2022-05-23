@@ -21,7 +21,7 @@ int common_ungetc(int ch, FILE *stream)
 	if (stream->pos > stream->start)
 	{
 		stream->pos--;
-		stream->buffer[stream->pos - stream->start] = ch;
+		stream->buffer[stream->pos - stream->start] = (char)ch;
 		// clear eof flag
 		stream->error = stream->error & ~_IOEOF;
 		return ch;

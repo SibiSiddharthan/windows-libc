@@ -16,7 +16,7 @@ int common_fputc(int ch, FILE *stream)
 	{
 		if (stream->start != stream->end && stream->pos != stream->end)
 		{
-			stream->buffer[stream->pos++ - stream->start] = ch;
+			stream->buffer[stream->pos++ - stream->start] = (char)ch;
 			return ch;
 		}
 	}

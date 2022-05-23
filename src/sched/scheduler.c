@@ -69,7 +69,7 @@ int wlibc_sched_setscheduler(pid_t pid, int policy, const struct sched_param *pa
 		}
 	}
 
-	priority_class.PriorityClass = policy;
+	priority_class.PriorityClass = (UCHAR)policy;
 
 	handle = open_process(pid, PROCESS_SET_INFORMATION);
 	if (handle == 0)

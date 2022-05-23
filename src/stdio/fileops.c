@@ -16,7 +16,7 @@ int common_fileno(FILE *stream);
 // Buffer queries
 size_t wlibc_fbufsize(FILE *stream)
 {
-	VALIDATE_FILE_STREAM(stream, -1);
+	VALIDATE_FILE_STREAM(stream, (size_t)-1);
 	return stream->buf_size;
 }
 
@@ -84,7 +84,7 @@ int wlibc_fwritable(FILE *stream)
 
 size_t wlibc_freadahead(FILE *stream)
 {
-	VALIDATE_FILE_STREAM(stream, -1);
+	VALIDATE_FILE_STREAM(stream, (size_t)-1);
 
 	if (stream->prev_op == OP_READ)
 	{
@@ -95,7 +95,7 @@ size_t wlibc_freadahead(FILE *stream)
 
 size_t wlibc_fpending(FILE *stream)
 {
-	VALIDATE_FILE_STREAM(stream, -1);
+	VALIDATE_FILE_STREAM(stream, (size_t)-1);
 
 	if (stream->prev_op == OP_WRITE)
 	{

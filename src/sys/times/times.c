@@ -10,7 +10,7 @@
 #include <errno.h>
 #include <sys/times.h>
 
-#define TO_CLOCK_T(number) (number) / (10000000 / CLOCKS_PER_SEC)
+#define TO_CLOCK_T(number) ((clock_t)(number) / (10000000 / CLOCKS_PER_SEC))
 
 clock_t wlibc_times(struct tms *tmsbuf)
 {

@@ -26,9 +26,8 @@ if(CMAKE_C_COMPILER_ID STREQUAL "MSVC")
 	add_compile_options(/W4
 						/wd4146 # Unary minus
 						/wd4714 # No inline in debug build
+						/wd5072 # ASAN enabled with O2
 						/wd4100 # Unused parameter
-						/wd4244 # Truncation loss of data
-						/wd4245 # Signed/Unsigned mismatch
 						/std:c11)
 endif()
 
@@ -61,7 +60,7 @@ option(ENABLE_SPAWN "Enable POSIX spawn API" ON)
 # Only enable the address sanitizer with MSVC.
 if(ENABLE_ASAN)
 	if(CMAKE_C_COMPILER_ID STREQUAL "MSVC")
-		add_compile_options(/fsanitize=address /wd5072)
+		add_compile_options(/fsanitize=address)
 		add_link_options(/incremental:no)
 	endif()
 endif()

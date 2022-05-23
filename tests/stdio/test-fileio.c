@@ -647,6 +647,9 @@ int test_read_append()
 	return 0;
 }
 
+#pragma warning(push)
+#pragma warning(disable: 4244) // Truncation loss of data
+
 int test_getc()
 {
 	FILE *f;
@@ -808,6 +811,8 @@ int test_getc_putc()
 
 	return 0;
 }
+
+#pragma warning(pop)
 
 int test_gets()
 {

@@ -124,8 +124,8 @@ int do_statfs(HANDLE handle, struct statfs *restrict statfsbuf)
 	{
 		// Copy the filesystem name to statfsbuf->f_fstypename.
 		u16_fstype.Buffer = attribute_info->FileSystemName;
-		u16_fstype.Length = attribute_info->FileSystemNameLength;
-		u16_fstype.MaximumLength = attribute_info->FileSystemNameLength;
+		u16_fstype.Length = (USHORT)attribute_info->FileSystemNameLength;
+		u16_fstype.MaximumLength = (USHORT)attribute_info->FileSystemNameLength;
 
 		u8_fstype.Buffer = statfsbuf->f_fstypename;
 		u8_fstype.Length = 0;

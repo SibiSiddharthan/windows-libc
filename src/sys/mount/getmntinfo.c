@@ -27,7 +27,7 @@ int wlibc_getmntinfo(struct statfs **mounts, int mode WLIBC_UNUSED)
 	MOUNTMGR_MOUNT_POINTS *mount_points = NULL;
 	VOID *mount_points_buffer = NULL;
 	DWORD drive_count = 0;
-	SIZE_T required_size = 4096; // Start with 4096 bytes
+	ULONG required_size = 4096; // Start with 4096 bytes
 
 	if (mounts == NULL)
 	{

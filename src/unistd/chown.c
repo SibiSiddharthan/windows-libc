@@ -61,7 +61,7 @@ int do_chown(HANDLE handle, uid_t owner, gid_t group)
 int common_chown(int dirfd, const char *path, uid_t owner, gid_t group, int flags)
 {
 	NTSTATUS status;
-	PVOID state;
+	PVOID state = NULL;
 	ULONG privilege = SE_TAKE_OWNERSHIP_PRIVILEGE;
 	BOOLEAN acquired_privilege = FALSE;
 	HANDLE handle;
@@ -131,7 +131,7 @@ int wlibc_common_chown(int dirfd, const char *path, uid_t owner, gid_t group, in
 	else
 	{
 		NTSTATUS status;
-		PVOID state;
+		PVOID state = NULL;
 		ULONG privilege = SE_TAKE_OWNERSHIP_PRIVILEGE;
 		BOOLEAN acquired_privilege = FALSE;
 		HANDLE handle;

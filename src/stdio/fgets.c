@@ -19,7 +19,7 @@ char *common_fgets(char *restrict buffer, size_t count, FILE *restrict stream)
 	while (ch != '\n' && read_count + 1 < count)
 	{
 		// TODO make this faster
-		ch = common_fgetc(stream);
+		ch = (char)common_fgetc(stream);
 		if (ch == EOF)
 		{
 			break;

@@ -12,7 +12,7 @@ int main()
 	int length;
 	char buffer[64];
 
-	length = read(STDIN_FILENO, buffer, 64);
+	length = (int)read(STDIN_FILENO, buffer, 64);
 	write(STDOUT_FILENO, buffer, length);
 
 	return 0;

@@ -140,7 +140,7 @@ size_t wlibc_fwrite_unlocked(const void *restrict buffer, size_t size, size_t co
 	if (buffer == NULL)
 	{
 		errno = EINVAL;
-		return -1;
+		return 0;
 	}
 
 	if (size * count == 0)
@@ -148,7 +148,7 @@ size_t wlibc_fwrite_unlocked(const void *restrict buffer, size_t size, size_t co
 		return 0;
 	}
 
-	VALIDATE_FILE_STREAM(stream, -1);
+	VALIDATE_FILE_STREAM(stream, 0);
 	return common_fwrite(buffer, size, count, stream);
 }
 
@@ -157,7 +157,7 @@ size_t wlibc_fwrite(const void *restrict buffer, size_t size, size_t count, FILE
 	if (buffer == NULL)
 	{
 		errno = EINVAL;
-		return -1;
+		return 0;
 	}
 
 	if (size * count == 0)
@@ -165,7 +165,7 @@ size_t wlibc_fwrite(const void *restrict buffer, size_t size, size_t count, FILE
 		return 0;
 	}
 
-	VALIDATE_FILE_STREAM(stream, -1);
+	VALIDATE_FILE_STREAM(stream, 0);
 
 	LOCK_FILE_STREAM(stream);
 	size_t ret = common_fwrite(buffer, size, count, stream);
