@@ -32,8 +32,14 @@ size_t common_fread(void *restrict buffer, size_t size, size_t count, FILE *rest
 {
 	ssize_t result = 0;
 
+	// Stream has reached it's end or an error has occured.
+	if (stream->error == _IOEOF || stream->error == _IOERROR)
+	{
+		return 0;
+	}
+
 	// Stream was opened for writing only.
-	if(stream->buf_mode & _IOBUFFER_WRONLY)
+	if (stream->buf_mode & _IOBUFFER_WRONLY)
 	{
 		errno = EACCES;
 		stream->error = _IOERROR;
