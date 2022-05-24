@@ -13,8 +13,9 @@ uid_t wlibc_getuid()
 	return current_uid;
 }
 
-int wlibc_setuid(uid_t uid WLIBC_UNUSED)
+int wlibc_setuid(uid_t uid)
 {
-   // Nop
+	// Nop
+	UNREFERENCED_PARAMETER(uid);
 	return 0;
 }

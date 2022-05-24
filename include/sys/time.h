@@ -22,10 +22,15 @@ struct timeval
 
 WLIBC_API int wlibc_gettimeofday(struct timeval *restrict tp);
 
+#pragma warning(push)
+#pragma warning(disable : 4100) // Unused parameter
+
 WLIBC_INLINE int gettimeofday(struct timeval *restrict tp, void *restrict tz WLIBC_UNUSED)
 {
 	return wlibc_gettimeofday(tp);
 }
+
+#pragma warning(pop)
 
 _WLIBC_END_DECLS
 

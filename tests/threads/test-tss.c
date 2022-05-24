@@ -16,10 +16,15 @@ typedef struct _tss_args
 
 int test_variable = 0;
 
+#pragma warning(push)
+#pragma warning(disable : 4100) // Unused parameter
+
 void destructor(void *value WLIBC_UNUSED)
 {
 	++test_variable;
 }
+
+#pragma warning(pop)
 
 int simple(void *arg)
 {

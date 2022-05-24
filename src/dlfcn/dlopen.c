@@ -10,7 +10,7 @@
 #include <dlfcn.h>
 #include <errno.h>
 
-void *wlibc_dlopen(const char *filename, int flags WLIBC_UNUSED)
+void *wlibc_dlopen(const char *filename, int flags)
 {
 	NTSTATUS status;
 	UTF8_STRING u8_image;
@@ -18,6 +18,7 @@ void *wlibc_dlopen(const char *filename, int flags WLIBC_UNUSED)
 	HANDLE handle;
 
 	VALIDATE_PATH(filename, ENOENT, NULL);
+	UNREFERENCED_PARAMETER(flags);
 
 	RtlInitUTF8String(&u8_image, filename);
 	RtlUTF8StringToUnicodeString(&u16_image, &u8_image, TRUE);

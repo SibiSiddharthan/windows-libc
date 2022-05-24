@@ -208,9 +208,8 @@ int wlibc_thread_sleep(const struct timespec *duration, struct timespec *remaini
 		return -1;
 	}
 
-	if(remaining)
+	if (remaining)
 	{
-		
 	}
 
 	// TODO Alerts
@@ -286,8 +285,11 @@ static void execute_thread_cancellation(threadinfo *tinfo)
 	RtlExitUserThread((NTSTATUS)(LONG_PTR)WLIBC_THREAD_CANCELED);
 }
 
-static void cancel_apc(void *arg1, void *arg2 WLIBC_UNUSED, void *arg3 WLIBC_UNUSED)
+static void cancel_apc(void *arg1, void *arg2, void *arg3)
 {
+	UNREFERENCED_PARAMETER(arg2);
+	UNREFERENCED_PARAMETER(arg3);
+
 	execute_thread_cancellation(arg1);
 }
 

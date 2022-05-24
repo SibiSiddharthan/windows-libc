@@ -41,9 +41,10 @@
 
 #define UNLOCK_QUEUE(lock) _InterlockedCompareExchange((volatile LONG *)&lock, 0, 1);
 
-int wlibc_cond_init(cond_t *restrict cond, const cond_attr_t *restrict attributes WLIBC_UNUSED)
+int wlibc_cond_init(cond_t *restrict cond, const cond_attr_t *restrict attributes)
 {
 	VALIDATE_PTR(cond, EINVAL, -1);
+	UNREFERENCED_PARAMETER(attributes);
 
 	// start with a size of 64.
 	cond->queue_size = 64;

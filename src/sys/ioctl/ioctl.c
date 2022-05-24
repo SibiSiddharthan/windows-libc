@@ -10,9 +10,6 @@
 #include <internal/error.h>
 #include <sys/ioctl.h>
 
-#pragma warning(push)
-#pragma warning(disable: 4100)
-
 int wlibc_ioctl(int fd, unsigned long request, va_list args)
 {
 	// Only support regular files
@@ -23,8 +20,8 @@ int wlibc_ioctl(int fd, unsigned long request, va_list args)
 	}
 
 	// TODO add ioctl codes that can be implemented.
+	UNREFERENCED_PARAMETER(request);
+	UNREFERENCED_PARAMETER(args);
 
 	return 0;
 }
-
-#pragma warning(pop)

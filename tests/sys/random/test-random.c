@@ -58,7 +58,7 @@ int test_getentropy()
 	return 0;
 }
 
-void SIGILL_handler(int signum WLIBC_UNUSED)
+void SIGILL_handler()
 {
 	printf("rdrand, rdseed intrinsics not supported skipping test\n");
 	exit(0);
@@ -70,7 +70,7 @@ int main()
 
 	// In CI this test sometimes fails with 'Illegal Instruction'.
 	// Handle this exception and skip this test if it fails.
-	signal(SIGILL, SIGILL_handler);
+	signal(SIGILL, (_crt_signal_t)SIGILL_handler);
 
 	TEST(test_getrandom());
 	TEST(test_getentropy());

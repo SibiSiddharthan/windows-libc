@@ -23,6 +23,9 @@ void *func(void *arg)
 	return (void *)(intptr_t)(args->a + args->b);
 }
 
+#pragma warning(push)
+#pragma warning(disable : 4100) // Unused parameter
+
 void *empty(void *arg WLIBC_UNUSED)
 {
 	return NULL;
@@ -113,6 +116,8 @@ void *testcancel_disabled(void *arg WLIBC_UNUSED)
 	pthread_testcancel();
 	return NULL;
 }
+
+#pragma warning(pop)
 
 int test_thread_basic()
 {

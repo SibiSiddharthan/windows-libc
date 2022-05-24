@@ -71,6 +71,9 @@ WLIBC_INLINE int sched_yield(void)
 
 // In Windows we can change the priority of a process/thread by two levels (increase or decrease)
 // of its current priority class.
+#pragma warning(push)
+#pragma warning(disable : 4100) // Unused parameter
+
 WLIBC_INLINE int sched_get_priority_max(int algorithm WLIBC_UNUSED)
 {
 	return SCHED_MAX_PRIORITY;
@@ -81,18 +84,21 @@ WLIBC_INLINE int sched_get_priority_min(int algorithm WLIBC_UNUSED)
 	return SCHED_MIN_PRIORITY;
 }
 
-WLIBC_API int wlibc_sched_getaffinity(pid_t pid, size_t cpusetsize, cpu_set_t *cpuset);
-WLIBC_API int wlibc_sched_setaffinity(pid_t pid, size_t cpusetsize, const cpu_set_t *cpuset);
 
-WLIBC_INLINE int sched_getaffinity(pid_t pid, size_t cpusetsize, cpu_set_t *cpuset)
+WLIBC_API int wlibc_sched_getaffinity(pid_t pid, cpu_set_t *cpuset);
+WLIBC_API int wlibc_sched_setaffinity(pid_t pid, const cpu_set_t *cpuset);
+
+WLIBC_INLINE int sched_getaffinity(pid_t pid, size_t cpusetsize WLIBC_UNUSED, cpu_set_t *cpuset)
 {
-	return wlibc_sched_getaffinity(pid, cpusetsize, cpuset);
+	return wlibc_sched_getaffinity(pid, cpuset);
 }
 
-WLIBC_INLINE int sched_setaffinity(pid_t pid, size_t cpusetsize, const cpu_set_t *cpuset)
+WLIBC_INLINE int sched_setaffinity(pid_t pid, size_t cpusetsize WLIBC_UNUSED, const cpu_set_t *cpuset)
 {
-	return wlibc_sched_setaffinity(pid, cpusetsize, cpuset);
+	return wlibc_sched_setaffinity(pid, cpuset);
 }
+
+#pragma warning(pop)
 
 WLIBC_API size_t wlibc_cpu_alloc_size(int num_cpus);
 WLIBC_API cpu_set_t *wlibc_cpu_alloc(int num_cpus);
@@ -168,6 +174,9 @@ WLIBC_INLINE int CPU_EQUAL(cpu_set_t *set1, cpu_set_t *set2)
 	return wlibc_cpu_equal(set1, set2);
 }
 
+#pragma warning(push)
+#pragma warning(disable : 4100) // Unused parameter
+
 WLIBC_INLINE void CPU_ZERO_S(size_t setsize WLIBC_UNUSED, cpu_set_t *set)
 {
 	wlibc_cpu_zero(set);
@@ -212,6 +221,8 @@ WLIBC_INLINE int CPU_EQUAL_S(size_t setsize WLIBC_UNUSED, cpu_set_t *set1, cpu_s
 {
 	return wlibc_cpu_equal(set1, set2);
 }
+
+#pragma warning(pop)
 
 _WLIBC_END_DECLS
 

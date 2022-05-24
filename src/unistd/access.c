@@ -42,11 +42,13 @@ int have_required_access(mode_t given_access, mode_t mode)
 	return 0;
 }
 
-int do_access(HANDLE handle, int mode, int flags WLIBC_UNUSED)
+int do_access(HANDLE handle, int mode, int flags)
 {
 	NTSTATUS status;
 	IO_STATUS_BLOCK io;
 	FILE_STAT_INFORMATION stat_info;
+
+	UNREFERENCED_PARAMETER(flags);
 
 	// Use the 'EffectiveAccess' field of FILE_STAT_INFORMATION
 	status = NtQueryInformationFile(handle, &io, &stat_info, sizeof(FILE_STAT_INFORMATION), FileStatInformation);

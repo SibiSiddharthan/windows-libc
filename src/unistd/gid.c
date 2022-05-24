@@ -13,8 +13,9 @@ gid_t wlibc_getgid()
 	return current_gid;
 }
 
-int wlibc_setgid(gid_t gid WLIBC_UNUSED)
+int wlibc_setgid(gid_t gid)
 {
 	// Nop
+	UNREFERENCED_PARAMETER(gid);
 	return 0;
 }

@@ -9,9 +9,11 @@
 #include <internal/error.h>
 #include <sys/mman.h>
 
-int wlibc_munmap(void *address, size_t size WLIBC_UNUSED)
+int wlibc_munmap(void *address, size_t size)
 {
 	NTSTATUS status;
+
+	UNREFERENCED_PARAMETER(size);
 
 	status = NtUnmapViewOfSectionEx(NtCurrentProcess(), address, 0);
 	if (status != STATUS_SUCCESS)

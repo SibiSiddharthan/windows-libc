@@ -18,7 +18,7 @@
 
 int do_statfs(HANDLE handle, struct statfs *restrict statfsbuf);
 
-int wlibc_getmntinfo(struct statfs **mounts, int mode WLIBC_UNUSED)
+int wlibc_getmntinfo(struct statfs **mounts, int mode)
 {
 	NTSTATUS status;
 	IO_STATUS_BLOCK io;
@@ -28,6 +28,8 @@ int wlibc_getmntinfo(struct statfs **mounts, int mode WLIBC_UNUSED)
 	VOID *mount_points_buffer = NULL;
 	DWORD drive_count = 0;
 	ULONG required_size = 4096; // Start with 4096 bytes
+
+	UNREFERENCED_PARAMETER(mode);
 
 	if (mounts == NULL)
 	{

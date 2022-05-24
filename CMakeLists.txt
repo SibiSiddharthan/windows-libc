@@ -27,7 +27,6 @@ if(CMAKE_C_COMPILER_ID STREQUAL "MSVC")
 						/wd4146 # Unary minus
 						/wd4714 # No inline in debug build
 						/wd5072 # ASAN enabled with O2
-						/wd4100 # Unused parameter
 						/std:c11)
 endif()
 

@@ -303,6 +303,9 @@ WLIBC_INLINE int fdutimens(int fd, const char *path, const struct timespec times
 	}
 }
 
+#pragma warning(push)
+#pragma warning(disable : 4100) // Unused parameter
+
 WLIBC_INLINE mode_t umask(mode_t mask WLIBC_UNUSED)
 {
 	/*
@@ -312,6 +315,8 @@ WLIBC_INLINE mode_t umask(mode_t mask WLIBC_UNUSED)
 	*/
 	return 0077;
 }
+
+#pragma warning(pop)
 
 _WLIBC_END_DECLS
 

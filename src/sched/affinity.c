@@ -12,7 +12,7 @@
 
 HANDLE open_process(DWORD pid, ACCESS_MASK access);
 
-int wlibc_sched_getaffinity(pid_t pid, size_t cpusetsize WLIBC_UNUSED, cpu_set_t *cpuset)
+int wlibc_sched_getaffinity(pid_t pid, cpu_set_t *cpuset)
 {
 	int result = -1;
 	NTSTATUS status;
@@ -52,7 +52,7 @@ finish:
 	return result;
 }
 
-int wlibc_sched_setaffinity(pid_t pid, size_t cpusetsize WLIBC_UNUSED, const cpu_set_t *cpuset)
+int wlibc_sched_setaffinity(pid_t pid, const cpu_set_t *cpuset)
 {
 	int result = -1;
 	NTSTATUS status;

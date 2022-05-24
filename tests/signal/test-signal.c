@@ -10,6 +10,9 @@
 
 static int global_variable = 0;
 
+#pragma warning(push)
+#pragma warning(disable : 4100) // Unused parameter
+
 void handler_1(int sig WLIBC_UNUSED)
 {
 	++global_variable;
@@ -19,6 +22,8 @@ void handler_2(int sig WLIBC_UNUSED)
 {
 	--global_variable;
 }
+
+#pragma warning(pop)
 
 int test_SIGKILL()
 {

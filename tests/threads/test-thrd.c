@@ -19,7 +19,7 @@ int func(void *arg)
 	return (args->a + args->b);
 }
 
-int empty(void *arg WLIBC_UNUSED)
+int empty()
 {
 	return 0;
 }
@@ -49,7 +49,7 @@ int test_join_detach()
 	int status;
 	thrd_t thread;
 
-	status = thrd_create(&thread, empty, NULL);
+	status = thrd_create(&thread, (thrd_start_t)empty, NULL);
 	ASSERT_EQ(status, 0);
 
 	status = thrd_detach(thread);

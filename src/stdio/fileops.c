@@ -145,9 +145,14 @@ void wlibc_fseterr(FILE *stream)
 	stream->error |= _IOERROR;
 }
 
-int wlibc_fsetlocking(FILE *stream, int type WLIBC_UNUSED)
+int wlibc_fsetlocking(FILE *stream, int type)
 {
 	// Don't bother changing the locking state. The CRITICAL_SECTION locks are recursive anyway.
 	VALIDATE_FILE_STREAM(stream, -1);
+	if (type != FSETLOCKING_QUERY && type != FSETLOCKING_INTERNAL && type != FSETLOCKING_BYCALLER)
+	{
+		return -1;
+	}
+
 	return FSETLOCKING_INTERNAL;
 }
