@@ -3,7 +3,7 @@ name: WLIBC CI/CD
 on: [push, pull_request]
 
 jobs:
-  msvc-asan-debug:
+  msvc-asan:
     runs-on: windows-2022
     steps:
     - uses: actions/checkout@v2
@@ -16,21 +16,6 @@ jobs:
         CALL "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" AMD64
         SET CC=cl
         cmake . -GNinja -DCMAKE_BUILD_TYPE=Debug -DENABLE_ASAN=ON
-        ninja
-        ctest -VV
-  msvc-asan-release:
-    runs-on: windows-2022
-    steps:
-    - uses: actions/checkout@v2
-    - name: Install ninja
-      shell: cmd
-      run: choco install ninja
-    - name: Build & Test
-      shell: cmd
-      run: |
-        CALL "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" AMD64
-        SET CC=cl
-        cmake . -GNinja -DCMAKE_BUILD_TYPE=Release -DENABLE_ASAN=ON
         ninja
         ctest -VV
   msvc-debug:
@@ -63,21 +48,7 @@ jobs:
         cmake . -GNinja -DCMAKE_BUILD_TYPE=Release
         ninja
         ctest -VV
-  clang-debug:
-    runs-on: windows-2022
-    steps:
-    - uses: actions/checkout@v2
-    - name: Install ninja
-      shell: cmd
-      run: choco install ninja
-    - name: Build & Test
-      shell: cmd
-      run: |
-        SET CC=clang
-        cmake . -GNinja -DCMAKE_BUILD_TYPE=Debug
-        ninja
-        ctest -VV
-  clang-release:
+  clang:
     runs-on: windows-2022
     steps:
     - uses: actions/checkout@v2
