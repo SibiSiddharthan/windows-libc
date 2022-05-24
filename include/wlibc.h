@@ -35,9 +35,11 @@
 #define WLIBC_NORETURN __declspec(noreturn)
 
 #if defined __clang__
-#	define WLIBC_UNUSED __attribute__((unused))
+#	define WLIBC_UNUSED  __attribute__((unused))
+#	define WLIBC_NONNULL __attribute__((nonnull))
 #elif defined _MSC_VER
 #	define WLIBC_UNUSED
+#	define WLIBC_NONNULL
 #endif
 
 #endif
