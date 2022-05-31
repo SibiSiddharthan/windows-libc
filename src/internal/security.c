@@ -6,6 +6,7 @@
 */
 
 #include <internal/nt.h>
+#include <internal/security.h>
 #include <sys/types.h>
 #include <stdlib.h>
 
@@ -30,14 +31,6 @@ PISID current_computer_sid = NULL; // Current Computer
 
 uid_t current_uid;
 gid_t current_gid;
-
-#define WLIBC_BASIC_PERMISSIONS   (FILE_READ_ATTRIBUTES | FILE_WRITE_ATTRIBUTES | READ_CONTROL | SYNCHRONIZE | DELETE)
-#define WLIBC_READ_PERMISSIONS    (FILE_READ_DATA | FILE_READ_EA | WLIBC_BASIC_PERMISSIONS)
-#define WLIBC_WRITE_PERMISSIONS   (FILE_WRITE_DATA | FILE_APPEND_DATA | FILE_WRITE_EA | FILE_DELETE_CHILD | WLIBC_BASIC_PERMISSIONS)
-#define WLIBC_EXECUTE_PERMISSIONS (FILE_EXECUTE | WLIBC_BASIC_PERMISSIONS)
-// Only give these to system, admins and user
-#define WLIBC_EXTRA_PERMISSIONS (WRITE_DAC | WRITE_OWNER) // skip ACCESS_SYSTEM_SECURITY
-#define WLIBC_ALL_PERMISSIONS   (WLIBC_READ_PERMISSIONS | WLIBC_WRITE_PERMISSIONS | WLIBC_EXECUTE_PERMISSIONS | WLIBC_EXTRA_PERMISSIONS)
 
 void initialize_sids(void)
 {

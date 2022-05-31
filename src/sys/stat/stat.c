@@ -15,10 +15,6 @@
 #include <sys/stat.h>
 #include <time.h>
 
-#define WLIBC_ACCEPTABLE_READ_PERMISSIONS    (FILE_READ_DATA | FILE_READ_EA)
-#define WLIBC_ACCEPTABLE_WRITE_PERMISSIONS   (FILE_WRITE_DATA | FILE_APPEND_DATA | FILE_WRITE_EA)
-#define WLIBC_ACCEPTABLE_EXECUTE_PERMISSIONS (FILE_EXECUTE)
-
 mode_t get_permissions(ACCESS_MASK access)
 {
 	mode_t perms = 0;
@@ -107,7 +103,7 @@ int do_stat(HANDLE handle, struct stat *restrict statbuf)
 			PACE_HEADER ace_header = (PACE_HEADER)((char *)acl + sizeof(ACL) + acl_read);
 
 			// Only support allowed and denied ACEs
-			// Both ACCESS_ALLOWED_ACE and PACCESS_DENIED_ACE have ACE_HEADER at the start.
+			// Both ACCESS_ALLOWED_ACE and ACCESS_DENIED_ACE have ACE_HEADER at the start.
 			// Type casting of pointers here will work.
 			if (ace_header->AceType == ACCESS_ALLOWED_ACE_TYPE)
 			{
