@@ -36,25 +36,28 @@ int wlibc_acl_create_entry(acl_t *acl, acl_entry_t *entry)
 	WORD used_size = offsetof(struct _wlibc_acl_t, entries);
 	WORD max_entry_size = sizeof(struct _wlibc_acl_entry_t) + SECURITY_SID_SIZE(SID_MAX_SUB_AUTHORITIES);
 
-	for (int i = 0; i < (*acl)->count; ++i)
+	for (WORD i = 0; i < (*acl)->count; ++i)
 	{
-		*entry = (struct _wlibc_acl_entry_t *)((char *)acl + used_size);
+		*entry = (struct _wlibc_acl_entry_t *)((char *)*acl + used_size);
 		used_size += (*entry)->size;
 	}
 
 	if ((*acl)->size - used_size < max_entry_size)
 	{
 		// Allocate more space.
-		acl_t temp = (acl_t)malloc(max_entry_size * (*acl)->count * 2);
-		memset(temp, 0, max_entry_size * (*acl)->count * 2);
+		WORD allocated_size = max_entry_size * (*acl)->count * 2;
+		acl_t temp = (acl_t)malloc(allocated_size);
+
+		memset(temp, 0, allocated_size);
 		memcpy(temp, *acl, (*acl)->size);
 		free(*acl);
 
 		*acl = temp;
+		(*acl)->size = allocated_size;
 	}
 
 	// Store the address at the end of the previous entry.
-	*entry = (struct _wlibc_acl_entry_t *)((char *)acl + used_size);
+	*entry = (struct _wlibc_acl_entry_t *)((char *)*acl + used_size);
 
 	// We have allocated a new entry, increment the count.
 	++(*acl)->count;
@@ -110,7 +113,7 @@ int wlibc_acl_get_entry(acl_t acl, int entry_id, acl_entry_t *entry)
 	{
 		WORD offset = 0;
 
-		for (int i = 0; i < acl->count - 1; ++i)
+		for (WORD i = 0; i < acl->count - 1; ++i)
 		{
 			*entry = (struct _wlibc_acl_entry_t *)((char *)acl + offsetof(struct _wlibc_acl_t, entries) + offset);
 			offset += (*entry)->size;
@@ -138,16 +141,29 @@ int wlibc_acl_get_entry(acl_t acl, int entry_id, acl_entry_t *entry)
 		WORD index = 0;
 		struct _wlibc_acl_entry_t *acl_entry;
 
-		for (int i = 0; i < acl->count; ++i)
+		for (WORD i = 0; i < acl->count; ++i)
 		{
 			acl_entry = (struct _wlibc_acl_entry_t *)((char *)acl + offsetof(struct _wlibc_acl_t, entries) + offset);
 			offset += acl_entry->size;
+
+			// Skip the first entry.
+			if (i == 0)
+			{
+				continue;
+			}
 
 			if (acl_entry == *entry)
 			{
 				index = i;
 				break;
 			}
+		}
+
+		if (index == 0)
+		{
+			// entry not found.
+			errno = ESRCH;
+			return -1;
 		}
 
 		if (index == acl->count - 1)

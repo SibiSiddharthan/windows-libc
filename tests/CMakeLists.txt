@@ -84,3 +84,7 @@ endif()
 if(ENABLE_THREADS OR ENABLE_SPAWN)
 	add_subdirectory(sched)
 endif()
+
+if(ENABLE_ACL_SUPPORT)
+	add_subdirectory(sys/acl)
+endif()

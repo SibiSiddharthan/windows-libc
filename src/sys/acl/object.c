@@ -18,6 +18,8 @@ static acl_t get_acl(HANDLE handle)
 	NTSTATUS status;
 	PVOID buffer = NULL;
 	ULONG buffer_size = 512, length_required = 0;
+	PACL acl = NULL;
+	acl_t result = NULL;
 
 	// Start with 512 bytes, grow as required.
 	buffer = malloc(buffer_size);
@@ -47,14 +49,23 @@ static acl_t get_acl(HANDLE handle)
 		}
 	}
 
-	return buffer;
+	// Get the DACL information.
+	acl = (PACL)((CHAR *)buffer + ((PISECURITY_DESCRIPTOR_RELATIVE)buffer)->Dacl);
+	result = (acl_t)malloc(acl->AclSize);
+
+	memcpy(result, acl, acl->AclSize);
+	free(buffer);
+
+	return result;
 }
 
 static int set_acl(HANDLE handle, acl_t acl)
 {
 	NTSTATUS status;
+	SECURITY_DESCRIPTOR security_descriptor = {
+		SECURITY_DESCRIPTOR_REVISION, 0, SE_OWNER_DEFAULTED | SE_GROUP_DEFAULTED | SE_DACL_PRESENT, NULL, NULL, NULL, (PACL)acl};
 
-	status = NtSetSecurityObject(handle, DACL_SECURITY_INFORMATION, (PSECURITY_DESCRIPTOR)acl);
+	status = NtSetSecurityObject(handle, DACL_SECURITY_INFORMATION, &security_descriptor);
 
 	if (status != STATUS_SUCCESS)
 	{

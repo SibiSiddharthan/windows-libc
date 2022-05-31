@@ -24,7 +24,7 @@ acl_t wlibc_acl_init(int count)
 
 	// Allocate enough space for atleast 1 ACE.
 	// Allocate 76 bytes per ACE, maximum required.
-	size_t size = offsetof(struct _wlibc_acl_t, entries) + (count != 0 ? count : 1) * max_entry_size;
+	ULONG size = offsetof(struct _wlibc_acl_t, entries) + (count != 0 ? count : 1) * max_entry_size;
 	PACL acl = (PACL)malloc(size);
 	RtlCreateAcl(acl, size, ACL_REVISION);
 	return (acl_t)acl;
@@ -34,9 +34,10 @@ acl_t wlibc_acl_dup(const acl_t acl)
 {
 	VALIDATE_ACL(acl, NULL);
 
-	size_t size = ((PACL)(acl))->AclSize;
-	PACL dup_acl = (PACL)malloc(size);
-	return (acl_t)dup_acl;
+	acl_t dup_acl = (acl_t)malloc(acl->size);
+	memcpy(dup_acl, acl, acl->size);
+
+	return dup_acl;
 }
 
 int wlibc_acl_free(acl_t acl)
@@ -64,7 +65,7 @@ int wlibc_acl_valid(const acl_t acl)
 
 	// Now iterate through the supposed ACES
 	WORD acl_read = 0;
-	for (int i = 0; i < acl->count; ++i)
+	for (WORD i = 0; i < acl->count; ++i)
 	{
 		struct _wlibc_acl_entry_t *entry = (struct _wlibc_acl_entry_t *)((char *)acl + offsetof(struct _wlibc_acl_t, entries) + acl_read);
 		// Just validate the type and flags
