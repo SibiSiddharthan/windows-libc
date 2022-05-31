@@ -84,7 +84,10 @@ if(ENABLE_THREADS OR ENABLE_SPAWN)
 	wlibc_add_module(sched)
 endif()
 
-#wlibc_add_module(sys.acl)
+if(ENABLE_ACL_SUPPORT)
+	wlibc_add_module(sys.acl)
+endif()
+
 wlibc_add_module(sys.utsname)
 wlibc_add_module(sys.times)
 
