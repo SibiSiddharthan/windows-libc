@@ -10,6 +10,7 @@
 #include <sys/acl.h>
 #include <sys/types.h>
 #include <stdlib.h>
+#include <string.h>
 #include <errno.h>
 
 acl_t wlibc_acl_init(int count)
@@ -20,13 +21,13 @@ acl_t wlibc_acl_init(int count)
 		return NULL;
 	}
 
-	WORD max_entry_size = sizeof(struct _wlibc_acl_entry_t) + SECURITY_SID_SIZE(SID_MAX_SUB_AUTHORITIES);
-
 	// Allocate enough space for atleast 1 ACE.
-	// Allocate 76 bytes per ACE, maximum required.
-	ULONG size = offsetof(struct _wlibc_acl_t, entries) + (count != 0 ? count : 1) * max_entry_size;
+	ULONG size = offsetof(struct _wlibc_acl_t, entries) + (count != 0 ? count : 1) * sizeof(struct _wlibc_acl_entry_t);
 	PACL acl = (PACL)malloc(size);
+
+	memset(acl, 0, size);
 	RtlCreateAcl(acl, size, ACL_REVISION);
+
 	return (acl_t)acl;
 }
 

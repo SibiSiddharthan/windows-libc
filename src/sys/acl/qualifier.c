@@ -7,6 +7,7 @@
 
 #include <internal/nt.h>
 #include <internal/acl.h>
+#include <internal/error.h>
 #include <sys/acl.h>
 #include <stddef.h>
 
@@ -21,9 +22,14 @@ int wlibc_acl_set_qualifier(acl_entry_t entry, const acl_qualifier_t qualifier)
 {
 	VALIDATE_ACL_ENTRY(entry, -1);
 
-	RtlCopySid(entry->size - offsetof(struct _wlibc_acl_entry_t, sid), &entry->sid, qualifier);
-	// After copying the sid, set the size of the entry. The length of the sid will determine it.
-	entry->size = offsetof(struct _wlibc_acl_entry_t, sid) + SECURITY_SID_SIZE(((PISID)qualifier)->SubAuthorityCount);
+	NTSTATUS status;
+
+	status = RtlCopySid(SECURITY_SID_SIZE(SID_MAX_SUB_AUTHORITIES), &entry->sid, qualifier);
+	if (status != STATUS_SUCCESS)
+	{
+		map_ntstatus_to_errno(status);
+		return -1;
+	}
 
 	return 0;
 }

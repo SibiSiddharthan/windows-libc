@@ -15,15 +15,28 @@
 #define ACL_VALID_PERMS 0x1F01FF
 #define ACL_VALID_FLAGS 0x1F
 
+#define MAX_AUTHORITIES 15
+
+// SID (constant size)
+typedef struct _wlibc_acl_qualifier_t
+{
+	BYTE revision;
+	BYTE count;
+	BYTE root[6];
+	DWORD authorities[MAX_AUTHORITIES];
+} wlibc_acl_qualifier_t;
+
+// ACE (constant size)
 typedef struct _wlibc_acl_entry_t
 {
 	BYTE type;
 	BYTE flags;
 	WORD size;
 	ACCESS_MASK mask;
-	DWORD sid;
+	wlibc_acl_qualifier_t sid;
 } wlibc_acl_entry_t;
 
+// ACL (variable size)
 typedef struct _wlibc_acl_t
 {
 	BYTE revision;

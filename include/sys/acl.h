@@ -19,10 +19,10 @@ typedef char acl_type_t;
 typedef char acl_tag_t;
 typedef unsigned long acl_perm_t;
 typedef unsigned char acl_flag_t;
-typedef void *acl_qualifier_t;
 
 typedef struct _wlibc_acl_t *acl_t;
 typedef struct _wlibc_acl_entry_t *acl_entry_t;
+typedef struct _wlibc_acl_qualifier_t *acl_qualifier_t;
 typedef unsigned long *acl_permset_t;
 typedef unsigned char *acl_flagset_t;
 

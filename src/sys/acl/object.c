@@ -6,6 +6,7 @@
 */
 
 #include <internal/nt.h>
+#include <internal/acl.h>
 #include <internal/error.h>
 #include <internal/fcntl.h>
 #include <internal/security.h>
@@ -18,6 +19,7 @@ static acl_t get_acl(HANDLE handle)
 	NTSTATUS status;
 	PVOID buffer = NULL;
 	ULONG buffer_size = 512, length_required = 0;
+	WORD acl_read = 0;
 	PACL acl = NULL;
 	acl_t result = NULL;
 
@@ -51,9 +53,32 @@ static acl_t get_acl(HANDLE handle)
 
 	// Get the DACL information.
 	acl = (PACL)((CHAR *)buffer + ((PISECURITY_DESCRIPTOR_RELATIVE)buffer)->Dacl);
-	result = (acl_t)malloc(acl->AclSize);
+	result = wlibc_acl_init(acl->AceCount);
 
-	memcpy(result, acl, acl->AclSize);
+	// For each of the supported ACE types copy the contents.
+	// We make the SIDs here of maximum length. This makes memory management
+	// a lot easier for the entire ACL API.
+	for (WORD i = 0; i < acl->AceCount; ++i)
+	{
+		PACE_HEADER ace_header = (PACE_HEADER)((char *)acl + sizeof(ACL) + acl_read);
+		if (ace_header->AceType == ACCESS_ALLOWED_ACE_TYPE || ace_header->AceType == ACCESS_DENIED_ACE_TYPE)
+		{
+			// Copy ACE_HEADER (4 bytes) and ACCESS_MASK (4 bytes).
+			*(LONGLONG *)&(result->entries[result->count]) = *(LONGLONG *)ace_header;
+
+			// Set the size of the ace to the maximum allowed one.
+			result->entries[result->count].size = sizeof(struct _wlibc_acl_entry_t);
+
+			// Copy SID.
+			RtlCopySid(SECURITY_SID_SIZE(SID_MAX_SUB_AUTHORITIES), &(result->entries[result->count].sid),
+					   (CHAR *)ace_header + sizeof(ACE_HEADER) + sizeof(ACCESS_MASK));
+			
+			// Increment count.
+			++result->count;
+		}
+		acl_read += ace_header->AceSize;
+	}
+
 	free(buffer);
 
 	return result;

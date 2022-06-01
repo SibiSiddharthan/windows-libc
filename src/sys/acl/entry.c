@@ -17,13 +17,7 @@ int wlibc_acl_copy_entry(acl_entry_t destination, acl_entry_t source)
 	VALIDATE_ACL_ENTRY(destination, -1);
 	VALIDATE_ACL_ENTRY(source, -1);
 
-	if (destination->size < source->size)
-	{
-		errno = ERANGE;
-		return -1;
-	}
-
-	memcpy(destination, source, source->size);
+	memcpy(destination, source, sizeof(struct _wlibc_acl_entry_t));
 
 	return 0;
 }
@@ -33,19 +27,12 @@ int wlibc_acl_create_entry(acl_t *acl, acl_entry_t *entry)
 	VALIDATE_PTR(acl, EINVAL, -1);
 	VALIDATE_PTR(entry, EINVAL, -1);
 
-	WORD used_size = offsetof(struct _wlibc_acl_t, entries);
-	WORD max_entry_size = sizeof(struct _wlibc_acl_entry_t) + SECURITY_SID_SIZE(SID_MAX_SUB_AUTHORITIES);
+	WORD used_size = offsetof(struct _wlibc_acl_t, entries) + (*acl)->count * sizeof(struct _wlibc_acl_entry_t);
 
-	for (WORD i = 0; i < (*acl)->count; ++i)
-	{
-		*entry = (struct _wlibc_acl_entry_t *)((char *)*acl + used_size);
-		used_size += (*entry)->size;
-	}
-
-	if ((*acl)->size - used_size < max_entry_size)
+	if ((*acl)->size - used_size < sizeof(struct _wlibc_acl_entry_t))
 	{
 		// Allocate more space.
-		WORD allocated_size = max_entry_size * (*acl)->count * 2;
+		WORD allocated_size = sizeof(struct _wlibc_acl_entry_t) * (*acl)->count * 2;
 		acl_t temp = (acl_t)malloc(allocated_size);
 
 		memset(temp, 0, allocated_size);
@@ -58,6 +45,7 @@ int wlibc_acl_create_entry(acl_t *acl, acl_entry_t *entry)
 
 	// Store the address at the end of the previous entry.
 	*entry = (struct _wlibc_acl_entry_t *)((char *)*acl + used_size);
+	(*entry)->size = sizeof(struct _wlibc_acl_entry_t);
 
 	// We have allocated a new entry, increment the count.
 	++(*acl)->count;
@@ -77,16 +65,38 @@ int wlibc_acl_delete_entry(acl_t acl, acl_entry_t entry)
 		return -1;
 	}
 
-	// All acls we handle here are in relative form.
-	// So check whether the address entry within the range of acl.
-	if ((char *)entry + entry->size > (char *)(acl) + acl->size)
+	// Check whether the entry is part of the acl.
+	WORD index = 0;
+	for (WORD i = 0; i < acl->count; ++i)
 	{
-		errno = EINVAL;
-		return -1;
+
+		if (entry == &(acl->entries[i]))
+		{
+			index = i;
+			break;
+		}
+
+		// entry is not part of acl.
+		if (i == acl->count - 1)
+		{
+			errno = ESRCH;
+			return -1;
+		}
 	}
 
-	// Do a memmove overwriting the entry.
-	memmove(entry, (char *)entry + entry->size, acl->size - entry->size - ((char *)entry - (char *)acl));
+	// Last entry
+	if (index == acl->count - 1)
+	{
+		// Just zero the entry.
+		memset(&(acl->entries[acl->count - 1]), 0, sizeof(struct _wlibc_acl_entry_t));
+	}
+	else
+	{
+		// Do a memmove overwriting the entry.
+		memmove(&(acl->entries[index]), &(acl->entries[index + 1]), sizeof(struct _wlibc_acl_entry_t) * (acl->count - index - 1));
+		// Zero the last entry.
+		memset(&(acl->entries[acl->count - 1]), 0, sizeof(struct _wlibc_acl_entry_t));
+	}
 
 	// Decrement the number of aces stored here.
 	--acl->count;
@@ -107,19 +117,11 @@ int wlibc_acl_get_entry(acl_t acl, int entry_id, acl_entry_t *entry)
 
 	if (entry_id == ACL_FIRST_ENTRY)
 	{
-		*entry = (struct _wlibc_acl_entry_t *)((char *)acl + offsetof(struct _wlibc_acl_t, entries));
+		*entry = &(acl->entries[0]);
 	}
 	else if (entry_id == ACL_LAST_ENTRY)
 	{
-		WORD offset = 0;
-
-		for (WORD i = 0; i < acl->count - 1; ++i)
-		{
-			*entry = (struct _wlibc_acl_entry_t *)((char *)acl + offsetof(struct _wlibc_acl_t, entries) + offset);
-			offset += (*entry)->size;
-		}
-
-		*entry = (struct _wlibc_acl_entry_t *)((char *)acl + offsetof(struct _wlibc_acl_t, entries) + offset);
+		*entry = &(acl->entries[acl->count - 1]);
 	}
 	else // entry_id == ACL_NEXT_ENTRY
 	{
@@ -129,51 +131,32 @@ int wlibc_acl_get_entry(acl_t acl, int entry_id, acl_entry_t *entry)
 			return -1;
 		}
 
-		// Check if entry is part of the acl.
-		if ((char *)*entry + (*entry)->size > (char *)(acl) + acl->size)
-		{
-			errno = EINVAL;
-			return -1;
-		}
-
-		// If the entry is the last entry set entry to NULL.
-		WORD offset = 0;
+		// Check whether the entry is part of the acl.
 		WORD index = 0;
-		struct _wlibc_acl_entry_t *acl_entry;
-
-		for (WORD i = 0; i < acl->count; ++i)
+		for (WORD i = 1; i < acl->count; ++i) // Skip the first entry.
 		{
-			acl_entry = (struct _wlibc_acl_entry_t *)((char *)acl + offsetof(struct _wlibc_acl_t, entries) + offset);
-			offset += acl_entry->size;
-
-			// Skip the first entry.
-			if (i == 0)
-			{
-				continue;
-			}
-
-			if (acl_entry == *entry)
+			if (*entry == &(acl->entries[i]))
 			{
 				index = i;
 				break;
 			}
+
+			// entry is not part of acl.
+			if (i == acl->count - 1)
+			{
+				errno = ESRCH;
+				return -1;
+			}
 		}
 
-		if (index == 0)
-		{
-			// entry not found.
-			errno = ESRCH;
-			return -1;
-		}
-
+		// If the entry is the last entry set entry to NULL.
 		if (index == acl->count - 1)
 		{
 			*entry = NULL;
 			return 0;
 		}
 
-		// The next entry will be located by 'size' bytes from the current one.
-		*entry = (struct _wlibc_acl_entry_t *)((char *)*entry + (*entry)->size);
+		*entry = &(acl->entries[index]);
 	}
 
 	return 0;
