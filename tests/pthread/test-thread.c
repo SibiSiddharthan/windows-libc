@@ -494,6 +494,14 @@ int test_name()
 	ASSERT_EQ(status, -1);
 	ASSERT_ERRNO(ERANGE);
 
+	// Unset the name
+	status = pthread_setname(thread, NULL);
+	ASSERT_EQ(status, 0);
+
+	status = pthread_getname(thread, buffer, 32);
+	ASSERT_EQ(status, 0);
+	ASSERT_EQ(strlen(buffer), 0);
+
 	// Destroy the thread.
 	status = pthread_cancel(thread);
 	ASSERT_EQ(status, 0);

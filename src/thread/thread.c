@@ -856,18 +856,31 @@ int wlibc_thread_setname(thread_t thread, const char *name)
 
 	VALIDATE_THREAD(thread);
 
-	RtlInitUTF8String(&u8_name, name);
-
-	if (u8_name.MaximumLength > 32)
+	if (name != NULL)
 	{
-		errno = E2BIG;
-		return -1;
+		RtlInitUTF8String(&u8_name, name);
+
+		if (u8_name.MaximumLength > 32)
+		{
+			errno = E2BIG;
+			return -1;
+		}
+
+		RtlUTF8StringToUnicodeString(&u16_name, &u8_name, TRUE);
+	}
+	else
+	{
+		u16_name.Length = 0;
+		u16_name.MaximumLength = 0;
+		u16_name.Buffer = NULL;
 	}
 
-	RtlUTF8StringToUnicodeString(&u16_name, &u8_name, TRUE);
-
 	status = NtSetInformationThread(tinfo->handle, ThreadNameInformation, &u16_name, sizeof(UNICODE_STRING));
-	RtlFreeUnicodeString(&u16_name);
+
+	if (name != NULL)
+	{
+		RtlFreeUnicodeString(&u16_name);
+	}
 
 	if (status != STATUS_SUCCESS)
 	{
