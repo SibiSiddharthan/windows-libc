@@ -9,6 +9,7 @@
 #define WLIBC_SPAWN_H
 
 #include <wlibc.h>
+#include <sched.h>
 #include <signal.h>
 #include <sys/types.h>
 
@@ -21,8 +22,8 @@ typedef struct _spawnattr_t
 	pid_t pgroup;
 	sigset_t sigdefault;
 	sigset_t sigmask;
-	// struct sched_param schedparam;
 	int schedpolicy;
+	int schedpriority;
 } spawnattr_t;
 
 typedef spawnattr_t posix_spawnattr_t;
@@ -87,14 +88,14 @@ typedef struct _spawn_actions_t
 typedef spawn_actions_t posix_spawn_file_actions_t;
 
 // Flags to be set in the posix_spawnattr_t.
-#define POSIX_SPAWN_SETSCHEDULER  0x0 // Unsupported
 #define POSIX_SPAWN_RESETIDS      0x0 // Unsupported
 #define POSIX_SPAWN_USEVFORK      0x0 // Unsupported
 #define POSIX_SPAWN_SETSID        0x0 // Unsupported
-#define POSIX_SPAWN_SETPGROUP     0x1
-#define POSIX_SPAWN_SETSIGDEF     0x2
-#define POSIX_SPAWN_SETSIGMASK    0x4
-#define POSIX_SPAWN_SETSCHEDPARAM 0x8
+#define POSIX_SPAWN_SETPGROUP     0x01
+#define POSIX_SPAWN_SETSIGDEF     0x02
+#define POSIX_SPAWN_SETSIGMASK    0x04
+#define POSIX_SPAWN_SETSCHEDPARAM 0x08
+#define POSIX_SPAWN_SETSCHEDULER  0x10
 
 // Spawn API.
 WLIBC_API int wlibc_common_spawn(pid_t *restrict pid, const char *restrict path, const spawn_actions_t *restrict actions,
@@ -124,10 +125,8 @@ WLIBC_API int wlibc_spawnattr_getpgroup(const spawnattr_t *restrict attributes, 
 WLIBC_API int wlibc_spawnattr_setpgroup(spawnattr_t *attributes, pid_t pgroup);
 WLIBC_API int wlibc_spawnattr_getschedpolicy(const spawnattr_t *restrict attributes, int *restrict schedpolicy);
 WLIBC_API int wlibc_spawnattr_setschedpolicy(spawnattr_t *attributes, int schedpolicy);
-#if 0
 WLIBC_API int wlibc_spawnattr_getschedparam(const spawnattr_t *restrict attributes, struct sched_param *restrict schedparam);
 WLIBC_API int wlibc_spawnattr_setschedparam(spawnattr_t *restrict attributes, const struct sched_param *restrict schedparam);
-#endif
 
 WLIBC_INLINE int posix_spawnattr_init(posix_spawnattr_t *attributes)
 {
@@ -193,7 +192,6 @@ WLIBC_INLINE int posix_spawnattr_setschedpolicy(posix_spawnattr_t *attributes, i
 	return wlibc_spawnattr_setschedpolicy(attributes, schedpolicy);
 }
 
-#if 0
 WLIBC_INLINE int posix_spawnattr_getschedparam(const posix_spawnattr_t *restrict attributes, struct sched_param *restrict schedparam)
 {
 	return wlibc_spawnattr_getschedparam(attributes, schedparam);
@@ -203,7 +201,6 @@ WLIBC_INLINE int posix_spawnattr_setschedparam(posix_spawnattr_t *restrict attri
 {
 	return wlibc_spawnattr_setschedparam(attributes, schedparam);
 }
-#endif
 
 // Spawn actions.
 WLIBC_API int wlibc_spawn_file_actions_init(spawn_actions_t *actions);

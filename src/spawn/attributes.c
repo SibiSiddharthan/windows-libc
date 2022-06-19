@@ -5,6 +5,7 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
+#include <internal/sched.h>
 #include <internal/validate.h>
 #include <errno.h>
 #include <spawn.h>
@@ -20,7 +21,8 @@ int wlibc_spawnattr_init(spawnattr_t *attributes)
 	attributes->sigmask = 0;
 	attributes->sigdefault = 0;
 	attributes->pgroup = 0;
-	attributes->schedpolicy = 0;
+	attributes->schedpolicy = SCHED_RR;
+	attributes->schedpriority = 0;
 
 	return 0;
 }
@@ -111,7 +113,27 @@ int wlibc_spawnattr_getschedpolicy(const spawnattr_t *restrict attributes, int *
 int wlibc_spawnattr_setschedpolicy(spawnattr_t *attributes, int schedpolicy)
 {
 	VALIDATE_SPAWNATTR(attributes);
+	VALIDATE_SCHED_POLICY(schedpolicy, EINVAL, -1);
 
 	attributes->schedpolicy = schedpolicy;
+	return 0;
+}
+
+int wlibc_spawnattr_getschedparam(const spawnattr_t *restrict attributes, struct sched_param *restrict schedparam)
+{
+	VALIDATE_SPAWNATTR(attributes);
+	VALIDATE_PTR(schedparam, EINVAL, -1);
+
+	schedparam->sched_priority = attributes->schedpriority;
+	return 0;
+}
+
+int wlibc_spawnattr_setschedparam(spawnattr_t *restrict attributes, const struct sched_param *restrict schedparam)
+{
+	VALIDATE_SPAWNATTR(attributes);
+	VALIDATE_PTR(schedparam, EINVAL, -1);
+	VALIDATE_SCHED_PRIORITY(schedparam->sched_priority, EINVAL, -1);
+
+	attributes->schedpriority = schedparam->sched_priority;
 	return 0;
 }

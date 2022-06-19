@@ -19,6 +19,7 @@
 #include <stdlib.h>
 
 int do_open(int dirfd, const char *name, int oflags, mode_t perm);
+int adjust_priority_of_process(HANDLE process, KPRIORITY new_priority);
 
 typedef struct _inherit_fdinfo
 {
@@ -1143,12 +1144,6 @@ int wlibc_common_spawn(pid_t *restrict pid, const char *restrict path, const spa
 		wenv = convert_env_to_wenv((char *const *)env, &wenv_size);
 	}
 
-	// TODO Ignore spawn attributes for now.
-	if(attributes)
-	{
-
-	}
-
 	// Perform the actions.
 	int max_fd_requested = 0;
 	int number_of_actions = 0;
@@ -1340,14 +1335,42 @@ int wlibc_common_spawn(pid_t *restrict pid, const char *restrict path, const spa
 
 	STARTUPINFOW sinfo;
 	PROCESS_INFORMATION pinfo = {0};
+	DWORD priority_class = NORMAL_PRIORITY_CLASS;
 
 	memset(&sinfo, 0, sizeof(STARTUPINFOW));
 	sinfo.cb = sizeof(STARTUPINFOW);
 
 	give_inherit_information_to_startupinfo(&inherit_info, &sinfo, &inherit_info_buffer);
 
+	if (attributes)
+	{
+		if (attributes->flags & POSIX_SPAWN_SETSCHEDULER)
+		{
+			switch (attributes->schedpolicy)
+			{
+			case SCHED_IDLE:
+				priority_class = IDLE_PRIORITY_CLASS;
+				break;
+			case SCHED_RR:
+				priority_class = NORMAL_PRIORITY_CLASS;
+				break;
+			case SCHED_FIFO:
+				priority_class = HIGH_PRIORITY_CLASS;
+				break;
+			case SCHED_BATCH:
+				priority_class = BELOW_NORMAL_PRIORITY_CLASS;
+				break;
+			case SCHED_SPORADIC:
+				priority_class = ABOVE_NORMAL_PRIORITY_CLASS;
+				break;
+			default: // Should be unreachable.
+				priority_class = NORMAL_PRIORITY_CLASS;
+			}
+		}
+	}
+
 	// Do the spawn.
-	BOOL status = CreateProcessW(wpath, wargv, NULL, NULL, TRUE, CREATE_UNICODE_ENVIRONMENT, wenv, wcwd, &sinfo, &pinfo);
+	BOOL status = CreateProcessW(wpath, wargv, NULL, NULL, TRUE, CREATE_UNICODE_ENVIRONMENT | priority_class, wenv, wcwd, &sinfo, &pinfo);
 	if (status == 0)
 	{
 		DWORD error = GetLastError();
@@ -1382,13 +1405,22 @@ int wlibc_common_spawn(pid_t *restrict pid, const char *restrict path, const spa
 			goto finish;
 		}
 
-		status = CreateProcessW(wpath, wargv, NULL, NULL, TRUE, CREATE_UNICODE_ENVIRONMENT, wenv, wcwd, &sinfo, &pinfo);
+		status = CreateProcessW(wpath, wargv, NULL, NULL, TRUE, CREATE_UNICODE_ENVIRONMENT | priority_class, wenv, wcwd, &sinfo, &pinfo);
 
 		// Shebang spawn failed.
 		if (status == 0)
 		{
 			map_doserror_to_errno(GetLastError());
 			goto finish;
+		}
+	}
+
+	if (attributes)
+	{
+		if (attributes->flags & POSIX_SPAWN_SETSCHEDPARAM && attributes->schedpriority != 0)
+		{
+			// Don't check for errors here.
+			adjust_priority_of_process(pinfo.hProcess, attributes->schedpriority);
 		}
 	}
 

@@ -360,6 +360,63 @@ int test_spawn_fchdir()
 	return 0;
 }
 
+int test_spawn_sched()
+{
+	int status;
+	int fds[2];
+	pid_t pid;
+	posix_spawn_file_actions_t actions;
+	posix_spawnattr_t attributes;
+	struct sched_param param;
+	const char *program = "cwd.exe";
+	char *argv[] = {(char *)program, NULL};
+
+	ASSERT_SUCCESS(pipe(fds));
+
+	status = posix_spawn_file_actions_init(&actions);
+	ASSERT_EQ(status, 0);
+
+	status = posix_spawn_file_actions_adddup2(&actions, fds[1], STDOUT_FILENO);
+	ASSERT_EQ(status, 0);
+
+	status = posix_spawnattr_init(&attributes);
+	ASSERT_EQ(status, 0);
+
+	status = posix_spawnattr_setflags(&attributes, POSIX_SPAWN_SETSCHEDULER | POSIX_SPAWN_SETSCHEDPARAM);
+	ASSERT_EQ(status, 0);
+
+	status = posix_spawnattr_setschedpolicy(&attributes, SCHED_FIFO);
+	ASSERT_EQ(status, 0);
+
+	param.sched_priority = -1;
+	status = posix_spawnattr_setschedparam(&attributes, &param);
+	ASSERT_EQ(status, 0);
+
+	status = posix_spawn(&pid, program, &actions, &attributes, argv, NULL);
+	ASSERT_EQ(status, 0);
+
+	status = posix_spawn_file_actions_destroy(&actions);
+	ASSERT_EQ(status, 0);
+
+	status = posix_spawnattr_destroy(&attributes);
+	ASSERT_EQ(status, 0);
+
+	status = sched_getscheduler(pid);
+	ASSERT_EQ(status, SCHED_FIFO);
+
+	status = sched_getparam(pid, &param);
+	ASSERT_EQ(status, 0);
+	ASSERT_EQ(param.sched_priority, -1);
+
+	status = waitpid(pid, NULL, 0);
+	ASSERT_EQ(status, pid);
+
+	ASSERT_SUCCESS(close(fds[0]));
+	ASSERT_SUCCESS(close(fds[1]));
+
+	return 0;
+}
+
 int test_spawn_inherit_wlibc()
 {
 	int status, wstatus;
@@ -1342,6 +1399,7 @@ int main()
 	TEST(test_spawn_env());
 	TEST(test_spawn_chdir());
 	TEST(test_spawn_fchdir());
+	TEST(test_spawn_sched());
 	TEST(test_spawn_inherit_wlibc());
 	TEST(test_spawn_inherit_wlibc_extra());
 	TEST(test_spawn_inherit_msvcrt());
