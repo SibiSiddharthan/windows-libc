@@ -52,6 +52,9 @@ typedef key_t pthread_key_t;
 #define PTHREAD_CREATE_JOINABLE WLIBC_THREAD_JOINABLE // Joinable thread.
 #define PTHREAD_CREATE_DETACHED WLIBC_THREAD_DETACHED // Detached thread.
 
+#define PTHREAD_CREATE_RUNNING   WLIBC_THREAD_RUNNING   // Running thread.
+#define PTHREAD_CREATE_SUSPENDED WLIBC_THREAD_SUSPENDED // Suspended thread.
+
 #define PTHREAD_PROCESS_PRIVATE WLIBC_PROCESS_PRIVATE // Private to a process.
 #define PTHREAD_PROCESS_SHARED  WLIBC_PROCESS_SHARED  // Shareabled across processes.
 
@@ -172,6 +175,19 @@ WLIBC_INLINE int pthread_attr_setdetachstate(pthread_attr_t *attributes, int det
 	return wlibc_threadattr_setdetachstate(attributes, detachstate);
 }
 
+WLIBC_INLINE int pthread_attr_getsuspendstate(const pthread_attr_t *attributes, int *suspendstate)
+{
+	return wlibc_threadattr_getsuspendstate(attributes, suspendstate);
+}
+
+WLIBC_INLINE int pthread_attr_setsuspendstate(pthread_attr_t *attributes, int suspendstate)
+{
+	return wlibc_threadattr_setsuspendstate(attributes, suspendstate);
+}
+
+#define pthread_attr_getsuspendstate_np pthread_attr_getsuspendstate
+#define pthread_attr_setsuspendstate_np pthread_attr_setsuspendstate
+
 WLIBC_INLINE int pthread_attr_getstacksize(const pthread_attr_t *restrict attributes, size_t *restrict stacksize)
 {
 	return wlibc_threadattr_getstacksize(attributes, stacksize);
@@ -250,7 +266,7 @@ WLIBC_INLINE int pthread_suspend(pthread_t thread)
 	return wlibc_thread_suspend(thread);
 }
 
-#define pthread_resume_np pthread_resume
+#define pthread_resume_np  pthread_resume
 #define pthread_suspend_np pthread_suspend
 
 WLIBC_INLINE int pthread_getschedparam(pthread_t thread, int *restrict policy, struct sched_param *restrict param)

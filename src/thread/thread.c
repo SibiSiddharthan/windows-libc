@@ -41,6 +41,7 @@ int wlibc_thread_create(thread_t *thread, thread_attr_t *attributes, thread_star
 	HANDLE thread_handle;
 	SIZE_T stacksize = 0;
 	BOOLEAN should_detach = FALSE;
+	BOOLEAN create_suspended = FALSE;
 	threadinfo *tinfo;
 
 	if (thread == NULL)
@@ -52,9 +53,14 @@ int wlibc_thread_create(thread_t *thread, thread_attr_t *attributes, thread_star
 	if (attributes != NULL)
 	{
 		stacksize = attributes->stacksize;
-		if (attributes->state == WLIBC_THREAD_DETACHED)
+		if (attributes->detachstate == WLIBC_THREAD_DETACHED)
 		{
 			should_detach = TRUE;
+		}
+
+		if (attributes->suspendstate == WLIBC_THREAD_SUSPENDED)
+		{
+			create_suspended = TRUE;
 		}
 	}
 
@@ -93,7 +99,10 @@ int wlibc_thread_create(thread_t *thread, thread_attr_t *attributes, thread_star
 		}
 	}
 
-	NtResumeThread(thread_handle, NULL);
+	if (!create_suspended)
+	{
+		NtResumeThread(thread_handle, NULL);
+	}
 
 	if (should_detach)
 	{
@@ -388,7 +397,8 @@ void wlibc_thread_cleanup_pop(int execute)
 
 int wlibc_threadattr_init(thread_attr_t *attributes)
 {
-	attributes->state = WLIBC_THREAD_JOINABLE;
+	attributes->detachstate = WLIBC_THREAD_JOINABLE;
+	attributes->suspendstate = WLIBC_THREAD_RUNNING;
 	attributes->inherit = WLIBC_THREAD_INHERIT_SCHED;
 	attributes->policy = SCHED_RR;
 	attributes->priority = 0;
@@ -401,7 +411,7 @@ int wlibc_threadattr_getdetachstate(const thread_attr_t *attributes, int *detach
 {
 	VALIDATE_THREAD_ATTR(attributes);
 	VALIDATE_PTR(detachstate, EINVAL, -1);
-	*detachstate = attributes->state;
+	*detachstate = attributes->detachstate;
 	return 0;
 }
 
@@ -414,7 +424,28 @@ int wlibc_threadattr_setdetachstate(thread_attr_t *attributes, int detachstate)
 		return -1;
 	}
 
-	attributes->state = detachstate;
+	attributes->detachstate = detachstate;
+	return 0;
+}
+
+int wlibc_threadattr_getsuspendstate(const thread_attr_t *attributes, int *suspendstate)
+{
+	VALIDATE_THREAD_ATTR(attributes);
+	VALIDATE_PTR(suspendstate, EINVAL, -1);
+	*suspendstate = attributes->suspendstate;
+	return 0;
+}
+
+int wlibc_threadattr_setsuspendstate(thread_attr_t *attributes, int suspendstate)
+{
+	VALIDATE_THREAD_ATTR(attributes);
+	if (suspendstate != WLIBC_THREAD_RUNNING && suspendstate != WLIBC_THREAD_SUSPENDED)
+	{
+		errno = EINVAL;
+		return -1;
+	}
+
+	attributes->suspendstate = suspendstate;
 	return 0;
 }
 

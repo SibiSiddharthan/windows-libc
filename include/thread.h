@@ -20,7 +20,8 @@ typedef void (*cleanup_t)(void *);
 
 typedef struct _wlibc_thread_attr_t
 {
-	int state;
+	int detachstate;
+	int suspendstate;
 	int inherit;
 	int policy;
 	int priority;
@@ -107,6 +108,9 @@ typedef void (*dtor_t)(void *);
 #define WLIBC_THREAD_JOINABLE 0 // Joinable thread.
 #define WLIBC_THREAD_DETACHED 1 // Detached thread.
 
+#define WLIBC_THREAD_RUNNING   0 // Running thread.
+#define WLIBC_THREAD_SUSPENDED 1 // Suspended thread.
+
 #define WLIBC_PROCESS_PRIVATE 0 // Private to a process.
 #define WLIBC_PROCESS_SHARED  1 // Shareabled across processes.
 
@@ -134,6 +138,8 @@ WLIBC_API void wlibc_thread_cleanup_pop(int execute);
 WLIBC_API int wlibc_threadattr_init(thread_attr_t *attributes);
 WLIBC_API int wlibc_threadattr_getdetachstate(const thread_attr_t *attributes, int *detachstate);
 WLIBC_API int wlibc_threadattr_setdetachstate(thread_attr_t *attributes, int detachstate);
+WLIBC_API int wlibc_threadattr_getsuspendstate(const thread_attr_t *attributes, int *suspendstate);
+WLIBC_API int wlibc_threadattr_setsuspendstate(thread_attr_t *attributes, int suspendstate);
 WLIBC_API int wlibc_threadattr_getstacksize(const thread_attr_t *restrict attributes, size_t *restrict stacksize);
 WLIBC_API int wlibc_threadattr_setstacksize(thread_attr_t *attributes, size_t stacksize);
 WLIBC_API int wlibc_threadattr_getscope(const thread_attr_t *restrict attributes, int *restrict scope);
