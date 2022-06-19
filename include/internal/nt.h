@@ -1666,6 +1666,7 @@ typedef enum _SYSTEM_INFORMATION_CLASS
 	SystemBasicInformation,
 	SystemProcessorInformation = 1,
 	SystemTimeOfDayInformation = 3,
+	SystemLogicalProcessorAndGroupInformation = 107,
 	MaxSystemInfoClass = 228
 } SYSTEM_INFORMATION_CLASS;
 
@@ -1711,7 +1712,12 @@ NtQuerySystemInformation(_In_ SYSTEM_INFORMATION_CLASS SystemInformationClass,
 						 _Out_writes_bytes_opt_(SystemInformationLength) PVOID SystemInformation, _In_ ULONG SystemInformationLength,
 						 _Out_opt_ PULONG ReturnLength);
 
-
+NTSYSCALLAPI
+NTSTATUS
+NTAPI
+NtQuerySystemInformationEx(_In_ SYSTEM_INFORMATION_CLASS SystemInformationClass, _In_reads_bytes_(InputBufferLength) PVOID InputBuffer,
+						   _In_ ULONG InputBufferLength, _Out_writes_bytes_opt_(SystemInformationLength) PVOID SystemInformation,
+						   _In_ ULONG SystemInformationLength, _Out_opt_ PULONG ReturnLength);
 
 typedef enum _KEY_INFORMATION_CLASS
 {
@@ -1970,10 +1976,12 @@ typedef enum _PROCESSINFOCLASS
 
 typedef enum _THREADINFOCLASS
 {
-	ThreadBasicInformation,
-	ThreadTimes,
-	ThreadPriority,
-	ThreadBasePriority,
+	ThreadBasicInformation = 0,
+	ThreadTimes = 1,
+	ThreadPriority = 2,
+	ThreadChangePriority = 3,
+	ThreadNameInformation = 38,
+	ThreadSelectedCpuSets = 39,
 	MaxThreadInfoClass = 51
 } THREADINFOCLASS;
 
@@ -2041,13 +2049,18 @@ typedef struct _PROCESS_BASIC_INFORMATION
 
 typedef struct _THREAD_BASIC_INFORMATION
 {
-    NTSTATUS ExitStatus;
-    PTEB TebBaseAddress;
-    CLIENT_ID ClientId;
-    ULONG_PTR AffinityMask;
-    KPRIORITY Priority;
-    LONG BasePriority;
+	NTSTATUS ExitStatus;
+	PTEB TebBaseAddress;
+	CLIENT_ID ClientId;
+	ULONG_PTR AffinityMask;
+	KPRIORITY Priority;
+	LONG BasePriority;
 } THREAD_BASIC_INFORMATION, *PTHREAD_BASIC_INFORMATION;
+
+typedef struct _THREAD_NAME_INFORMATION
+{
+	UNICODE_STRING ThreadName;
+} THREAD_NAME_INFORMATION, *PTHREAD_NAME_INFORMATION;
 
 NTSYSCALLAPI
 NTSTATUS

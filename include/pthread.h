@@ -36,6 +36,12 @@ typedef key_t pthread_key_t;
 #define PTHREAD_CANCELED  WLIBC_THREAD_CANCELED
 #define PTHREAD_CANCELLED PTHREAD_CANCELED
 
+#define PTHREAD_INHERIT_SCHED  WLIBC_THREAD_INHERIT_SCHED
+#define PTHREAD_EXPLICIT_SCHED WLIBC_THREAD_EXPLICIT_SCHED
+
+#define PTHREAD_SCOPE_SYSTEM  WLIBC_THREAD_SCOPE_SYSTEM
+#define PTHREAD_SCOPE_PROCESS WLIBC_THREAD_SCOPE_PROCESS
+
 #define PTHREAD_CANCEL_ENABLE       WLIBC_THREAD_CANCEL_ENABLE
 #define PTHREAD_CANCEL_DISABLE      WLIBC_THREAD_CANCEL_DISABLE
 #define PTHREAD_CANCEL_DEFERRED     WLIBC_THREAD_CANCEL_DEFERRED
@@ -84,6 +90,13 @@ WLIBC_INLINE pthread_t pthread_self(void)
 {
 	return wlibc_thread_self();
 }
+
+WLIBC_INLINE int pthread_threadid(pthread_t thread, pid_t *id)
+{
+	return wlibc_threadid(thread, id);
+}
+
+#define pthread_threadid_np pthread_threadid
 
 WLIBC_INLINE int pthread_yield(void)
 {
@@ -167,6 +180,137 @@ WLIBC_INLINE int pthread_attr_getstacksize(const pthread_attr_t *restrict attrib
 WLIBC_INLINE int pthread_attr_setstacksize(pthread_attr_t *attributes, size_t stacksize)
 {
 	return wlibc_threadattr_setstacksize(attributes, stacksize);
+}
+
+WLIBC_INLINE int pthread_attr_getscope(const pthread_attr_t *restrict attributes, int *restrict scope)
+{
+	return wlibc_threadattr_getscope(attributes, scope);
+}
+
+WLIBC_INLINE int pthread_attr_setscope(pthread_attr_t *attributes, int scope)
+{
+	return wlibc_threadattr_setscope(attributes, scope);
+}
+
+WLIBC_INLINE int pthread_attr_getinheritsched(pthread_attr_t *attributes, int *inherit)
+{
+	return wlibc_threadattr_getinheritsched(attributes, inherit);
+}
+
+WLIBC_INLINE int pthread_attr_setinheritsched(pthread_attr_t *attributes, int inherit)
+{
+	return wlibc_threadattr_setinheritsched(attributes, inherit);
+}
+
+WLIBC_INLINE int pthread_attr_getschedparam(const pthread_attr_t *restrict attributes, struct sched_param *restrict param)
+{
+	return wlibc_threadattr_getschedparam(attributes, param);
+}
+
+WLIBC_INLINE int pthread_attr_setschedparam(pthread_attr_t *restrict attributes, const struct sched_param *restrict param)
+{
+	return wlibc_threadattr_setschedparam(attributes, param);
+}
+
+WLIBC_INLINE int pthread_attr_getschedpolicy(const pthread_attr_t *restrict attributes, int *restrict policy)
+{
+	return wlibc_threadattr_getschedpolicy(attributes, policy);
+}
+
+WLIBC_INLINE int pthread_attr_setschedpolicy(pthread_attr_t *attributes, int policy)
+{
+	return wlibc_threadattr_setschedpolicy(attributes, policy);
+}
+
+#pragma warning(push)
+#pragma warning(disable : 4100) // Unused parameter
+
+WLIBC_INLINE int pthread_attr_getaffinity(const pthread_attr_t *attributes, size_t cpusetsize WLIBC_UNUSED, cpu_set_t *restrict cpuset)
+{
+	return wlibc_threadattr_getaffinity(attributes, cpuset);
+}
+
+WLIBC_INLINE int pthread_attr_setaffinity(pthread_attr_t *attributes, size_t cpusetsize WLIBC_UNUSED, const cpu_set_t *restrict cpuset)
+{
+	return wlibc_threadattr_setaffinity(attributes, cpuset);
+}
+
+#define pthread_attr_getaffinity_np pthread_attr_getaffinity
+#define pthread_attr_setaffinity_np pthread_attr_setaffinity
+
+#pragma warning(pop)
+
+WLIBC_INLINE int pthread_resume(pthread_t thread)
+{
+	return wlibc_thread_resume(thread);
+}
+
+WLIBC_INLINE int pthread_suspend(pthread_t thread)
+{
+	return wlibc_thread_suspend(thread);
+}
+
+#define pthread_resume_np pthread_resume
+#define pthread_suspend_np pthread_suspend
+
+WLIBC_INLINE int pthread_getschedparam(pthread_t thread, int *restrict policy, struct sched_param *restrict param)
+{
+	return wlibc_thread_getschedparam(thread, policy, param);
+}
+
+WLIBC_INLINE int pthread_setschedparam(pthread_t thread, int policy, const struct sched_param *param)
+{
+	return wlibc_thread_setschedparam(thread, policy, param);
+}
+
+WLIBC_INLINE int pthread_getschedprio(pthread_t thread, int *priority)
+{
+	return wlibc_thread_getschedpriority(thread, priority);
+}
+
+WLIBC_INLINE int pthread_setschedprio(pthread_t thread, int priority)
+{
+	return wlibc_thread_setschedpriority(thread, priority);
+}
+
+WLIBC_INLINE int pthread_getname(pthread_t thread, char *buffer, size_t length)
+{
+	return wlibc_thread_getname(thread, buffer, length);
+}
+
+WLIBC_INLINE int pthread_setname(pthread_t thread, const char *name)
+{
+	return wlibc_thread_setname(thread, name);
+}
+
+#pragma warning(push)
+#pragma warning(disable : 4100) // Unused parameter
+
+WLIBC_INLINE int pthread_getaffinity(pthread_t thread, size_t cpusetsize WLIBC_UNUSED, cpu_set_t *cpuset)
+{
+	return wlibc_thread_getaffinity(thread, cpuset);
+}
+
+WLIBC_INLINE int pthread_setaffinity(pthread_t thread, size_t cpusetsize WLIBC_UNUSED, const cpu_set_t *cpuset)
+{
+	return wlibc_thread_setaffinity(thread, cpuset);
+}
+
+#pragma warning(pop)
+
+#define pthread_getname_np     pthread_getname
+#define pthread_setname_np     pthread_setname
+#define pthread_getaffinity_np pthread_getaffinity
+#define pthread_setaffinity_np pthread_setaffinity
+
+WLIBC_INLINE int pthread_getconcurrency(void)
+{
+	return wlibc_thread_getconcurrency();
+}
+
+WLIBC_INLINE int pthread_setconcurrency(int level)
+{
+	return wlibc_thread_setconcurrency(level);
 }
 
 // One time initialization.

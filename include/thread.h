@@ -20,8 +20,12 @@ typedef void (*cleanup_t)(void *);
 
 typedef struct _wlibc_thread_attr_t
 {
-	size_t stacksize;
 	int state;
+	int inherit;
+	int policy;
+	int priority;
+	size_t stacksize;
+	cpu_set_t *set;
 } thread_attr_t;
 
 typedef struct _wlibc_mutex_attr_t
@@ -81,6 +85,12 @@ typedef struct _wlibc_rwlock_t
 typedef unsigned long key_t;
 typedef void (*dtor_t)(void *);
 
+#define WLIBC_THREAD_INHERIT_SCHED  0
+#define WLIBC_THREAD_EXPLICIT_SCHED 1
+
+#define WLIBC_THREAD_SCOPE_SYSTEM  0
+#define WLIBC_THREAD_SCOPE_PROCESS 1 // Unsupported
+
 #define WLIBC_THREAD_CANCEL_ENABLE       0
 #define WLIBC_THREAD_CANCEL_DISABLE      1
 #define WLIBC_THREAD_CANCEL_ASYNCHRONOUS 0 // Immediate cancellation
@@ -89,8 +99,10 @@ typedef void (*dtor_t)(void *);
 #define WLIBC_THREAD_CANCELED  ((void *)(intptr_t)-1)
 #define WLIBC_THREAD_CANCELLED WLIBC_THREAD_CANCELED
 
+// clang-format off
 #define WLIBC_THREAD_ONCE_INIT {0}
 #define WLIBC_DTOR_ITERATIONS 1
+// clang-format on
 
 #define WLIBC_THREAD_JOINABLE 0 // Joinable thread.
 #define WLIBC_THREAD_DETACHED 1 // Detached thread.
@@ -110,6 +122,7 @@ WLIBC_API int wlibc_thread_tryjoin(thread_t thread, void **result);
 WLIBC_API int wlibc_thread_timedjoin(thread_t thread, void **result, const struct timespec *abstime);
 WLIBC_API int wlibc_thread_equal(thread_t thread_a, thread_t thread_b);
 WLIBC_API thread_t wlibc_thread_self(void);
+WLIBC_API int wlibc_threadid(thread_t thread, pid_t *id);
 WLIBC_API int wlibc_thread_sleep(const struct timespec *duration, struct timespec *remaining);
 WLIBC_API WLIBC_NORETURN void wlibc_thread_exit(void *retval);
 WLIBC_API int wlibc_thread_setcancelstate(int state, int *oldstate);
@@ -123,6 +136,29 @@ WLIBC_API int wlibc_threadattr_getdetachstate(const thread_attr_t *attributes, i
 WLIBC_API int wlibc_threadattr_setdetachstate(thread_attr_t *attributes, int detachstate);
 WLIBC_API int wlibc_threadattr_getstacksize(const thread_attr_t *restrict attributes, size_t *restrict stacksize);
 WLIBC_API int wlibc_threadattr_setstacksize(thread_attr_t *attributes, size_t stacksize);
+WLIBC_API int wlibc_threadattr_getscope(const thread_attr_t *restrict attributes, int *restrict scope);
+WLIBC_API int wlibc_threadattr_setscope(thread_attr_t *attributes, int scope);
+WLIBC_API int wlibc_threadattr_getinheritsched(thread_attr_t *attributes, int *inherit);
+WLIBC_API int wlibc_threadattr_setinheritsched(thread_attr_t *attributes, int inherit);
+WLIBC_API int wlibc_threadattr_getschedparam(const thread_attr_t *restrict attributes, struct sched_param *restrict param);
+WLIBC_API int wlibc_threadattr_setschedparam(thread_attr_t *restrict attributes, const struct sched_param *restrict param);
+WLIBC_API int wlibc_threadattr_getschedpolicy(const thread_attr_t *restrict attributes, int *restrict policy);
+WLIBC_API int wlibc_threadattr_setschedpolicy(thread_attr_t *attributes, int policy);
+WLIBC_API int wlibc_threadattr_getaffinity(const thread_attr_t *attributes, cpu_set_t *restrict cpuset);
+WLIBC_API int wlibc_threadattr_setaffinity(thread_attr_t *attributes, const cpu_set_t *restrict cpuset);
+
+WLIBC_API int wlibc_thread_resume(thread_t thread);
+WLIBC_API int wlibc_thread_suspend(thread_t thread);
+WLIBC_API int wlibc_thread_setschedparam(thread_t thread, int policy, const struct sched_param *param);
+WLIBC_API int wlibc_thread_getschedparam(thread_t thread, int *restrict policy, struct sched_param *restrict param);
+WLIBC_API int wlibc_thread_getschedpriority(thread_t thread, int *priority);
+WLIBC_API int wlibc_thread_setschedpriority(thread_t thread, int priority);
+WLIBC_API int wlibc_thread_getname(thread_t thread, char *buffer, size_t length);
+WLIBC_API int wlibc_thread_setname(thread_t thread, const char *name);
+WLIBC_API int wlibc_thread_getaffinity(thread_t thread, cpu_set_t *cpuset);
+WLIBC_API int wlibc_thread_setaffinity(thread_t thread, const cpu_set_t *cpuset);
+WLIBC_API int wlibc_thread_getconcurrency(void);
+WLIBC_API int wlibc_thread_setconcurrency(int level);
 
 WLIBC_INLINE int wlibc_thread_yield(void)
 {

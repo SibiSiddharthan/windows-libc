@@ -364,8 +364,12 @@ void wlibc_thread_cleanup_pop(int execute)
 
 int wlibc_threadattr_init(thread_attr_t *attributes)
 {
-	attributes->stacksize = 0;
 	attributes->state = WLIBC_THREAD_JOINABLE;
+	attributes->inherit = WLIBC_THREAD_INHERIT_SCHED;
+	attributes->policy = SCHED_RR;
+	attributes->priority = 0;
+	attributes->stacksize = 0;
+	attributes->set = NULL;
 	return 0;
 }
 
@@ -402,5 +406,488 @@ int wlibc_threadattr_setstacksize(thread_attr_t *attributes, size_t stacksize)
 {
 	VALIDATE_THREAD_ATTR(attributes);
 	attributes->stacksize = stacksize;
+	return 0;
+}
+
+int wlibc_threadattr_getscope(const thread_attr_t *restrict attributes, int *restrict scope)
+{
+	VALIDATE_THREAD_ATTR(attributes);
+	VALIDATE_PTR(scope, EINVAL, -1);
+	*scope = WLIBC_THREAD_SCOPE_SYSTEM;
+	return 0;
+}
+
+int wlibc_threadattr_setscope(thread_attr_t *attributes, int scope)
+{
+	VALIDATE_THREAD_ATTR(attributes);
+
+	// We only support the system scope. Just validate input and return.
+	if (scope != WLIBC_THREAD_SCOPE_SYSTEM && scope != WLIBC_THREAD_SCOPE_PROCESS)
+	{
+		errno = EINVAL;
+		return -1;
+	}
+
+	return 0;
+}
+
+int wlibc_threadattr_getinheritsched(thread_attr_t *restrict attributes, int *restrict inherit)
+{
+	VALIDATE_THREAD_ATTR(attributes);
+	VALIDATE_PTR(inherit, EINVAL, -1);
+	*inherit = attributes->inherit;
+	return 0;
+}
+
+int wlibc_threadattr_setinheritsched(thread_attr_t *attributes, int inherit)
+{
+	VALIDATE_THREAD_ATTR(attributes);
+
+	if (inherit != WLIBC_THREAD_INHERIT_SCHED && inherit != WLIBC_THREAD_EXPLICIT_SCHED)
+	{
+		errno = EINVAL;
+		return -1;
+	}
+
+	attributes->inherit = inherit;
+	return 0;
+}
+
+int wlibc_threadattr_getschedparam(const thread_attr_t *restrict attributes, struct sched_param *restrict param)
+{
+	VALIDATE_THREAD_ATTR(attributes);
+	VALIDATE_PTR(param, EINVAL, -1);
+	param->sched_priority = attributes->priority;
+	return 0;
+}
+
+int wlibc_threadattr_setschedparam(thread_attr_t *restrict attributes, const struct sched_param *restrict param)
+{
+	VALIDATE_THREAD_ATTR(attributes);
+	VALIDATE_PTR(param, EINVAL, -1);
+
+	if (param->sched_priority < SCHED_MIN_PRIORITY || param->sched_priority > SCHED_MAX_PRIORITY)
+	{
+		errno = EINVAL;
+		return -1;
+	}
+
+	attributes->priority = param->sched_priority;
+	return 0;
+}
+
+int wlibc_threadattr_getschedpolicy(const thread_attr_t *restrict attributes, int *restrict policy)
+{
+	VALIDATE_THREAD_ATTR(attributes);
+	VALIDATE_PTR(policy, EINVAL, -1);
+	*policy = attributes->policy;
+	return 0;
+}
+
+int wlibc_threadattr_setschedpolicy(thread_attr_t *attributes, int policy)
+{
+	VALIDATE_THREAD_ATTR(attributes);
+
+	if (policy != SCHED_IDLE && policy != SCHED_RR && policy != SCHED_FIFO && policy != SCHED_BATCH && policy != SCHED_SPORADIC)
+	{
+		errno = EINVAL;
+		return -1;
+	}
+
+	attributes->policy = policy;
+	return 0;
+}
+
+int wlibc_threadattr_getaffinity(const thread_attr_t *attributes, cpu_set_t *restrict cpuset)
+{
+	VALIDATE_THREAD_ATTR(attributes);
+	VALIDATE_PTR(cpuset, EINVAL, -1);
+
+	if (attributes->set == NULL)
+	{
+		// No specific affinity.
+		memset(cpuset->group_mask, 0, cpuset->num_groups * sizeof(unsigned long long));
+	}
+	else
+	{
+		if (attributes->set->num_cpus != cpuset->num_cpus)
+		{
+			errno = ERANGE;
+			return -1;
+		}
+
+		memcpy(cpuset->group_mask, attributes->set->group_mask, attributes->set->num_groups * sizeof(unsigned long long));
+	}
+
+	return 0;
+}
+
+int wlibc_threadattr_setaffinity(thread_attr_t *attributes, const cpu_set_t *restrict cpuset)
+{
+	VALIDATE_THREAD_ATTR(attributes);
+	VALIDATE_PTR(cpuset, EINVAL, -1);
+
+	if (cpuset->num_cpus <= 0)
+	{
+		errno = EINVAL;
+		return -1;
+	}
+
+	// Discard qualifiers.
+	attributes->set = (cpu_set_t *)cpuset;
+
+	return 0;
+}
+
+int wlibc_thread_resume(thread_t thread)
+{
+	NTSTATUS status;
+	threadinfo *tinfo = (threadinfo *)thread;
+
+	status = NtSuspendThread(tinfo->handle, NULL);
+	if (status != STATUS_SUCCESS)
+	{
+		map_ntstatus_to_errno(status);
+		return -1;
+	}
+
+	return 0;
+}
+
+int wlibc_thread_suspend(thread_t thread)
+{
+	NTSTATUS status;
+	threadinfo *tinfo = (threadinfo *)thread;
+
+	status = NtResumeThread(tinfo->handle, NULL);
+	if (status != STATUS_SUCCESS)
+	{
+		map_ntstatus_to_errno(status);
+		return -1;
+	}
+
+	return 0;
+}
+
+int wlibc_thread_getconcurrency(void)
+{
+	NTSTATUS status;
+	LOGICAL_PROCESSOR_RELATIONSHIP relationship = RelationGroup;
+	ULONG length;
+	CHAR buffer[128];
+	BYTE count = 0;
+
+	status = NtQuerySystemInformationEx(SystemLogicalProcessorAndGroupInformation, &relationship, sizeof(LOGICAL_PROCESSOR_RELATIONSHIP),
+										buffer, sizeof(buffer), &length);
+	if (status != STATUS_SUCCESS)
+	{
+		// CHECK For larger multiprocessor systems.
+		map_ntstatus_to_errno(status);
+		return 0;
+	}
+
+	PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX processor_info = (PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX)buffer;
+
+	for (WORD i = 0; i < processor_info->Group.ActiveGroupCount; ++i)
+	{
+		count += processor_info->Group.GroupInfo[i].ActiveProcessorCount;
+	}
+
+	return count;
+}
+
+int wlibc_thread_setconcurrency(int level)
+{
+	// Nop
+	if (level < 0)
+	{
+		errno = EINVAL;
+		return -1;
+	}
+
+	return 0;
+}
+
+int wlibc_threadid(thread_t thread, pid_t *id)
+{
+	threadinfo *tinfo = (threadinfo *)thread;
+	*id = (pid_t)tinfo->id;
+
+	return 0;
+}
+
+int wlibc_thread_getschedparam(thread_t thread, int *restrict policy, struct sched_param *restrict param)
+{
+	NTSTATUS status;
+	KPRIORITY priority;
+	THREAD_BASIC_INFORMATION basic_info;
+	threadinfo *tinfo = (threadinfo *)thread;
+
+	status = NtQueryInformationThread(tinfo->handle, ThreadBasicInformation, &basic_info, sizeof(THREAD_BASIC_INFORMATION), NULL);
+	if (status != STATUS_SUCCESS)
+	{
+		map_ntstatus_to_errno(status);
+		return -1;
+	}
+
+	priority = basic_info.Priority;
+
+	if (priority <= SCHED_IDLE)
+	{
+		*policy = SCHED_IDLE;
+		param->sched_priority = priority - SCHED_IDLE;
+	}
+	else if (priority <= SCHED_BATCH)
+	{
+		*policy = SCHED_BATCH;
+		param->sched_priority = priority - SCHED_BATCH;
+	}
+	else if (priority <= SCHED_RR)
+	{
+		*policy = SCHED_RR;
+		param->sched_priority = priority - SCHED_RR;
+	}
+	else if (priority <= SCHED_SPORADIC)
+	{
+		*policy = SCHED_SPORADIC;
+		param->sched_priority = priority - SCHED_SPORADIC;
+	}
+	else
+	{
+		*policy = SCHED_FIFO;
+		param->sched_priority = priority - SCHED_FIFO;
+	}
+
+	// Bound the maximum value of sched_priority. This should only happen
+	// if the thread is running with realtime priority.
+	if (param->sched_priority > 2)
+	{
+		param->sched_priority = 2;
+	}
+
+	// In this case reduce the policy class and adjust priority accordingly.
+	if (param->sched_priority < -2)
+	{
+		if (*policy == SCHED_IDLE)
+		{
+			param->sched_priority = -2;
+		}
+		else if (*policy == SCHED_BATCH)
+		{
+			*policy = SCHED_IDLE;
+			param->sched_priority = priority - SCHED_IDLE;
+		}
+		else if (*policy == SCHED_RR)
+		{
+			*policy = SCHED_BATCH;
+			param->sched_priority = priority - SCHED_BATCH;
+		}
+		else if (*policy == SCHED_SPORADIC)
+		{
+			*policy = SCHED_RR;
+			param->sched_priority = priority - SCHED_RR;
+		}
+		else if (*policy == SCHED_FIFO)
+		{
+			*policy = SCHED_SPORADIC;
+			param->sched_priority = priority - SCHED_SPORADIC;
+		}
+	}
+
+	return 0;
+}
+
+int wlibc_thread_setschedparam(thread_t thread, int policy, const struct sched_param *param)
+{
+	NTSTATUS status;
+	KPRIORITY priority;
+	threadinfo *tinfo = (threadinfo *)thread;
+
+	VALIDATE_PTR(param, EINVAL, -1);
+
+	if (param->sched_priority > SCHED_MAX_PRIORITY || param->sched_priority < SCHED_MIN_PRIORITY)
+	{
+		errno = EINVAL;
+		return -1;
+	}
+
+	if (policy != SCHED_IDLE && policy != SCHED_RR && policy != SCHED_FIFO && policy != SCHED_BATCH && policy != SCHED_SPORADIC)
+	{
+		errno = EINVAL;
+		return -1;
+	}
+
+	// Base priority of policies.
+	switch (policy)
+	{
+	case SCHED_IDLE:
+		priority = 4;
+	case SCHED_RR:
+		priority = 8;
+	case SCHED_FIFO:
+		priority = 13;
+	case SCHED_BATCH:
+		priority = 6;
+	case SCHED_SPORADIC:
+		priority = 10;
+	default: // Should be unreachable.
+		priority = 8;
+	}
+
+	priority += param->sched_priority;
+
+	// This sets the absolute priority of the thread.
+	status = NtSetInformationThread(tinfo->handle, ThreadPriority, &priority, sizeof(KPRIORITY));
+	if (status != STATUS_SUCCESS)
+	{
+		map_ntstatus_to_errno(status);
+		return -1;
+	}
+
+	return 0;
+}
+
+int wlibc_thread_getschedpriority(thread_t thread, int *priority)
+{
+	int status;
+	int policy;
+	struct sched_param param;
+
+	status = wlibc_thread_getschedparam(thread, &policy, &param);
+
+	*priority = param.sched_priority;
+
+	return status;
+}
+
+int wlibc_thread_setschedpriority(thread_t thread, int priority)
+{
+	NTSTATUS status;
+	KPRIORITY change = priority;
+	threadinfo *tinfo = (threadinfo *)thread;
+
+	if (priority > SCHED_MAX_PRIORITY || priority < SCHED_MIN_PRIORITY)
+	{
+		errno = EINVAL;
+		return -1;
+	}
+
+	// This will change the priority of the thread according to 'new_priority = old_priority + change'.
+	status = NtSetInformationThread(tinfo->handle, ThreadChangePriority, &change, sizeof(KPRIORITY));
+	if (status != STATUS_SUCCESS)
+	{
+		map_ntstatus_to_errno(status);
+		return -1;
+	}
+
+	return 0;
+}
+
+int wlibc_thread_getname(thread_t thread, char *buffer, size_t length)
+{
+	NTSTATUS status;
+	CHAR u16_buffer[80]; // 16 bytes UNICODE_STRING, 64 bytes name.
+	UNICODE_STRING *u16_name = (UNICODE_STRING *)u16_buffer;
+	UTF8_STRING u8_name;
+	threadinfo *tinfo = (threadinfo *)thread;
+
+	VALIDATE_PTR(buffer, EINVAL, -1);
+
+	if (length < 32)
+	{
+		errno = ERANGE;
+		return -1;
+	}
+
+	status = NtQueryInformationThread(tinfo->handle, ThreadNameInformation, buffer, sizeof(buffer), NULL);
+	if (status != STATUS_SUCCESS)
+	{
+		map_ntstatus_to_errno(status);
+		return -1;
+	}
+
+	u8_name.Length = 0;
+	u8_name.MaximumLength = length;
+	u8_name.Buffer = buffer;
+
+	status = RtlUnicodeStringToUTF8String(&u8_name, u16_name, FALSE);
+	if (status != STATUS_SUCCESS)
+	{
+		map_ntstatus_to_errno(status);
+		return -1;
+	}
+
+	return 0;
+}
+
+int wlibc_thread_setname(thread_t thread, const char *name)
+{
+	NTSTATUS status;
+	UTF8_STRING u8_name;
+	UNICODE_STRING u16_name;
+	threadinfo *tinfo = (threadinfo *)thread;
+
+	RtlInitUTF8String(&u8_name, name);
+	RtlUTF8StringToUnicodeString(&u16_name, &u8_name, TRUE);
+
+	status = NtSetInformationThread(tinfo->handle, ThreadNameInformation, &u16_name, sizeof(UNICODE_STRING));
+	RtlFreeUnicodeString(&u16_name);
+
+	if (status != STATUS_SUCCESS)
+	{
+		map_ntstatus_to_errno(status);
+		return -1;
+	}
+
+	return 0;
+}
+
+int wlibc_thread_getaffinity(thread_t thread, cpu_set_t *cpuset)
+{
+	NTSTATUS status;
+	LONGLONG mask;
+	threadinfo *tinfo = (threadinfo *)thread;
+	// TODO: Scale this beyond 64 cores.
+
+	if (cpuset == NULL || cpuset->num_groups == 0)
+	{
+		errno = EINVAL;
+		return -1;
+	}
+
+	status = NtQueryInformationThread(tinfo->handle, ThreadSelectedCpuSets, &mask, sizeof(LONGLONG), NULL);
+	if (status != STATUS_SUCCESS)
+	{
+		map_ntstatus_to_errno(status);
+		return -1;
+	}
+
+	cpuset->group_mask[0] = mask;
+
+	return 0;
+}
+
+int wlibc_thread_setaffinity(thread_t thread, const cpu_set_t *cpuset)
+{
+	NTSTATUS status;
+	LONGLONG mask;
+	threadinfo *tinfo = (threadinfo *)thread;
+	// TODO: Scale this beyond 64 cores.
+
+	if (cpuset == NULL || cpuset->num_groups == 0)
+	{
+		errno = EINVAL;
+		return -1;
+	}
+
+	mask = cpuset->group_mask[0];
+
+	status = NtSetInformationThread(tinfo->handle, ThreadSelectedCpuSets, &mask, sizeof(LONGLONG));
+	if (status != STATUS_SUCCESS)
+	{
+		map_ntstatus_to_errno(status);
+		return -1;
+	}
+
 	return 0;
 }
