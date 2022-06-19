@@ -632,30 +632,30 @@ int wlibc_thread_getschedparam(thread_t thread, int *restrict policy, struct sch
 
 	priority = basic_info.Priority;
 
-	if (priority <= SCHED_IDLE)
+	if (priority <= 4) // SCHED_IDLE
 	{
 		*policy = SCHED_IDLE;
-		param->sched_priority = priority - SCHED_IDLE;
+		param->sched_priority = priority - 4;
 	}
-	else if (priority <= SCHED_BATCH)
+	else if (priority <= 6) // SCHED_BATCH
 	{
 		*policy = SCHED_BATCH;
-		param->sched_priority = priority - SCHED_BATCH;
+		param->sched_priority = priority - 6;
 	}
-	else if (priority <= SCHED_RR)
+	else if (priority <= 8) // SCHED_RR
 	{
 		*policy = SCHED_RR;
-		param->sched_priority = priority - SCHED_RR;
+		param->sched_priority = priority - 8;
 	}
-	else if (priority <= SCHED_SPORADIC)
+	else if (priority <= 10) // SCHED_SPORADIC
 	{
 		*policy = SCHED_SPORADIC;
-		param->sched_priority = priority - SCHED_SPORADIC;
+		param->sched_priority = priority - 10;
 	}
 	else
 	{
 		*policy = SCHED_FIFO;
-		param->sched_priority = priority - SCHED_FIFO;
+		param->sched_priority = priority - 13;
 	}
 
 	// Bound the maximum value of sched_priority. This should only happen
@@ -675,22 +675,22 @@ int wlibc_thread_getschedparam(thread_t thread, int *restrict policy, struct sch
 		else if (*policy == SCHED_BATCH)
 		{
 			*policy = SCHED_IDLE;
-			param->sched_priority = priority - SCHED_IDLE;
+			param->sched_priority = priority - 4;
 		}
 		else if (*policy == SCHED_RR)
 		{
 			*policy = SCHED_BATCH;
-			param->sched_priority = priority - SCHED_BATCH;
+			param->sched_priority = priority - 6;
 		}
 		else if (*policy == SCHED_SPORADIC)
 		{
 			*policy = SCHED_RR;
-			param->sched_priority = priority - SCHED_RR;
+			param->sched_priority = priority - 8;
 		}
 		else if (*policy == SCHED_FIFO)
 		{
 			*policy = SCHED_SPORADIC;
-			param->sched_priority = priority - SCHED_SPORADIC;
+			param->sched_priority = priority - 10;
 		}
 	}
 
@@ -722,14 +722,19 @@ int wlibc_thread_setschedparam(thread_t thread, int policy, const struct sched_p
 	{
 	case SCHED_IDLE:
 		priority = 4;
+		break;
 	case SCHED_RR:
 		priority = 8;
+		break;
 	case SCHED_FIFO:
 		priority = 13;
+		break;
 	case SCHED_BATCH:
 		priority = 6;
+		break;
 	case SCHED_SPORADIC:
 		priority = 10;
+		break;
 	default: // Should be unreachable.
 		priority = 8;
 	}
@@ -793,13 +798,13 @@ int wlibc_thread_getname(thread_t thread, char *buffer, size_t length)
 
 	VALIDATE_PTR(buffer, EINVAL, -1);
 
-	if (length < 32)
+	if (length > 65536) // Limit of UNICODE_STRING.
 	{
 		errno = ERANGE;
 		return -1;
 	}
 
-	status = NtQueryInformationThread(tinfo->handle, ThreadNameInformation, buffer, sizeof(buffer), NULL);
+	status = NtQueryInformationThread(tinfo->handle, ThreadNameInformation, u16_buffer, sizeof(u16_buffer), NULL);
 	if (status != STATUS_SUCCESS)
 	{
 		map_ntstatus_to_errno(status);
@@ -807,7 +812,7 @@ int wlibc_thread_getname(thread_t thread, char *buffer, size_t length)
 	}
 
 	u8_name.Length = 0;
-	u8_name.MaximumLength = length;
+	u8_name.MaximumLength = (USHORT)length;
 	u8_name.Buffer = buffer;
 
 	status = RtlUnicodeStringToUTF8String(&u8_name, u16_name, FALSE);
@@ -828,6 +833,13 @@ int wlibc_thread_setname(thread_t thread, const char *name)
 	threadinfo *tinfo = (threadinfo *)thread;
 
 	RtlInitUTF8String(&u8_name, name);
+
+	if (u8_name.MaximumLength > 32)
+	{
+		errno = E2BIG;
+		return -1;
+	}
+
 	RtlUTF8StringToUnicodeString(&u16_name, &u8_name, TRUE);
 
 	status = NtSetInformationThread(tinfo->handle, ThreadNameInformation, &u16_name, sizeof(UNICODE_STRING));

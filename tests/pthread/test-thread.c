@@ -7,6 +7,7 @@
 
 #include <tests/test.h>
 #include <pthread.h>
+#include <stdlib.h>
 #include <sys/time.h>
 #include <unistd.h>
 
@@ -114,6 +115,13 @@ void *testcancel_disabled(void *arg WLIBC_UNUSED)
 {
 	pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
 	pthread_testcancel();
+	return NULL;
+}
+
+void *infinite(void *arg WLIBC_UNUSED)
+{
+	while (1)
+		;
 	return NULL;
 }
 
@@ -367,6 +375,136 @@ int test_cancel()
 	return 0;
 }
 
+int test_concurrency()
+{
+	printf("Number of logical processors: %d.\n", pthread_getconcurrency());
+	return 0;
+}
+
+int test_affinity()
+{
+	int status;
+	pthread_t thread;
+	cpu_set_t *cpuset, *result;
+
+	cpuset = CPU_ALLOC(2);
+	result = CPU_ALLOC(2);
+
+	// We can only set affinity to core 0, as this will always exist.
+	CPU_ZERO(cpuset);
+	CPU_SET(0, cpuset);
+
+	status = pthread_create(&thread, NULL, infinite, NULL);
+	ASSERT_EQ(status, 0);
+
+	status = pthread_setaffinity(thread, 16, cpuset);
+	ASSERT_EQ(status, 0);
+
+	status = pthread_getaffinity(thread, 16, result);
+	ASSERT_EQ(status, 0);
+
+	ASSERT_EQ(CPU_ISSET(0, result), 1);
+
+	// Destroy the thread.
+	status = pthread_cancel(thread);
+	ASSERT_EQ(status, 0);
+
+	status = pthread_join(thread, NULL);
+	ASSERT_EQ(status, 0);
+
+	CPU_FREE(cpuset);
+	CPU_FREE(result);
+
+	return 0;
+}
+
+int test_sched()
+{
+	int status;
+	int policy;
+	void *result;
+	pthread_t thread;
+	struct sched_param param;
+
+	status = pthread_create(&thread, NULL, infinite, NULL);
+	ASSERT_EQ(status, 0);
+
+	status = pthread_getschedparam(thread, &policy, &param);
+	ASSERT_EQ(status, 0);
+
+	// Based on policies we may have ambiguous priorities. Only test SCHED_FIFO.
+	policy = SCHED_FIFO;
+	param.sched_priority = 1;
+	status = pthread_setschedparam(thread, policy, &param);
+	ASSERT_EQ(status, 0);
+
+	status = pthread_getschedparam(thread, &policy, &param);
+	ASSERT_EQ(status, 0);
+	ASSERT_EQ(param.sched_priority, 1);
+	ASSERT_EQ(policy, SCHED_FIFO);
+
+	// Destroy the thread.
+	status = pthread_cancel(thread);
+	ASSERT_EQ(status, 0);
+
+	status = pthread_join(thread, &result);
+	ASSERT_EQ(status, 0);
+	ASSERT_EQ(result, PTHREAD_CANCELED);
+
+	return 0;
+}
+
+int test_name()
+{
+	int status;
+	void *result;
+	pthread_t thread;
+	char buffer[32];
+	const char *name = "wlibc thread";
+	const char *bigname = "very very biggggggggggggggggggggggg name";
+
+	status = pthread_create(&thread, NULL, infinite, NULL);
+	ASSERT_EQ(status, 0);
+
+	// No name given to thread.
+	status = pthread_getname(thread, buffer, 32);
+	ASSERT_EQ(status, 0);
+	ASSERT_EQ(strlen(buffer), 0);
+
+	status = pthread_setname(thread, name);
+	ASSERT_EQ(status, 0);
+
+	status = pthread_getname(thread, buffer, 32);
+	ASSERT_EQ(status, 0);
+	ASSERT_STREQ(buffer, name);
+
+	errno = 0;
+	status = pthread_setname(thread, bigname);
+	ASSERT_EQ(status, -1);
+	ASSERT_ERRNO(E2BIG);
+
+	// Buffer should be unchanged.
+	status = pthread_getname(thread, buffer, 32);
+	ASSERT_EQ(status, 0);
+	ASSERT_STREQ(buffer, name);
+
+	// Small buffer.
+	errno = 0;
+	status = pthread_getname(thread, buffer, 8);
+	ASSERT_EQ(status, -1);
+	ASSERT_ERRNO(ERANGE);
+
+	// Destroy the thread.
+	status = pthread_cancel(thread);
+	ASSERT_EQ(status, 0);
+
+	status = pthread_join(thread, &result);
+	ASSERT_EQ(status, 0);
+	ASSERT_EQ(result, PTHREAD_CANCELED);
+
+	return 0;
+}
+
 int main()
 {
 	INITIAILIZE_TESTS();
@@ -380,6 +518,10 @@ int main()
 	TEST(test_cleanup());
 	test_variable = 0;
 	TEST(test_cancel());
+	TEST(test_concurrency());
+	TEST(test_affinity());
+	TEST(test_sched());
+	TEST(test_name());
 
 	VERIFY_RESULT_AND_EXIT();
 }
