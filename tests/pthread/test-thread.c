@@ -212,24 +212,24 @@ int test_attributes()
 {
 	int status;
 	pthread_t thread;
-	pthread_attr_t attr;
+	pthread_attr_t attributes;
 
-	status = pthread_attr_init(&attr);
+	status = pthread_attr_init(&attributes);
 	ASSERT_EQ(status, 0);
 
-	status = pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+	status = pthread_attr_setdetachstate(&attributes, PTHREAD_CREATE_DETACHED);
 	ASSERT_EQ(status, 0);
-	status = pthread_attr_setstacksize(&attr, 16384); // 16KB
+	status = pthread_attr_setstacksize(&attributes, 16384); // 16KB
 	ASSERT_EQ(status, 0);
 
-	status = pthread_create(&thread, &attr, empty, NULL);
+	status = pthread_create(&thread, &attributes, empty, NULL);
 	ASSERT_EQ(status, 0);
 
 	// Already detached thread, detaching again should fail.
 	status = pthread_detach(thread);
 	ASSERT_EQ(status, -1);
 
-	status = pthread_attr_destroy(&attr);
+	status = pthread_attr_destroy(&attributes);
 	ASSERT_EQ(status, 0);
 
 	return 0;
@@ -386,6 +386,7 @@ int test_affinity()
 	int status;
 	pthread_t thread;
 	cpu_set_t *cpuset, *result;
+	pthread_attr_t attributes;
 
 	cpuset = CPU_ALLOC(2);
 	result = CPU_ALLOC(2);
@@ -412,6 +413,30 @@ int test_affinity()
 	status = pthread_join(thread, NULL);
 	ASSERT_EQ(status, 0);
 
+	// Do it again, this time pass it in creation attributes.
+	status = pthread_attr_init(&attributes);
+	ASSERT_EQ(status, 0);
+
+	status = pthread_attr_setaffinity(&attributes, 16, cpuset);
+	ASSERT_EQ(status, 0);
+
+	status = pthread_create(&thread, &attributes, infinite, NULL);
+	ASSERT_EQ(status, 0);
+
+	status = pthread_getaffinity(thread, 16, result);
+	ASSERT_EQ(status, 0);
+	ASSERT_EQ(CPU_ISSET(0, result), 1);
+
+	// Destroy the thread.
+	status = pthread_cancel(thread);
+	ASSERT_EQ(status, 0);
+
+	status = pthread_join(thread, NULL);
+	ASSERT_EQ(status, 0);
+
+	status = pthread_attr_destroy(&attributes);
+	ASSERT_EQ(status, 0);
+
 	CPU_FREE(cpuset);
 	CPU_FREE(result);
 
@@ -424,6 +449,7 @@ int test_sched()
 	int policy;
 	void *result;
 	pthread_t thread;
+	pthread_attr_t attributes;
 	struct sched_param param;
 
 	status = pthread_create(&thread, NULL, infinite, NULL);
@@ -450,6 +476,39 @@ int test_sched()
 	status = pthread_join(thread, &result);
 	ASSERT_EQ(status, 0);
 	ASSERT_EQ(result, PTHREAD_CANCELED);
+
+	// Do it again, this time pass it in creation attributes.
+	status = pthread_attr_init(&attributes);
+	ASSERT_EQ(status, 0);
+
+	param.sched_priority = 2;
+	policy = SCHED_FIFO;
+
+	status = pthread_attr_setinheritsched(&attributes, PTHREAD_EXPLICIT_SCHED);
+	ASSERT_EQ(status, 0);
+	status = pthread_attr_setschedpolicy(&attributes, SCHED_FIFO);
+	ASSERT_EQ(status, 0);
+	status = pthread_attr_setschedparam(&attributes, &param);
+	ASSERT_EQ(status, 0);
+
+	status = pthread_create(&thread, &attributes, infinite, NULL);
+	ASSERT_EQ(status, 0);
+
+	status = pthread_getschedparam(thread, &policy, &param);
+	ASSERT_EQ(status, 0);
+	ASSERT_EQ(param.sched_priority, 2);
+	ASSERT_EQ(policy, SCHED_FIFO);
+
+	// Destroy the thread.
+	status = pthread_cancel(thread);
+	ASSERT_EQ(status, 0);
+
+	status = pthread_join(thread, &result);
+	ASSERT_EQ(status, 0);
+	ASSERT_EQ(result, PTHREAD_CANCELED);
+
+	status = pthread_attr_destroy(&attributes);
+	ASSERT_EQ(status, 0);
 
 	return 0;
 }

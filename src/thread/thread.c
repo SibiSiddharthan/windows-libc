@@ -76,6 +76,23 @@ int wlibc_thread_create(thread_t *thread, thread_attr_t *attributes, thread_star
 	tinfo->handle = thread_handle;
 	tinfo->id = thread_id;
 
+	if (attributes != NULL)
+	{
+		if (attributes->inherit == WLIBC_THREAD_EXPLICIT_SCHED)
+		{
+			struct sched_param param;
+			param.sched_priority = attributes->priority;
+
+			wlibc_thread_setschedparam(tinfo, attributes->policy, &param);
+		}
+
+		if (attributes->set != NULL)
+		{
+			// This can be done by passing GROUP_AFFINITY in PROC_THREAD_ATTRIBUTE_LIST.
+			wlibc_thread_setaffinity(tinfo, attributes->set);
+		}
+	}
+
 	NtResumeThread(thread_handle, NULL);
 
 	if (should_detach)
