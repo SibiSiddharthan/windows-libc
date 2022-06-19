@@ -8,6 +8,7 @@
 #include <internal/nt.h>
 #include <internal/convert.h>
 #include <internal/error.h>
+#include <internal/sched.h>
 #include <internal/thread.h>
 #include <internal/validate.h>
 #include <errno.h>
@@ -542,12 +543,7 @@ int wlibc_threadattr_getschedpolicy(const thread_attr_t *restrict attributes, in
 int wlibc_threadattr_setschedpolicy(thread_attr_t *attributes, int policy)
 {
 	VALIDATE_THREAD_ATTR(attributes);
-
-	if (policy != SCHED_IDLE && policy != SCHED_RR && policy != SCHED_FIFO && policy != SCHED_BATCH && policy != SCHED_SPORADIC)
-	{
-		errno = EINVAL;
-		return -1;
-	}
+	VALIDATE_SCHED_POLICY(policy, EINVAL, -1);
 
 	attributes->policy = policy;
 	return 0;
@@ -768,18 +764,8 @@ int wlibc_thread_setschedparam(thread_t thread, int policy, const struct sched_p
 
 	VALIDATE_THREAD(thread);
 	VALIDATE_PTR(param, EINVAL, -1);
-
-	if (param->sched_priority > SCHED_MAX_PRIORITY || param->sched_priority < SCHED_MIN_PRIORITY)
-	{
-		errno = EINVAL;
-		return -1;
-	}
-
-	if (policy != SCHED_IDLE && policy != SCHED_RR && policy != SCHED_FIFO && policy != SCHED_BATCH && policy != SCHED_SPORADIC)
-	{
-		errno = EINVAL;
-		return -1;
-	}
+	VALIDATE_SCHED_PRIORITY(param->sched_priority, EINVAL, -1);
+	VALIDATE_SCHED_POLICY(policy, EINVAL, -1);
 
 	// Base priority of policies.
 	switch (policy)

@@ -7,6 +7,7 @@
 
 #include <internal/nt.h>
 #include <internal/error.h>
+#include <internal/sched.h>
 #include <errno.h>
 #include <sched.h>
 
@@ -54,19 +55,11 @@ int wlibc_sched_setscheduler(pid_t pid, int policy, const struct sched_param *pa
 
 	// To set a process with realtime priority we need 'SeIncreaseBasePriorityPrivilege'.
 	// This is will not be supported here.
-	if ((policy < SCHED_IDLE || policy > SCHED_SPORADIC) && policy != PROCESS_PRIORITY_CLASS_REALTIME)
-	{
-		errno = EINVAL;
-		return -1;
-	}
+	VALIDATE_SCHED_POLICY(policy, EINVAL, -1);
 
 	if (param)
 	{
-		if (param->sched_priority < SCHED_MIN_PRIORITY || param->sched_priority > SCHED_MAX_PRIORITY)
-		{
-			errno = EINVAL;
-			return -1;
-		}
+		VALIDATE_SCHED_PRIORITY(param->sched_priority, EINVAL, -1);
 	}
 
 	priority_class.PriorityClass = (UCHAR)policy;

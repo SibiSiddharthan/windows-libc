@@ -7,6 +7,8 @@
 
 #include <internal/nt.h>
 #include <internal/error.h>
+#include <internal/sched.h>
+#include <internal/validate.h>
 #include <errno.h>
 #include <sched.h>
 #include <sys/param.h>
@@ -171,11 +173,8 @@ int wlibc_sched_setparam(pid_t pid, const struct sched_param *param)
 {
 	HANDLE handle;
 
-	if (param == NULL || param->sched_priority < SCHED_MIN_PRIORITY || param->sched_priority > SCHED_MAX_PRIORITY)
-	{
-		errno = EINVAL;
-		return -1;
-	}
+	VALIDATE_PTR(param, EINVAL, -1);
+	VALIDATE_SCHED_PRIORITY(param->sched_priority, EINVAL, -1);
 
 	handle = open_process(pid, PROCESS_QUERY_INFORMATION | PROCESS_SET_INFORMATION);
 	if (handle == 0)
