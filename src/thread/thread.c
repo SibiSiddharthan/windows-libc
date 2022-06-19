@@ -14,6 +14,7 @@
 #include <stdlib.h>
 #include <thread.h>
 
+#define VALIDATE_THREAD(thread)           VALIDATE_PTR(thread, EINVAL, -1)
 #define VALIDATE_THREAD_ATTR(thread_attr) VALIDATE_PTR(thread_attr, EINVAL, -1)
 
 DWORD wlibc_thread_entry(void *arg)
@@ -93,6 +94,8 @@ int wlibc_thread_detach(thread_t thread)
 	NTSTATUS status;
 	threadinfo *tinfo = (threadinfo *)thread;
 
+	VALIDATE_THREAD(thread);
+
 	if (tinfo->handle != 0)
 	{
 		status = NtClose(tinfo->handle);
@@ -119,6 +122,8 @@ int wlibc_common_thread_join(thread_t thread, void **result, const struct timesp
 	NTSTATUS status;
 	LARGE_INTEGER timeout;
 	threadinfo *tinfo = (threadinfo *)thread;
+
+	VALIDATE_THREAD(thread);
 
 	timeout.QuadPart = 0;
 	// If abstime is null                    -> infinite wait.
@@ -297,6 +302,8 @@ WLIBC_API int wlibc_thread_cancel(thread_t thread)
 {
 	NTSTATUS status;
 	threadinfo *tinfo = (threadinfo *)thread;
+
+	VALIDATE_THREAD(thread);
 
 	// NOTE: The apc we queue will prempt execution of the thread.
 	status = NtQueueApcThreadEx(tinfo->handle, QUEUE_USER_SPECIAL_APC, cancel_apc, (void *)tinfo, NULL, NULL);
@@ -544,7 +551,9 @@ int wlibc_thread_resume(thread_t thread)
 	NTSTATUS status;
 	threadinfo *tinfo = (threadinfo *)thread;
 
-	status = NtSuspendThread(tinfo->handle, NULL);
+	VALIDATE_THREAD(thread);
+
+	status = NtResumeThread(tinfo->handle, NULL);
 	if (status != STATUS_SUCCESS)
 	{
 		map_ntstatus_to_errno(status);
@@ -559,7 +568,9 @@ int wlibc_thread_suspend(thread_t thread)
 	NTSTATUS status;
 	threadinfo *tinfo = (threadinfo *)thread;
 
-	status = NtResumeThread(tinfo->handle, NULL);
+	VALIDATE_THREAD(thread);
+
+	status = NtSuspendThread(tinfo->handle, NULL);
 	if (status != STATUS_SUCCESS)
 	{
 		map_ntstatus_to_errno(status);
@@ -610,6 +621,8 @@ int wlibc_thread_setconcurrency(int level)
 
 int wlibc_threadid(thread_t thread, pid_t *id)
 {
+	VALIDATE_THREAD(thread);
+
 	threadinfo *tinfo = (threadinfo *)thread;
 	*id = (pid_t)tinfo->id;
 
@@ -622,6 +635,8 @@ int wlibc_thread_getschedparam(thread_t thread, int *restrict policy, struct sch
 	KPRIORITY priority;
 	THREAD_BASIC_INFORMATION basic_info;
 	threadinfo *tinfo = (threadinfo *)thread;
+
+	VALIDATE_THREAD(thread);
 
 	status = NtQueryInformationThread(tinfo->handle, ThreadBasicInformation, &basic_info, sizeof(THREAD_BASIC_INFORMATION), NULL);
 	if (status != STATUS_SUCCESS)
@@ -703,6 +718,7 @@ int wlibc_thread_setschedparam(thread_t thread, int policy, const struct sched_p
 	KPRIORITY priority;
 	threadinfo *tinfo = (threadinfo *)thread;
 
+	VALIDATE_THREAD(thread);
 	VALIDATE_PTR(param, EINVAL, -1);
 
 	if (param->sched_priority > SCHED_MAX_PRIORITY || param->sched_priority < SCHED_MIN_PRIORITY)
@@ -758,6 +774,9 @@ int wlibc_thread_getschedpriority(thread_t thread, int *priority)
 	int policy;
 	struct sched_param param;
 
+	VALIDATE_THREAD(thread);
+	VALIDATE_PTR(priority, EINVAL, -1);
+
 	status = wlibc_thread_getschedparam(thread, &policy, &param);
 
 	*priority = param.sched_priority;
@@ -770,6 +789,8 @@ int wlibc_thread_setschedpriority(thread_t thread, int priority)
 	NTSTATUS status;
 	KPRIORITY change = priority;
 	threadinfo *tinfo = (threadinfo *)thread;
+
+	VALIDATE_THREAD(thread);
 
 	if (priority > SCHED_MAX_PRIORITY || priority < SCHED_MIN_PRIORITY)
 	{
@@ -796,6 +817,7 @@ int wlibc_thread_getname(thread_t thread, char *buffer, size_t length)
 	UTF8_STRING u8_name;
 	threadinfo *tinfo = (threadinfo *)thread;
 
+	VALIDATE_THREAD(thread);
 	VALIDATE_PTR(buffer, EINVAL, -1);
 
 	if (length > 65536) // Limit of UNICODE_STRING.
@@ -832,6 +854,8 @@ int wlibc_thread_setname(thread_t thread, const char *name)
 	UNICODE_STRING u16_name;
 	threadinfo *tinfo = (threadinfo *)thread;
 
+	VALIDATE_THREAD(thread);
+
 	RtlInitUTF8String(&u8_name, name);
 
 	if (u8_name.MaximumLength > 32)
@@ -861,6 +885,8 @@ int wlibc_thread_getaffinity(thread_t thread, cpu_set_t *cpuset)
 	threadinfo *tinfo = (threadinfo *)thread;
 	// TODO: Scale this beyond 64 cores.
 
+	VALIDATE_THREAD(thread);
+
 	if (cpuset == NULL || cpuset->num_groups == 0)
 	{
 		errno = EINVAL;
@@ -885,6 +911,8 @@ int wlibc_thread_setaffinity(thread_t thread, const cpu_set_t *cpuset)
 	LONGLONG mask;
 	threadinfo *tinfo = (threadinfo *)thread;
 	// TODO: Scale this beyond 64 cores.
+
+	VALIDATE_THREAD(thread);
 
 	if (cpuset == NULL || cpuset->num_groups == 0)
 	{
