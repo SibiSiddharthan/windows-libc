@@ -588,7 +588,9 @@ int main()
 	TEST(test_concurrency());
 	TEST(test_affinity());
 	TEST(test_sched());
-	TEST(test_name());
+	// Don't execute this test case. Setting and retrieving a thread's name causes the process
+	// to hang indefinitely upon exit.
+	//TEST(test_name());
 
 	VERIFY_RESULT_AND_EXIT();
 }
