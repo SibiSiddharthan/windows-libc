@@ -20,36 +20,33 @@ void my_sighandler_2(int sig)
 	global_variable -= sig;
 }
 
-int test_EFAULT()
+int test_EINVAL_1()
 {
 	int result;
 
 	result = sigemptyset(NULL);
 	ASSERT_EQ(result, -1);
-	ASSERT_ERRNO(EFAULT);
+	ASSERT_ERRNO(EINVAL);
 	result = sigfillset(NULL);
 	ASSERT_EQ(result, -1);
-	ASSERT_ERRNO(EFAULT);
+	ASSERT_ERRNO(EINVAL);
 	result = sigaddset(NULL, SIGINT);
 	ASSERT_EQ(result, -1);
-	ASSERT_ERRNO(EFAULT);
+	ASSERT_ERRNO(EINVAL);
 	result = sigdelset(NULL, SIGINT);
 	ASSERT_EQ(result, -1);
-	ASSERT_ERRNO(EFAULT);
+	ASSERT_ERRNO(EINVAL);
 	result = sigismember(NULL, SIGINT);
 	ASSERT_EQ(result, -1);
-	ASSERT_ERRNO(EFAULT);
+	ASSERT_ERRNO(EINVAL);
 	result = sigpending(NULL);
 	ASSERT_EQ(result, -1);
-	ASSERT_ERRNO(EFAULT);
-	result = sigprocmask(SIG_SETMASK, NULL, NULL);
-	ASSERT_EQ(result, -1);
-	ASSERT_ERRNO(EFAULT);
+	ASSERT_ERRNO(EINVAL);
 
 	return 0;
 }
 
-int test_EINVAL()
+int test_EINVAL_2()
 {
 	errno = 0;
 	int result;
@@ -59,10 +56,10 @@ int test_EINVAL()
 	ASSERT_EQ(result, 0);
 	ASSERT_ERRNO(0);
 
-	result = sigaddset(&s, SIGKILL);
+	result = sigaddset(&s, NSIG);
 	ASSERT_EQ(result, -1);
 	ASSERT_ERRNO(EINVAL);
-	result = sigaddset(&s, SIGSTOP);
+	result = sigaddset(&s, 0);
 	ASSERT_EQ(result, -1);
 	ASSERT_ERRNO(EINVAL);
 
@@ -99,6 +96,11 @@ int test_sigprocmask_1()
 	ASSERT_EQ(result, 0);
 	ASSERT_EQ(old, 1u << SIGABRT);
 	ASSERT_EQ(global_variable, SIGABRT);
+
+	// Query signal mask
+	result = sigprocmask(SIG_UNBLOCK, NULL, &old);
+	ASSERT_EQ(result, 0);
+	ASSERT_EQ(old, 0);
 
 	return 0;
 }
@@ -157,8 +159,8 @@ int main()
 {
 	INITIAILIZE_TESTS();
 
-	TEST(test_EFAULT());
-	TEST(test_EINVAL());
+	TEST(test_EINVAL_1());
+	TEST(test_EINVAL_2());
 	TEST(test_sigprocmask_1());
 	TEST(test_sigprocmask_2());
 

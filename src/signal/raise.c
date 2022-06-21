@@ -5,8 +5,10 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <signal.h>
+#include <internal/nt.h>
 #include <internal/signal.h>
+#include <internal/thread.h>
+#include <signal.h>
 #include <errno.h>
 #include <stdlib.h>
 
@@ -16,6 +18,7 @@ extern int __cdecl raise(int sig);
 
 static void reset_handler(int sig)
 {
+	EnterCriticalSection(&_wlibc_signal_critical);
 	switch (sig)
 	{
 	case SIGHUP:
@@ -28,19 +31,16 @@ static void reset_handler(int sig)
 	case SIGPIPE:
 	case SIGALRM:
 	case SIGSTOP:
-		EnterCriticalSection(&_wlibc_signal_critical);
 		_wlibc_signal_table[sig] = SIG_DFL;
-		LeaveCriticalSection(&_wlibc_signal_critical);
 		break;
 	case SIGSTKFLT:
 	case SIGCHLD:
 	case SIGCONT:
 	case SIGTSTP:
-		EnterCriticalSection(&_wlibc_signal_critical);
 		_wlibc_signal_table[sig] = SIG_IGN;
-		LeaveCriticalSection(&_wlibc_signal_critical);
 		break;
 	}
+	LeaveCriticalSection(&_wlibc_signal_critical);
 }
 
 static int wlibc_raise_SIGALRM()
@@ -51,7 +51,9 @@ static int wlibc_raise_SIGALRM()
 
 static int wlibc_raise_internal(int sig)
 {
+	threadinfo *tinfo = (threadinfo *)TlsGetValue(_wlibc_threadinfo_index);
 	_crt_signal_t action = get_action(sig);
+
 	if (action == SIG_DFL)
 	{
 		_exit(3);
@@ -64,12 +66,12 @@ static int wlibc_raise_internal(int sig)
 	{
 		EnterCriticalSection(&_wlibc_signal_critical);
 
-		// Block signals according to sa_mask given during setup of this signal
-		_wlibc_blocked_signals |= _wlibc_signal_mask[sig];
-		// Block this signal next time if SA_NODEFER is not given
-		if (!(_wlibc_signal_flags[sig] & SA_NODEFER))
+		// Block signals according to sa_mask given during setup of this signal.
+		tinfo->sigmask |= _wlibc_signal_mask[sig];
+		// Block this signal next time if SA_NODEFER is not given.
+		if ((_wlibc_signal_flags[sig] & SA_NODEFER) == 0)
 		{
-			_wlibc_blocked_signals |= 1u << sig;
+			tinfo->sigmask |= 1u << sig;
 		}
 
 		// Restore the default signal handler
@@ -88,10 +90,12 @@ static int wlibc_raise_internal(int sig)
 
 int wlibc_raise(int sig)
 {
-	sigset_t blocked_signals = get_blocked_signals();
-	if (blocked_signals & 1u << sig)
+	threadinfo *tinfo = (threadinfo *)TlsGetValue(_wlibc_threadinfo_index);
+	sigset_t blocked_signals = tinfo->sigmask;
+
+	if (blocked_signals & (1u << sig))
 	{
-		add_pending_signals(sig);
+		tinfo->pending |= (1u << sig);
 		return 0;
 	}
 
