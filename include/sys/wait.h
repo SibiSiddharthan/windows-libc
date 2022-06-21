@@ -35,10 +35,9 @@ WLIBC_INLINE pid_t waitpid(pid_t pid, int *wstatus, int options)
 	return wlibc_waitpid(pid, wstatus, options);
 }
 
-WLIBC_API pid_t wlibc_wait(int *wstatus);
 WLIBC_INLINE pid_t wait(int *wstatus)
 {
-	return wlibc_wait(wstatus);
+	return wlibc_waitpid(-1, wstatus, 0);
 }
 
 _WLIBC_END_DECLS

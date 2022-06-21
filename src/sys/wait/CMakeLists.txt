@@ -9,7 +9,6 @@ wlibc_module(
 MODULE sys.wait
 
 SOURCES
-wait.c
 waitpid.c
 
 HEADERS
