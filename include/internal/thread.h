@@ -35,6 +35,7 @@ typedef struct _threadinfo
 	HANDLE handle;
 	DWORD id;
 	sigset_t sigmask;
+	sigset_t pending;
 	DWORD cancelstate;
 	DWORD canceltype;
 	thread_start_t routine;

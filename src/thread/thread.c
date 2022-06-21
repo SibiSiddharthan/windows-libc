@@ -325,7 +325,7 @@ static void cancel_apc(void *arg1, void *arg2, void *arg3)
 	execute_thread_cancellation(arg1);
 }
 
-WLIBC_API int wlibc_thread_cancel(thread_t thread)
+int wlibc_thread_cancel(thread_t thread)
 {
 	NTSTATUS status;
 	threadinfo *tinfo = (threadinfo *)thread;
@@ -343,10 +343,35 @@ WLIBC_API int wlibc_thread_cancel(thread_t thread)
 	return 0;
 }
 
-WLIBC_API void wlibc_thread_testcancel(void)
+void wlibc_thread_testcancel(void)
 {
 	threadinfo *tinfo = TlsGetValue(_wlibc_threadinfo_index);
 	execute_thread_cancellation(tinfo);
+}
+
+static void kill_apc(void *arg1, void *arg2, void *arg3)
+{
+	UNREFERENCED_PARAMETER(arg2);
+	UNREFERENCED_PARAMETER(arg3);
+
+	wlibc_raise((int)(intptr_t)arg1);
+}
+
+int wlibc_thread_kill(thread_t thread, int sig)
+{
+	NTSTATUS status;
+	threadinfo *tinfo = (threadinfo *)thread;
+
+	VALIDATE_THREAD(thread);
+
+	status = NtQueueApcThreadEx(tinfo->handle, QUEUE_USER_SPECIAL_APC, kill_apc, (void *)(intptr_t)sig, NULL, NULL);
+	if (status != STATUS_SUCCESS)
+	{
+		map_ntstatus_to_errno(status);
+		return -1;
+	}
+
+	return 0;
 }
 
 void wlibc_thread_cleanup_push(cleanup_t routine, void *arg)
@@ -759,7 +784,7 @@ int wlibc_thread_getschedparam(thread_t thread, int *restrict policy, struct sch
 int wlibc_thread_setschedparam(thread_t thread, int policy, const struct sched_param *param)
 {
 	NTSTATUS status;
-	KPRIORITY priority;
+	KPRIORITY priority = SCHED_RR;
 	threadinfo *tinfo = (threadinfo *)thread;
 
 	VALIDATE_THREAD(thread);
@@ -785,8 +810,6 @@ int wlibc_thread_setschedparam(thread_t thread, int policy, const struct sched_p
 	case SCHED_SPORADIC:
 		priority = 10;
 		break;
-	default: // Should be unreachable.
-		priority = 8;
 	}
 
 	priority += param->sched_priority;

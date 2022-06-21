@@ -329,6 +329,16 @@ WLIBC_INLINE int pthread_setconcurrency(int level)
 	return wlibc_thread_setconcurrency(level);
 }
 
+WLIBC_INLINE int pthread_kill(pthread_t thread, int sig)
+{
+	return wlibc_thread_kill(thread, sig);
+}
+
+WLIBC_INLINE int pthread_sigmask(int how, const sigset_t *newset, sigset_t *oldset)
+{
+	return wlibc_thread_sigmask(how, newset, oldset);
+}
+
 // One time initialization.
 WLIBC_INLINE int pthread_once(pthread_once_t *control, void (*init)(void))
 {

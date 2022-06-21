@@ -10,6 +10,7 @@
 
 #include <wlibc.h>
 #include <sched.h>
+#include <signal.h>
 #include <time.h>
 
 _WLIBC_BEGIN_DECLS
@@ -165,6 +166,13 @@ WLIBC_API int wlibc_thread_getaffinity(thread_t thread, cpu_set_t *cpuset);
 WLIBC_API int wlibc_thread_setaffinity(thread_t thread, const cpu_set_t *cpuset);
 WLIBC_API int wlibc_thread_getconcurrency(void);
 WLIBC_API int wlibc_thread_setconcurrency(int level);
+
+WLIBC_API int wlibc_thread_kill(thread_t thread, int sig);
+
+WLIBC_INLINE int wlibc_thread_sigmask(int how, const sigset_t *newset, sigset_t *oldset)
+{
+	return wlibc_sigprocmask(how, newset, oldset);
+}
 
 WLIBC_INLINE int wlibc_thread_yield(void)
 {
