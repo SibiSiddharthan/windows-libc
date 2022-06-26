@@ -37,20 +37,20 @@ int wmain(int argc, wchar_t **wargv)
 		argv[argc] = NULL;
 	}
 
-#ifdef WLIBC_POSIX_IO
+#ifdef WLIBC_IO
 	// DO NOT change the order of this.
 	init_fd_table();
 	initialize_stdio();
 	atexit(cleanup_fd_table);
 	atexit(cleanup_stdio);
 #endif
-#ifdef WLIBC_PROCESS
-	process_init();
-	atexit(process_cleanup);
-#endif
 #ifdef WLIBC_SIGNALS
 	signal_init();
 	atexit(signal_cleanup);
+#endif
+#ifdef WLIBC_SPAWN
+	process_init();
+	atexit(process_cleanup);
 #endif
 #ifdef WLIBC_THREADS
 	threads_init();

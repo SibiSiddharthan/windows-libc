@@ -36,12 +36,8 @@ if(ENABLE_LANGINFO)
 	wlibc_add_module(langinfo)
 endif()
 
-if(ENABLE_SIGNALS)
+if(ENABLE_POSIX_SIGNALS)
 	wlibc_add_module(signal)
-endif()
-
-if(ENABLE_PROCESS)
-	wlibc_add_module(sys.wait)
 endif()
 
 if(ENABLE_STRINGS)
@@ -77,14 +73,14 @@ if(ENABLE_THREADS)
 endif()
 
 if(ENABLE_SPAWN)
-	wlibc_add_module(spawn)
+	wlibc_add_module(spawn sys.wait)
 endif()
 
 if(ENABLE_THREADS OR ENABLE_SPAWN)
 	wlibc_add_module(sched)
 endif()
 
-if(ENABLE_ACL_SUPPORT)
+if(ENABLE_ACLS)
 	wlibc_add_module(sys.acl)
 endif()
 

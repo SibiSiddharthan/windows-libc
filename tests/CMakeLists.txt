@@ -32,12 +32,8 @@ if(ENABLE_LANGINFO)
 	add_subdirectory(langinfo)
 endif()
 
-if(ENABLE_SIGNALS)
+if(ENABLE_POSIX_SIGNALS)
 	add_subdirectory(signal)
-endif()
-
-if(ENABLE_PROCESS)
-	add_subdirectory(sys/wait)
 endif()
 
 if(ENABLE_SYS_RESOURCE)
@@ -79,12 +75,13 @@ endif()
 
 if(ENABLE_SPAWN)
 	add_subdirectory(spawn)
+	add_subdirectory(sys/wait)
 endif()
 
 if(ENABLE_THREADS OR ENABLE_SPAWN)
 	add_subdirectory(sched)
 endif()
 
-if(ENABLE_ACL_SUPPORT)
+if(ENABLE_ACLS)
 	add_subdirectory(sys/acl)
 endif()
