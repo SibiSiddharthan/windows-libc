@@ -7,7 +7,7 @@
 
 #include <signal.h>
 #include <stdlib.h>
-#include <Windows.h>
+#include <unistd.h>
 
 int main(int argc, char **argv)
 {
@@ -16,12 +16,12 @@ int main(int argc, char **argv)
 		int mode = atoi(argv[1]);
 		if (mode == 1)
 		{
-			int duration = atoi(argv[1]);
-			Sleep(duration);
+			int duration = atoi(argv[2]);
+			usleep(duration * 1000);
 		}
 		if (mode == 2)
 		{
-			int sig = atoi(argv[1]);
+			int sig = atoi(argv[2]);
 			raise(sig);
 		}
 	}

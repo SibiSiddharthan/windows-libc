@@ -8,56 +8,48 @@
 #include <internal/spawn.h>
 #include <tests/test.h>
 #include <signal.h>
+#include <spawn.h>
 #include <stdlib.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
 pid_t create_process_simple()
 {
-	STARTUPINFOA si;
-	PROCESS_INFORMATION pi;
+	int status;
+	pid_t pid;
+	const char *program = "child-helper.exe";
+	char *argv[] = {(char *)program, NULL};
 
-	memset(&si, 0, sizeof(si));
-	si.cb = sizeof(si);
-	memset(&pi, 0, sizeof(pi));
+	status = posix_spawn(&pid, program, NULL, NULL, argv, NULL);
 
-	BOOL result = CreateProcessA(NULL, "child-helper", NULL, NULL, TRUE, 0, NULL, NULL, &si, &pi);
-	if (result == 0)
+	if (status != 0)
 	{
 		return -1;
 	}
 
-	add_child(pi.dwProcessId, pi.hProcess);
-	return pi.dwProcessId;
+	return pid;
 }
 
 pid_t create_process(int arg1, int arg2) // mode, argument
 {
-	STARTUPINFOA si;
-	PROCESS_INFORMATION pi;
+	int status;
+	pid_t pid;
+	const char *program = "child-helper.exe";
+	char arg1buf[16] = {0};
+	char arg2buf[16] = {0};
+	char *argv[] = {(char *)program, arg1buf, arg2buf, NULL};
 
-	memset(&si, 0, sizeof(si));
-	si.cb = sizeof(si);
-	memset(&pi, 0, sizeof(pi));
+	itoa(arg1, arg1buf, 10);
+	itoa(arg2, arg2buf, 10);
 
-	char cmd[128] = "\0";
-	char buf[16] = "\0";
-	strcat(cmd, "child-helper");
-	strcat(cmd, " ");
-	itoa(arg1, buf, 10);
-	strcat(cmd, buf);
-	strcat(cmd, " ");
-	itoa(arg2, buf, 10);
-	strcat(cmd, buf);
+	status = posix_spawn(&pid, program, NULL, NULL, argv, NULL);
 
-	BOOL result = CreateProcessA(NULL, cmd, NULL, NULL, TRUE, 0, NULL, NULL, &si, &pi);
-	if (result == 0)
+	if (status != 0)
 	{
 		return -1;
 	}
 
-	add_child(pi.dwProcessId, pi.hProcess);
-	return pi.dwProcessId;
+	return pid;
 }
 
 int test_internal()
@@ -130,7 +122,7 @@ int test_waitpid()
 	int wstatus;
 	pid_t child, result;
 
-	child = create_process(1, 200); // child will sleep for 200ms
+	child = create_process(1, 20); // child will sleep for 20ms
 	result = waitpid(child, &wstatus, 0);
 	ASSERT_EQ(result, child);
 	ASSERT_EQ(wstatus, 0); // child will exit normally
@@ -143,9 +135,10 @@ int test_waitpid_WNOHANG()
 	int wstatus;
 	pid_t child, result;
 
-	child = create_process(1, 200);
+	child = create_process(1, 100);
 	result = waitpid(child, &wstatus, WNOHANG);
 	ASSERT_EQ(result, 0);
+	ASSERT_EQ(wstatus, -1);
 
 	result = waitpid(child, &wstatus, 0);
 	ASSERT_EQ(result, child);
@@ -188,6 +181,7 @@ int main()
 	TEST(test_ECHILD());
 	TEST(test_waitpid());
 	TEST(test_waitpid_WNOHANG());
+	TEST(test_signal_exit());
 
 	VERIFY_RESULT_AND_EXIT();
 }
