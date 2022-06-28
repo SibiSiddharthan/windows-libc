@@ -10,11 +10,116 @@
 #include <internal/signal.h>
 #include <internal/spawn.h>
 #include <errno.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <sys/wait.h>
 
-pid_t wlibc_waitpid_implementation(pid_t pid, int *wstatus, int options)
+pid_t wait_child(pid_t pid, int *wstatus, int options)
 {
+	NTSTATUS status;
+	PROCESS_BASIC_INFORMATION basic_info;
+	LARGE_INTEGER timeout = {0};
+	processinfo pinfo;
+
+	get_processinfo(pid, &pinfo);
+
+	if (pinfo.handle == INVALID_HANDLE_VALUE)
+	{
+		errno = ECHILD;
+		return -1;
+	}
+
+	status = NtWaitForSingleObject(pinfo.handle, FALSE, (options & WNOHANG) ? &timeout : NULL);
+	if (status != STATUS_SUCCESS)
+	{
+		if (status == STATUS_TIMEOUT) // WNOHANG
+		{
+			if (wstatus)
+			{
+				*wstatus = -1;
+			}
+
+			return 0;
+		}
+
+		map_ntstatus_to_errno(status);
+		return -1;
+	}
+
+	if (wstatus)
+	{
+		status = NtQueryInformationProcess(pinfo.handle, ProcessBasicInformation, &basic_info, sizeof(PROCESS_BASIC_INFORMATION), NULL);
+		if (status == STATUS_SUCCESS)
+		{
+			*wstatus = (int)basic_info.ExitStatus;
+		}
+	}
+
+	delete_child(pinfo.id);
+
+	return pid;
+}
+
+pid_t wait_all_children(int *wstatus, int options)
+{
+	NTSTATUS status;
+	PROCESS_BASIC_INFORMATION basic_info;
+	LARGE_INTEGER timeout = {0};
+	HANDLE child_handles[MAXIMUM_WAIT_OBJECTS] = {0};
+	DWORD child_pids[MAXIMUM_WAIT_OBJECTS] = {0};
+	ULONG count = 0;
+
+	// We can only wait for 64(MAXIMUM_WAIT_OBJECTS) children simultaneously at a time. Ignore the rest.
+	SHARED_LOCK_PROCESS_TABLE();
+	for (size_t i = 0; i < _wlibc_process_table_size; ++i)
+	{
+		if (_wlibc_process_table[i].handle != INVALID_HANDLE_VALUE)
+		{
+			child_handles[count] = _wlibc_process_table[i].handle;
+			child_pids[count] = _wlibc_process_table[i].id;
+			++count;
+		}
+	}
+	SHARED_UNLOCK_PROCESS_TABLE();
+
+	status = NtWaitForMultipleObjects(count, child_handles, WaitAny, FALSE, (options & WNOHANG) ? &timeout : NULL);
+
+	if (status == STATUS_TIMEOUT) // WNOHANG
+	{
+		if (wstatus)
+		{
+			*wstatus = -1;
+		}
+
+		return 0;
+	}
+
+	if (status < STATUS_WAIT_0 && status > STATUS_WAIT_63)
+	{
+		map_ntstatus_to_errno(status);
+		return -1;
+	}
+
+	// After this point status will be between 0 (STATUS_WAIT_0) and 63 (STATUS_WAIT_63).
+	if (wstatus)
+	{
+		status =
+			NtQueryInformationProcess(child_handles[status], ProcessBasicInformation, &basic_info, sizeof(PROCESS_BASIC_INFORMATION), NULL);
+		if (status == STATUS_SUCCESS)
+		{
+			*wstatus = (int)basic_info.ExitStatus;
+		}
+	}
+
+	delete_child(child_pids[status]);
+
+	return child_pids[status];
+}
+
+pid_t wlibc_waitpid(pid_t pid, int *wstatus, int options)
+{
+	pid_t result = -1;
+
 	if (pid < -1)
 	{
 		errno = ENOTSUP;
@@ -27,107 +132,16 @@ pid_t wlibc_waitpid_implementation(pid_t pid, int *wstatus, int options)
 		return -1;
 	}
 
-	if (pid == -1 || pid == 0) // Same thing for us (wait for all children)
-	{
-		DWORD child_count = get_child_process_count();
-		HANDLE *child_handles = (HANDLE *)malloc(sizeof(HANDLE) * child_count);
-
-		SHARED_LOCK_PROCESS_TABLE();
-		for (DWORD i = 0; i < child_count; i++)
-		{
-			child_handles[i] = _wlibc_process_table[i].process_handle;
-		}
-		SHARED_UNLOCK_PROCESS_TABLE();
-
-		DWORD wait_result = WaitForMultipleObjects(child_count, child_handles, FALSE, (options & WNOHANG) ? 0 : INFINITE);
-		if (wait_result == WAIT_FAILED)
-		{
-			map_doserror_to_errno(GetLastError());
-			free(child_handles);
-			return -1;
-		}
-		else if (wait_result >= WAIT_OBJECT_0 &&
-				 wait_result < WAIT_OBJECT_0 + child_count) // return code - WAIT_OBJECT_0 = array index of child_handles
-		{
-			DWORD child_exit_code;
-			if (!GetExitCodeProcess(child_handles[wait_result - WAIT_OBJECT_0], &child_exit_code))
-			{
-				map_doserror_to_errno(GetLastError());
-				free(child_handles);
-				return -1;
-			}
-
-			if (wstatus)
-			{
-				*wstatus = child_exit_code;
-			}
-			delete_child(child_handles[wait_result - WAIT_OBJECT_0]);
-			free(child_handles);
-			return pid;
-		}
-		else if (wait_result == WAIT_TIMEOUT) // WNOHANG
-		{
-			if (wstatus)
-			{
-				*wstatus = -1;
-			}
-			free(child_handles);
-			return 0;
-		}
-	}
-
 	if (pid > 0)
 	{
-		if (is_child(pid))
-		{
-			HANDLE child_handle = get_child_handle(pid);
-			DWORD wait_result = WaitForSingleObject(child_handle, (options & WNOHANG) ? 0 : INFINITE);
-			if (wait_result == WAIT_FAILED)
-			{
-				map_doserror_to_errno(GetLastError());
-				return -1;
-			}
-			else if (wait_result == WAIT_OBJECT_0) // child has exited
-			{
-				DWORD child_exit_code;
-				if (!GetExitCodeProcess(child_handle, &child_exit_code))
-				{
-					map_doserror_to_errno(GetLastError());
-					return -1;
-				}
-
-				if (wstatus)
-				{
-					*wstatus = child_exit_code;
-				}
-				delete_child(child_handle);
-				return pid;
-			}
-			else if (wait_result == WAIT_TIMEOUT) // WNOHANG
-			{
-				if (wstatus)
-				{
-					*wstatus = -1;
-				}
-				return 0;
-			}
-		}
-
-		else
-		{
-			errno = ECHILD;
-			return -1;
-		}
+		result = wait_child(pid, wstatus, options);
+	}
+	else if (pid == -1 || pid == 0) // Same thing for us (wait for all children)
+	{
+		result = wait_all_children(wstatus, options);
 	}
 
-	// Should be unreachable
-	return -1;
-}
-
-pid_t wlibc_waitpid(pid_t pid, int *wstatus, int options)
-{
-	pid_t _pid = wlibc_waitpid_implementation(pid, wstatus, options);
-	if (_pid > 0) // Not an error and when options is WNOHANG
+	if (result > 0) // Not an error and when options is WNOHANG
 	{
 		bool should_raise_SIGCHLD = true;
 
@@ -143,5 +157,5 @@ pid_t wlibc_waitpid(pid_t pid, int *wstatus, int options)
 			wlibc_raise(SIGCHLD);
 		}
 	}
-	return _pid;
+	return result;
 }

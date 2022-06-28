@@ -9,30 +9,27 @@
 #define WLIBC_SPAWN_INTERNAL_H
 
 #include <internal/nt.h>
-#include <stdbool.h>
 #include <sys/types.h>
 
-typedef struct _process_table
+typedef struct _processinfo
 {
-	HANDLE process_handle;
-	pid_t process_id;
-} process_table;
+	HANDLE handle;
+	DWORD id;
+} processinfo;
 
-extern process_table *_wlibc_process_table;
-extern pid_t _wlibc_process_table_size;
-extern pid_t _wlibc_child_process_count;
+extern processinfo *_wlibc_process_table;
+extern size_t _wlibc_process_table_size;
+extern size_t _wlibc_child_process_count;
 
 extern RTL_SRWLOCK _wlibc_process_table_srwlock;
 
 void process_init(void);
 void process_cleanup(void);
 
-bool is_child(pid_t pid);
-HANDLE get_child_handle(pid_t pid);
-unsigned int get_child_process_count();
+void get_processinfo(pid_t pid, processinfo *pinfo);
 
-void add_child(pid_t pid, HANDLE child);
-void delete_child(HANDLE process_handle);
+void add_child(DWORD id, HANDLE child);
+void delete_child(DWORD id);
 
 #define SHARED_LOCK_PROCESS_TABLE()      RtlAcquireSRWLockShared(&_wlibc_process_table_srwlock)
 #define SHARED_UNLOCK_PROCESS_TABLE()    RtlReleaseSRWLockShared(&_wlibc_process_table_srwlock)

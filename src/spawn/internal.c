@@ -9,9 +9,9 @@
 #include <internal/spawn.h>
 #include <stdlib.h>
 
-process_table *_wlibc_process_table = NULL;
-pid_t _wlibc_process_table_size = 0;
-pid_t _wlibc_child_process_count = 0;
+processinfo *_wlibc_process_table = NULL;
+size_t _wlibc_process_table_size = 0;
+size_t _wlibc_child_process_count = 0;
 
 RTL_SRWLOCK _wlibc_process_table_srwlock;
 
@@ -19,13 +19,13 @@ void process_init(void)
 {
 	RtlInitializeSRWLock(&_wlibc_process_table_srwlock);
 
-	_wlibc_process_table = (process_table *)malloc(sizeof(process_table) * 4);
+	_wlibc_process_table = (processinfo *)malloc(sizeof(processinfo) * 4);
 	_wlibc_process_table_size = 4;
 	_wlibc_child_process_count = 0;
-	for (int i = 0; i < _wlibc_process_table_size; i++)
+	for (size_t i = 0; i < _wlibc_process_table_size; i++)
 	{
-		_wlibc_process_table[i].process_id = -1;
-		_wlibc_process_table[i].process_handle = INVALID_HANDLE_VALUE;
+		_wlibc_process_table[i].id = 0;
+		_wlibc_process_table[i].handle = INVALID_HANDLE_VALUE;
 	}
 }
 
@@ -34,65 +34,37 @@ void process_cleanup(void)
 	free(_wlibc_process_table);
 }
 
-bool is_child(pid_t pid)
+void get_processinfo(pid_t pid, processinfo *pinfo)
 {
-	bool result = false;
+	pinfo->handle = INVALID_HANDLE_VALUE;
+	pinfo->id = 0;
 
 	SHARED_LOCK_PROCESS_TABLE();
 
-	for (pid_t i = 0; i < _wlibc_process_table_size; i++)
+	for (size_t i = 0; i < _wlibc_process_table_size; i++)
 	{
-		if (pid == _wlibc_process_table[i].process_id)
+		if ((DWORD)pid == _wlibc_process_table[i].id)
 		{
-			result = true;
+			pinfo->handle = _wlibc_process_table[i].handle;
+			pinfo->id = _wlibc_process_table[i].id;
 			break;
 		}
 	}
 
 	SHARED_UNLOCK_PROCESS_TABLE();
-
-	return result;
 }
 
-HANDLE get_child_handle(pid_t pid)
-{
-	HANDLE child = INVALID_HANDLE_VALUE;
-
-	SHARED_LOCK_PROCESS_TABLE();
-
-	for (pid_t i = 0; i < _wlibc_process_table_size; i++)
-	{
-		if (pid == _wlibc_process_table[i].process_id)
-		{
-			child = _wlibc_process_table[i].process_handle;
-			break;
-		}
-	}
-
-	SHARED_UNLOCK_PROCESS_TABLE();
-	return child;
-}
-
-unsigned int get_child_process_count()
-{
-	unsigned int child_count;
-	SHARED_LOCK_PROCESS_TABLE();
-	child_count = _wlibc_child_process_count;
-	SHARED_UNLOCK_PROCESS_TABLE();
-	return child_count;
-}
-
-void add_child(pid_t pid, HANDLE child)
+void add_child(DWORD id, HANDLE child)
 {
 	EXCLUSIVE_LOCK_PROCESS_TABLE();
 
-	pid_t i = 0;
+	size_t i = 0;
 	for (i = 0; i < _wlibc_process_table_size; i++)
 	{
-		if (_wlibc_process_table[i].process_id == -1)
+		if (_wlibc_process_table[i].id == 0)
 		{
-			_wlibc_process_table[i].process_id = pid;
-			_wlibc_process_table[i].process_handle = child;
+			_wlibc_process_table[i].handle = child;
+			_wlibc_process_table[i].id = id;
 			break;
 		}
 	}
@@ -100,18 +72,18 @@ void add_child(pid_t pid, HANDLE child)
 	// No more space in process table. Double it's size
 	if (i == _wlibc_process_table_size)
 	{
-		process_table *temp = (process_table *)malloc(sizeof(process_table) * _wlibc_process_table_size * 2);
-		memcpy(temp, _wlibc_process_table, sizeof(process_table) * _wlibc_process_table_size);
+		processinfo *temp = (processinfo *)malloc(sizeof(processinfo) * _wlibc_process_table_size * 2);
+		memcpy(temp, _wlibc_process_table, sizeof(processinfo) * _wlibc_process_table_size);
 		free(_wlibc_process_table);
 		_wlibc_process_table = temp;
 
-		_wlibc_process_table[_wlibc_process_table_size].process_id = pid;
-		_wlibc_process_table[_wlibc_process_table_size].process_handle = child;
+		_wlibc_process_table[_wlibc_process_table_size].id = id;
+		_wlibc_process_table[_wlibc_process_table_size].handle = child;
 
 		for (i = _wlibc_process_table_size + 1; i < 2 * _wlibc_process_table_size; i++)
 		{
-			_wlibc_process_table[i].process_id = -1;
-			_wlibc_process_table[i].process_handle = INVALID_HANDLE_VALUE;
+			_wlibc_process_table[i].handle = INVALID_HANDLE_VALUE;
+			_wlibc_process_table[i].id = 0;
 		}
 		_wlibc_process_table_size *= 2;
 	}
@@ -121,24 +93,24 @@ void add_child(pid_t pid, HANDLE child)
 	EXCLUSIVE_UNLOCK_PROCESS_TABLE();
 }
 
-void delete_child(HANDLE process_handle)
+void delete_child(DWORD id)
 {
 	EXCLUSIVE_LOCK_PROCESS_TABLE();
 
-	for (pid_t i = 0; i < _wlibc_child_process_count; i++)
+	for (size_t i = 0; i < _wlibc_child_process_count; i++)
 	{
-		if (process_handle == _wlibc_process_table[i].process_handle)
+		if (id == _wlibc_process_table[i].id)
 		{
-			_wlibc_process_table[i].process_id = -1;
-			_wlibc_process_table[i].process_handle = INVALID_HANDLE_VALUE;
+			_wlibc_process_table[i].handle = INVALID_HANDLE_VALUE;
+			_wlibc_process_table[i].id = 0;
 
 			/* We don't care about the order in which children are spawned. To maintain a continuous array
 			   of alive children, do a swap with the exited and waited child with a free slot in the array.
 			*/
-			pid_t j = i + 2;
+			size_t j = i + 2;
 			for (j = i + 2; j < _wlibc_process_table_size; j++)
 			{
-				if (_wlibc_process_table[j].process_handle == INVALID_HANDLE_VALUE)
+				if (_wlibc_process_table[j].handle == INVALID_HANDLE_VALUE)
 				{
 					break;
 				}
@@ -147,8 +119,8 @@ void delete_child(HANDLE process_handle)
 			if (j != i)
 			{
 				_wlibc_process_table[i] = _wlibc_process_table[j - 1];
-				_wlibc_process_table[j - 1].process_id = -1;
-				_wlibc_process_table[j - 1].process_handle = INVALID_HANDLE_VALUE;
+				_wlibc_process_table[j - 1].handle = INVALID_HANDLE_VALUE;
+				_wlibc_process_table[j - 1].id = 0;
 			}
 
 			break;
