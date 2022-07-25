@@ -9,37 +9,78 @@
 #include <internal/validate.h>
 #include <signal.h>
 #include <errno.h>
-#include <stdbool.h>
 
-#undef signal
-
-int wlibc_sigaction(int sig, const struct sigaction *new_action, struct sigaction *old_action)
+BOOL console_handler(DWORD ctrl)
 {
-	VALIDATE_PTR(new_action, EINVAL, -1);
-	VALIDATE_SIGNAL(sig);
+	int status = 0;
 
-	_crt_signal_t old_handler;
-
-	old_handler = wlibc_signal(sig, new_action->sa_handler);
-
-	if (old_handler == SIG_ERR)
+	if (ctrl == CTRL_C_EVENT)
 	{
-		return -1;
+		status = wlibc_raise(SIGINT);
+	}
+	else if (ctrl == CTRL_BREAK_EVENT)
+	{
+		status = wlibc_raise(SIGBREAK);
 	}
 
-	EnterCriticalSection(&_wlibc_signal_critical);
+	// Only return false if the execution of any of the signal handlers fail.
+	if (status != 0)
+	{
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
+int do_sigaction(int sig, const struct sigaction *new_action, struct sigaction *old_action)
+{
+
+	int status = 0;
+	siginfo sinfo;
 
 	if (old_action)
 	{
-		old_action->sa_flags = _wlibc_signal_flags[sig];
-		old_action->sa_mask = _wlibc_signal_mask[sig];
-		old_action->sa_handler = old_handler;
+		get_siginfo(sig, &sinfo);
+
+		old_action->sa_handler = sinfo.action;
+		old_action->sa_flags = sinfo.flags;
+		old_action->sa_mask = sinfo.mask;
 	}
 
-	_wlibc_signal_mask[sig] = new_action->sa_mask;
-	_wlibc_signal_flags[sig] = new_action->sa_flags;
+	if (sig == SIGKILL || sig == SIGSTOP)
+	{
+		errno = EINVAL;
+		return -1;
+	}
 
-	LeaveCriticalSection(&_wlibc_signal_critical);
+	if (new_action == NULL)
+	{
+		return 0;
+	}
 
-	return 0;
+	// Console interrupts require special handling.
+	if (sig == SIGINT || sig == SIGTSTP)
+	{
+		if (SetConsoleCtrlHandler(console_handler, TRUE) == 0)
+		{
+			errno = EINVAL;
+			status = -1;
+		}
+	}
+
+	// Update the signal handling information in the signal table.
+	sinfo.action = new_action->sa_handler;
+	sinfo.flags = new_action->sa_flags;
+	sinfo.mask = new_action->sa_mask;
+
+	set_siginfo(sig, &sinfo);
+
+	return status;
+}
+
+int wlibc_sigaction(int sig, const struct sigaction *new_action, struct sigaction *old_action)
+{
+	VALIDATE_SIGNAL(sig);
+
+	return do_sigaction(sig, new_action, old_action);
 }

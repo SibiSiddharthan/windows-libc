@@ -19,6 +19,44 @@ extern int main(int argc, char **argv);
 // From errno/program.c
 void init_program_name(void);
 
+int exception_handler(DWORD code)
+{
+	switch (code)
+	{
+	// SIGSEGV
+	case STATUS_ACCESS_VIOLATION:
+	case STATUS_DATATYPE_MISALIGNMENT:
+	case STATUS_ARRAY_BOUNDS_EXCEEDED:
+	case STATUS_GUARD_PAGE_VIOLATION:
+	case STATUS_IN_PAGE_ERROR:
+		wlibc_raise(SIGSEGV);
+		return EXCEPTION_CONTINUE_EXECUTION;
+
+	// SIGFPE
+	case STATUS_FLOAT_DENORMAL_OPERAND:
+	case STATUS_FLOAT_DIVIDE_BY_ZERO:
+	case STATUS_FLOAT_INEXACT_RESULT:
+	case STATUS_FLOAT_INVALID_OPERATION:
+	case STATUS_FLOAT_OVERFLOW:
+	case STATUS_FLOAT_STACK_CHECK:
+	case STATUS_FLOAT_UNDERFLOW:
+	case STATUS_INTEGER_DIVIDE_BY_ZERO:
+	case STATUS_INTEGER_OVERFLOW:
+		wlibc_raise(SIGFPE);
+		return EXCEPTION_CONTINUE_EXECUTION;
+
+	// SIGILL
+	case STATUS_ILLEGAL_INSTRUCTION:
+	case STATUS_PRIVILEGED_INSTRUCTION:
+	case STATUS_STACK_OVERFLOW:
+		wlibc_raise(SIGILL);
+		return EXCEPTION_CONTINUE_EXECUTION;
+
+	default:
+		return EXCEPTION_CONTINUE_SEARCH;
+	}
+}
+
 int wmain(int argc, wchar_t **wargv)
 {
 	char **argv = NULL;
@@ -64,7 +102,16 @@ int wmain(int argc, wchar_t **wargv)
 	init_program_name();
 #endif
 
-	int exit_status = main(argc, argv);
+	int exit_status = 0;
+
+	__try
+	{
+		exit_status = main(argc, argv);
+	}
+	__except (exception_handler(GetExceptionCode()))
+	{
+		;
+	}
 
 	if (argc)
 	{

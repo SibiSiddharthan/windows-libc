@@ -9,49 +9,42 @@
 #include <internal/signal.h>
 #include <errno.h>
 
-#undef signal
-// MSVC signal
-extern _crt_signal_t __cdecl signal(int sig, _crt_signal_t handler);
+int do_sigaction(int sig, const struct sigaction *new_action, struct sigaction *old_action);
 
-_crt_signal_t wlibc_signal_internal(int sig, _crt_signal_t handler)
+signal_t wlibc_signal(int sig, signal_t handler)
 {
-	if(handler == SIG_GET)
-	{
-		_crt_signal_t action = get_action(sig);
-		return action;
-	}
-	_crt_signal_t old_action = set_action(sig, handler);
-	return old_action;
-}
+	int status;
+	struct sigaction new_action, old_action;
 
-_crt_signal_t wlibc_signal(int sig, _crt_signal_t handler)
-{
-	switch (sig)
+	if (sig <= 0 || sig >= NSIG)
 	{
-	case SIGHUP:
-	case SIGQUIT:
-	case SIGTRAP:
-	case SIGUSR1:
-	case SIGUSR2:
-	case SIGPIPE:
-	case SIGALRM:
-	case SIGSTKFLT:
-	case SIGCHLD:
-	case SIGCONT:
-	case SIGTSTP:
-		return wlibc_signal_internal(sig, handler);
-	case SIGBUS:
-		return signal(SIGSEGV, handler);
-	case SIGINT:
-	case SIGILL:
-	case SIGFPE:
-	case SIGSEGV:
-	case SIGTERM:
-	case SIGBREAK:
-	case SIGABRT:
-		return signal(sig, handler); // call msvcrt signal
-	default:
 		errno = EINVAL;
 		return SIG_ERR;
 	}
+
+	if (handler == SIG_ERR)
+	{
+		errno = EINVAL;
+		return SIG_ERR;
+	}
+
+	if (handler == SIG_GET)
+	{
+		// This will not fail.
+		do_sigaction(sig, NULL, &old_action);
+		return old_action.sa_handler;
+	}
+
+	new_action.sa_handler = handler;
+	new_action.sa_mask = 1u << sig; // Always add the signal to the mask.
+
+	status = do_sigaction(sig, &new_action, &old_action);
+
+	if (status != 0)
+	{
+		return SIG_ERR;
+	}
+
+	return old_action.sa_handler;
+
 }

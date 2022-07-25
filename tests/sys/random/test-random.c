@@ -70,7 +70,7 @@ int main()
 
 	// In CI this test sometimes fails with 'Illegal Instruction'.
 	// Handle this exception and skip this test if it fails.
-	signal(SIGILL, (_crt_signal_t)SIGILL_handler);
+	signal(SIGILL, (signal_t)SIGILL_handler);
 
 	TEST(test_getrandom());
 	TEST(test_getentropy());

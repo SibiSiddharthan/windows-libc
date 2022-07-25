@@ -6,6 +6,7 @@
 ]]
 
 wlibc_add_tests(
+segmentation-fault
 sigaction
 signal
 sigprocmask)

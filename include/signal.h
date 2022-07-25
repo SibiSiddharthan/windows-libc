@@ -12,53 +12,70 @@
 
 _WLIBC_BEGIN_DECLS
 
-typedef void(__cdecl *_crt_signal_t)(int);
+typedef void(__cdecl *signal_t)(int);
 typedef int sig_atomic_t;
-typedef int sigset_t;
+typedef unsigned int sigset_t;
 
 struct sigaction
 {
-	_crt_signal_t sa_handler;
+	signal_t sa_handler;
 	// void (*sa_sigaction)(int, siginfo_t *, void *); Unsupported
 	sigset_t sa_mask;
 	int sa_flags;
 	void (*sa_restorer)(void); // Not intended for public use. See POSIX doc
 };
 
-#define SIGHUP    1
-#define SIGINT    2 // Interrupt
-#define SIGQUIT   3
-#define SIGILL    4 // Illegal instruction
-#define SIGTRAP   5
-#define SIGABRT   6
-#define SIGBUS    7  // Same action as SIGSEGV
-#define SIGFPE    8  // floating point exception
-#define SIGKILL   9  // Call abort always
-#define SIGUSR1   10 // User defined signal
+#define SIGHUP    1  // Hangup
+#define SIGINT    2  // Interrupt
+#define SIGQUIT   3  // Quit
+#define SIGILL    4  // Illegal instruction
+#define SIGTRAP   5  // Trap
+#define SIGABRT   6  // Abnormal termination
+#define SIGBUS    7  // Bus error
+#define SIGFPE    8  // Floating point exception
+#define SIGKILL   9  // Kill
+#define SIGUSR1   10 // User defined signal 1
 #define SIGSEGV   11 // Segment violation
-#define SIGUSR2   12 // User defined signal
-#define SIGPIPE   13
-#define SIGALRM   14
-#define SIGTERM   15 // Termination
-#define SIGSTKFLT 16 // Unused
-#define SIGCHLD   17
-#define SIGCLD    17 // Same as SIGCHLD
-#define SIGCONT   18
-#define SIGSTOP   19
-#define SIGTSTP   20 // Unsupported
-#define SIGTTIN   21 // Ctrl-Break sequence
-#define SIGBREAK  SIGTTIN
+#define SIGUSR2   12 // User defined signal 2
+#define SIGPIPE   13 // Broken pipe
+#define SIGALRM   14 // Alarm clock
+#define SIGTERM   15 // Terminate
+#define SIGSTKFLT 16 // Stack fault (Obsolete, Unsupported)
+#define SIGCHLD   17 // Child terminated or stopped
+#define SIGCONT   18 // Continue
+#define SIGTTIN   19 // Background read from control terminal (Unsupported)
+#define SIGTTOU   20 // Background write to control terminal (Unsupported)
+#define SIGTSTP   21 // Keyboard stop
+#define SIGSTOP   22 // Stop
+#define SIGURG    23 // Urgent data is available at a socket
+#define SIGXCPU   24 // CPU time limit exceeded
+#define SIGXFSZ   25 // File size limit exceeded
+#define SIGVTALRM 26 // Virtual timer expired
+#define SIGPROF   27 // Profiling timer expired
+#define SIGWINCH  28 // Window size change
+#define SIGPOLL   29 // Pollable event
+#define SIGPWR    30 // Power failure imminent
+#define SIGSYS    31 // Bad syscall
 
-#define NSIG 22 // Biggest signal number + 1
+// Compatibility names
+#define SIGIO    SIGPOLL
+#define SIGIOT   SIGABRT
+#define SIGCLD   SIGCHLD
+#define SIGBREAK SIGTSTP // Ctrl-Break sequence
+
+#define NSIG 32 // Biggest signal number + 1
 
 // Signal action codes
-#define SIG_ERR ((_crt_signal_t)-1) // Signal error value
-#define SIG_DFL ((_crt_signal_t)0)  // Default signal action
-#define SIG_IGN ((_crt_signal_t)1)  // Ignore signal
-#define SIG_GET ((_crt_signal_t)2)  // Return current value
-#define SIG_SGE ((_crt_signal_t)3)  // Signal error
-#define SIG_ACK ((_crt_signal_t)4)  // Acknowledge
-#define SIG_DIE ((_crt_signal_t)5)  // Terminate process
+#define SIG_ERR ((signal_t)-1) // Signal error value
+#define SIG_DFL ((signal_t)0)  // Default signal action
+#define SIG_IGN ((signal_t)1)  // Ignore signal
+#define SIG_GET ((signal_t)2)  // Return current value
+// Unsupported signal codes
+#if 0
+#	define SIG_SGE ((_crt_signal_t)3) // Signal error
+#	define SIG_ACK ((_crt_signal_t)4) // Acknowledge
+#	define SIG_DIE ((_crt_signal_t)5) // Terminate process
+#endif
 
 // Values for the 'how' argument to sigprocmask.
 #define SIG_BLOCK   0 // Block signals
@@ -83,11 +100,19 @@ struct sigaction
 #define SA_ONESHOT SA_RESETHAND
 #define SA_STACK   SA_ONSTACK
 
-#define raise wlibc_raise
 WLIBC_API int wlibc_raise(int sig);
 
-#define signal wlibc_signal
-WLIBC_API _crt_signal_t wlibc_signal(int sig, _crt_signal_t handler);
+WLIBC_INLINE int raise(int sig)
+{
+	return wlibc_raise(sig);
+}
+
+WLIBC_API signal_t wlibc_signal(int sig, signal_t handler);
+
+WLIBC_INLINE signal_t signal(int sig, signal_t handler)
+{
+	return wlibc_signal(sig, handler);
+}
 
 // Signal blocking, unblocking machinery
 WLIBC_API int wlibc_sigemptyset(sigset_t *set);          // Initialize signal set

@@ -12,17 +12,24 @@
 #include <internal/validate.h>
 #include <signal.h>
 
-extern CRITICAL_SECTION _wlibc_signal_critical;
+typedef struct _siginfo
+{
+	signal_t action;
+	int flags;
+	int mask;
+} siginfo;
 
-extern _crt_signal_t _wlibc_signal_table[NSIG];
-extern int _wlibc_signal_flags[NSIG];
-extern int _wlibc_signal_mask[NSIG];
+extern RTL_CRITICAL_SECTION _wlibc_signal_critical;
+extern siginfo _wlibc_signal_table[NSIG];
 
 void signal_init(void);
 void signal_cleanup(void);
 
-_crt_signal_t get_action(int signum);
-_crt_signal_t set_action(int signum, _crt_signal_t action); // return the old action
+void get_siginfo(int sig, siginfo *sinfo);
+void set_siginfo(int sig, const siginfo *sinfo);
+
+#define LOCK_SIGNAL_TABLE()   RtlEnterCriticalSection(&_wlibc_signal_critical)
+#define UNLOCK_SIGNAL_TABLE() RtlLeaveCriticalSection(&_wlibc_signal_critical)
 
 #define VALIDATE_SIGSET(sigset) VALIDATE_PTR(sigset, EINVAL, -1)
 
