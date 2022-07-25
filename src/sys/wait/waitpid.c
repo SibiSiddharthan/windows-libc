@@ -10,7 +10,6 @@
 #include <internal/signal.h>
 #include <internal/spawn.h>
 #include <errno.h>
-#include <stdbool.h>
 #include <stdlib.h>
 #include <sys/wait.h>
 
@@ -34,11 +33,7 @@ pid_t wait_child(pid_t pid, int *wstatus, int options)
 	{
 		if (status == STATUS_TIMEOUT) // WNOHANG
 		{
-			if (wstatus)
-			{
-				*wstatus = -1;
-			}
-
+			*wstatus = -1;
 			return 0;
 		}
 
@@ -46,13 +41,10 @@ pid_t wait_child(pid_t pid, int *wstatus, int options)
 		return -1;
 	}
 
-	if (wstatus)
+	status = NtQueryInformationProcess(pinfo.handle, ProcessBasicInformation, &basic_info, sizeof(PROCESS_BASIC_INFORMATION), NULL);
+	if (status == STATUS_SUCCESS)
 	{
-		status = NtQueryInformationProcess(pinfo.handle, ProcessBasicInformation, &basic_info, sizeof(PROCESS_BASIC_INFORMATION), NULL);
-		if (status == STATUS_SUCCESS)
-		{
-			*wstatus = (int)basic_info.ExitStatus;
-		}
+		*wstatus = (int)basic_info.ExitStatus;
 	}
 
 	delete_child(pinfo.id);
@@ -101,14 +93,11 @@ pid_t wait_all_children(int *wstatus, int options)
 	}
 
 	// After this point status will be between 0 (STATUS_WAIT_0) and 63 (STATUS_WAIT_63).
-	if (wstatus)
+	status =
+		NtQueryInformationProcess(child_handles[status], ProcessBasicInformation, &basic_info, sizeof(PROCESS_BASIC_INFORMATION), NULL);
+	if (status == STATUS_SUCCESS)
 	{
-		status =
-			NtQueryInformationProcess(child_handles[status], ProcessBasicInformation, &basic_info, sizeof(PROCESS_BASIC_INFORMATION), NULL);
-		if (status == STATUS_SUCCESS)
-		{
-			*wstatus = (int)basic_info.ExitStatus;
-		}
+		*wstatus = (int)basic_info.ExitStatus;
 	}
 
 	delete_child(child_pids[status]);
@@ -118,7 +107,9 @@ pid_t wait_all_children(int *wstatus, int options)
 
 pid_t wlibc_waitpid(pid_t pid, int *wstatus, int options)
 {
-	pid_t result = -1;
+	pid_t child = -1;
+	int exit_code = 0;
+	siginfo sinfo;
 
 	if (pid < -1)
 	{
@@ -134,28 +125,31 @@ pid_t wlibc_waitpid(pid_t pid, int *wstatus, int options)
 
 	if (pid > 0)
 	{
-		result = wait_child(pid, wstatus, options);
+		child = wait_child(pid, &exit_code, options);
 	}
 	else if (pid == -1 || pid == 0) // Same thing for us (wait for all children)
 	{
-		result = wait_all_children(wstatus, options);
+		child = wait_all_children(&exit_code, options);
 	}
 
-	if (result > 0) // Not an error and when options is WNOHANG
+	if (wstatus)
 	{
-		bool should_raise_SIGCHLD = true;
+		*wstatus = exit_code;
+	}
 
-		EnterCriticalSection(&_wlibc_signal_critical);
-		if (!(_wlibc_signal_flags[SIGCHLD] & SA_NOCLDSTOP))
+	if (child > 0) // Not an error and when options is WNOHANG
+	{
+		exit_code -= 128;
+		if (exit_code == SIGCONT || exit_code == SIGTTIN || exit_code == SIGTTOU || exit_code == SIGTSTP || exit_code == SIGSTOP)
 		{
-			should_raise_SIGCHLD = false;
-		}
-		LeaveCriticalSection(&_wlibc_signal_critical);
+			get_siginfo(SIGCHLD, &sinfo);
 
-		if (should_raise_SIGCHLD)
-		{
-			wlibc_raise(SIGCHLD);
+			if ((sinfo.flags & SA_NOCLDSTOP) == 0)
+			{
+				wlibc_raise(SIGCHLD);
+			}
 		}
 	}
-	return result;
+
+	return child;
 }
