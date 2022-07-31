@@ -9,6 +9,7 @@ wlibc_add_tests(
 access
 close
 chdir
+chown
 dup
 getcwd
 io

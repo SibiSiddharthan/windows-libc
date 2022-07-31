@@ -73,6 +73,9 @@ void map_ntstatus_to_errno(NTSTATUS error)
 	case STATUS_ACCESS_DENIED:
 	case STATUS_SHARING_VIOLATION:
 	case STATUS_SECTION_PROTECTION:
+	// This status is returned when a user with insufficient permissions tries to transfer
+	// ownership of an object to a higher privileged user.
+	case STATUS_INVALID_OWNER: 
 		errno = EACCES;
 		break;
 	case STATUS_CANNOT_DELETE:
