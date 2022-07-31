@@ -13,11 +13,17 @@ char *program_invocation_short_name = NULL;
 
 void init_program_name(void)
 {
+	NTSTATUS status;
 	UTF8_STRING u8_program;
 
 	// Fetch path name from RTL_USER_PROCESS_PARAMETERS.
 	// This will be freed automatically during program termination.
-	RtlUnicodeStringToUTF8String(&u8_program, &NtCurrentPeb()->ProcessParameters->ImagePathName, TRUE);
+	status = RtlUnicodeStringToUTF8String(&u8_program, &NtCurrentPeb()->ProcessParameters->ImagePathName, TRUE);
+	if(status != STATUS_SUCCESS)
+	{
+		// Error due to insufficient memory.
+		return;
+	}
 
 	// Convert back slashes to forward slashes.
 	int last_slash = 0;

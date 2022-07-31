@@ -7,6 +7,7 @@
 
 #include <internal/nt.h>
 #include <internal/fcntl.h>
+#include <internal/error.h>
 #include <dlfcn.h>
 #include <errno.h>
 
@@ -21,7 +22,12 @@ void *wlibc_dlopen(const char *filename, int flags)
 	UNREFERENCED_PARAMETER(flags);
 
 	RtlInitUTF8String(&u8_image, filename);
-	RtlUTF8StringToUnicodeString(&u16_image, &u8_image, TRUE);
+	status = RtlUTF8StringToUnicodeString(&u16_image, &u8_image, TRUE);
+	if (status != STATUS_SUCCESS)
+	{
+		map_ntstatus_to_errno(status);
+		return NULL;
+	}
 
 	status = LdrLoadDll(NULL, NULL, &u16_image, &handle);
 	if (status != STATUS_SUCCESS)
