@@ -72,10 +72,23 @@ struct dirent *do_readdir(DIR *dirstream, struct dirent *entry)
 	u16_path.MaximumLength = (USHORT)direntry->FileNameLength;
 	u16_path.Buffer = direntry->FileName;
 
-	RtlUnicodeStringToUTF8String(&u8_path, &u16_path, TRUE);
-	memcpy(entry->d_name, u8_path.Buffer, u8_path.MaximumLength);
-	entry->d_namlen = (uint8_t)u8_path.Length; // This does not include the NULL character.
-	RtlFreeUTF8String(&u8_path);
+	u8_path.Buffer = entry->d_name;
+	u8_path.Length = 0;
+	u8_path.MaximumLength = 260;
+
+	status = RtlUnicodeStringToUTF8String(&u8_path, &u16_path, FALSE);
+
+	if (status == STATUS_SUCCESS)
+	{
+		memcpy(entry->d_name, u8_path.Buffer, u8_path.MaximumLength);
+		entry->d_namlen = (uint8_t)u8_path.Length; // This does not include the NULL character.
+	}
+	else
+	{
+		// Converting the UTF-16 name to UTF-8 has failed. Treat as if the entry has no name.
+		// This really should never happen.
+		entry->d_namlen = 0;
+	}
 
 	dirstream->offset += direntry->NextEntryOffset;
 	// Each entry is aligned to a 8 byte boundary, except the last one

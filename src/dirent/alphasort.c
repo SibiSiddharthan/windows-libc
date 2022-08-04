@@ -7,7 +7,6 @@
 
 #include <dirent.h>
 #include <string.h>
-#include <wchar.h>
 
 int wlibc_alphasort(const struct dirent **e1, const struct dirent **e2)
 {

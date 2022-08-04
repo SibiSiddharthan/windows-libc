@@ -12,18 +12,24 @@
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <stdlib.h>
 
-static void initialize_dirstream(DIR **dirstream, int fd)
+static DIR *initialize_dirstream(int fd)
 {
-	*dirstream = (DIR *)malloc(sizeof(DIR));
-	(*dirstream)->magic = DIR_STREAM_MAGIC;
-	(*dirstream)->fd = fd;
-	(*dirstream)->buffer = malloc(DIRENT_DIR_BUFFER_SIZE);
-	(*dirstream)->offset = 0;
-	(*dirstream)->read_data = 0;
-	(*dirstream)->received_data = 0;
-	RtlInitializeCriticalSection(&((*dirstream)->critical));
+	DIR *dirstream = (DIR *)RtlAllocateHeap(NtCurrentProcessHeap(), HEAP_ZERO_MEMORY, sizeof(DIR) + DIRENT_DIR_BUFFER_SIZE);
+
+	if (dirstream == NULL)
+	{
+		errno = ENOMEM;
+		return NULL;
+	}
+
+	dirstream->magic = DIR_STREAM_MAGIC;
+	dirstream->fd = fd;
+	dirstream->buffer = (void *)((char *)dirstream + sizeof(DIR));
+
+	RtlInitializeCriticalSection(&(dirstream->critical));
+
+	return dirstream;
 }
 
 DIR *wlibc_opendir(const char *path)
@@ -40,8 +46,7 @@ DIR *wlibc_opendir(const char *path)
 
 	int fd = register_to_fd_table(handle, DIRECTORY_HANDLE, O_RDONLY | O_CLOEXEC | O_DIRECTORY);
 
-	DIR *dirstream = NULL;
-	initialize_dirstream(&dirstream, fd);
+	DIR *dirstream = initialize_dirstream(fd);
 
 	return dirstream;
 }
@@ -55,8 +60,7 @@ DIR *wlibc_fdopendir(int fd)
 		return NULL;
 	}
 
-	DIR *dirstream = NULL;
-	initialize_dirstream(&dirstream, fd);
+	DIR *dirstream = initialize_dirstream(fd);
 
 	return dirstream;
 }

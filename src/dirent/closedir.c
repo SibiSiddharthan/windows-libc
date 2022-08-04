@@ -10,7 +10,6 @@
 #include <internal/dirent.h>
 #include <internal/fcntl.h>
 #include <dirent.h>
-#include <stdlib.h>
 
 int wlibc_closedir(DIR *dirstream)
 {
@@ -18,10 +17,13 @@ int wlibc_closedir(DIR *dirstream)
 
 	if (!close_fd(dirstream->fd))
 	{
-		// Free the memory of DIR and it's components
-		free(dirstream->buffer);
+		// Free the memory of DIR.
 		RtlDeleteCriticalSection(&(dirstream->critical));
-		free(dirstream);
+		if (RtlFreeHeap(NtCurrentProcessHeap(), 0, dirstream) == FALSE)
+		{
+			return -1;
+		}
+
 		return 0;
 	}
 	else

@@ -11,8 +11,6 @@
 #include <dirent.h>
 #include <stdlib.h>
 
-void fill_dir_buffer(DIR *dirstream);
-
 void wlibc_seekdir(DIR *dirstream, long long int pos)
 {
 	VALIDATE_DIR_STREAM(dirstream, );
