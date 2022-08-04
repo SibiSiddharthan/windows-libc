@@ -60,9 +60,7 @@ int do_dup(int oldfd, int newfd, int flags)
 			}
 		}
 
-		insert_into_fd_table(newfd, target, oldfd_info.type, oldfd_info.flags | flags);
-
-		return newfd;
+		return insert_into_fd_table(newfd, target, oldfd_info.type, oldfd_info.flags | flags);
 	}
 }
 

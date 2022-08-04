@@ -10,7 +10,6 @@
 #include <internal/fcntl.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <stdlib.h>
 
 fdinfo *_wlibc_fd_table = NULL;
 size_t _wlibc_fd_table_size = 0;
@@ -20,7 +19,7 @@ RTL_SRWLOCK _wlibc_fd_table_srwlock;
 // Declaration of static functions
 static int internal_insert_fd(int index, HANDLE _h, handle_t _type, int _flags);
 static int register_to_fd_table_internal(HANDLE _h, handle_t _type, int _flags);
-static void insert_into_fd_table_internal(int _fd, HANDLE _h, handle_t _type, int _flags);
+static int insert_into_fd_table_internal(int _fd, HANDLE _h, handle_t _type, int _flags);
 static void unregister_from_fd_table_internal(HANDLE _h);
 static int get_fd_internal(HANDLE _h);
 static int close_fd_internal(int _fd);
@@ -260,7 +259,14 @@ void init_fd_table(void)
 	{
 		_wlibc_fd_table_size *= 2;
 	}
-	_wlibc_fd_table = (fdinfo *)malloc(sizeof(fdinfo) * _wlibc_fd_table_size);
+
+	_wlibc_fd_table = (fdinfo *)RtlAllocateHeap(NtCurrentProcessHeap(), 0, sizeof(fdinfo) * _wlibc_fd_table_size);
+
+	// Exit the process if the initialization routine fails.
+	if (_wlibc_fd_table == NULL)
+	{
+		RtlExitUserProcess(STATUS_NO_MEMORY);
+	}
 
 	// Mark all handles as invalid at the start.
 	for (size_t i = 0; i < _wlibc_fd_table_size; ++i)
@@ -325,7 +331,7 @@ void init_fd_table(void)
 // Not worrying about open handles (not closed by the user)
 void cleanup_fd_table(void)
 {
-	free(_wlibc_fd_table);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, _wlibc_fd_table);
 }
 
 ///////////////////////////////////////
@@ -379,9 +385,13 @@ static int register_to_fd_table_internal(HANDLE _h, handle_t _type, int _flags)
 
 	else // double the table size
 	{
-		fdinfo *temp = (fdinfo *)malloc(sizeof(fdinfo) * _wlibc_fd_table_size * 2);
-		memcpy(temp, _wlibc_fd_table, sizeof(fdinfo) * _wlibc_fd_table_size);
-		free(_wlibc_fd_table);
+		void *temp = (fdinfo *)RtlReAllocateHeap(NtCurrentProcessHeap(), 0, _wlibc_fd_table, sizeof(fdinfo) * _wlibc_fd_table_size * 2);
+		if (temp == NULL)
+		{
+			errno = ENOMEM;
+			return -1;
+		}
+
 		_wlibc_fd_table = temp;
 
 		fd = internal_insert_fd((int)_wlibc_fd_table_size, _h, _type, _flags);
@@ -405,14 +415,20 @@ int register_to_fd_table(HANDLE _h, handle_t _type, int _flags)
 	return fd;
 }
 
-static void insert_into_fd_table_internal(int _fd, HANDLE _h, handle_t _type, int _flags)
+static int insert_into_fd_table_internal(int _fd, HANDLE _h, handle_t _type, int _flags)
 {
 	// grow the table
 	if (_fd >= (int)_wlibc_fd_table_size)
 	{
-		fdinfo *temp = (fdinfo *)malloc(sizeof(fdinfo) * _fd * 2); // Allocate double the requested fd number
-		memcpy(temp, _wlibc_fd_table, sizeof(fdinfo) * _wlibc_fd_table_size);
-		free(_wlibc_fd_table);
+		void *temp = (fdinfo *)RtlReAllocateHeap(NtCurrentProcessHeap(), 0, _wlibc_fd_table,
+												 sizeof(fdinfo) * _fd * 2); // Allocate double the requested fd number
+
+		if (temp == NULL)
+		{
+			errno = ENOMEM;
+			return -1;
+		}
+
 		_wlibc_fd_table = temp;
 
 		for (int i = (int)_wlibc_fd_table_size; i < _fd * 2; ++i)
@@ -424,13 +440,16 @@ static void insert_into_fd_table_internal(int _fd, HANDLE _h, handle_t _type, in
 	}
 
 	internal_insert_fd(_fd, _h, _type, _flags);
+	return _fd;
 }
 
-void insert_into_fd_table(int _fd, HANDLE _h, handle_t _type, int _flags)
+int insert_into_fd_table(int _fd, HANDLE _h, handle_t _type, int _flags)
 {
+	int fd;
 	EXCLUSIVE_LOCK_FD_TABLE();
-	insert_into_fd_table_internal(_fd, _h, _type, _flags);
+	fd = insert_into_fd_table_internal(_fd, _h, _type, _flags);
 	EXCLUSIVE_UNLOCK_FD_TABLE();
+	return fd;
 }
 
 static void unregister_from_fd_table_internal(HANDLE _h)

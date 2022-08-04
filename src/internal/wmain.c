@@ -61,15 +61,31 @@ int wmain(int argc, wchar_t **wargv)
 {
 	char **argv = NULL;
 	UTF8_STRING *u8_args = NULL;
+
 	if (argc)
 	{
-		argv = (char **)malloc(sizeof(char *) * (argc + 1)); // argv ends with NULL
-		u8_args = (UTF8_STRING *)malloc(sizeof(UTF8_STRING) * argc);
+		argv = (char **)RtlAllocateHeap(NtCurrentProcessHeap(), 0, sizeof(char *) * (argc + 1)); // argv ends with NULL
+		u8_args = (UTF8_STRING *)RtlAllocateHeap(NtCurrentProcessHeap(), 0, sizeof(UTF8_STRING) * argc);
+
+		// Exit the process if we cannot create argv.
+		if(argv == NULL || u8_args == NULL)
+		{
+			RtlExitUserProcess(STATUS_NO_MEMORY);
+		}
+
 		for (int i = 0; i < argc; i++)
 		{
+			NTSTATUS status;
 			UNICODE_STRING u16_arg;
 			RtlInitUnicodeString(&u16_arg, wargv[i]);
-			RtlUnicodeStringToUTF8String(&u8_args[i], &u16_arg, TRUE);
+			status = RtlUnicodeStringToUTF8String(&u8_args[i], &u16_arg, TRUE);
+
+			// Exit the process if we cannot create argv.
+			if (status != STATUS_SUCCESS)
+			{
+				RtlExitUserProcess(status);
+			}
+
 			argv[i] = u8_args[i].Buffer;
 		}
 		argv[argc] = NULL;
@@ -119,7 +135,8 @@ int wmain(int argc, wchar_t **wargv)
 		{
 			RtlFreeUTF8String(&u8_args[i]);
 		}
-		free(argv);
+		RtlFreeHeap(NtCurrentProcessHeap(), 0, u8_args);
+		RtlFreeHeap(NtCurrentProcessHeap(), 0, argv);
 	}
 
 	return exit_status;

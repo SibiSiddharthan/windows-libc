@@ -12,7 +12,6 @@
 #include <internal/thread.h>
 #include <internal/validate.h>
 #include <errno.h>
-#include <stdlib.h>
 #include <thread.h>
 
 #define VALIDATE_THREAD(thread)           VALIDATE_PTR(thread, EINVAL, -1)
@@ -65,9 +64,14 @@ int wlibc_thread_create(thread_t *thread, thread_attr_t *attributes, thread_star
 		}
 	}
 
-	*thread = malloc(sizeof(threadinfo));
+	*thread = RtlAllocateHeap(NtCurrentProcessHeap(), HEAP_ZERO_MEMORY, sizeof(threadinfo));
 	tinfo = (threadinfo *)*thread;
-	memset(tinfo, 0, sizeof(threadinfo));
+
+	if (*thread == NULL)
+	{
+		errno = ENOMEM;
+		return -1;
+	}
 
 	tinfo->routine = routine;
 	tinfo->args = arg;
@@ -185,7 +189,7 @@ int wlibc_common_thread_join(thread_t thread, void **result, const struct timesp
 	}
 
 	// Finally free the thread structure.
-	free(thread);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, thread);
 
 	return 0;
 }
@@ -380,16 +384,28 @@ void wlibc_thread_cleanup_push(cleanup_t routine, void *arg)
 
 	if (tinfo->cleanup_slots_allocated == 0)
 	{
-		tinfo->cleanup_entries = (cleanup_entry *)malloc(sizeof(cleanup_entry) * 8);
+		tinfo->cleanup_entries = (cleanup_entry *)RtlAllocateHeap(NtCurrentProcessHeap(), 0, sizeof(cleanup_entry) * 8);
+		if (tinfo->cleanup_entries == NULL)
+		{
+			errno = ENOMEM;
+			return;
+		}
+
 		tinfo->cleanup_slots_allocated = 8;
 	}
 
 	// Double the cleanup routine list
 	if (tinfo->cleanup_slots_allocated == tinfo->cleanup_slots_used)
 	{
-		cleanup_entry *temp = (cleanup_entry *)malloc(sizeof(cleanup_entry) * tinfo->cleanup_slots_allocated * 2);
-		memcpy(temp, tinfo->cleanup_entries, sizeof(cleanup_entry) * tinfo->cleanup_slots_allocated);
-		free(tinfo->cleanup_entries);
+		void *temp = (cleanup_entry *)RtlReAllocateHeap(NtCurrentProcessHeap(), 0, tinfo->cleanup_entries,
+														sizeof(cleanup_entry) * tinfo->cleanup_slots_allocated * 2);
+
+		if (temp == NULL)
+		{
+			errno = ENOMEM;
+			return;
+		}
+
 		tinfo->cleanup_entries = temp;
 		tinfo->cleanup_slots_allocated *= 2;
 	}
@@ -923,7 +939,12 @@ int wlibc_thread_setname(thread_t thread, const char *name)
 			return -1;
 		}
 
-		RtlUTF8StringToUnicodeString(&u16_name, &u8_name, TRUE);
+		status = RtlUTF8StringToUnicodeString(&u16_name, &u8_name, TRUE);
+		if (status != STATUS_SUCCESS)
+		{
+			map_ntstatus_to_errno(status);
+			return -1;
+		}
 	}
 	else
 	{

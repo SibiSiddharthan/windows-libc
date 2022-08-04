@@ -47,7 +47,7 @@ int register_to_fd_table(HANDLE _h, handle_t _type, int _flags);
 void update_fd_table(int _fd, HANDLE _h, handle_t _type, int _flags);
 
 // Create an entry in the fd table with the following values
-void insert_into_fd_table(int _fd, HANDLE _h, handle_t _type, int _flags);
+int insert_into_fd_table(int _fd, HANDLE _h, handle_t _type, int _flags);
 
 // Remove the file descriptor from the table without closing the handle
 // Used by the hooks to stdio

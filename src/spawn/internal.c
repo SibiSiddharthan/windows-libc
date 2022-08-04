@@ -7,7 +7,6 @@
 
 #include <internal/nt.h>
 #include <internal/spawn.h>
-#include <stdlib.h>
 
 processinfo *_wlibc_process_table = NULL;
 size_t _wlibc_process_table_size = 0;
@@ -19,9 +18,17 @@ void process_init(void)
 {
 	RtlInitializeSRWLock(&_wlibc_process_table_srwlock);
 
-	_wlibc_process_table = (processinfo *)malloc(sizeof(processinfo) * 4);
+	_wlibc_process_table = (processinfo *)RtlAllocateHeap(NtCurrentProcessHeap(), 0, sizeof(processinfo) * 4);
+
+	// Exit the process if this initialization routine fails.
+	if (_wlibc_process_table == NULL)
+	{
+		RtlExitUserProcess(STATUS_NO_MEMORY);
+	}
+
 	_wlibc_process_table_size = 4;
 	_wlibc_child_process_count = 0;
+
 	for (size_t i = 0; i < _wlibc_process_table_size; i++)
 	{
 		_wlibc_process_table[i].id = 0;
@@ -31,7 +38,7 @@ void process_init(void)
 
 void process_cleanup(void)
 {
-	free(_wlibc_process_table);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, _wlibc_process_table);
 }
 
 void get_processinfo(pid_t pid, processinfo *pinfo)
@@ -54,7 +61,7 @@ void get_processinfo(pid_t pid, processinfo *pinfo)
 	SHARED_UNLOCK_PROCESS_TABLE();
 }
 
-void add_child(DWORD id, HANDLE child)
+int add_child(DWORD id, HANDLE child)
 {
 	EXCLUSIVE_LOCK_PROCESS_TABLE();
 
@@ -72,11 +79,15 @@ void add_child(DWORD id, HANDLE child)
 	// No more space in process table. Double it's size
 	if (i == _wlibc_process_table_size)
 	{
-		processinfo *temp = (processinfo *)malloc(sizeof(processinfo) * _wlibc_process_table_size * 2);
-		memcpy(temp, _wlibc_process_table, sizeof(processinfo) * _wlibc_process_table_size);
-		free(_wlibc_process_table);
-		_wlibc_process_table = temp;
+		void *temp = (processinfo *)RtlReAllocateHeap(NtCurrentProcessHeap(), 0, _wlibc_process_table,
+													  sizeof(processinfo) * _wlibc_process_table_size * 2);
 
+		if (temp == NULL)
+		{
+			goto fail;
+		}
+
+		_wlibc_process_table = temp;
 		_wlibc_process_table[_wlibc_process_table_size].id = id;
 		_wlibc_process_table[_wlibc_process_table_size].handle = child;
 
@@ -85,12 +96,19 @@ void add_child(DWORD id, HANDLE child)
 			_wlibc_process_table[i].handle = INVALID_HANDLE_VALUE;
 			_wlibc_process_table[i].id = 0;
 		}
+
 		_wlibc_process_table_size *= 2;
 	}
 
 	++_wlibc_child_process_count;
 
 	EXCLUSIVE_UNLOCK_PROCESS_TABLE();
+
+	return 0;
+
+fail:
+	errno = ENOMEM;
+	return -1;
 }
 
 void delete_child(DWORD id)

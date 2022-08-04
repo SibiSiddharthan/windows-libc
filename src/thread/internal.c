@@ -7,7 +7,6 @@
 
 #include <internal/nt.h>
 #include <internal/thread.h>
-#include <stdlib.h>
 
 DWORD _wlibc_threadinfo_index;
 ULONGLONG _wlibc_tls_bitmap;
@@ -25,8 +24,13 @@ void threads_init(void)
 	memset(_wlibc_tls_destructors, 0, sizeof(dtor_t) * 64);
 
 	// Initialize the main thread's info structure.
-	threadinfo *tinfo = (threadinfo *)malloc(sizeof(threadinfo));
-	memset(tinfo, 0, sizeof(threadinfo));
+	threadinfo *tinfo = (threadinfo *)RtlAllocateHeap(NtCurrentProcessHeap(), HEAP_ZERO_MEMORY, sizeof(threadinfo));
+
+	// Exit the process if this initialization routine fails.
+	if (tinfo == NULL)
+	{
+		RtlExitUserProcess(STATUS_NO_MEMORY);
+	}
 
 	tinfo->handle = NtCurrentThread();
 	tinfo->id = NtCurrentThreadId();
@@ -44,7 +48,7 @@ void threads_cleanup(void)
 	cleanup_tls(tinfo);
 
 	// Free the main thread's info structure.
-	free(tinfo);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, tinfo);
 
 	TlsFree(_wlibc_threadinfo_index);
 }
@@ -94,5 +98,5 @@ void execute_cleanup(threadinfo *tinfo)
 	}
 
 	// This will not be double free.
-	free(tinfo->cleanup_entries);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, tinfo->cleanup_entries);
 }

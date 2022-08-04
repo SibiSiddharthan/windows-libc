@@ -28,7 +28,7 @@ void process_cleanup(void);
 
 void get_processinfo(pid_t pid, processinfo *pinfo);
 
-void add_child(DWORD id, HANDLE child);
+int add_child(DWORD id, HANDLE child);
 void delete_child(DWORD id);
 
 #define SHARED_LOCK_PROCESS_TABLE()      RtlAcquireSRWLockShared(&_wlibc_process_table_srwlock)
