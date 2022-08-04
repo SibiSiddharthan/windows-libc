@@ -11,7 +11,6 @@
 #include <internal/fcntl.h>
 #include <internal/security.h>
 #include <errno.h>
-#include <stdlib.h>
 #include <sys/acl.h>
 
 static acl_t get_acl(HANDLE handle)
@@ -24,22 +23,30 @@ static acl_t get_acl(HANDLE handle)
 	acl_t result = NULL;
 
 	// Start with 512 bytes, grow as required.
-	buffer = malloc(buffer_size);
+	buffer = RtlAllocateHeap(NtCurrentProcessHeap(), 0, buffer_size);
+	if (buffer == NULL)
+	{
+		errno = ENOMEM;
+		return NULL;
+	}
 
 	status = NtQuerySecurityObject(handle, DACL_SECURITY_INFORMATION, buffer, buffer_size, &length_required);
 
 	if (status != STATUS_SUCCESS)
 	{
-		// Free the buffer first.
-		free(buffer);
 		if (status == STATUS_BUFFER_TOO_SMALL) // CHECK
 		{
-			buffer = malloc(length_required);
+			buffer = RtlReAllocateHeap(NtCurrentProcessHeap(), 0, buffer, length_required);
+			if (buffer == NULL)
+			{
+				errno = ENOMEM;
+				return NULL;
+			}
 
 			status = NtQuerySecurityObject(handle, DACL_SECURITY_INFORMATION, buffer, buffer_size, &length_required);
 			if (status != STATUS_SUCCESS)
 			{
-				free(buffer);
+				RtlFreeHeap(NtCurrentProcessHeap(), 0, buffer);
 				map_ntstatus_to_errno(status);
 				return NULL;
 			}
@@ -72,14 +79,14 @@ static acl_t get_acl(HANDLE handle)
 			// Copy SID.
 			RtlCopySid(SECURITY_SID_SIZE(SID_MAX_SUB_AUTHORITIES), &(result->entries[result->count].sid),
 					   (CHAR *)ace_header + sizeof(ACE_HEADER) + sizeof(ACCESS_MASK));
-			
+
 			// Increment count.
 			++result->count;
 		}
 		acl_read += ace_header->AceSize;
 	}
 
-	free(buffer);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, buffer);
 
 	return result;
 }

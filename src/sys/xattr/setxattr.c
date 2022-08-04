@@ -10,7 +10,6 @@
 #include <internal/fcntl.h>
 #include <internal/validate.h>
 #include <errno.h>
-#include <stdlib.h>
 #include <sys/types.h>
 #include <sys/xattr.h>
 
@@ -71,13 +70,20 @@ int do_setxattr(HANDLE handle, const char *restrict name, const void *restrict v
 	}
 
 	size_of_insert_buffer = sizeof(FILE_FULL_EA_INFORMATION) + length + 1 + size;
-	insert_buffer = (char *)malloc(size_of_insert_buffer);
-	memset(insert_buffer, 0, size_of_insert_buffer);
+	insert_buffer = (char *)RtlAllocateHeap(NtCurrentProcessHeap(), HEAP_ZERO_MEMORY, size_of_insert_buffer);
+
+	if (insert_buffer == NULL)
+	{
+		errno = ENOMEM;
+		return -1;
+	}
+
 	ea_info = (PFILE_FULL_EA_INFORMATION)insert_buffer;
 
 	ea_info->EaNameLength = (UCHAR)length;
 	ea_info->EaValueLength = (USHORT)size;
 	memcpy(ea_info->EaName, name, length + 1);
+
 	if (size > 0)
 	{
 		memcpy(ea_info->EaName + length + 1, value, size);
@@ -91,8 +97,9 @@ int do_setxattr(HANDLE handle, const char *restrict name, const void *restrict v
 	}
 
 	result = 0;
+
 finish:
-	free(insert_buffer);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, insert_buffer);
 	return result;
 }
 
@@ -159,14 +166,15 @@ int wlibc_common_setxattr(int fd, const char *restrict path, const char *restric
 	}
 	else
 	{
-		handle_t type = get_fd_type(fd);
-		if (type != FILE_HANDLE && type != DIRECTORY_HANDLE)
+		fdinfo info;
+		get_fdinfo(fd, &info);
+
+		if (info.type != FILE_HANDLE && info.type != DIRECTORY_HANDLE)
 		{
 			errno = EBADF;
 			return -1;
 		}
 
-		HANDLE handle = get_fd_handle(fd);
-		return do_setxattr(handle, name, value, size, operation);
+		return do_setxattr(info.handle, name, value, size, operation);
 	}
 }

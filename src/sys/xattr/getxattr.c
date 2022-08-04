@@ -10,7 +10,6 @@
 #include <internal/fcntl.h>
 #include <internal/validate.h>
 #include <errno.h>
-#include <stdlib.h>
 #include <sys/types.h>
 #include <sys/xattr.h>
 
@@ -41,7 +40,12 @@ ssize_t do_getxattr(HANDLE handle, const char *restrict name, void *restrict val
 	name_info->EaNameLength = (UCHAR)length;
 	memcpy(name_info->EaName, name, length);
 
-	query_buffer = (char *)malloc(query_buffer_size);
+	query_buffer = (char *)RtlAllocateHeap(NtCurrentProcessHeap(), 0, query_buffer_size);
+	if (query_buffer == NULL)
+	{
+		errno = ENOMEM;
+		return -1;
+	}
 
 	status = NtQueryEaFile(handle, &io, query_buffer, (ULONG)query_buffer_size, FALSE, ea_name_buffer, 260, NULL, FALSE);
 	if (status != STATUS_SUCCESS)
@@ -49,7 +53,14 @@ ssize_t do_getxattr(HANDLE handle, const char *restrict name, void *restrict val
 		if (status == STATUS_BUFFER_OVERFLOW || status == STATUS_BUFFER_TOO_SMALL)
 		{
 			query_buffer_size = 65536; // Use this big of a buffer, fail if this also fails
-			query_buffer = (char *)realloc(query_buffer, query_buffer_size);
+			query_buffer = (char *)RtlReAllocateHeap(NtCurrentProcessHeap(), 0, query_buffer, query_buffer_size);
+
+			if (query_buffer == NULL)
+			{
+				errno = ENOMEM;
+				goto finish;
+			}
+
 			status = NtQueryEaFile(handle, &io, query_buffer, (ULONG)query_buffer_size, FALSE, ea_name_buffer, 260, NULL, FALSE);
 			if (status != STATUS_SUCCESS)
 			{
@@ -88,7 +99,7 @@ ssize_t do_getxattr(HANDLE handle, const char *restrict name, void *restrict val
 	result = ea_info->EaValueLength;
 
 finish:
-	free(query_buffer);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, query_buffer);
 	return result;
 }
 
@@ -133,14 +144,15 @@ ssize_t wlibc_common_getxattr(int fd, const char *restrict path, const char *res
 	}
 	else
 	{
-		handle_t type = get_fd_type(fd);
-		if (type != FILE_HANDLE && type != DIRECTORY_HANDLE)
+		fdinfo info;
+		get_fdinfo(fd, &info);
+
+		if (info.type != FILE_HANDLE && info.type != DIRECTORY_HANDLE)
 		{
 			errno = EBADF;
 			return -1;
 		}
 
-		HANDLE handle = get_fd_handle(fd);
-		return do_getxattr(handle, name, value, size);
+		return do_getxattr(info.handle, name, value, size);
 	}
 }

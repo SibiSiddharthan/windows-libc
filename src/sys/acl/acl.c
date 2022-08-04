@@ -9,7 +9,7 @@
 #include <internal/acl.h>
 #include <sys/acl.h>
 #include <sys/types.h>
-#include <stdlib.h>
+#include <stddef.h>
 #include <string.h>
 #include <errno.h>
 
@@ -23,9 +23,15 @@ acl_t wlibc_acl_init(int count)
 
 	// Allocate enough space for atleast 1 ACE.
 	ULONG size = offsetof(struct _wlibc_acl_t, entries) + (count != 0 ? count : 1) * sizeof(struct _wlibc_acl_entry_t);
-	PACL acl = (PACL)malloc(size);
+	PACL acl = (PACL)RtlAllocateHeap(NtCurrentProcessHeap(), HEAP_ZERO_MEMORY, size);
 
-	memset(acl, 0, size);
+	if (acl == NULL)
+	{
+		errno = ENOMEM;
+		return NULL;
+	}
+
+	// This will succeed.
 	RtlCreateAcl(acl, size, ACL_REVISION);
 
 	return (acl_t)acl;
@@ -35,7 +41,13 @@ acl_t wlibc_acl_dup(const acl_t acl)
 {
 	VALIDATE_ACL(acl, NULL);
 
-	acl_t dup_acl = (acl_t)malloc(acl->size);
+	acl_t dup_acl = (acl_t)RtlAllocateHeap(NtCurrentProcessHeap(), 0, acl->size);
+	if (dup_acl == NULL)
+	{
+		errno = ENOMEM;
+		return NULL;
+	}
+
 	memcpy(dup_acl, acl, acl->size);
 
 	return dup_acl;
@@ -45,7 +57,11 @@ int wlibc_acl_free(acl_t acl)
 {
 	VALIDATE_ACL(acl, -1);
 
-	free(acl);
+	if (RtlFreeHeap(NtCurrentProcessHeap(), 0, acl) == FALSE)
+	{
+		return -1;
+	}
+
 	return 0;
 }
 

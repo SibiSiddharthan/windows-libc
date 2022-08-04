@@ -36,6 +36,11 @@ int do_chmod(HANDLE handle, mode_t mode)
 	}
 
 	security_descriptor = get_security_descriptor(mode, is_directory);
+	if(security_descriptor == NULL)
+	{
+		// errno will be set by `create_security_descriptor`.
+		return -1;
+	}
 
 	status = NtSetSecurityObject(handle, DACL_SECURITY_INFORMATION, security_descriptor);
 	if (status != STATUS_SUCCESS)

@@ -8,7 +8,7 @@
 #include <internal/nt.h>
 #include <internal/acl.h>
 #include <errno.h>
-#include <stdlib.h>
+#include <stddef.h>
 #include <string.h>
 #include <sys/acl.h>
 
@@ -33,11 +33,13 @@ int wlibc_acl_create_entry(acl_t *acl, acl_entry_t *entry)
 	{
 		// Allocate more space.
 		WORD allocated_size = sizeof(struct _wlibc_acl_entry_t) * (*acl)->count * 2;
-		acl_t temp = (acl_t)malloc(allocated_size);
+		acl_t temp = (acl_t)RtlReAllocateHeap(NtCurrentProcessHeap(), HEAP_ZERO_MEMORY, *acl, allocated_size);
 
-		memset(temp, 0, allocated_size);
-		memcpy(temp, *acl, (*acl)->size);
-		free(*acl);
+		if (temp == NULL)
+		{
+			errno = ENOMEM;
+			return -1;
+		}
 
 		*acl = temp;
 		(*acl)->size = allocated_size;

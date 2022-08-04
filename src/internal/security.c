@@ -8,7 +8,6 @@
 #include <internal/nt.h>
 #include <internal/security.h>
 #include <sys/types.h>
-#include <stdlib.h>
 
 // Contains all possible security descriptors 0000 - 0777 * 2(directories as well)
 static PISECURITY_DESCRIPTOR_RELATIVE all_security_descriptors[1024] = {NULL};
@@ -95,7 +94,7 @@ void cleanup_security_decsriptors(void)
 {
 	for (int i = 0; i < 1024; ++i)
 	{
-		free(all_security_descriptors[i]);
+		RtlFreeHeap(NtCurrentProcessHeap(), 0, all_security_descriptors[i]);
 	}
 }
 
@@ -142,8 +141,13 @@ static PISECURITY_DESCRIPTOR_RELATIVE create_security_descriptor(mode_t mode, in
 	  Total                                : 152 bytes or 192 bytes max
 	*/
 	const ULONG size_of_sd_buffer = 256;
-	char *sd_buffer = (char *)malloc(size_of_sd_buffer);
-	memset(sd_buffer, 0, size_of_sd_buffer);
+	char *sd_buffer = (char *)RtlAllocateHeap(NtCurrentProcessHeap(), HEAP_ZERO_MEMORY, size_of_sd_buffer);
+
+	if (sd_buffer == NULL)
+	{
+		errno = ENOMEM;
+		return NULL;
+	}
 
 	PISECURITY_DESCRIPTOR_RELATIVE security_descriptor = (PISECURITY_DESCRIPTOR_RELATIVE)sd_buffer;
 	security_descriptor->Revision = SECURITY_DESCRIPTOR_REVISION;

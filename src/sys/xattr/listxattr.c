@@ -9,7 +9,7 @@
 #include <internal/error.h>
 #include <internal/fcntl.h>
 #include <errno.h>
-#include <stdlib.h>
+#include <stddef.h>
 #include <sys/types.h>
 #include <sys/xattr.h>
 
@@ -23,7 +23,12 @@ ssize_t do_listxattr(HANDLE handle, char *restrict list, size_t size)
 	ssize_t result = -1;
 	size_t data_length = 0;
 
-	query_buffer = (char *)malloc(query_buffer_size);
+	query_buffer = (char *)RtlAllocateHeap(NtCurrentProcessHeap(), 0, query_buffer_size);
+	if (query_buffer == NULL)
+	{
+		errno = ENOMEM;
+		return -1;
+	}
 
 	while (status != STATUS_NO_MORE_EAS)
 	{
@@ -38,7 +43,14 @@ ssize_t do_listxattr(HANDLE handle, char *restrict list, size_t size)
 		if (status == STATUS_BUFFER_TOO_SMALL || status == STATUS_BUFFER_OVERFLOW)
 		{
 			query_buffer_size = 65536; // Use this big of a buffer
-			query_buffer = (char *)realloc(query_buffer, query_buffer_size);
+			query_buffer = (char *)RtlReAllocateHeap(NtCurrentProcessHeap(), 0, query_buffer, query_buffer_size);
+
+			if (query_buffer == NULL)
+			{
+				errno = ENOMEM;
+				goto finish;
+			}
+
 			status = NtQueryEaFile(handle, &io, query_buffer, (ULONG)query_buffer_size, FALSE, NULL, 0, NULL, FALSE);
 			if (status != STATUS_SUCCESS)
 			{
@@ -76,7 +88,7 @@ ssize_t do_listxattr(HANDLE handle, char *restrict list, size_t size)
 	result = data_length;
 
 finish:
-	free(query_buffer);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, query_buffer);
 	return result;
 }
 
@@ -119,14 +131,15 @@ ssize_t wlibc_common_listxattr(int fd, const char *restrict path, char *restrict
 	}
 	else
 	{
-		handle_t type = get_fd_type(fd);
-		if (type != FILE_HANDLE && type != DIRECTORY_HANDLE)
+		fdinfo info;
+		get_fdinfo(fd, &info);
+
+		if (info.type != FILE_HANDLE && info.type != DIRECTORY_HANDLE)
 		{
 			errno = EBADF;
 			return -1;
 		}
 
-		HANDLE handle = get_fd_handle(fd);
-		return do_listxattr(handle, list, size);
+		return do_listxattr(info.handle, list, size);
 	}
 }
