@@ -121,6 +121,7 @@ void map_ntstatus_to_errno(NTSTATUS error)
 	case STATUS_INVALID_ACL:
 	case STATUS_INVALID_SID:
 	case STATUS_INVALID_SECURITY_DESCR:
+	case STATUS_IO_REPARSE_DATA_INVALID:
 		errno = EINVAL;
 		break;
 	case STATUS_FILE_IS_A_DIRECTORY:
@@ -148,6 +149,7 @@ void map_ntstatus_to_errno(NTSTATUS error)
 		errno = ERANGE;
 		break;
 	case STATUS_EA_TOO_LARGE:
+	case STATUS_BUFFER_OVERFLOW:
 		errno = E2BIG;
 		break;
 	case STATUS_TIMEOUT:

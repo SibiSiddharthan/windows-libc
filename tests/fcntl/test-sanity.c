@@ -81,12 +81,15 @@ int test_peb_teb()
 	int result = 0;
 	DWORD threadid_nt, threadid_k32;
 	DWORD processid_nt, processid_k32;
+	PVOID heap_nt, heap_k32;
 
 	threadid_nt = NtCurrentThreadId();
 	processid_nt = NtCurrentProcessId();
+	heap_nt = NtCurrentProcessHeap();
 
 	threadid_k32 = GetCurrentThreadId();
 	processid_k32 = GetCurrentProcessId();
+	heap_k32 = GetProcessHeap();
 
 	if (threadid_nt != threadid_k32)
 	{
@@ -94,9 +97,15 @@ int test_peb_teb()
 		++result;
 	}
 
-	if (threadid_nt != threadid_k32)
+	if (processid_nt != processid_k32)
 	{
 		printf("Process ids are different: %lu <-> %lu\n", processid_nt, processid_k32);
+		++result;
+	}
+
+	if (heap_nt != heap_k32)
+	{
+		printf("Heap handles are different: %lld <-> %lld\n", (intptr_t)heap_nt, (intptr_t)heap_k32);
 		++result;
 	}
 

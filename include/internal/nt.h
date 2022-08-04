@@ -24,6 +24,8 @@
 typedef _Return_type_success_(return >= 0) LONG NTSTATUS;
 typedef NTSTATUS *PNTSTATUS;
 
+typedef ULONG LOGICAL, *PLOGICAL;
+
 #include <ntstatus.h>
 
 typedef WCHAR *PWCHAR, *LPWCH, *PWCH;
@@ -1473,13 +1475,17 @@ typedef struct _CLIENT_ID
 
 typedef struct _PEB
 {
-	BYTE Reserved1[2];
+	BYTE InheritedAddressSpace;
+	BYTE ReadImageFileExecOptions;
 	BYTE BeingDebugged;
 	BYTE Reserved2[1];
-	PVOID Reserved3[2];
+	HANDLE Mutant;
+	PVOID ImageBaseAddress;
 	PPEB_LDR_DATA Ldr;
 	PRTL_USER_PROCESS_PARAMETERS ProcessParameters;
-	PVOID Reserved4[3];
+	PVOID SubSystemData;
+	PVOID ProcessHeap;
+	PRTL_CRITICAL_SECTION FastPebLock;
 	PVOID AtlThunkSListPtr;
 	PVOID Reserved5;
 	ULONG Reserved6;
@@ -1518,9 +1524,10 @@ typedef struct _TEB
 #define NtCurrentProcessToken() ((HANDLE)(LONG_PTR)-4)
 #define NtCurrentThreadToken()  ((HANDLE)(LONG_PTR)-5)
 
-#define NtCurrentPeb()       (NtCurrentTeb()->ProcessEnvironmentBlock)
-#define NtCurrentProcessId() ((DWORD)(INT_PTR)(NtCurrentTeb()->ClientId.UniqueProcess))
-#define NtCurrentThreadId()  ((DWORD)(INT_PTR)(NtCurrentTeb()->ClientId.UniqueThread))
+#define NtCurrentPeb()         (NtCurrentTeb()->ProcessEnvironmentBlock)
+#define NtCurrentProcessHeap() (NtCurrentPeb()->ProcessHeap)
+#define NtCurrentProcessId()   ((DWORD)(INT_PTR)(NtCurrentTeb()->ClientId.UniqueProcess))
+#define NtCurrentThreadId()    ((DWORD)(INT_PTR)(NtCurrentTeb()->ClientId.UniqueThread))
 
 #define CTL_CODE(DeviceType, Function, Method, Access) (((DeviceType) << 16) | ((Access) << 14) | ((Function) << 2) | (Method))
 #define DEVICE_TYPE_FROM_CTL_CODE(ctrlCode)            (((ULONG)(ctrlCode & 0xffff0000)) >> 16)
@@ -2304,6 +2311,104 @@ RtlBarrierForDelete(_Inout_ PRTL_BARRIER Barrier, _In_ ULONG Flags);
 NTSYSAPI
 BOOL WINAPI RtlRunOnceExecuteOnce(_Inout_ PRTL_RUN_ONCE InitOnce, _In_ __callback PINIT_ONCE_FN InitFn, _Inout_opt_ PVOID Parameter,
 								  _Outptr_opt_result_maybenull_ LPVOID *Context);
+
+typedef NTSTATUS NTAPI RTL_HEAP_COMMIT_ROUTINE(_In_ PVOID Base, _Inout_ PVOID *CommitAddress, _Inout_ PSIZE_T CommitSize);
+typedef RTL_HEAP_COMMIT_ROUTINE *PRTL_HEAP_COMMIT_ROUTINE;
+
+typedef struct _RTL_HEAP_PARAMETERS
+{
+	ULONG Length;
+	SIZE_T SegmentReserve;
+	SIZE_T SegmentCommit;
+	SIZE_T DeCommitFreeBlockThreshold;
+	SIZE_T DeCommitTotalFreeThreshold;
+	SIZE_T MaximumAllocationSize;
+	SIZE_T VirtualMemoryThreshold;
+	SIZE_T InitialCommit;
+	SIZE_T InitialReserve;
+	PRTL_HEAP_COMMIT_ROUTINE CommitRoutine;
+	SIZE_T Reserved[2];
+} RTL_HEAP_PARAMETERS, *PRTL_HEAP_PARAMETERS;
+
+#define HEAP_NO_SERIALIZE             0x00000001
+#define HEAP_GROWABLE                 0x00000002
+#define HEAP_GENERATE_EXCEPTIONS      0x00000004
+#define HEAP_ZERO_MEMORY              0x00000008
+#define HEAP_REALLOC_IN_PLACE_ONLY    0x00000010
+#define HEAP_TAIL_CHECKING_ENABLED    0x00000020
+#define HEAP_FREE_CHECKING_ENABLED    0x00000040
+#define HEAP_DISABLE_COALESCE_ON_FREE 0x00000080
+
+#define HEAP_CREATE_ALIGN_16       0x00010000
+#define HEAP_CREATE_ENABLE_TRACING 0x00020000
+#define HEAP_CREATE_ENABLE_EXECUTE 0x00040000
+#define HEAP_CREATE_SEGMENT_HEAP   0x00000100
+#define HEAP_CREATE_HARDENED       0x00000200
+
+typedef enum _RTL_MEMORY_TYPE
+{
+	MemoryTypePaged,
+	MemoryTypeNonPaged,
+	MemoryType64KPage,
+	MemoryTypeLargePage,
+	MemoryTypeHugePage,
+	MemoryTypeMax
+} RTL_MEMORY_TYPE,
+	*PRTL_MEMORY_TYPE;
+
+#define RTL_SEGHEAP_MEM_SOURCE_ANY_NODE ((ULONG)-1)
+
+typedef struct _RTL_SEGMENT_HEAP_MEMORY_SOURCE
+{
+	ULONG Flags;
+	ULONG MemoryTypeMask;
+	ULONG NumaNode;
+	HANDLE PartitionHandle;
+
+	SIZE_T Reserved[2];
+} RTL_SEGMENT_HEAP_MEMORY_SOURCE, *PRTL_SEGMENT_HEAP_MEMORY_SOURCE;
+
+#define SEGMENT_HEAP_PARAMETERS_VERSION 3
+#define SEGMENT_HEAP_FLG_USE_PAGE_HEAP  0x1
+#define SEGMENT_HEAP_PARAMS_VALID_FLAGS SEGMENT_HEAP_FLG_USE_PAGE_HEAP
+
+typedef struct _RTL_SEGMENT_HEAP_PARAMETERS
+{
+	USHORT Version;
+	USHORT Size;
+	ULONG Flags;
+
+	RTL_SEGMENT_HEAP_MEMORY_SOURCE MemorySource;
+
+	SIZE_T Reserved[4];
+} RTL_SEGMENT_HEAP_PARAMETERS, *PRTL_SEGMENT_HEAP_PARAMETERS;
+
+NTSYSAPI
+PVOID
+NTAPI
+RtlCreateHeap(_In_ ULONG Flags, _In_opt_ PVOID HeapBase, _In_opt_ SIZE_T ReserveSize, _In_opt_ SIZE_T CommitSize, _In_opt_ PVOID Lock,
+			  _When_((Flags & 0x100) != 0, _In_reads_bytes_opt_(sizeof(RTL_SEGMENT_HEAP_PARAMETERS)))
+				  _When_((Flags & 0x100) == 0, _In_reads_bytes_opt_(sizeof(RTL_HEAP_PARAMETERS))) PRTL_HEAP_PARAMETERS Parameters);
+
+NTSYSAPI
+PVOID
+NTAPI
+RtlDestroyHeap(_In_ _Post_invalid_ PVOID HeapHandle);
+
+NTSYSAPI
+PVOID
+NTAPI
+RtlAllocateHeap(_In_ PVOID HeapHandle, _In_opt_ ULONG Flags, _In_ SIZE_T Size);
+
+NTSYSAPI
+PVOID
+NTAPI
+RtlReAllocateHeap(_In_ PVOID HeapHandle, _In_ ULONG Flags, _Frees_ptr_opt_ PVOID BaseAddress, _In_ SIZE_T Size);
+
+NTSYSAPI
+LOGICAL
+NTAPI
+RtlFreeHeap(_In_ PVOID HeapHandle, _In_opt_ ULONG Flags, _Frees_ptr_opt_ PVOID BaseAddress);
 
 NTSYSAPI
 NTSTATUS
