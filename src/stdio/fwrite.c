@@ -9,7 +9,6 @@
 #include <internal/stdio.h>
 #include <fcntl.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <unistd.h>
 
 size_t common_fwrite(const void *restrict buffer, size_t size, size_t count, FILE *restrict stream)
@@ -67,7 +66,13 @@ size_t common_fwrite(const void *restrict buffer, size_t size, size_t count, FIL
 		// allocate the buffer if not allocated already
 		if ((stream->buf_mode & _IOBUFFER_INTERNAL) && ((stream->buf_mode & _IOBUFFER_ALLOCATED) == 0))
 		{
-			stream->buffer = (char *)malloc(sizeof(char) * stream->buf_size);
+			stream->buffer = (char *)RtlAllocateHeap(NtCurrentProcessHeap(), 0, sizeof(char) * stream->buf_size);
+			if (stream->buffer == NULL)
+			{
+				errno = ENOMEM;
+				return -1;
+			}
+
 			stream->buf_mode |= _IOBUFFER_ALLOCATED;
 		}
 

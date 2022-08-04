@@ -26,6 +26,12 @@ ssize_t common_getdelim(char **restrict buffer, size_t *restrict size, int delim
 		// Allocate 512 bytes initially
 		buffer_size = 512;
 		*buffer = (char *)malloc(buffer_size);
+		if (*buffer == NULL)
+		{
+			errno = ENOMEM;
+			return -1;
+		}
+
 		*size = buffer_size;
 	}
 
@@ -52,10 +58,14 @@ ssize_t common_getdelim(char **restrict buffer, size_t *restrict size, int delim
 
 		if (result == (ssize_t)*size)
 		{
-			// Double the buffer
-			char *temp = (char *)malloc(buffer_size * 2);
-			memcpy(temp, *buffer, buffer_size);
-			free(*buffer);
+			// Double the buffer.
+			char *temp = (char *)realloc(*buffer, buffer_size * 2);
+			if (temp == NULL)
+			{
+				errno = ENOMEM;
+				return -1;
+			}
+
 			*buffer = temp;
 			buffer_size *= 2;
 			*size = buffer_size;

@@ -67,6 +67,9 @@ typedef struct _WLIBC_FILE
 extern FILE *_wlibc_stdio_head;
 extern RTL_CRITICAL_SECTION _wlibc_stdio_critical;
 
+#define LOCK_STDIO()   RtlEnterCriticalSection(&_wlibc_stdio_critical)
+#define UNLOCK_STDIO() RtlLeaveCriticalSection(&_wlibc_stdio_critical)
+
 void initialize_stdio(void);
 void cleanup_stdio(void);
 FILE *create_stream(int fd, int buf_mode, int buf_size);

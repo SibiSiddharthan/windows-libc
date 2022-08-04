@@ -5,9 +5,10 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
+#include <internal/nt.h>
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <errno.h>
 #include <unistd.h>
 #include <corecrt_stdio_config.h>
 
@@ -41,10 +42,17 @@ int wlibc_vfprintf(FILE *restrict stream, const char *restrict format, va_list a
 		return -1;
 	}
 
-	char *buffer = (char *)malloc(count + 1);
+	char *buffer = (char *)RtlAllocateHeap(NtCurrentProcessHeap(), 0, count + 1);
+	if (buffer == NULL)
+	{
+		errno = ENOMEM;
+		return -1;
+	}
+
 	print_chars(buffer, count + 1, format, args);
 	int result = (int)fwrite(buffer, 1, count, stream);
-	free(buffer);
+
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, buffer);
 	return result;
 }
 
@@ -55,10 +63,18 @@ int wlibc_vdprintf(int fd, const char *restrict format, va_list args)
 	{
 		return -1;
 	}
-	char *buffer = (char *)malloc(count + 1);
+
+	char *buffer = (char *)RtlAllocateHeap(NtCurrentProcessHeap(), 0, count + 1);
+	if (buffer == NULL)
+	{
+		errno = ENOMEM;
+		return -1;
+	}
+
 	print_chars(buffer, count + 1, format, args);
 	int result = (int)write(fd, buffer, count);
-	free(buffer);
+
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, buffer);
 	return result;
 }
 
@@ -70,7 +86,14 @@ int wlibc_vasprintf(char **restrict buffer, const char *restrict format, va_list
 		return -1;
 	}
 
+	// User freeable buffer, use malloc.
 	*buffer = (char *)malloc(count + 1);
+	if (*buffer == NULL)
+	{
+		errno = ENOMEM;
+		return -1;
+	}
+
 	return print_chars(*buffer, count + 1, format, args);
 }
 
@@ -110,6 +133,12 @@ char *wlibc_vasnprintf(char *restrict buffer, size_t *size, const char *restrict
 	{
 		// Allocate a new buffer.
 		buffer = (char *)malloc(count + 1);
+		if (buffer == NULL)
+		{
+			errno = ENOMEM;
+			return NULL;
+		}
+
 		count = print_chars(buffer, *size, format, args);
 		*size = count;
 		return buffer;

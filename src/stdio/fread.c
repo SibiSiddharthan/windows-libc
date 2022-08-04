@@ -7,7 +7,6 @@
 
 #include <internal/stdio.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <unistd.h>
 
 int common_fflush(FILE *stream);
@@ -74,7 +73,13 @@ size_t common_fread(void *restrict buffer, size_t size, size_t count, FILE *rest
 		// allocate the buffer if not allocated already
 		if ((stream->buf_mode & _IOBUFFER_INTERNAL) && ((stream->buf_mode & _IOBUFFER_ALLOCATED) == 0))
 		{
-			stream->buffer = (char *)malloc(sizeof(char) * stream->buf_size);
+			stream->buffer = (char *)RtlAllocateHeap(NtCurrentProcessHeap(), 0, sizeof(char) * stream->buf_size);
+			if (stream->buffer == NULL)
+			{
+				errno = ENOMEM;
+				return 0;
+			}
+
 			stream->buf_mode |= _IOBUFFER_ALLOCATED;
 		}
 

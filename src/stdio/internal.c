@@ -8,7 +8,6 @@
 #include <internal/nt.h>
 #include <internal/fcntl.h>
 #include <internal/stdio.h>
-#include <stdlib.h>
 
 FILE *_wlibc_stdio_head = NULL;
 
@@ -33,7 +32,7 @@ int common_fflush(FILE *stream);
 
 void close_all_streams(void)
 {
-	RtlEnterCriticalSection(&_wlibc_stdio_critical);
+	LOCK_STDIO();
 
 	while (_wlibc_stdio_head != NULL)
 	{
@@ -45,18 +44,18 @@ void close_all_streams(void)
 		// free internal buffers if any
 		if (_wlibc_stdio_head->buffer != NULL && (_wlibc_stdio_head->buf_mode & _IOBUFFER_INTERNAL))
 		{
-			free(_wlibc_stdio_head->buffer);
+			RtlFreeHeap(NtCurrentProcessHeap(), 0, _wlibc_stdio_head->buffer);
 		}
 		DeleteCriticalSection(&(_wlibc_stdio_head->critical));
 
 		// close the underlying file descriptor
 		close_fd(_wlibc_stdio_head->fd);
 
-		free(_wlibc_stdio_head);
+		RtlFreeHeap(NtCurrentProcessHeap(), 0, _wlibc_stdio_head);
 		_wlibc_stdio_head = prev;
 	}
 
-	RtlLeaveCriticalSection(&_wlibc_stdio_critical);
+	UNLOCK_STDIO();
 }
 
 void cleanup_stdio(void)
@@ -67,27 +66,29 @@ void cleanup_stdio(void)
 
 FILE *create_stream(int fd, int buf_mode, int buf_size)
 {
-	FILE *stream = (FILE *)malloc(sizeof(FILE));
+	FILE *stream = (FILE *)RtlAllocateHeap(NtCurrentProcessHeap(), HEAP_ZERO_MEMORY, sizeof(FILE));
+
+	if (stream == NULL)
+	{
+		errno = ENOMEM;
+		return NULL;
+	}
+
 	stream->magic = FILE_STREAM_MAGIC;
 	stream->fd = fd;
-	stream->error = 0;
 	stream->buf_mode = buf_mode;
-	stream->buffer = NULL;
 	stream->buf_size = buf_size;
-	stream->start = 0;
-	stream->end = 0;
-	stream->pos = 0;
-	stream->prev_op = 0;
-	stream->phandle = NULL;
+
 	RtlInitializeCriticalSection(&(stream->critical));
 	insert_stream(stream);
+
 	return stream;
 }
 
 void insert_stream(FILE *stream)
 {
-	// stream won't be null here
-	RtlEnterCriticalSection(&_wlibc_stdio_critical);
+	// stream won't be null here.
+	LOCK_STDIO();
 
 	stream->prev = _wlibc_stdio_head;
 	stream->next = NULL;
@@ -99,13 +100,13 @@ void insert_stream(FILE *stream)
 
 	_wlibc_stdio_head = stream;
 
-	RtlLeaveCriticalSection(&_wlibc_stdio_critical);
+	UNLOCK_STDIO();
 }
 
 void delete_stream(FILE *stream)
 {
-	// stream won't be null here
-	RtlEnterCriticalSection(&_wlibc_stdio_critical);
+	// stream won't be null here.
+	LOCK_STDIO();
 
 	if (stream->prev != NULL && stream->next != NULL)
 	{
@@ -127,7 +128,7 @@ void delete_stream(FILE *stream)
 	}
 
 	RtlDeleteCriticalSection(&(stream->critical));
-	free(stream);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, stream);
 
-	RtlLeaveCriticalSection(&_wlibc_stdio_critical);
+	UNLOCK_STDIO();
 }

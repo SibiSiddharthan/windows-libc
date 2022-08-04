@@ -9,7 +9,6 @@
 #include <internal/stdio.h>
 #include <errno.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <unistd.h>
 
 int common_fflush(FILE *stream);
@@ -32,7 +31,10 @@ int common_setvbuf(FILE *restrict stream, char *restrict buffer, int mode, size_
 		// free any internal buffer
 		if (stream->buffer != NULL && (stream->buf_mode & _IOBUFFER_INTERNAL))
 		{
-			free(stream->buffer);
+			if (RtlFreeHeap(NtCurrentProcessHeap(), 0, stream->buffer) == FALSE)
+			{
+				return -1;
+			}
 		}
 	}
 	else // buffering
@@ -43,7 +45,13 @@ int common_setvbuf(FILE *restrict stream, char *restrict buffer, int mode, size_
 			{
 				if (stream->buf_mode & _IOBUFFER_EXTERNAL)
 				{
-					stream->buffer = malloc(size);
+					stream->buffer = RtlAllocateHeap(NtCurrentProcessHeap(), 0, size);
+					if (stream->buffer == NULL)
+					{
+						errno = ENOMEM;
+						return -1;
+					}
+
 					stream->buf_size = size;
 					stream->buf_mode = mode | _IOBUFFER_INTERNAL | _IOBUFFER_ALLOCATED;
 				}
@@ -54,13 +62,26 @@ int common_setvbuf(FILE *restrict stream, char *restrict buffer, int mode, size_
 					{
 						if (stream->buf_mode & _IOBUFFER_ALLOCATED)
 						{
-							stream->buffer = realloc(stream->buffer, size);
+							void *new_buffer = RtlReAllocateHeap(NtCurrentProcessHeap(), 0, stream->buffer, size);
+							if (new_buffer == NULL)
+							{
+								errno = ENOMEM;
+								return -1;
+							}
+
+							stream->buffer = new_buffer;
 							stream->buf_size = size;
 							stream->buf_mode = mode | _IOBUFFER_INTERNAL | _IOBUFFER_ALLOCATED;
 						}
 						else
 						{
-							stream->buffer = malloc(size);
+							stream->buffer = RtlAllocateHeap(NtCurrentProcessHeap(), 0, size);
+							if (stream->buffer == NULL)
+							{
+								errno = ENOMEM;
+								return -1;
+							}
+
 							stream->buf_size = size;
 							stream->buf_mode = mode | _IOBUFFER_INTERNAL | _IOBUFFER_ALLOCATED;
 						}
@@ -79,7 +100,10 @@ int common_setvbuf(FILE *restrict stream, char *restrict buffer, int mode, size_
 			// Use the user provided buffer
 			if (stream->buffer != NULL && (stream->buf_mode & _IOBUFFER_INTERNAL))
 			{
-				free(stream->buffer);
+				if (RtlFreeHeap(NtCurrentProcessHeap(), 0, stream->buffer) == FALSE)
+				{
+					return -1;
+				}
 			}
 			stream->buffer = buffer;
 			stream->buf_size = size;

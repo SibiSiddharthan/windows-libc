@@ -8,6 +8,7 @@
 #define _CRT_RAND_S
 
 #include <internal/nt.h>
+#include <internal/error.h>
 #include <internal/registry.h>
 #include <internal/security.h>
 #include <sddl.h>
@@ -36,6 +37,7 @@ char *wlibc_tmpdir(void)
 	wchar_t *string_sid = NULL;
 	wchar_t *registry_key = NULL;
 	wchar_t *localdir = NULL;
+	NTSTATUS status;
 	UNICODE_STRING u16_localdir;
 	UTF8_STRING u8_localdir;
 
@@ -46,15 +48,22 @@ char *wlibc_tmpdir(void)
 
 		string_sid_length = wcslen(string_sid);
 		// "\\Registry\\User\\sid\\Volatile Environment\0"
-		registry_key = (wchar_t *)malloc((15 + string_sid_length + 20 + 2) * sizeof(wchar_t));
+		registry_key = (wchar_t *)RtlAllocateHeap(NtCurrentProcessHeap(), 0, (15 + string_sid_length + 20 + 2) * sizeof(wchar_t));
+		if (registry_key == NULL)
+		{
+			errno = ENOMEM;
+			return NULL;
+		}
+
 		memcpy(registry_key, L"\\Registry\\User\\", 15 * sizeof(wchar_t));
 		memcpy(registry_key + 15, string_sid, string_sid_length * sizeof(wchar_t));
 		registry_key[15 + string_sid_length] = L'\\';
 		memcpy(registry_key + 15 + string_sid_length + 1, L"Volatile Environment\0", 21 * sizeof(wchar_t));
 
 		localdir = get_registry_value(registry_key, L"LOCALAPPDATA", &localdir_size);
+
+		RtlFreeHeap(NtCurrentProcessHeap(), 0, registry_key);
 		LocalFree(string_sid);
-		free(registry_key);
 
 		if (localdir != NULL)
 		{
@@ -64,13 +73,19 @@ char *wlibc_tmpdir(void)
 
 			u8_localdir.Buffer = tmpdir;
 			u8_localdir.MaximumLength = L_tmpnam;
-			RtlUnicodeStringToUTF8String(&u8_localdir, &u16_localdir, FALSE);
+			status = RtlUnicodeStringToUTF8String(&u8_localdir, &u16_localdir, FALSE);
+			RtlFreeHeap(NtCurrentProcessHeap(), 0, localdir);
+
+			if (status != STATUS_SUCCESS)
+			{
+				map_ntstatus_to_errno(status);
+				return NULL;
+			}
 
 			// The directory will be of the form "C:\Users\XXXXX\AppData\Local\Temp".
 			// In Windows the user name for the home directory will be truncated to 5 characters.(Don't ask me why.)
 			// As a result there will be plenty of space left in the buffer.
 			strcat(tmpdir, "\\Temp\\");
-			free(localdir);
 			tmpdir_initialized = 1;
 		}
 	}
@@ -138,6 +153,12 @@ char *wlibc_tempnam(const char *restrict dir, const char *restrict prefix)
 		// It does not matter whether dir is relative or absolute, as all the open functions will handle them appropriately.
 		dir_length = strlen(dir);
 		tempname = (char *)malloc(dir_length + prefix_length + 10); // NULL + slash if needed + random string
+		if (tempname == NULL)
+		{
+			errno = ENOMEM;
+			return NULL;
+		}
+
 		strcpy(tempname, dir);
 
 		if (dir[dir_length - 1] != '/' && dir[dir_length - 1] != '\\')
@@ -150,6 +171,12 @@ char *wlibc_tempnam(const char *restrict dir, const char *restrict prefix)
 	{
 		dir_length = strlen(wlibc_tmpdir());
 		tempname = (char *)malloc(dir_length + prefix_length + 10);
+		if (tempname == NULL)
+		{
+			errno = ENOMEM;
+			return NULL;
+		}
+
 		strcpy(tempname, wlibc_tmpdir());
 	}
 

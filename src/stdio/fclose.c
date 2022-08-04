@@ -9,7 +9,6 @@
 #include <internal/stdio.h>
 #include <errno.h>
 #include <stdio.h>
-#include <stdlib.h>
 
 void close_all_streams(void);
 int common_fflush(FILE *stream);
@@ -23,7 +22,7 @@ int common_fclose(FILE *stream)
 
 	if ((stream->buf_mode & _IOBUFFER_INTERNAL) && (stream->buf_mode & _IOBUFFER_ALLOCATED))
 	{
-		free(stream->buffer);
+		RtlFreeHeap(NtCurrentProcessHeap(), 0, stream->buffer);
 	}
 
 	// stream is freed here
