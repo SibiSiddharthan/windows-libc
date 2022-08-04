@@ -46,7 +46,7 @@ int wlibc_getdomainname(char *name, size_t length)
 	u8_domainname.Buffer = name;
 	u8_domainname.MaximumLength = (USHORT)length;
 	status = RtlUnicodeStringToUTF8String(&u8_domainname, &u16_domainname, FALSE);
-	free(data);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, data);
 
 	if (status != STATUS_SUCCESS)
 	{

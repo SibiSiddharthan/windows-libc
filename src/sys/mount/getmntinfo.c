@@ -44,9 +44,14 @@ int wlibc_getmntinfo(struct statfs **mounts, int mode)
 		return -1;
 	}
 
-	mount_points_buffer = malloc(required_size);
-	memset(mount_points_buffer, 0, required_size);
+	mount_points_buffer = RtlAllocateHeap(NtCurrentProcessHeap(), 0, required_size);
 	mount_points = (PMOUNTMGR_MOUNT_POINTS)mount_points_buffer;
+
+	if (mount_points_buffer == NULL)
+	{
+		errno = ENOMEM;
+		return -1;
+	}
 
 	status = NtDeviceIoControlFile(mountmgr_handle, NULL, NULL, NULL, &io, IOCTL_MOUNTMGR_QUERY_POINTS, &mount,
 								   sizeof(MOUNTMGR_MOUNT_POINT), mount_points, required_size);
@@ -55,12 +60,15 @@ int wlibc_getmntinfo(struct statfs **mounts, int mode)
 		if (status != STATUS_BUFFER_OVERFLOW)
 		{
 			required_size = roundup(mount_points->Size, 4096);
-			VOID *temp = mount_points_buffer;
 
-			mount_points_buffer = realloc(mount_points_buffer, required_size);
-			memset(mount_points_buffer, 0, required_size);
+			mount_points_buffer = RtlReAllocateHeap(NtCurrentProcessHeap(), 0, mount_points_buffer, required_size);
 			mount_points = (PMOUNTMGR_MOUNT_POINTS)mount_points_buffer;
-			free(temp);
+
+			if (mount_points_buffer == NULL)
+			{
+				errno = ENOMEM;
+				return -1;
+			}
 
 			status = NtDeviceIoControlFile(mountmgr_handle, NULL, NULL, NULL, &io, IOCTL_MOUNTMGR_QUERY_POINTS, &mount,
 										   sizeof(MOUNTMGR_MOUNT_POINT), mount_points, required_size);
@@ -95,8 +103,15 @@ int wlibc_getmntinfo(struct statfs **mounts, int mode)
 		}
 	}
 
+	// User freeable buffer, use malloc.
 	*mounts = (struct statfs *)malloc(sizeof(struct statfs) * drive_count);
 	DWORD index = 0;
+
+	if (*mounts == NULL)
+	{
+		errno = ENOMEM;
+		return -1;
+	}
 
 	for (ULONG i = 0; i < mount_points->NumberOfMountPoints; ++i)
 	{
@@ -126,6 +141,6 @@ int wlibc_getmntinfo(struct statfs **mounts, int mode)
 
 finish:
 	NtClose(mountmgr_handle);
-	free(mount_points_buffer);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, mount_points_buffer);
 	return drive_count;
 }

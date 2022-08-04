@@ -45,7 +45,7 @@ int wlibc_gethostname(char *name, size_t length)
 	u8_hostname.Buffer = name;
 	u8_hostname.MaximumLength = (USHORT)length;
 	status = RtlUnicodeStringToUTF8String(&u8_hostname, &u16_hostname, FALSE);
-	free(data);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, data);
 
 	if (status != STATUS_SUCCESS)
 	{

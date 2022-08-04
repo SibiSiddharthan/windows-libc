@@ -5,16 +5,26 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <unistd.h>
-#include <stdlib.h>
-#include <wchar.h>
 #include <internal/nt.h>
+#include <internal/error.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <wchar.h>
 
 char *wlibc_getcwd(char *buf, size_t size)
 {
 	char *return_buffer = NULL;
+	NTSTATUS status;
 	UTF8_STRING u8_cwd;
-	RtlUnicodeStringToUTF8String(&u8_cwd, &(NtCurrentPeb()->ProcessParameters->CurrentDirectory.DosPath), TRUE);
+
+	status = RtlUnicodeStringToUTF8String(&u8_cwd, &(NtCurrentPeb()->ProcessParameters->CurrentDirectory.DosPath), TRUE);
+
+	if (status != STATUS_SUCCESS)
+	{
+		map_ntstatus_to_errno(status);
+		return NULL;
+	}
+
 	// Dospath has a trailing slash remove it only if it is a directory. Ignore if at root of a volume.
 	if (u8_cwd.Length != 3) // "C:\"
 	{
@@ -32,11 +42,23 @@ char *wlibc_getcwd(char *buf, size_t size)
 		if (size == 0)
 		{
 			return_buffer = (char *)malloc(u8_cwd.MaximumLength);
+			if (return_buffer == NULL)
+			{
+				errno = ENOMEM;
+				return NULL;
+			}
+
 			memcpy(return_buffer, u8_cwd.Buffer, u8_cwd.MaximumLength);
 		}
 		else // size > u8_cwd.Length
 		{
 			return_buffer = (char *)malloc(size);
+			if (return_buffer == NULL)
+			{
+				errno = ENOMEM;
+				return NULL;
+			}
+
 			memcpy(return_buffer, u8_cwd.Buffer, u8_cwd.MaximumLength);
 		}
 	}
@@ -81,11 +103,23 @@ wchar_t *wlibc_wgetcwd(wchar_t *wbuf, size_t length)
 		if (length == 0)
 		{
 			return_buffer = (wchar_t *)malloc(cwd_length);
+			if (return_buffer == NULL)
+			{
+				errno = ENOMEM;
+				return NULL;
+			}
+
 			memcpy(return_buffer, cwd->Buffer, cwd_length);
 		}
 		else // length * sizeof(wchar_t) > cwd_length
 		{
 			return_buffer = (wchar_t *)malloc(sizeof(wchar_t) * length);
+			if (return_buffer == NULL)
+			{
+				errno = ENOMEM;
+				return NULL;
+			}
+
 			memcpy(return_buffer, cwd->Buffer, cwd_length);
 		}
 	}

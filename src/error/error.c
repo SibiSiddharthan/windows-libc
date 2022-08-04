@@ -6,6 +6,7 @@
 */
 
 #include <internal/nt.h>
+#include <internal/error.h>
 #include <internal/validate.h>
 #include <errno.h>
 #include <error.h>
@@ -20,10 +21,18 @@ static char program_name_buffer[260] = {0};
 
 static char *get_program_name(void)
 {
+	NTSTATUS status;
+	UTF8_STRING u8_imagepath;
+
+	status = RtlUnicodeStringToUTF8String(&u8_imagepath, &(NtCurrentPeb()->ProcessParameters->ImagePathName), TRUE);
+	if (status != STATUS_SUCCESS)
+	{
+		map_ntstatus_to_errno(status);
+		return NULL;
+	}
+
 	int length = 0;
 	int start = 0;
-	UTF8_STRING u8_imagepath;
-	RtlUnicodeStringToUTF8String(&u8_imagepath, &(NtCurrentPeb()->ProcessParameters->ImagePathName), TRUE);
 
 	for (int i = u8_imagepath.Length;; --i)
 	{

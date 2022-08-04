@@ -10,7 +10,6 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <poll.h>
-#include <stdlib.h>
 #include <intrin.h>
 
 int do_poll(const fdinfo *pinfo, struct pollfd *fds, nfds_t nfds, const struct timespec *timeout)
@@ -185,7 +184,12 @@ int wlibc_common_poll(struct pollfd *fds, nfds_t nfds, const struct timespec *ti
 		return -1;
 	}
 
-	pinfo = (fdinfo *)malloc(sizeof(fdinfo) * nfds);
+	pinfo = (fdinfo *)RtlAllocateHeap(NtCurrentProcessHeap(), 0, sizeof(fdinfo) * nfds);
+	if (pinfo == NULL)
+	{
+		errno = ENOMEM;
+		return -1;
+	}
 
 	// TODO Avoid locking every single time.
 	for (nfds_t i = 0; i < nfds; ++i)
@@ -206,7 +210,7 @@ int wlibc_common_poll(struct pollfd *fds, nfds_t nfds, const struct timespec *ti
 		sigprocmask(SIG_SETMASK, &oldmask, NULL);
 	}
 
-	free(pinfo);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, pinfo);
 
 	return result;
 }

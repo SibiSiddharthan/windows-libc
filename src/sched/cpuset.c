@@ -5,9 +5,9 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
+#include <internal/nt.h>
 #include <errno.h>
 #include <sched.h>
-#include <stdlib.h>
 #include <intrin.h>
 
 size_t wlibc_cpu_alloc_size(int num_cpus)
@@ -33,7 +33,12 @@ cpu_set_t *wlibc_cpu_alloc(int num_cpus)
 		return NULL;
 	}
 
-	cpu_set_t *set = (cpu_set_t *)malloc(sizeof(cpu_set_t) + ((num_cpus - 1) / 64) * 8);
+	cpu_set_t *set = (cpu_set_t *)RtlAllocateHeap(NtCurrentProcessHeap(), 0, sizeof(cpu_set_t) + ((num_cpus - 1) / 64) * 8);
+	if (set == NULL)
+	{
+		return NULL;
+	}
+
 	set->num_groups = (num_cpus / 64) + ((num_cpus % 64) == 0 ? 0 : 1);
 	set->num_cpus = num_cpus;
 
@@ -47,7 +52,7 @@ cpu_set_t *wlibc_cpu_alloc(int num_cpus)
 
 void wlibc_cpu_free(cpu_set_t *set)
 {
-	free(set);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, set);
 }
 
 void wlibc_cpu_zero(cpu_set_t *set)

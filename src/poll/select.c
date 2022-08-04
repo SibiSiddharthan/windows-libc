@@ -5,9 +5,9 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
+#include <internal/nt.h>
 #include <errno.h>
 #include <poll.h>
-#include <stdlib.h>
 #include <string.h>
 #include <sys/select.h>
 
@@ -67,8 +67,12 @@ int wlibc_common_select(int nfds, fd_set *restrict readfds, fd_set *restrict wri
 		return 0;
 	}
 
-	pollfds = (struct pollfd *)malloc(sizeof(struct pollfd) * countfds);
-	memset(pollfds, 0, sizeof(struct pollfd) * countfds);
+	pollfds = (struct pollfd *)RtlAllocateHeap(NtCurrentProcessHeap(), HEAP_ZERO_MEMORY, sizeof(struct pollfd) * countfds);
+	if (pollfds == NULL)
+	{
+		errno = ENOMEM;
+		return -1;
+	}
 
 	size_t index = 0;
 	for (int i = 0; i < nfds; ++i)
@@ -104,7 +108,7 @@ int wlibc_common_select(int nfds, fd_set *restrict readfds, fd_set *restrict wri
 	poll_result = wlibc_common_poll(pollfds, countfds, timeout, sigmask);
 	if (poll_result == -1)
 	{
-		free(pollfds);
+		RtlFreeHeap(NtCurrentProcessHeap(), 0, pollfds);
 		return -1;
 	}
 
@@ -145,7 +149,7 @@ int wlibc_common_select(int nfds, fd_set *restrict readfds, fd_set *restrict wri
 		}
 	}
 
-	free(pollfds);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, pollfds);
 
 	if (error == 1)
 	{

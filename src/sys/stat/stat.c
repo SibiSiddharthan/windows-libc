@@ -11,7 +11,6 @@
 #include <internal/fcntl.h>
 #include <internal/security.h>
 #include <stdbool.h>
-#include <stdlib.h>
 #include <sys/stat.h>
 #include <time.h>
 
@@ -215,39 +214,53 @@ int do_stat(HANDLE handle, struct stat *restrict statbuf)
 		if ((statbuf->st_mode & S_IFMT) == S_IFLNK)
 		{
 			statbuf->st_size = -1;
-			PREPARSE_DATA_BUFFER reparse_buffer = (PREPARSE_DATA_BUFFER)malloc(MAXIMUM_REPARSE_DATA_BUFFER_SIZE);
-			status = NtFsControlFile(handle, NULL, NULL, NULL, &io, FSCTL_GET_REPARSE_POINT, NULL, 0, reparse_buffer,
-									 MAXIMUM_REPARSE_DATA_BUFFER_SIZE);
-			if (status != STATUS_SUCCESS)
-			{
-				// don't return just set errno
-				map_ntstatus_to_errno(status);
-			}
+			PREPARSE_DATA_BUFFER reparse_buffer =
+				(PREPARSE_DATA_BUFFER)RtlAllocateHeap(NtCurrentProcessHeap(), 0, MAXIMUM_REPARSE_DATA_BUFFER_SIZE);
 
-			if (reparse_buffer->ReparseTag == IO_REPARSE_TAG_SYMLINK)
+			if (reparse_buffer != NULL)
 			{
-				if (reparse_buffer->SymbolicLinkReparseBuffer.PrintNameLength != 0)
+				status = NtFsControlFile(handle, NULL, NULL, NULL, &io, FSCTL_GET_REPARSE_POINT, NULL, 0, reparse_buffer,
+										 MAXIMUM_REPARSE_DATA_BUFFER_SIZE);
+				if (status == STATUS_SUCCESS)
 				{
-					statbuf->st_size = reparse_buffer->SymbolicLinkReparseBuffer.PrintNameLength / sizeof(WCHAR);
-				}
-				else if (reparse_buffer->SymbolicLinkReparseBuffer.SubstituteNameLength != 0)
-				{
-					statbuf->st_size = reparse_buffer->SymbolicLinkReparseBuffer.SubstituteNameLength / sizeof(WCHAR);
-				}
-			}
 
-			if (reparse_buffer->ReparseTag == IO_REPARSE_TAG_MOUNT_POINT)
-			{
-				if (reparse_buffer->MountPointReparseBuffer.PrintNameLength != 0)
-				{
-					statbuf->st_size = reparse_buffer->MountPointReparseBuffer.PrintNameLength / sizeof(WCHAR);
+					if (reparse_buffer->ReparseTag == IO_REPARSE_TAG_SYMLINK)
+					{
+						if (reparse_buffer->SymbolicLinkReparseBuffer.PrintNameLength != 0)
+						{
+							statbuf->st_size = reparse_buffer->SymbolicLinkReparseBuffer.PrintNameLength / sizeof(WCHAR);
+						}
+						else if (reparse_buffer->SymbolicLinkReparseBuffer.SubstituteNameLength != 0)
+						{
+							statbuf->st_size = reparse_buffer->SymbolicLinkReparseBuffer.SubstituteNameLength / sizeof(WCHAR);
+						}
+					}
+
+					if (reparse_buffer->ReparseTag == IO_REPARSE_TAG_MOUNT_POINT)
+					{
+						if (reparse_buffer->MountPointReparseBuffer.PrintNameLength != 0)
+						{
+							statbuf->st_size = reparse_buffer->MountPointReparseBuffer.PrintNameLength / sizeof(WCHAR);
+						}
+						else if (reparse_buffer->MountPointReparseBuffer.SubstituteNameLength != 0)
+						{
+							statbuf->st_size = reparse_buffer->MountPointReparseBuffer.SubstituteNameLength / sizeof(WCHAR);
+						}
+					}
+
+					RtlFreeHeap(NtCurrentProcessHeap(), 0, reparse_buffer);
 				}
-				else if (reparse_buffer->MountPointReparseBuffer.SubstituteNameLength != 0)
+				else
 				{
-					statbuf->st_size = reparse_buffer->MountPointReparseBuffer.SubstituteNameLength / sizeof(WCHAR);
+					// Don't return just set errno.
+					map_ntstatus_to_errno(status);
 				}
 			}
-			free(reparse_buffer);
+			else
+			{
+				// Don't return just set errno.
+				errno = ENOMEM;
+			}
 		}
 
 		FILE_FS_SIZE_INFORMATION size_info;

@@ -10,7 +10,6 @@
 #include <internal/registry.h>
 #include <LM.h>
 #include <sddl.h>
-#include <stdlib.h>
 #include <string.h>
 #include <pwd.h>
 #include <wchar.h>
@@ -89,7 +88,13 @@ int USER_INFO_3_to_passwd(PUSER_INFO_3 user_info, struct passwd *pw_entry, void 
 		{
 			string_sid_length = wcslen(string_sid);
 			// "\\Registry\\User\\sid\\Volatile Environment\0"
-			registry_key = (wchar_t *)malloc((15 + string_sid_length + 20 + 2) * sizeof(wchar_t));
+			registry_key = (wchar_t *)RtlAllocateHeap(NtCurrentProcessHeap(), 0, (15 + string_sid_length + 20 + 2) * sizeof(wchar_t));
+			if (registry_key == NULL)
+			{
+				errno = ENOMEM;
+				return -1;
+			}
+
 			memcpy(registry_key, L"\\Registry\\User\\", 15 * sizeof(wchar_t));
 			memcpy(registry_key + 15, string_sid, string_sid_length * sizeof(wchar_t));
 			registry_key[15 + string_sid_length] = L'\\';
@@ -97,8 +102,8 @@ int USER_INFO_3_to_passwd(PUSER_INFO_3 user_info, struct passwd *pw_entry, void 
 
 			real_homedir = get_registry_value(registry_key, L"USERPROFILE", &homedir_size);
 
+			RtlFreeHeap(NtCurrentProcessHeap(), 0, registry_key);
 			LocalFree(string_sid);
-			free(registry_key);
 
 			if (real_homedir != NULL)
 			{
@@ -109,7 +114,7 @@ int USER_INFO_3_to_passwd(PUSER_INFO_3 user_info, struct passwd *pw_entry, void 
 				u8_homedir.MaximumLength = (USHORT)(size - u8_name.MaximumLength + u8_gecos.MaximumLength);
 				u8_homedir.Buffer = (char *)buffer + u8_name.MaximumLength + u8_gecos.MaximumLength;
 				ntstatus = RtlUnicodeStringToUTF8String(&u8_homedir, &u16_homedir, FALSE);
-				free(real_homedir);
+				RtlFreeHeap(NtCurrentProcessHeap(), 0, real_homedir);
 
 				if (ntstatus != STATUS_SUCCESS)
 				{

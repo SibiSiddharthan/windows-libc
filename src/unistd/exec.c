@@ -10,7 +10,6 @@
 #include <process.h>
 #include <spawn.h>
 #include <stdarg.h>
-#include <stdlib.h>
 #include <sys/wait.h>
 
 #define WLIBC_VALIDATE_SPAWN_MODE(mode)         \
@@ -61,8 +60,14 @@ int wlibc_execl(int use_path, int env_given, const char *path, const char *arg0,
 
 	char **argv = NULL, **env = NULL;
 
-	argv = (char **)malloc(sizeof(char *) * (argc + 1));
-	env = (char **)malloc(sizeof(char *) * (envc + 1));
+	argv = (char **)RtlAllocateHeap(NtCurrentProcessHeap(), 0, sizeof(char *) * (argc + 1));
+	env = (char **)RtlAllocateHeap(NtCurrentProcessHeap(), 0, sizeof(char *) * (envc + 1));
+
+	if (argv == NULL || env == NULL)
+	{
+		errno = ENOMEM;
+		return -1;
+	}
 
 	// argv
 	for (int i = 0; i < argc; ++i)
@@ -93,8 +98,8 @@ int wlibc_execl(int use_path, int env_given, const char *path, const char *arg0,
 
 	int status = wlibc_execve(use_path, path, argv, env);
 
-	free(argv);
-	free(env);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, argv);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, env);
 
 	return status;
 }
@@ -156,8 +161,14 @@ int wlibc_spawnl(int use_path, int env_given, int mode, const char *path, const 
 
 	char **argv = NULL, **env = NULL;
 
-	argv = (char **)malloc(sizeof(char *) * (argc + 1));
-	env = (char **)malloc(sizeof(char *) * (envc + 1));
+	argv = (char **)RtlAllocateHeap(NtCurrentProcessHeap(), 0, sizeof(char *) * (argc + 1));
+	env = (char **)RtlAllocateHeap(NtCurrentProcessHeap(), 0, sizeof(char *) * (envc + 1));
+
+	if (argv == NULL || env == NULL)
+	{
+		errno = ENOMEM;
+		return -1;
+	}
 
 	// argv
 	for (int i = 0; i < argc; ++i)
@@ -188,8 +199,8 @@ int wlibc_spawnl(int use_path, int env_given, int mode, const char *path, const 
 
 	int status = wlibc_spawnve(use_path, mode, path, argv, env);
 
-	free(argv);
-	free(env);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, argv);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, env);
 
 	return status;
 }

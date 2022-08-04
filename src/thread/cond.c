@@ -11,7 +11,6 @@
 #include <internal/validate.h>
 #include <errno.h>
 #include <intrin.h>
-#include <stdlib.h>
 #include <thread.h>
 
 #define VALIDATE_COND(cond)        \
@@ -52,8 +51,14 @@ int wlibc_cond_init(cond_t *restrict cond, const cond_attr_t *restrict attribute
 	cond->queue_end = 0;
 	cond->waiting_threads = 0;
 	cond->lock = 0;
+
 	// Create an array to store 64 thread ids.
-	cond->ptr = (DWORD *)malloc(64 * sizeof(DWORD));
+	cond->ptr = (DWORD *)RtlAllocateHeap(NtCurrentProcessHeap(), 0, 64 * sizeof(DWORD));
+	if (cond->ptr == NULL)
+	{
+		errno = ENOMEM;
+		return -1;
+	}
 
 	return 0;
 }
@@ -62,7 +67,7 @@ int wlibc_cond_destroy(cond_t *restrict cond)
 {
 	VALIDATE_COND(cond);
 
-	free(cond->ptr);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, cond->ptr);
 	cond->ptr = NULL;
 	cond->queue_size = 0;
 	cond->queue_begin = 0;

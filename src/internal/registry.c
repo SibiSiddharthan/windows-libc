@@ -8,7 +8,7 @@
 #include <internal/nt.h>
 #include <internal/registry.h>
 #include <internal/error.h>
-#include <stdlib.h>
+#include <errno.h>
 
 void *get_registry_value(const wchar_t *restrict basekey, const wchar_t *restrict subkey, size_t *restrict outsize)
 {
@@ -32,7 +32,13 @@ void *get_registry_value(const wchar_t *restrict basekey, const wchar_t *restric
 	}
 
 	// Start with 512 bytes
-	value_info = (PKEY_VALUE_FULL_INFORMATION)malloc(512);
+	value_info = (PKEY_VALUE_FULL_INFORMATION)RtlAllocateHeap(NtCurrentProcessHeap(), 0, 512);
+	if (value_info == NULL)
+	{
+		errno = ENOMEM;
+		return NULL;
+	}
+
 	RtlInitUnicodeString(&valuename, subkey);
 
 	status = NtQueryValueKey(key, &valuename, KeyValueFullInformation, value_info, length, &length);
@@ -40,7 +46,13 @@ void *get_registry_value(const wchar_t *restrict basekey, const wchar_t *restric
 	{
 		if (status == STATUS_BUFFER_TOO_SMALL || status == STATUS_BUFFER_OVERFLOW)
 		{
-			value_info = (PKEY_VALUE_FULL_INFORMATION)realloc(value_info, length);
+			value_info = (PKEY_VALUE_FULL_INFORMATION)RtlReAllocateHeap(NtCurrentProcessHeap(), 0, value_info, length);
+			if (value_info == NULL)
+			{
+				errno = ENOMEM;
+				return NULL;
+			}
+
 			status = NtQueryValueKey(key, &valuename, KeyValueFullInformation, value_info, length, &length);
 			if (status != STATUS_SUCCESS)
 			{
@@ -57,13 +69,20 @@ void *get_registry_value(const wchar_t *restrict basekey, const wchar_t *restric
 
 	if (value_info->DataLength > 2) // L'\0'
 	{
-		data = malloc(value_info->DataLength);
+		data = RtlAllocateHeap(NtCurrentProcessHeap(), 0, value_info->DataLength);
+		if (data == NULL)
+		{
+			errno = ENOMEM;
+			return NULL;
+		}
+
 		memcpy(data, (char *)value_info + value_info->DataOffset, value_info->DataLength);
 	}
+
 	*outsize = value_info->DataLength;
 
 finish:
-	free(value_info);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, value_info);
 	// data will be freed by user
 	return data;
 }

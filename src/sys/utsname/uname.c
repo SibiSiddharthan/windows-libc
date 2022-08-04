@@ -15,6 +15,7 @@
 
 static void u16_value_to_u8_value(char *destination, wchar_t *source, size_t size)
 {
+	NTSTATUS status;
 	UTF8_STRING u8_data;
 	UNICODE_STRING u16_data;
 
@@ -25,8 +26,14 @@ static void u16_value_to_u8_value(char *destination, wchar_t *source, size_t siz
 	u8_data.MaximumLength = WLIBC_UTSNAME_LENGTH;
 	u8_data.Buffer = destination;
 
-	RtlUnicodeStringToUTF8String(&u8_data, &u16_data, FALSE);
-	free(source);
+	status = RtlUnicodeStringToUTF8String(&u8_data, &u16_data, FALSE);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, source);
+
+	// If we encounter an error in converting UTF-16 to UTF-8(most likely insufficient buffer space.), set errno.
+	if(status != STATUS_SUCCESS)
+	{
+		map_ntstatus_to_errno(status);
+	}
 }
 
 int wlibc_uname(struct utsname *name)
