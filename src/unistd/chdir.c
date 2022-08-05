@@ -30,16 +30,23 @@ int wlibc_chdir(const char *name)
 {
 	VALIDATE_PATH(name, ENOENT, -1);
 
+	NTSTATUS status;
 	UTF8_STRING u8_name;
 	UNICODE_STRING u16_name;
 
 	RtlInitUTF8String(&u8_name, name);
-	RtlUTF8StringToUnicodeString(&u16_name, &u8_name, TRUE);
+	status = RtlUTF8StringToUnicodeString(&u16_name, &u8_name, TRUE);
 
-	int status = common_chdir(u16_name.Buffer);
+	if (status != STATUS_SUCCESS)
+	{
+		map_ntstatus_to_errno(status);
+		return -1;
+	}
+
+	int result = common_chdir(u16_name.Buffer);
 
 	RtlFreeUnicodeString(&u16_name);
-	return status;
+	return result;
 }
 
 int wlibc_fchdir(int fd)
@@ -51,14 +58,14 @@ int wlibc_fchdir(int fd)
 	}
 
 	UNICODE_STRING *dirpath = get_fd_dospath(fd);
-	if(dirpath == NULL)
+	if (dirpath == NULL)
 	{
-		errno = EBADF;
+		// errno will be set by `get_fd_dospath`.
 		return -1;
 	}
 
 	int result = common_chdir(dirpath->Buffer);
-	free(dirpath);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, dirpath);
 
 	return result;
 }

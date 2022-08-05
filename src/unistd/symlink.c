@@ -10,7 +10,6 @@
 #include <internal/fcntl.h>
 #include <internal/path.h>
 #include <internal/security.h>
-#include <stdlib.h>
 #include <unistd.h>
 
 // Symlinking to root '/' requires special handling.
@@ -41,7 +40,8 @@ int symlink_root(int dirfd, const char *restrict target, mode_t mode)
 
 	status = NtCreateFile(&target_handle, FILE_READ_ATTRIBUTES | FILE_WRITE_ATTRIBUTES | SYNCHRONIZE, &object, &io, NULL, 0,
 						  FILE_SHARE_READ | FILE_SHARE_WRITE, FILE_CREATE, FILE_DIRECTORY_FILE | FILE_SYNCHRONOUS_IO_NONALERT, NULL, 0);
-	free(u16_nttarget);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, u16_nttarget);
+
 	if (status != STATUS_SUCCESS)
 	{
 		map_ntstatus_to_errno(status);
@@ -50,8 +50,14 @@ int symlink_root(int dirfd, const char *restrict target, mode_t mode)
 
 	USHORT total_reparse_data_length =
 		REPARSE_DATA_BUFFER_HEADER_SIZE + 12 + 6 + 14; // 6 -> "C:\" (PrintName), 14 -> "\??\C:\" (SubstituteName).
-	PREPARSE_DATA_BUFFER reparse_data = (PREPARSE_DATA_BUFFER)malloc(total_reparse_data_length);
-	memset(reparse_data, 0, total_reparse_data_length);
+	PREPARSE_DATA_BUFFER reparse_data =
+		(PREPARSE_DATA_BUFFER)RtlAllocateHeap(NtCurrentProcessHeap(), HEAP_ZERO_MEMORY, total_reparse_data_length);
+
+	if (reparse_data == NULL)
+	{
+		errno = ENOMEM;
+		return -1;
+	}
 
 	reparse_data->ReparseTag = IO_REPARSE_TAG_SYMLINK;
 	reparse_data->ReparseDataLength = total_reparse_data_length - REPARSE_DATA_BUFFER_HEADER_SIZE;
@@ -69,7 +75,7 @@ int symlink_root(int dirfd, const char *restrict target, mode_t mode)
 	status =
 		NtFsControlFile(target_handle, NULL, NULL, NULL, &io, FSCTL_SET_REPARSE_POINT, reparse_data, total_reparse_data_length, NULL, 0);
 
-	free(reparse_data);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, reparse_data);
 	NtClose(target_handle);
 
 	if (status != STATUS_SUCCESS)
@@ -83,10 +89,11 @@ int symlink_root(int dirfd, const char *restrict target, mode_t mode)
 
 int common_symlink(const char *restrict source, int dirfd, const char *restrict target, mode_t mode)
 {
+	int result = -1;
 	NTSTATUS status;
 	IO_STATUS_BLOCK io;
 	HANDLE target_handle;
-	UNICODE_STRING *u16_nttarget, *u16_ntsource;
+	UNICODE_STRING *u16_nttarget = NULL, *u16_ntsource = NULL;
 	OBJECT_ATTRIBUTES object;
 	PSECURITY_DESCRIPTOR security_descriptor = NULL;
 
@@ -115,7 +122,13 @@ int common_symlink(const char *restrict source, int dirfd, const char *restrict 
 	// Try opening the source
 	if (!is_absolute)
 	{
-		normalized_source = malloc(target_length + source_length + 5); // '/../' + NULL
+		normalized_source = RtlAllocateHeap(NtCurrentProcessHeap(), 0, target_length + source_length + 5); // '/../' + NULL
+		if (normalized_source == NULL)
+		{
+			errno = ENOMEM;
+			goto finish;
+		}
+
 		// This is an easy way of checking whether the link text if it exists is a directory or a file.
 		memcpy(normalized_source, target, target_length + 1); // Including NULL
 		if (target[target_length - 1] != '/' && target[target_length - 1] != '\\')
@@ -126,7 +139,7 @@ int common_symlink(const char *restrict source, int dirfd, const char *restrict 
 		strcat(normalized_source, source);
 
 		u16_ntsource = get_absolute_ntpath(dirfd, normalized_source);
-		free(normalized_source);
+		RtlFreeHeap(NtCurrentProcessHeap(), 0, normalized_source);
 	}
 	else
 	{
@@ -138,14 +151,12 @@ int common_symlink(const char *restrict source, int dirfd, const char *restrict 
 	{
 		// Bad path
 		// errno will be set by 'get_absolute_ntpath'.
-		free(u16_nttarget);
-		return -1;
+		goto finish;
 	}
 
-	HANDLE source_handle = just_open2(u16_ntsource, FILE_READ_ATTRIBUTES, FILE_OPEN_REPARSE_POINT | FILE_NON_DIRECTORY_FILE);
-	free(u16_ntsource);
-
 	ULONG options = FILE_NON_DIRECTORY_FILE;
+	HANDLE source_handle = just_open2(u16_ntsource, FILE_READ_ATTRIBUTES, FILE_OPEN_REPARSE_POINT | FILE_NON_DIRECTORY_FILE);
+
 	if (source_handle == INVALID_HANDLE_VALUE)
 	{
 		if (errno == EISDIR)
@@ -165,10 +176,11 @@ int common_symlink(const char *restrict source, int dirfd, const char *restrict 
 
 	security_descriptor = (PSECURITY_DESCRIPTOR)get_security_descriptor(mode & 0777, options == FILE_DIRECTORY_FILE ? 1 : 0);
 	InitializeObjectAttributes(&object, u16_nttarget, OBJ_CASE_INSENSITIVE, NULL, security_descriptor);
+
 	// Open synchronously as NtFsControlFile might return STATUS_PENDING.
 	status = NtCreateFile(&target_handle, FILE_READ_ATTRIBUTES | FILE_WRITE_ATTRIBUTES | SYNCHRONIZE, &object, &io, NULL, 0,
 						  FILE_SHARE_READ | FILE_SHARE_WRITE, FILE_CREATE, options | FILE_SYNCHRONOUS_IO_NONALERT, NULL, 0);
-	free(u16_nttarget);
+
 	if (status != STATUS_SUCCESS)
 	{
 		map_ntstatus_to_errno(status);
@@ -182,7 +194,13 @@ int common_symlink(const char *restrict source, int dirfd, const char *restrict 
 	u8_source.Length = (USHORT)source_length;
 	u8_source.MaximumLength = (USHORT)(source_length + 1);
 	u8_source.Buffer = (PCHAR)source;
-	RtlUTF8StringToUnicodeString(&u16_source, &u8_source, TRUE);
+
+	status = RtlUTF8StringToUnicodeString(&u16_source, &u8_source, TRUE);
+	if (status != STATUS_SUCCESS)
+	{
+		map_ntstatus_to_errno(status);
+		goto finish;
+	}
 
 	// Handle cygwin paths
 	if (u16_source.Buffer[0] == L'/' && isalpha((char)u16_source.Buffer[1]))
@@ -220,8 +238,14 @@ int common_symlink(const char *restrict source, int dirfd, const char *restrict 
 
 	USHORT total_reparse_data_length =
 		REPARSE_DATA_BUFFER_HEADER_SIZE + 12 + 2 * u16_source.Length + (is_absolute ? 8 : 0); // For SubstituteName, PrintName
-	PREPARSE_DATA_BUFFER reparse_data = (PREPARSE_DATA_BUFFER)malloc(total_reparse_data_length);
-	memset(reparse_data, 0, total_reparse_data_length);
+	PREPARSE_DATA_BUFFER reparse_data =
+		(PREPARSE_DATA_BUFFER)RtlAllocateHeap(NtCurrentProcessHeap(), HEAP_ZERO_MEMORY, total_reparse_data_length);
+
+	if (reparse_data == NULL)
+	{
+		errno = ENOMEM;
+		goto finish;
+	}
 
 	reparse_data->ReparseTag = IO_REPARSE_TAG_SYMLINK;
 	reparse_data->ReparseDataLength = total_reparse_data_length - REPARSE_DATA_BUFFER_HEADER_SIZE;
@@ -245,16 +269,21 @@ int common_symlink(const char *restrict source, int dirfd, const char *restrict 
 	status =
 		NtFsControlFile(target_handle, NULL, NULL, NULL, &io, FSCTL_SET_REPARSE_POINT, reparse_data, total_reparse_data_length, NULL, 0);
 
-	free(reparse_data);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, reparse_data);
 	NtClose(target_handle);
 
 	if (status != STATUS_SUCCESS)
 	{
 		map_ntstatus_to_errno(status);
-		return -1;
+		goto finish;
 	}
 
-	return 0;
+	result = 0;
+
+finish:
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, u16_nttarget);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, u16_ntsource);
+	return result;
 }
 
 int wlibc_common_symlink(const char *restrict source, int dirfd, const char *restrict target, mode_t mode)

@@ -23,11 +23,11 @@ int test_null()
 
 	path = get_absolute_ntpath(AT_FDCWD, "NUL");
 	ASSERT_MEMEQ((char *)path->Buffer, (char *)L"\\Device\\Null", path->Length);
-	free(path);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, path);
 
 	path = get_absolute_ntpath(AT_FDCWD, "/dev/null");
 	ASSERT_MEMEQ((char *)path->Buffer, (char *)L"\\Device\\Null", path->Length);
-	free(path);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, path);
 
 	return 0;
 }
@@ -38,11 +38,11 @@ int test_con()
 
 	path = get_absolute_ntpath(AT_FDCWD, "CON");
 	ASSERT_MEMEQ((char *)path->Buffer, (char *)L"\\Device\\ConDrv\\Console", path->Length);
-	free(path);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, path);
 
 	path = get_absolute_ntpath(AT_FDCWD, "/dev/tty");
 	ASSERT_MEMEQ((char *)path->Buffer, (char *)L"\\Device\\ConDrv\\Console", path->Length);
-	free(path);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, path);
 
 	return 0;
 }
@@ -53,14 +53,14 @@ int test_relative_nt()
 
 	path = get_absolute_ntpath(AT_FDCWD, ".");
 	ASSERT_WSTREQ(path->Buffer, cwd_nt);
-	free(path);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, path);
 
 	cwd_nt[cwd_nt_length] = L'\\';
 	cwd_nt[cwd_nt_length + 1] = L'a';
 	cwd_nt[cwd_nt_length + 2] = L'\0';
 	path = get_absolute_ntpath(AT_FDCWD, "a");
 	ASSERT_WSTREQ(path->Buffer, cwd_nt);
-	free(path);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, path);
 
 	cwd_nt[cwd_nt_length + 2] = L'\\';
 	cwd_nt[cwd_nt_length + 3] = L'a';
@@ -69,61 +69,61 @@ int test_relative_nt()
 	cwd_nt[cwd_nt_length + 6] = L'\0';
 	path = get_absolute_ntpath(AT_FDCWD, "a/abc");
 	ASSERT_WSTREQ(path->Buffer, cwd_nt);
-	free(path);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, path);
 
 	path = get_absolute_ntpath(AT_FDCWD, "a\\abc");
 	ASSERT_WSTREQ(path->Buffer, cwd_nt);
-	free(path);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, path);
 
 	path = get_absolute_ntpath(AT_FDCWD, "a/./abc");
 	ASSERT_WSTREQ(path->Buffer, cwd_nt);
-	free(path);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, path);
 
 	// mix and forward slash with backward slashes
 	path = get_absolute_ntpath(AT_FDCWD, "a\\./abc");
 	ASSERT_WSTREQ(path->Buffer, cwd_nt);
-	free(path);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, path);
 
 	cwd_nt[cwd_nt_length + 2] = L'b';
 	cwd_nt[cwd_nt_length + 3] = L'c';
 	cwd_nt[cwd_nt_length + 4] = L'\0';
 	path = get_absolute_ntpath(AT_FDCWD, "a/../abc");
 	ASSERT_WSTREQ(path->Buffer, cwd_nt);
-	free(path);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, path);
 
 	path = get_absolute_ntpath(AT_FDCWD, "abc/.");
 	ASSERT_WSTREQ(path->Buffer, cwd_nt);
-	free(path);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, path);
 
 	path = get_absolute_ntpath(AT_FDCWD, "abc/./.");
 	ASSERT_WSTREQ(path->Buffer, cwd_nt);
-	free(path);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, path);
 
 	// trailing slash
 	cwd_nt[cwd_nt_length + 4] = L'\\';
 	cwd_nt[cwd_nt_length + 5] = L'\0';
 	path = get_absolute_ntpath(AT_FDCWD, "abc/");
 	ASSERT_WSTREQ(path->Buffer, cwd_nt);
-	free(path);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, path);
 
 	path = get_absolute_ntpath(AT_FDCWD, "abc/./");
 	ASSERT_WSTREQ(path->Buffer, cwd_nt);
-	free(path);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, path);
 
 	path = get_absolute_ntpath(AT_FDCWD, "abc/././");
 	ASSERT_WSTREQ(path->Buffer, cwd_nt);
-	free(path);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, path);
 
 	cwd_nt[cwd_nt_length] = L'\0';
 	path = get_absolute_ntpath(AT_FDCWD, "abc/..");
 	ASSERT_WSTREQ(path->Buffer, cwd_nt);
-	free(path);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, path);
 
 	cwd_nt[cwd_nt_length] = L'\\';
 	cwd_nt[cwd_nt_length + 1] = L'\0';
 	path = get_absolute_ntpath(AT_FDCWD, "abc/../");
 	ASSERT_WSTREQ(path->Buffer, cwd_nt);
-	free(path);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, path);
 
 	cwd_nt[cwd_nt_length] = L'\0';
 
@@ -136,14 +136,14 @@ int test_relative_dos()
 
 	path = get_absolute_dospath(AT_FDCWD, ".");
 	ASSERT_WSTREQ(path->Buffer, cwd_dos);
-	free(path);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, path);
 
 	cwd_dos[cwd_dos_length] = L'\\';
 	cwd_dos[cwd_dos_length + 1] = L'a';
 	cwd_dos[cwd_dos_length + 2] = L'\0';
 	path = get_absolute_dospath(AT_FDCWD, "a");
 	ASSERT_WSTREQ(path->Buffer, cwd_dos);
-	free(path);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, path);
 
 	cwd_dos[cwd_dos_length + 2] = L'\\';
 	cwd_dos[cwd_dos_length + 3] = L'a';
@@ -152,61 +152,61 @@ int test_relative_dos()
 	cwd_dos[cwd_dos_length + 6] = L'\0';
 	path = get_absolute_dospath(AT_FDCWD, "a/abc");
 	ASSERT_WSTREQ(path->Buffer, cwd_dos);
-	free(path);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, path);
 
 	path = get_absolute_dospath(AT_FDCWD, "a\\abc");
 	ASSERT_WSTREQ(path->Buffer, cwd_dos);
-	free(path);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, path);
 
 	path = get_absolute_dospath(AT_FDCWD, "a/./abc");
 	ASSERT_WSTREQ(path->Buffer, cwd_dos);
-	free(path);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, path);
 
 	// mix and forward slash with backward slashes
 	path = get_absolute_dospath(AT_FDCWD, "a\\./abc");
 	ASSERT_WSTREQ(path->Buffer, cwd_dos);
-	free(path);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, path);
 
 	cwd_dos[cwd_dos_length + 2] = L'b';
 	cwd_dos[cwd_dos_length + 3] = L'c';
 	cwd_dos[cwd_dos_length + 4] = L'\0';
 	path = get_absolute_dospath(AT_FDCWD, "a/../abc");
 	ASSERT_WSTREQ(path->Buffer, cwd_dos);
-	free(path);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, path);
 
 	path = get_absolute_dospath(AT_FDCWD, "abc/.");
 	ASSERT_WSTREQ(path->Buffer, cwd_dos);
-	free(path);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, path);
 
 	path = get_absolute_dospath(AT_FDCWD, "abc/./.");
 	ASSERT_WSTREQ(path->Buffer, cwd_dos);
-	free(path);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, path);
 
 	// trailing slash
 	cwd_dos[cwd_dos_length + 4] = L'\\';
 	cwd_dos[cwd_dos_length + 5] = L'\0';
 	path = get_absolute_dospath(AT_FDCWD, "abc/");
 	ASSERT_WSTREQ(path->Buffer, cwd_dos);
-	free(path);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, path);
 
 	path = get_absolute_dospath(AT_FDCWD, "abc/./");
 	ASSERT_WSTREQ(path->Buffer, cwd_dos);
-	free(path);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, path);
 
 	path = get_absolute_dospath(AT_FDCWD, "abc/././");
 	ASSERT_WSTREQ(path->Buffer, cwd_dos);
-	free(path);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, path);
 
 	cwd_dos[cwd_dos_length] = L'\0';
 	path = get_absolute_dospath(AT_FDCWD, "abc/..");
 	ASSERT_WSTREQ(path->Buffer, cwd_dos);
-	free(path);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, path);
 
 	cwd_dos[cwd_dos_length] = L'\\';
 	cwd_dos[cwd_dos_length + 1] = L'\0';
 	path = get_absolute_dospath(AT_FDCWD, "abc/../");
 	ASSERT_WSTREQ(path->Buffer, cwd_dos);
-	free(path);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, path);
 
 	cwd_dos[cwd_dos_length] = L'\0';
 
@@ -224,22 +224,22 @@ int test_at()
 	wcscat(cwd_nt, L"\\t-path");
 	path = get_absolute_ntpath(fd, ".");
 	ASSERT_WSTREQ(path->Buffer, cwd_nt);
-	free(path);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, path);
 
 	wcscat(cwd_dos, L"\\t-path");
 	path = get_absolute_dospath(fd, ".");
 	ASSERT_WSTREQ(path->Buffer, cwd_dos);
-	free(path);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, path);
 
 	wcscat(cwd_nt, L"\\abc");
 	path = get_absolute_ntpath(fd, "abc");
 	ASSERT_WSTREQ(path->Buffer, cwd_nt);
-	free(path);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, path);
 
 	wcscat(cwd_dos, L"\\abc");
 	path = get_absolute_dospath(fd, "abc");
 	ASSERT_WSTREQ(path->Buffer, cwd_dos);
-	free(path);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, path);
 
 	ASSERT_SUCCESS(close(fd));
 
@@ -256,49 +256,49 @@ int test_absolute_nt()
 
 	path = get_absolute_ntpath(AT_FDCWD, "C:/abc");
 	ASSERT_WSTREQ(path->Buffer, cdrive);
-	free(path);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, path);
 
 	path = get_absolute_ntpath(AT_FDCWD, "C:\\abc");
 	ASSERT_WSTREQ(path->Buffer, cdrive);
-	free(path);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, path);
 
 	wcscat(cdrive, L"\\");
 
 	path = get_absolute_ntpath(AT_FDCWD, "C:/abc/");
 	ASSERT_WSTREQ(path->Buffer, cdrive);
-	free(path);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, path);
 
 	cdrive[cdrive_length] = L'\0';
 
 	path = get_absolute_ntpath(AT_FDCWD, "C:/abc/..");
 	ASSERT_WSTREQ(path->Buffer, cdrive);
-	free(path);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, path);
 
 	path = get_absolute_ntpath(AT_FDCWD, "C:/abc/../");
 	ASSERT_WSTREQ(path->Buffer, cdrive);
-	free(path);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, path);
 
 	cdrive[cdrive_length] = L'\0';
 	wcscat(cdrive, L"abc");
 
 	path = get_absolute_ntpath(AT_FDCWD, "C:/abc/.");
 	ASSERT_WSTREQ(path->Buffer, cdrive);
-	free(path);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, path);
 
 	cdrive[cdrive_length] = L'\0';
 
 	path = get_absolute_ntpath(AT_FDCWD, "C:/");
 	ASSERT_WSTREQ(path->Buffer, cdrive);
-	free(path);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, path);
 
 	path = get_absolute_ntpath(AT_FDCWD, "C:");
 	ASSERT_WSTREQ(path->Buffer, cdrive);
-	free(path);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, path);
 
 	// bad path
 	path = get_absolute_ntpath(AT_FDCWD, "C:/..");
 	ASSERT_NULL(path);
-	free(path); // should be a nop
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, path); // should be a nop
 
 	fd = open("t-path", O_RDONLY);
 	ASSERT_NOTEQ(fd, -1);
@@ -306,7 +306,7 @@ int test_absolute_nt()
 	wcscat(cdrive, L"abc\\");
 	path = get_absolute_ntpath(fd, "C:/abc/");
 	ASSERT_WSTREQ(path->Buffer, cdrive);
-	free(path);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, path);
 
 	ASSERT_SUCCESS(close(fd));
 
@@ -321,47 +321,47 @@ int test_absolute_dos()
 
 	path = get_absolute_dospath(AT_FDCWD, "C:/abc");
 	ASSERT_WSTREQ(path->Buffer, L"C:\\abc");
-	free(path);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, path);
 
 	path = get_absolute_dospath(AT_FDCWD, "C:\\abc");
 	ASSERT_WSTREQ(path->Buffer, L"C:\\abc");
-	free(path);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, path);
 
 	path = get_absolute_dospath(AT_FDCWD, "C:/abc/");
 	ASSERT_WSTREQ(path->Buffer, L"C:\\abc\\");
-	free(path);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, path);
 
 	path = get_absolute_dospath(AT_FDCWD, "C:/abc/..");
 	ASSERT_WSTREQ(path->Buffer, L"C:\\");
-	free(path);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, path);
 
 	path = get_absolute_dospath(AT_FDCWD, "C:/abc/../");
 	ASSERT_WSTREQ(path->Buffer, L"C:\\");
-	free(path);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, path);
 
 	path = get_absolute_dospath(AT_FDCWD, "C:/abc/.");
 	ASSERT_WSTREQ(path->Buffer, L"C:\\abc");
-	free(path);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, path);
 
 	path = get_absolute_dospath(AT_FDCWD, "C:/");
 	ASSERT_WSTREQ(path->Buffer, L"C:\\");
-	free(path);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, path);
 
 	path = get_absolute_dospath(AT_FDCWD, "C:");
 	ASSERT_WSTREQ(path->Buffer, L"C:\\");
-	free(path);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, path);
 
 	// bad path
 	path = get_absolute_dospath(AT_FDCWD, "C:/..");
 	ASSERT_NULL(path);
-	free(path); // should be a nop
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, path); // should be a nop
 
 	fd = open("t-path", O_RDONLY);
 	ASSERT_NOTEQ(fd, -1);
 	// fd should be ignored
 	path = get_absolute_dospath(fd, "C:/abc/");
 	ASSERT_WSTREQ(path->Buffer, L"C:\\abc\\");
-	free(path);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, path);
 
 	ASSERT_SUCCESS(close(fd));
 
@@ -380,8 +380,8 @@ int test_absolute_cygwin_path()
 	dospath = get_absolute_dospath(AT_FDCWD, "/c/abc");
 	ASSERT_WSTREQ(ntpath->Buffer, cdrive);
 	ASSERT_WSTREQ(dospath->Buffer, L"C:\\abc");
-	free(ntpath);
-	free(dospath);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, ntpath);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, dospath);
 
 	wcscat(cdrive, L"\\");
 
@@ -389,8 +389,8 @@ int test_absolute_cygwin_path()
 	dospath = get_absolute_dospath(AT_FDCWD, "/c/abc/");
 	ASSERT_WSTREQ(ntpath->Buffer, cdrive);
 	ASSERT_WSTREQ(dospath->Buffer, L"C:\\abc\\");
-	free(ntpath);
-	free(dospath);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, ntpath);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, dospath);
 
 	cdrive[cdrive_length] = L'\0';
 
@@ -398,15 +398,15 @@ int test_absolute_cygwin_path()
 	dospath = get_absolute_dospath(AT_FDCWD, "/c/abc/..");
 	ASSERT_WSTREQ(ntpath->Buffer, cdrive);
 	ASSERT_WSTREQ(dospath->Buffer, L"C:\\");
-	free(ntpath);
-	free(dospath);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, ntpath);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, dospath);
 
 	ntpath = get_absolute_ntpath(AT_FDCWD, "/c/abc/../");
 	dospath = get_absolute_dospath(AT_FDCWD, "/c/abc/../");
 	ASSERT_WSTREQ(ntpath->Buffer, cdrive);
 	ASSERT_WSTREQ(dospath->Buffer, L"C:\\");
-	free(ntpath);
-	free(dospath);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, ntpath);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, dospath);
 
 	cdrive[cdrive_length] = L'\0';
 	wcscat(cdrive, L"abc");
@@ -415,8 +415,8 @@ int test_absolute_cygwin_path()
 	dospath = get_absolute_dospath(AT_FDCWD, "/c/abc/.");
 	ASSERT_WSTREQ(ntpath->Buffer, cdrive);
 	ASSERT_WSTREQ(dospath->Buffer, L"C:\\abc");
-	free(ntpath);
-	free(dospath);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, ntpath);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, dospath);
 
 	cdrive[cdrive_length] = L'\0';
 
@@ -424,23 +424,23 @@ int test_absolute_cygwin_path()
 	dospath = get_absolute_dospath(AT_FDCWD, "/c/");
 	ASSERT_WSTREQ(ntpath->Buffer, cdrive);
 	ASSERT_WSTREQ(dospath->Buffer, L"C:\\");
-	free(ntpath);
-	free(dospath);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, ntpath);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, dospath);
 
 	ntpath = get_absolute_ntpath(AT_FDCWD, "/c");
 	dospath = get_absolute_dospath(AT_FDCWD, "/c");
 	ASSERT_WSTREQ(ntpath->Buffer, cdrive);
 	ASSERT_WSTREQ(dospath->Buffer, L"C:\\");
-	free(ntpath);
-	free(dospath);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, ntpath);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, dospath);
 
 	// bad path
 	ntpath = get_absolute_ntpath(AT_FDCWD, "/c/..");
 	dospath = get_absolute_dospath(AT_FDCWD, "/c/..");
 	ASSERT_NULL(ntpath);
 	ASSERT_NULL(dospath);
-	free(ntpath);  // should be a nop
-	free(dospath); // should be a nop
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, ntpath);  // should be a nop
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, dospath); // should be a nop
 
 	fd = open("t-path", O_RDONLY);
 	ASSERT_NOTEQ(fd, -1);
@@ -451,8 +451,8 @@ int test_absolute_cygwin_path()
 	dospath = get_absolute_dospath(fd, "/c/abc/");
 	ASSERT_WSTREQ(ntpath->Buffer, cdrive);
 	ASSERT_WSTREQ(dospath->Buffer, L"C:\\abc\\");
-	free(ntpath);
-	free(dospath);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, ntpath);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, dospath);
 
 	ASSERT_SUCCESS(close(fd));
 
@@ -476,10 +476,10 @@ int test_root()
 	ASSERT_WSTREQ(root_ntpath->Buffer, cd_ntpath->Buffer);
 	ASSERT_WSTREQ(root_dospath->Buffer, cd_dospath->Buffer);
 
-	free(cd_ntpath);
-	free(cd_dospath);
-	free(root_ntpath);
-	free(root_dospath);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, cd_ntpath);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, cd_dospath);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, root_ntpath);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, root_dospath);
 
 	return 0;
 }
@@ -506,9 +506,9 @@ int main()
 	memcpy(cdrive, pcdrive_nt->Buffer, pcdrive_nt->MaximumLength);
 	cdrive_length = pcdrive_nt->Length / sizeof(wchar_t);
 
-	free(pcwd_dos);
-	free(pcwd_nt);
-	free(pcdrive_nt);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, pcwd_dos);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, pcwd_nt);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, pcdrive_nt);
 
 	INITIAILIZE_TESTS();
 

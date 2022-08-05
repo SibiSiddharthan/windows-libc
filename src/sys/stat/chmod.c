@@ -8,7 +8,6 @@
 #include <internal/nt.h>
 #include <internal/error.h>
 #include <internal/fcntl.h>
-#include <internal/path.h>
 #include <internal/security.h>
 #include <stdlib.h>
 #include <sys/stat.h>

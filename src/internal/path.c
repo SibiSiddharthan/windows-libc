@@ -6,6 +6,7 @@
 */
 
 #include <internal/nt.h>
+#include <internal/error.h>
 #include <internal/fcntl.h>
 #include <internal/path.h>
 #include <ctype.h>
@@ -13,7 +14,6 @@
 #include <fcntl.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include <stdlib.h>
 
 static int path_components_size = 16;
 
@@ -27,21 +27,33 @@ static path_component *add_component(path_component *restrict components, int *r
 {
 	if (components == NULL)
 	{
-		components = (path_component *)malloc(path_components_size * sizeof(path_component));
+		components = (path_component *)RtlAllocateHeap(NtCurrentProcessHeap(), 0, path_components_size * sizeof(path_component));
+
+		if (components == NULL)
+		{
+			errno = ENOMEM;
+			return NULL;
+		}
 	}
 
 	if (*index == path_components_size)
 	{
-		void *temp = malloc(path_components_size * 2 * sizeof(path_component));
-		memcpy(temp, components, path_components_size * sizeof(path_component));
-		free(components);
-		components = temp;
+		void *temp = RtlReAllocateHeap(NtCurrentProcessHeap(), 0, components, path_components_size * 2 * sizeof(path_component));
+
+		if (temp == NULL)
+		{
+			errno = ENOMEM;
+			return NULL;
+		}
+
+		components = (path_component *)temp;
 		path_components_size *= 2;
 	}
 
 	components[*index].start = start;
 	components[*index].length = length;
 	(*index)++;
+
 	return components;
 }
 
@@ -192,7 +204,7 @@ void update_fd_path_cache(int fd, int sequence, PUNICODE_STRING nt_path)
 	if (fd_path_cache[index].nt_path != NULL)
 	{
 		// previosly used slot, free the memory.
-		free(fd_path_cache[index].nt_path);
+		RtlFreeHeap(NtCurrentProcessHeap(), 0, fd_path_cache[index].nt_path);
 	}
 	fd_path_cache[index].nt_path = nt_path;
 }
@@ -203,19 +215,31 @@ UNICODE_STRING *get_handle_ntpath(HANDLE handle)
 	ULONG length;
 	UNICODE_STRING *path = NULL;
 
-	path = malloc(1024);
-	status = NtQueryObject(handle, ObjectNameInformation, path, 1024, &length);
+	path = RtlAllocateHeap(NtCurrentProcessHeap(), 0, 1024);
+	if (path == NULL)
+	{
+		errno = ENOMEM;
+		return NULL;
+	}
 
+	status = NtQueryObject(handle, ObjectNameInformation, path, 1024, &length);
 	if (status == STATUS_BUFFER_OVERFLOW)
 	{
-		path = realloc(path, length);
+		path = RtlReAllocateHeap(NtCurrentProcessHeap(), 0, path, length);
+		if (path == NULL)
+		{
+			errno = ENOMEM;
+			return NULL;
+		}
+
 		status = NtQueryObject(handle, ObjectNameInformation, path, length, &length);
 	}
 
 	// If we have an open handle, this should not fail.
 	if (status != STATUS_SUCCESS)
 	{
-		free(path);
+		map_ntstatus_to_errno(status);
+		RtlFreeHeap(NtCurrentProcessHeap(), 0, path);
 		return NULL;
 	}
 
@@ -254,6 +278,7 @@ UNICODE_STRING *get_fd_ntpath_internal(int fd)
 
 UNICODE_STRING *get_absolute_ntpath2(int dirfd, const char *path, handle_t *type)
 {
+	NTSTATUS status;
 	UTF8_STRING u8_path;
 	UNICODE_STRING u16_path, u16_rootdir = {0};
 
@@ -288,7 +313,14 @@ UNICODE_STRING *get_absolute_ntpath2(int dirfd, const char *path, handle_t *type
 
 		// UTF-16LE char truncation.
 		device = dos_device_to_nt_device((char)(NtCurrentPeb()->ProcessParameters->CurrentDirectory.DosPath.Buffer[0]));
-		u16_ntpath = (UNICODE_STRING *)malloc(sizeof(UNICODE_STRING) + device->length + 2 * sizeof(WCHAR)); // '\\', '\0'
+		u16_ntpath = (UNICODE_STRING *)RtlAllocateHeap(NtCurrentProcessHeap(), 0,
+													   sizeof(UNICODE_STRING) + device->length + 2 * sizeof(WCHAR)); // '\\', '\0'
+
+		if (u16_ntpath == NULL)
+		{
+			errno = ENOMEM;
+			return NULL;
+		}
 
 		u16_ntpath->Buffer = (WCHAR *)((char *)u16_ntpath + sizeof(UNICODE_STRING));
 		u16_ntpath->Length = device->length + sizeof(WCHAR);
@@ -305,83 +337,147 @@ UNICODE_STRING *get_absolute_ntpath2(int dirfd, const char *path, handle_t *type
 	{
 		if (strncmp(path + 5, "null", 5) == 0)
 		{
-			u16_ntpath = (UNICODE_STRING *)malloc(sizeof(UNICODE_STRING));
+			u16_ntpath = (UNICODE_STRING *)RtlAllocateHeap(NtCurrentProcessHeap(), 0, sizeof(UNICODE_STRING));
+			if (u16_ntpath == NULL)
+			{
+				errno = ENOMEM;
+				return NULL;
+			}
+
 			u16_ntpath->Length = 24;
 			u16_ntpath->MaximumLength = u16_ntpath->Length;
 			u16_ntpath->Buffer = L"\\Device\\Null";
 			*type = NULL_HANDLE;
+
 			return u16_ntpath;
 		}
 		if (strncmp(path + 5, "tty", 4) == 0)
 		{
-			u16_ntpath = (UNICODE_STRING *)malloc(sizeof(UNICODE_STRING));
+			u16_ntpath = (UNICODE_STRING *)RtlAllocateHeap(NtCurrentProcessHeap(), 0, sizeof(UNICODE_STRING));
+			if (u16_ntpath == NULL)
+			{
+				errno = ENOMEM;
+				return NULL;
+			}
+
 			u16_ntpath->Length = 44;
 			u16_ntpath->MaximumLength = u16_ntpath->Length;
 			u16_ntpath->Buffer = L"\\Device\\ConDrv\\Console";
 			*type = CONSOLE_HANDLE;
+
 			return u16_ntpath;
 		}
 		if (strncmp(path + 5, "stdin", 6) == 0)
 		{
-			u16_ntpath = (UNICODE_STRING *)malloc(sizeof(UNICODE_STRING));
+			u16_ntpath = (UNICODE_STRING *)RtlAllocateHeap(NtCurrentProcessHeap(), 0, sizeof(UNICODE_STRING));
+			if (u16_ntpath == NULL)
+			{
+				errno = ENOMEM;
+				return NULL;
+			}
+
 			u16_ntpath->Length = 48;
 			u16_ntpath->MaximumLength = u16_ntpath->Length;
 			u16_ntpath->Buffer = L"\\Device\\ConDrv\\CurrentIn";
 			*type = CONSOLE_HANDLE;
+
 			return u16_ntpath;
 		}
 		if (strncmp(path + 5, "stdout", 7) == 0)
 		{
-			u16_ntpath = (UNICODE_STRING *)malloc(sizeof(UNICODE_STRING));
+			u16_ntpath = (UNICODE_STRING *)RtlAllocateHeap(NtCurrentProcessHeap(), 0, sizeof(UNICODE_STRING));
+			if (u16_ntpath == NULL)
+			{
+				errno = ENOMEM;
+				return NULL;
+			}
+
 			u16_ntpath->Length = 50;
 			u16_ntpath->MaximumLength = u16_ntpath->Length;
 			u16_ntpath->Buffer = L"\\Device\\ConDrv\\CurrentOut";
 			*type = CONSOLE_HANDLE;
+
 			return u16_ntpath;
 		}
 		if (strncmp(path + 5, "stderr", 7) == 0)
 		{
-			u16_ntpath = (UNICODE_STRING *)malloc(sizeof(UNICODE_STRING));
+			u16_ntpath = (UNICODE_STRING *)RtlAllocateHeap(NtCurrentProcessHeap(), 0, sizeof(UNICODE_STRING));
+			if (u16_ntpath == NULL)
+			{
+				errno = ENOMEM;
+				return NULL;
+			}
+
 			u16_ntpath->Length = 50;
 			u16_ntpath->MaximumLength = u16_ntpath->Length;
 			u16_ntpath->Buffer = L"\\Device\\ConDrv\\CurrentOut";
 			*type = CONSOLE_HANDLE;
+
 			return u16_ntpath;
 		}
 		// Other devices to be implemented via drivers. TODO
 		if (strncmp(path + 5, "zero", 5) == 0)
 		{
-			u16_ntpath = (UNICODE_STRING *)malloc(sizeof(UNICODE_STRING));
+			u16_ntpath = (UNICODE_STRING *)RtlAllocateHeap(NtCurrentProcessHeap(), 0, sizeof(UNICODE_STRING));
+			if (u16_ntpath == NULL)
+			{
+				errno = ENOMEM;
+				return NULL;
+			}
+
 			u16_ntpath->Length = 24;
 			u16_ntpath->MaximumLength = u16_ntpath->Length;
 			u16_ntpath->Buffer = L"\\Device\\Zero";
 			*type = NULL_HANDLE;
+
 			return u16_ntpath;
 		}
 		if (strncmp(path + 5, "full", 5) == 0)
 		{
+			u16_ntpath = (UNICODE_STRING *)RtlAllocateHeap(NtCurrentProcessHeap(), 0, sizeof(UNICODE_STRING));
+			if (u16_ntpath == NULL)
+			{
+				errno = ENOMEM;
+				return NULL;
+			}
+
 			u16_ntpath->Length = 24;
 			u16_ntpath->MaximumLength = u16_ntpath->Length;
 			u16_ntpath->Buffer = L"\\Device\\Full";
 			*type = NULL_HANDLE;
+
 			return u16_ntpath;
 		}
 		if (strncmp(path + 5, "random", 7) == 0)
 		{
-			u16_ntpath = (UNICODE_STRING *)malloc(sizeof(UNICODE_STRING));
+			u16_ntpath = (UNICODE_STRING *)RtlAllocateHeap(NtCurrentProcessHeap(), 0, sizeof(UNICODE_STRING));
+			if (u16_ntpath == NULL)
+			{
+				errno = ENOMEM;
+				return NULL;
+			}
+
 			u16_ntpath->Length = 28;
 			u16_ntpath->MaximumLength = u16_ntpath->Length;
 			u16_ntpath->Buffer = L"\\Device\\Random";
 			*type = NULL_HANDLE;
+
 			return u16_ntpath;
 		}
 		if (strncmp(path + 5, "urandom", 8) == 0)
 		{
-			u16_ntpath = (UNICODE_STRING *)malloc(sizeof(UNICODE_STRING));
+			u16_ntpath = (UNICODE_STRING *)RtlAllocateHeap(NtCurrentProcessHeap(), 0, sizeof(UNICODE_STRING));
+			if (u16_ntpath == NULL)
+			{
+				errno = ENOMEM;
+				return NULL;
+			}
+
 			u16_ntpath->Length = 28;
 			u16_ntpath->MaximumLength = u16_ntpath->Length;
 			u16_ntpath->Buffer = L"\\Device\\Random";
 			*type = NULL_HANDLE;
+
 			return u16_ntpath;
 		}
 	}
@@ -389,40 +485,68 @@ UNICODE_STRING *get_absolute_ntpath2(int dirfd, const char *path, handle_t *type
 	// DOS devices
 	if (stricmp(path, "NUL") == 0)
 	{
-		u16_ntpath = (UNICODE_STRING *)malloc(sizeof(UNICODE_STRING));
+		u16_ntpath = (UNICODE_STRING *)RtlAllocateHeap(NtCurrentProcessHeap(), 0, sizeof(UNICODE_STRING));
+		if (u16_ntpath == NULL)
+		{
+			errno = ENOMEM;
+			return NULL;
+		}
+
 		u16_ntpath->Length = 24;
 		u16_ntpath->MaximumLength = u16_ntpath->Length;
 		u16_ntpath->Buffer = L"\\Device\\Null";
 		*type = NULL_HANDLE;
+
 		return u16_ntpath;
 	}
 	if (strnicmp(path, "CON", 3) == 0)
 	{
 		if (path[3] == '\0')
 		{
-			u16_ntpath = (UNICODE_STRING *)malloc(sizeof(UNICODE_STRING));
+			u16_ntpath = (UNICODE_STRING *)RtlAllocateHeap(NtCurrentProcessHeap(), 0, sizeof(UNICODE_STRING));
+			if (u16_ntpath == NULL)
+			{
+				errno = ENOMEM;
+				return NULL;
+			}
+
 			u16_ntpath->Length = 44;
 			u16_ntpath->MaximumLength = u16_ntpath->Length;
 			u16_ntpath->Buffer = L"\\Device\\ConDrv\\Console";
 			*type = CONSOLE_HANDLE;
+
 			return u16_ntpath;
 		}
 		if (strnicmp(path + 3, "IN$", 4) == 0)
 		{
-			u16_ntpath = (UNICODE_STRING *)malloc(sizeof(UNICODE_STRING));
+			u16_ntpath = (UNICODE_STRING *)RtlAllocateHeap(NtCurrentProcessHeap(), 0, sizeof(UNICODE_STRING));
+			if (u16_ntpath == NULL)
+			{
+				errno = ENOMEM;
+				return NULL;
+			}
+
 			u16_ntpath->Length = 48;
 			u16_ntpath->MaximumLength = u16_ntpath->Length;
 			u16_ntpath->Buffer = L"\\Device\\ConDrv\\CurrentIn";
 			*type = CONSOLE_HANDLE;
+
 			return u16_ntpath;
 		}
 		if (strnicmp(path + 3, "OUT$", 5) == 0)
 		{
-			u16_ntpath = (UNICODE_STRING *)malloc(sizeof(UNICODE_STRING));
+			u16_ntpath = (UNICODE_STRING *)RtlAllocateHeap(NtCurrentProcessHeap(), 0, sizeof(UNICODE_STRING));
+			if (u16_ntpath == NULL)
+			{
+				errno = ENOMEM;
+				return NULL;
+			}
+
 			u16_ntpath->Length = 50;
 			u16_ntpath->MaximumLength = u16_ntpath->Length;
 			u16_ntpath->Buffer = L"\\Device\\ConDrv\\CurrentOut";
 			*type = CONSOLE_HANDLE;
+
 			return u16_ntpath;
 		}
 	}
@@ -462,7 +586,13 @@ UNICODE_STRING *get_absolute_ntpath2(int dirfd, const char *path, handle_t *type
 			pu16_cwd = &NtCurrentPeb()->ProcessParameters->CurrentDirectory.DosPath;
 			// Eg "C:\Windows\"" -> "\Windows\"
 			short cwd_length_without_drive_letter = pu16_cwd->Length - 2 * sizeof(WCHAR);
-			rootdir_buffer = (char *)malloc(1024);
+			rootdir_buffer = (char *)RtlAllocateHeap(NtCurrentProcessHeap(), 0, 1024);
+
+			if (rootdir_buffer == NULL)
+			{
+				errno = ENOMEM;
+				goto finish;
+			}
 
 			// No need to check return value here as RTL_USER_PROCESS_PARAMETERS can be trusted.
 			// UTF-16LE is just zero extended ASCII for the english alphabet.
@@ -506,7 +636,13 @@ UNICODE_STRING *get_absolute_ntpath2(int dirfd, const char *path, handle_t *type
 	}
 
 	RtlInitUTF8String(&u8_path, path);
-	RtlUTF8StringToUnicodeString(&u16_path, &u8_path, TRUE);
+	status = RtlUTF8StringToUnicodeString(&u16_path, &u8_path, TRUE);
+
+	if (status != STATUS_SUCCESS)
+	{
+		map_ntstatus_to_errno(status);
+		goto finish;
+	}
 
 	// Convert forward slashes to backward slashes
 	for (int i = 0; u16_path.Buffer[i] != L'\0'; ++i)
@@ -528,7 +664,12 @@ UNICODE_STRING *get_absolute_ntpath2(int dirfd, const char *path, handle_t *type
 		required_size += 54; // "\\Device\\HarddiskVolumeXXXX\\"
 	}
 
-	ntpath_buffer = (WCHAR *)malloc(required_size);
+	ntpath_buffer = (WCHAR *)RtlAllocateHeap(NtCurrentProcessHeap(), 0, required_size);
+	if (ntpath_buffer == NULL)
+	{
+		errno = ENOMEM;
+		goto finish;
+	}
 
 	if (!path_is_absolute)
 	{
@@ -584,7 +725,13 @@ UNICODE_STRING *get_absolute_ntpath2(int dirfd, const char *path, handle_t *type
 		{
 			if (i - start > 2) // not '.' or '..'
 			{
-				components = add_component(components, &index, start, (i - start) * sizeof(WCHAR)); // push stack
+				void *temp = add_component(components, &index, start, (i - start) * sizeof(WCHAR)); // push stack
+				if (temp == NULL)
+				{
+					goto finish;
+				}
+
+				components = temp;
 			}
 			else
 			{
@@ -603,7 +750,13 @@ UNICODE_STRING *get_absolute_ntpath2(int dirfd, const char *path, handle_t *type
 				}
 				else
 				{
-					components = add_component(components, &index, start, (i - start) * sizeof(WCHAR)); // push stack
+					void *temp = add_component(components, &index, start, (i - start) * sizeof(WCHAR)); // push stack
+					if (temp == NULL)
+					{
+						goto finish;
+					}
+
+					components = temp;
 				}
 			}
 
@@ -616,7 +769,13 @@ UNICODE_STRING *get_absolute_ntpath2(int dirfd, const char *path, handle_t *type
 	}
 
 	// All the constructed paths will have a terminating NULL.
-	u16_ntpath = (UNICODE_STRING *)malloc(required_size + sizeof(UNICODE_STRING));
+	u16_ntpath = (UNICODE_STRING *)RtlAllocateHeap(NtCurrentProcessHeap(), 0, required_size + sizeof(UNICODE_STRING));
+	if (u16_ntpath == NULL)
+	{
+		errno = ENOMEM;
+		goto finish;
+	}
+
 	u16_ntpath->Length = 0;
 	u16_ntpath->MaximumLength = required_size;
 	u16_ntpath->Buffer = (WCHAR *)((char *)u16_ntpath + sizeof(UNICODE_STRING));
@@ -643,9 +802,9 @@ UNICODE_STRING *get_absolute_ntpath2(int dirfd, const char *path, handle_t *type
 	u16_ntpath->Buffer[u16_ntpath->Length / sizeof(WCHAR)] = L'\0';
 
 finish:
-	free(components);
-	free(rootdir_buffer);
-	free(ntpath_buffer);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, components);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, rootdir_buffer);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, ntpath_buffer);
 
 	return u16_ntpath;
 }
@@ -656,7 +815,14 @@ UNICODE_STRING *get_fd_ntpath(int fd)
 	UNICODE_STRING *ntpath_copy = NULL;
 
 	ntpath = get_fd_ntpath_internal(fd);
-	ntpath_copy = (UNICODE_STRING *)malloc(sizeof(UNICODE_STRING) + ntpath->MaximumLength);
+	ntpath_copy = (UNICODE_STRING *)RtlAllocateHeap(NtCurrentProcessHeap(), 0, sizeof(UNICODE_STRING) + ntpath->MaximumLength);
+
+	if (ntpath_copy == NULL)
+	{
+		errno = ENOMEM;
+		return NULL;
+	}
+
 	memcpy(ntpath_copy, ntpath, sizeof(UNICODE_STRING) + ntpath->MaximumLength);
 
 	return ntpath_copy;
@@ -742,7 +908,14 @@ UNICODE_STRING *ntpath_to_dospath(const UNICODE_STRING *ntpath)
 	if (label != '\0')
 	{
 		// We technically will actually use less than this, but this is close enough. ((-) "\Device\HarddiskVolume" (+) "C:").
-		dospath = (UNICODE_STRING *)malloc(sizeof(UNICODE_STRING) + ntpath->Length - (16 * sizeof(WCHAR)));
+		dospath =
+			(UNICODE_STRING *)RtlAllocateHeap(NtCurrentProcessHeap(), 0, sizeof(UNICODE_STRING) + ntpath->Length - (16 * sizeof(WCHAR)));
+		if (dospath == NULL)
+		{
+			errno = ENOMEM;
+			return NULL;
+		}
+
 		dospath->Buffer = (WCHAR *)((char *)dospath + sizeof(UNICODE_STRING));
 		dospath->Buffer[0] = (WCHAR)label;
 		dospath->Buffer[1] = L':';
@@ -776,7 +949,14 @@ UNICODE_STRING *dospath_to_ntpath(const UNICODE_STRING *dospath)
 		return NULL;
 	}
 
-	ntpath = (UNICODE_STRING *)malloc(sizeof(UNICODE_STRING) + device->length + dospath->MaximumLength - 4);
+	ntpath =
+		(UNICODE_STRING *)RtlAllocateHeap(NtCurrentProcessHeap(), 0, sizeof(UNICODE_STRING) + device->length + dospath->MaximumLength - 4);
+	if (ntpath == NULL)
+	{
+		errno = ENOMEM;
+		return NULL;
+	}
+
 	memcpy((CHAR *)ntpath + sizeof(UNICODE_STRING), device->name, device->length);
 	memcpy((CHAR *)ntpath + sizeof(UNICODE_STRING) + device->length, (CHAR *)dospath->Buffer + 4, dospath->MaximumLength - 4);
 
@@ -801,7 +981,7 @@ UNICODE_STRING *get_absolute_dospath(int dirfd, const char *path)
 	}
 
 	dospath = ntpath_to_dospath(ntpath);
-	free(ntpath);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, ntpath);
 
 	return dospath;
 }

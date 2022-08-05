@@ -40,13 +40,14 @@ int wlibc_common_mkdir(int dirfd, const char *path, mode_t mode)
 	InitializeObjectAttributes(&object, u16_ntpath, OBJ_CASE_INSENSITIVE, NULL, security_descriptor);
 	status = NtCreateFile(&handle, FILE_READ_ATTRIBUTES, &object, &io, NULL, 0, FILE_SHARE_READ | FILE_SHARE_WRITE, FILE_CREATE,
 						  FILE_DIRECTORY_FILE, NULL, 0);
-	free(u16_ntpath);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, u16_ntpath);
 
 	if (status != STATUS_SUCCESS)
 	{
 		map_ntstatus_to_errno(status);
 		return -1;
 	}
+
 	NtClose(handle);
 
 	return 0;

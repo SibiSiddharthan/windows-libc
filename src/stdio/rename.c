@@ -52,9 +52,15 @@ int do_rename(HANDLE handle, const UNICODE_STRING *path, int flags)
 	NTSTATUS status;
 	IO_STATUS_BLOCK io;
 	ULONG size_of_rename_info = sizeof(FILE_RENAME_INFORMATION) - sizeof(WCHAR) + path->Length;
-	PFILE_RENAME_INFORMATION rename_info = (PFILE_RENAME_INFORMATION)malloc(size_of_rename_info);
+	PFILE_RENAME_INFORMATION rename_info =
+		(PFILE_RENAME_INFORMATION)RtlAllocateHeap(NtCurrentProcessHeap(), HEAP_ZERO_MEMORY, size_of_rename_info);
 
-	memset(rename_info, 0, size_of_rename_info);
+	if (rename_info == NULL)
+	{
+		errno = ENOMEM;
+		return -1;
+	}
+
 	// No need to set RootDirectory as we are zeroing the memory
 	rename_info->Flags = FILE_RENAME_POSIX_SEMANTICS | FILE_RENAME_IGNORE_READONLY_ATTRIBUTE |
 						 (flags == RENAME_NOREPLACE ? 0 : FILE_RENAME_REPLACE_IF_EXISTS);
@@ -62,7 +68,8 @@ int do_rename(HANDLE handle, const UNICODE_STRING *path, int flags)
 	memcpy(rename_info->FileName, path->Buffer, path->Length);
 
 	status = NtSetInformationFile(handle, &io, rename_info, size_of_rename_info, FileRenameInformationEx);
-	free(rename_info);
+
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, rename_info);
 
 	if (status != STATUS_SUCCESS)
 	{
@@ -110,7 +117,7 @@ int common_rename(int olddirfd, const char *restrict oldpath, int newdirfd, cons
 
 	int status = do_rename(old_handle, u16_ntnewpath, flags);
 
-	free(u16_ntnewpath);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, u16_ntnewpath);
 	NtClose(old_handle);
 
 	return status;

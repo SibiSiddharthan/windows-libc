@@ -11,7 +11,6 @@
 #include <internal/path.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <stdlib.h>
 #include <sys/param.h>
 #include <sys/statfs.h>
 
@@ -150,19 +149,32 @@ int do_statfs(HANDLE handle, struct statfs *restrict statfsbuf)
 	statfsbuf->f_fsid.minor = (USHORT)volume_info->VolumeSerialNumber;
 
 	u16_ntpath = get_handle_ntpath(handle);
+	if (u16_ntpath == NULL)
+	{
+		// errno will be set by `get_handle_ntpath`.
+		return -1;
+	}
+
 	memcpy(statfsbuf->f_mntfromname, "\\Device\\HarddiskVolume", 22);
 	for (int i = 22; u16_ntpath->Buffer[i] != L'\0' && u16_ntpath->Buffer[i] != L'\\'; ++i)
 	{
 		statfsbuf->f_mntfromname[i] = (char)u16_ntpath->Buffer[i];
 	}
 
-	// This will not fail.
 	u16_dospath = ntpath_to_dospath(u16_ntpath);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, u16_dospath);
+
+	if (u16_dospath == NULL)
+	{
+		// errno will be set by `ntpath_to_dospath`.
+		return -1;
+	}
+
 	statfsbuf->f_mntonname[0] = (char)u16_dospath->Buffer[0];
 	statfsbuf->f_mntonname[1] = ':';
 
-	free(u16_dospath);
-	free(u16_ntpath);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, u16_ntpath);
+
 	// TODO removable
 	return 0;
 }

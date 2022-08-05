@@ -9,7 +9,6 @@
 #include <internal/error.h>
 #include <internal/fcntl.h>
 #include <internal/path.h>
-#include <stdlib.h>
 #include <unistd.h>
 
 int do_link(HANDLE handle, int dirfd, const char *restrict target)
@@ -29,18 +28,23 @@ int do_link(HANDLE handle, int dirfd, const char *restrict target)
 	}
 
 	size_of_link_info = sizeof(FILE_LINK_INFORMATION) - sizeof(WCHAR) + u16_nttarget->Length;
-	link_info = (PFILE_LINK_INFORMATION)malloc(size_of_link_info);
+	link_info = (PFILE_LINK_INFORMATION)RtlAllocateHeap(NtCurrentProcessHeap(), HEAP_ZERO_MEMORY, size_of_link_info);
 
-	memset(link_info, 0, size_of_link_info);
+	if (link_info == NULL)
+	{
+		errno = ENOMEM;
+		return -1;
+	}
+
 	// No need to set RootDirectory as we are zeroing the memory
 	link_info->Flags = FILE_LINK_POSIX_SEMANTICS;
 	link_info->FileNameLength = u16_nttarget->Length;
 	memcpy(link_info->FileName, u16_nttarget->Buffer, u16_nttarget->Length);
 
-	free(u16_nttarget);
-
 	status = NtSetInformationFile(handle, &io, link_info, size_of_link_info, FileLinkInformationEx);
-	free(link_info);
+
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, u16_nttarget);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, link_info);
 
 	if (status != STATUS_SUCCESS)
 	{

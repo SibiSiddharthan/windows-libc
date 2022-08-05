@@ -279,7 +279,7 @@ HANDLE just_open(int dirfd, const char *path, ACCESS_MASK access, ULONG options)
 	}
 
 	handle = just_open2(u16_ntpath, access, options);
-	free(u16_ntpath);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, u16_ntpath);
 
 	return handle;
 }
@@ -317,18 +317,20 @@ int do_open(int dirfd, const char *name, int oflags, mode_t perm)
 
 	if (oflags & O_TMPFILE)
 	{
-		USHORT temp_bufsize = (1 + 6) * sizeof(WCHAR); // number of digits of 32bit random(5) + slash(1) + NULL
-		UNICODE_STRING *u16_temppath = (UNICODE_STRING *)malloc(sizeof(UNICODE_STRING) + u16_ntpath->Length + temp_bufsize);
+		USHORT rand_bufsize = (1 + 6) * sizeof(WCHAR); // number of digits of 32bit random(5) + slash(1) + NULL
+		UNICODE_STRING *u16_temppath = (UNICODE_STRING *)RtlReAllocateHeap(NtCurrentProcessHeap(), HEAP_ZERO_MEMORY, u16_ntpath,
+																		   sizeof(UNICODE_STRING) + u16_ntpath->Length + rand_bufsize);
 
-		u16_temppath->Buffer = (WCHAR *)((char *)u16_temppath + sizeof(UNICODE_STRING));
-		memcpy(u16_temppath->Buffer, u16_ntpath->Buffer, u16_ntpath->Length);
-		u16_temppath->Length = u16_ntpath->Length;
-		u16_temppath->MaximumLength = u16_ntpath->Length + temp_bufsize;
-		memset((char *)u16_temppath->Buffer + u16_temppath->Length, 0, temp_bufsize);
+		if (u16_temppath == NULL)
+		{
+			goto finish;
+		}
 
-		// now swap the buffers
-		free(u16_ntpath);
 		u16_ntpath = u16_temppath;
+
+		// Realloc will preserve the contents in memory. Update the buffer pointer, maximum length.
+		u16_ntpath->Buffer = (WCHAR *)((char *)u16_ntpath + sizeof(UNICODE_STRING));
+		u16_ntpath->MaximumLength = u16_ntpath->Length + rand_bufsize; 
 
 		if (u16_ntpath->Buffer[u16_ntpath->Length / sizeof(WCHAR) - 1] != L'\\')
 		{
@@ -343,9 +345,9 @@ int do_open(int dirfd, const char *name, int oflags, mode_t perm)
 		_ultow_s(rn, rbuf, 8, 36);
 
 		// Append the string to u16_ntpath.
-		memcpy((char *)u16_temppath->Buffer + u16_temppath->Length, rbuf,
-			   u16_temppath->MaximumLength - u16_temppath->Length - sizeof(WCHAR));
-		u16_ntpath->Length = u16_temppath->MaximumLength - sizeof(WCHAR);
+		memcpy((char *)u16_ntpath->Buffer + u16_ntpath->Length, rbuf, u16_ntpath->MaximumLength - u16_ntpath->Length - sizeof(WCHAR));
+		u16_ntpath->Length = u16_ntpath->MaximumLength - sizeof(WCHAR);
+
 		// Start from the end to figure out the length.
 		while (u16_ntpath->Buffer[u16_ntpath->Length / sizeof(WCHAR) - 1] == L'\0')
 		{
@@ -454,7 +456,7 @@ int do_open(int dirfd, const char *name, int oflags, mode_t perm)
 
 finish:
 	// u16_ntpath is malloc'ed, so free it.
-	free(u16_ntpath);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, u16_ntpath);
 	return fd;
 }
 
@@ -474,7 +476,7 @@ int wlibc_common_open(int dirfd, const char *name, int oflags, va_list perm_args
 		perm = va_arg(perm_args, mode_t);
 	}
 
-	// glibc does not do bounds checking. Will set a bound for perm when ACLs are implemented
+	// Glibc does not do bounds checking for permissions.
 	// if (perm > 0777)
 	//{
 	//	errno = EINVAL;
