@@ -23,13 +23,13 @@ char *wlibc_ttyname(int fd)
 	return NULL;
 }
 
-int wlibc_ttyname_r(int fd, char *buf, size_t bufsiz)
+int wlibc_ttyname_r(int fd, char *buffer, size_t bufsiz)
 {
-	VALIDATE_PTR(buf, EINVAL, EINVAL);
+	VALIDATE_PTR(buffer, EINVAL, EINVAL);
 
 	if (wlibc_isatty(fd))
 	{
-		if (GetConsoleOriginalTitleA(buf, (DWORD)bufsiz) == 0) // bufsiz is too small
+		if (GetConsoleOriginalTitleA(buffer, (DWORD)bufsiz) == 0) // bufsiz is too small
 		{
 			errno = ERANGE;
 			return errno;

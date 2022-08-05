@@ -146,17 +146,17 @@ WLIBC_INLINE int fsync(int fd)
 	return wlibc_fsync(fd);
 }
 
-WLIBC_API char *wlibc_getcwd(char *buf, size_t size);
-WLIBC_API wchar_t *wlibc_wgetcwd(wchar_t *wbuf, size_t size);
+WLIBC_API char *wlibc_getcwd(char *buffer, size_t size);
+WLIBC_API wchar_t *wlibc_wgetcwd(wchar_t *wbuffer, size_t size);
 
-WLIBC_INLINE char *getcwd(char *buf, size_t size)
+WLIBC_INLINE char *getcwd(char *buffer, size_t size)
 {
-	return wlibc_getcwd(buf, size);
+	return wlibc_getcwd(buffer, size);
 }
 
-WLIBC_INLINE wchar_t *wgetcwd(wchar_t *wbuf, size_t size)
+WLIBC_INLINE wchar_t *wgetcwd(wchar_t *wbuffer, size_t size)
 {
-	return wlibc_wgetcwd(wbuf, size);
+	return wlibc_wgetcwd(wbuffer, size);
 }
 
 WLIBC_API uid_t wlibc_getuid(void);
@@ -266,16 +266,16 @@ WLIBC_INLINE int pipe2(int pipefd[2], int flags)
 	return wlibc_common_pipe(pipefd, flags);
 }
 
-WLIBC_API ssize_t wlibc_pread(int fd, void *buf, size_t count, off_t offset);
-WLIBC_API ssize_t wlibc_pwrite(int fd, const void *buf, size_t count, off_t offset);
+WLIBC_API ssize_t wlibc_pread(int fd, void *buffer, size_t count, off_t offset);
+WLIBC_API ssize_t wlibc_pwrite(int fd, const void *buffer, size_t count, off_t offset);
 
-WLIBC_INLINE ssize_t pread(int fd, void *buf, size_t count, off_t offset)
+WLIBC_INLINE ssize_t pread(int fd, void *buffer, size_t count, off_t offset)
 {
-	return wlibc_pread(fd, buf, count, offset);
+	return wlibc_pread(fd, buffer, count, offset);
 }
-WLIBC_INLINE ssize_t pwrite(int fd, const void *buf, size_t count, off_t offset)
+WLIBC_INLINE ssize_t pwrite(int fd, const void *buffer, size_t count, off_t offset)
 {
-	return wlibc_pwrite(fd, buf, count, offset);
+	return wlibc_pwrite(fd, buffer, count, offset);
 }
 
 WLIBC_API int wlibc_isatty(int fd);
@@ -307,10 +307,10 @@ WLIBC_INLINE off_t lseek(int fd, off_t offset, int whence)
 	return wlibc_lseek(fd, offset, whence);
 }
 
-WLIBC_API ssize_t wlibc_read(int fd, void *buf, size_t count);
-WLIBC_INLINE ssize_t read(int fd, void *buf, size_t count)
+WLIBC_API ssize_t wlibc_read(int fd, void *buffer, size_t count);
+WLIBC_INLINE ssize_t read(int fd, void *buffer, size_t count)
 {
-	return wlibc_read(fd, buf, count);
+	return wlibc_read(fd, buffer, count);
 }
 
 WLIBC_INLINE int rmdir(const char *path)
@@ -323,15 +323,15 @@ WLIBC_INLINE int rmdirat(int dirfd, const char *path)
 	return wlibc_common_remove(dirfd, path, AT_REMOVEDIR);
 }
 
-WLIBC_API ssize_t wlibc_common_readlink(int dirfd, const char *restrict path, char *restrict buf, size_t bufsiz);
-WLIBC_INLINE ssize_t readlinkat(int dirfd, const char *restrict path, char *restrict buf, size_t bufsiz)
+WLIBC_API ssize_t wlibc_common_readlink(int dirfd, const char *restrict path, char *restrict buffer, size_t bufsiz);
+WLIBC_INLINE ssize_t readlinkat(int dirfd, const char *restrict path, char *restrict buffer, size_t bufsiz)
 {
-	return wlibc_common_readlink(dirfd, path, buf, bufsiz);
+	return wlibc_common_readlink(dirfd, path, buffer, bufsiz);
 }
 
-WLIBC_INLINE ssize_t readlink(const char *restrict path, char *restrict buf, size_t bufsiz)
+WLIBC_INLINE ssize_t readlink(const char *restrict path, char *restrict buffer, size_t bufsiz)
 {
-	return wlibc_common_readlink(AT_FDCWD, path, buf, bufsiz);
+	return wlibc_common_readlink(AT_FDCWD, path, buffer, bufsiz);
 }
 
 WLIBC_API int wlibc_common_symlink(const char *restrict source, int dirfd, const char *restrict target, mode_t mode);
@@ -380,16 +380,16 @@ WLIBC_INLINE int ftruncate(int fd, off_t length)
 }
 
 WLIBC_API char *wlibc_ttyname(int fd);
-WLIBC_API int wlibc_ttyname_r(int fd, char *buf, size_t bufsiz);
+WLIBC_API int wlibc_ttyname_r(int fd, char *buffer, size_t bufsiz);
 
 WLIBC_INLINE char *ttyname(int fd)
 {
 	return wlibc_ttyname(fd);
 }
 
-WLIBC_INLINE int ttyname_r(int fd, char *buf, size_t bufsiz)
+WLIBC_INLINE int ttyname_r(int fd, char *buffer, size_t bufsiz)
 {
-	return wlibc_ttyname_r(fd, buf, bufsiz);
+	return wlibc_ttyname_r(fd, buffer, bufsiz);
 }
 
 WLIBC_INLINE int unlink(const char *path)
@@ -402,10 +402,10 @@ WLIBC_INLINE int unlinkat(int dirfd, const char *path, int flags)
 	return wlibc_common_remove(dirfd, path, flags);
 }
 
-WLIBC_API ssize_t wlibc_write(int fd, const void *buf, size_t count);
-WLIBC_INLINE ssize_t write(int fd, const void *buf, size_t count)
+WLIBC_API ssize_t wlibc_write(int fd, const void *buffer, size_t count);
+WLIBC_INLINE ssize_t write(int fd, const void *buffer, size_t count)
 {
-	return wlibc_write(fd, buf, count);
+	return wlibc_write(fd, buffer, count);
 }
 
 // pathconf names

@@ -70,7 +70,7 @@ size_t common_fwrite(const void *restrict buffer, size_t size, size_t count, FIL
 			if (stream->buffer == NULL)
 			{
 				errno = ENOMEM;
-				return -1;
+				return 0;
 			}
 
 			stream->buf_mode |= _IOBUFFER_ALLOCATED;

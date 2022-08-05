@@ -12,7 +12,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-ssize_t wlibc_write(int fd, const void *buf, size_t count)
+ssize_t wlibc_write(int fd, const void *buffer, size_t count)
 {
 	NTSTATUS status;
 	IO_STATUS_BLOCK io;
@@ -20,7 +20,7 @@ ssize_t wlibc_write(int fd, const void *buf, size_t count)
 	LARGE_INTEGER offset;
 	fdinfo info;
 
-	if (buf == NULL)
+	if (buffer == NULL)
 	{
 		errno = EFAULT;
 		return -1;
@@ -46,7 +46,7 @@ ssize_t wlibc_write(int fd, const void *buf, size_t count)
 		offset.LowPart = FILE_USE_FILE_POINTER_POSITION;
 	}
 
-	status = NtWriteFile(handle, NULL, NULL, NULL, &io, (PVOID)buf, (ULONG)count, &offset, NULL);
+	status = NtWriteFile(handle, NULL, NULL, NULL, &io, (PVOID)buffer, (ULONG)count, &offset, NULL);
 	if (status != STATUS_SUCCESS && status != STATUS_PENDING)
 	{
 		// NOTE: According to POSIX when status is STATUS_PIPE_BROKEN the signal SIGPIPE should be raised.

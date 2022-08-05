@@ -12,14 +12,14 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-ssize_t wlibc_read(int fd, void *buf, size_t count)
+ssize_t wlibc_read(int fd, void *buffer, size_t count)
 {
 	NTSTATUS status;
 	IO_STATUS_BLOCK io;
 	HANDLE handle;
 	fdinfo info;
 
-	if (buf == NULL)
+	if (buffer == NULL)
 	{
 		errno = EFAULT;
 		return -1;
@@ -36,7 +36,7 @@ ssize_t wlibc_read(int fd, void *buf, size_t count)
 	handle = info.handle;
 	io.Information = 0;
 
-	status = NtReadFile(handle, NULL, NULL, NULL, &io, buf, (ULONG)count, NULL, NULL);
+	status = NtReadFile(handle, NULL, NULL, NULL, &io, buffer, (ULONG)count, NULL, NULL);
 	if (status != STATUS_SUCCESS && status != STATUS_PENDING && status != STATUS_END_OF_FILE && status != STATUS_PIPE_BROKEN &&
 		status != STATUS_PIPE_EMPTY)
 	{

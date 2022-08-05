@@ -71,7 +71,7 @@ ssize_t do_readlink(HANDLE handle, char *restrict buffer, size_t bufsiz)
 
 	u8_data.Buffer = buffer;
 	u8_data.Length = 0;
-	u8_data.MaximumLength = bufsiz;
+	u8_data.MaximumLength = (USHORT)bufsiz;
 
 	if (reparse_buffer->ReparseTag == IO_REPARSE_TAG_SYMLINK)
 	{

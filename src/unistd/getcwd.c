@@ -11,7 +11,7 @@
 #include <unistd.h>
 #include <wchar.h>
 
-char *wlibc_getcwd(char *buf, size_t size)
+char *wlibc_getcwd(char *buffer, size_t size)
 {
 	char *return_buffer = NULL;
 	NTSTATUS status;
@@ -37,7 +37,7 @@ char *wlibc_getcwd(char *buf, size_t size)
 		goto finish;
 	}
 
-	if (buf == NULL)
+	if (buffer == NULL)
 	{
 		if (size == 0)
 		{
@@ -69,8 +69,8 @@ char *wlibc_getcwd(char *buf, size_t size)
 			errno = ERANGE;
 			goto finish;
 		}
-		return_buffer = buf;
-		memcpy(buf, u8_cwd.Buffer, u8_cwd.MaximumLength);
+		return_buffer = buffer;
+		memcpy(buffer, u8_cwd.Buffer, u8_cwd.MaximumLength);
 	}
 
 	for (int i = 0; i < u8_cwd.Length; i++)
@@ -86,7 +86,7 @@ finish:
 	return return_buffer;
 }
 
-wchar_t *wlibc_wgetcwd(wchar_t *wbuf, size_t length)
+wchar_t *wlibc_wgetcwd(wchar_t *wbuffer, size_t length)
 {
 	PUNICODE_STRING cwd = &(NtCurrentPeb()->ProcessParameters->CurrentDirectory.DosPath);
 	USHORT cwd_length = cwd->Length + sizeof(WCHAR);
@@ -98,7 +98,7 @@ wchar_t *wlibc_wgetcwd(wchar_t *wbuf, size_t length)
 		return NULL;
 	}
 
-	if (wbuf == NULL)
+	if (wbuffer == NULL)
 	{
 		if (length == 0)
 		{
@@ -130,8 +130,8 @@ wchar_t *wlibc_wgetcwd(wchar_t *wbuf, size_t length)
 			errno = ERANGE;
 			return NULL;
 		}
-		return_buffer = wbuf;
-		memcpy(wbuf, cwd->Buffer, cwd_length);
+		return_buffer = wbuffer;
+		memcpy(wbuffer, cwd->Buffer, cwd_length);
 	}
 
 	if (cwd->Length != 6)

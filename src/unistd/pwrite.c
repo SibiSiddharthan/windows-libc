@@ -11,7 +11,7 @@
 #include <errno.h>
 #include <unistd.h>
 
-ssize_t wlibc_pwrite(int fd, const void *buf, size_t count, off_t offset)
+ssize_t wlibc_pwrite(int fd, const void *buffer, size_t count, off_t offset)
 {
 	ssize_t result = 0;
 	NTSTATUS status;
@@ -21,7 +21,7 @@ ssize_t wlibc_pwrite(int fd, const void *buf, size_t count, off_t offset)
 	FILE_POSITION_INFORMATION pos_info;
 	fdinfo info;
 
-	if (buf == NULL)
+	if (buffer == NULL)
 	{
 		errno = EFAULT;
 		return -1;
@@ -56,7 +56,7 @@ ssize_t wlibc_pwrite(int fd, const void *buf, size_t count, off_t offset)
 	}
 
 	byte_offset.QuadPart = offset;
-	status = NtWriteFile(handle, NULL, NULL, NULL, &io, (PVOID)buf, (ULONG)count, &byte_offset, NULL);
+	status = NtWriteFile(handle, NULL, NULL, NULL, &io, (PVOID)buffer, (ULONG)count, &byte_offset, NULL);
 	if (status != STATUS_SUCCESS && status != STATUS_PENDING)
 	{
 		map_ntstatus_to_errno(status);
