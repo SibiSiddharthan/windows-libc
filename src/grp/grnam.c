@@ -17,6 +17,7 @@ int GROUP_INFO_2_to_group(PGROUP_INFO_2 group_info, struct group *grp_entry, voi
 
 struct group *common_getgrnam(const char *restrict name, struct group *restrict grp_entry, char *restrict buffer, size_t size)
 {
+	NTSTATUS ntstatus;
 	DWORD status;
 	BYTE *local_info_buffer = NULL;
 	BYTE *global_info_buffer = NULL;
@@ -147,7 +148,13 @@ struct group *common_getgrnam(const char *restrict name, struct group *restrict 
 	}
 
 	RtlInitUTF8String(&u8_name, name);
-	RtlUTF8StringToUnicodeString(&u16_name, &u8_name, TRUE);
+	ntstatus = RtlUTF8StringToUnicodeString(&u16_name, &u8_name, TRUE);
+
+	if(ntstatus != STATUS_SUCCESS)
+	{
+		map_ntstatus_to_errno(ntstatus);
+		return NULL;
+	}
 
 	status = NetLocalGroupGetInfo(NULL, u16_name.Buffer, 0, &local_info_buffer);
 	if (status != NERR_Success)

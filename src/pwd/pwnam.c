@@ -6,6 +6,7 @@
 */
 
 #include <internal/nt.h>
+#include <internal/error.h>
 #include <internal/validate.h>
 #include <LM.h>
 #include <errno.h>
@@ -15,6 +16,7 @@ int USER_INFO_3_to_passwd(PUSER_INFO_3 user_info, struct passwd *pw_entry, void 
 
 struct passwd *common_getpwnam(const char *restrict name, struct passwd *restrict pwd_entry, char *restrict buffer, size_t size)
 {
+	NTSTATUS ntstatus;
 	DWORD status;
 	BYTE *info_buffer = NULL;
 	UTF8_STRING u8_name;
@@ -36,7 +38,13 @@ struct passwd *common_getpwnam(const char *restrict name, struct passwd *restric
 	}
 
 	RtlInitUTF8String(&u8_name, name);
-	RtlUTF8StringToUnicodeString(&u16_name, &u8_name, TRUE);
+	ntstatus = RtlUTF8StringToUnicodeString(&u16_name, &u8_name, TRUE);
+
+	if (ntstatus != STATUS_SUCCESS)
+	{
+		map_ntstatus_to_errno(ntstatus);
+		return NULL;
+	}
 
 	status = NetUserGetInfo(NULL, u16_name.Buffer, 3, &info_buffer);
 	if (status != NERR_Success)

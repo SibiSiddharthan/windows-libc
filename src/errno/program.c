@@ -19,10 +19,10 @@ void init_program_name(void)
 	// Fetch path name from RTL_USER_PROCESS_PARAMETERS.
 	// This will be freed automatically during program termination.
 	status = RtlUnicodeStringToUTF8String(&u8_program, &NtCurrentPeb()->ProcessParameters->ImagePathName, TRUE);
-	if(status != STATUS_SUCCESS)
+	if (status != STATUS_SUCCESS)
 	{
-		// Error due to insufficient memory.
-		return;
+		// Exit the program due to insufficient memory.
+		RtlExitUserProcess(STATUS_NO_MEMORY);
 	}
 
 	// Convert back slashes to forward slashes.
