@@ -5,14 +5,12 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <unistd.h>
 #include <tests/test.h>
 #include <errno.h>
 #include <signal.h>
+#include <spawn.h>
 #include <sys/wait.h>
-
-#include <internal/spawn.h>
-#include <Windows.h>
+#include <unistd.h>
 
 int test_EINVAL()
 {
@@ -23,26 +21,51 @@ int test_EINVAL()
 	return 0;
 }
 
-int test_okay()
+int test_kill()
 {
-	STARTUPINFOA si;
-	PROCESS_INFORMATION pi;
-	int status, wait_status;
-	pid_t child_pid;
+	int status, wstatus = 0;
+	pid_t pid;
+	char *argv[] = {"kill-helper", NULL};
 
-	memset(&si, 0, sizeof(si));
-	si.cb = sizeof(si);
-	memset(&pi, 0, sizeof(pi));
-
-	CreateProcessA(NULL, "kill-helper", NULL, NULL, TRUE, 0, NULL, NULL, &si, &pi);
-	add_child(pi.dwProcessId, pi.hProcess);
-
-	status = kill(pi.dwProcessId, SIGTERM);
+	status = posix_spawn(&pid, "kill-helper", NULL, NULL, argv, NULL);
 	ASSERT_EQ(status, 0);
 
-	child_pid = waitpid(pi.dwProcessId, &wait_status, 0);
-	ASSERT_EQ(child_pid, pi.dwProcessId);
-	ASSERT_EQ(wait_status, 3);
+	status = kill(pid, SIGTERM);
+	ASSERT_EQ(status, 0);
+
+	status = waitpid(pid, &wstatus, 0);
+	ASSERT_EQ(status, pid);
+	ASSERT_EQ(wstatus, 128 + SIGTERM);
+
+	return 0;
+}
+
+int test_suspend()
+{
+	int status, wstatus = 0;
+	pid_t pid;
+	char *argv[] = {"kill-helper", NULL};
+
+	status = posix_spawn(&pid, "kill-helper", NULL, NULL, argv, NULL);
+	ASSERT_EQ(status, 0);
+
+	// This should suspend the process.
+	status = kill(pid, SIGSTOP);
+	ASSERT_EQ(status, 0);
+
+	usleep(1000);
+
+	status = waitpid(pid, &wstatus, WNOHANG);
+	ASSERT_EQ(status, 0);
+	ASSERT_EQ(wstatus, -1);
+
+	// Now kill the process.
+	status = kill(pid, SIGTERM);
+	ASSERT_EQ(status, 0);
+
+	status = waitpid(pid, &wstatus, 0);
+	ASSERT_EQ(status, pid);
+	ASSERT_EQ(wstatus, 128 + SIGTERM);
 
 	return 0;
 }
@@ -52,7 +75,8 @@ int main()
 	INITIAILIZE_TESTS();
 
 	TEST(test_EINVAL());
-	TEST(test_okay());
+	TEST(test_kill());
+	TEST(test_suspend());
 
 	VERIFY_RESULT_AND_EXIT();
 }
