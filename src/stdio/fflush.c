@@ -53,7 +53,7 @@ int common_flushall(int lock)
 	FILE *start = _wlibc_stdio_head;
 	int status = 0;
 
-	EnterCriticalSection(&_wlibc_stdio_critical);
+	LOCK_STDIO();
 	while (start != NULL)
 	{
 		if (lock)
@@ -67,7 +67,7 @@ int common_flushall(int lock)
 		}
 		start = start->prev;
 	}
-	LeaveCriticalSection(&_wlibc_stdio_critical);
+	UNLOCK_STDIO();
 
 	return status;
 }

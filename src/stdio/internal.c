@@ -46,7 +46,7 @@ void close_all_streams(void)
 		{
 			RtlFreeHeap(NtCurrentProcessHeap(), 0, _wlibc_stdio_head->buffer);
 		}
-		DeleteCriticalSection(&(_wlibc_stdio_head->critical));
+		RtlDeleteCriticalSection(&(_wlibc_stdio_head->critical));
 
 		// close the underlying file descriptor
 		close_fd(_wlibc_stdio_head->fd);
