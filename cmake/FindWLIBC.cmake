@@ -9,8 +9,8 @@ include(SelectLibraryConfigurations)
 include(FindPackageHandleStandardArgs)
 
 find_path(WLIBC_INCLUDE_DIR NAMES wlibc.h)
-find_library(WLIBC_LIBRARY_RELEASE NAMES wlibc NAMES_PER_DIR)
-find_library(WLIBC_LIBRARY_DEBUG NAMES wlibcd NAMES_PER_DIR)
+find_library(WLIBC_LIBRARY_RELEASE NAMES wlibc wlibcs NAMES_PER_DIR)
+find_library(WLIBC_LIBRARY_DEBUG NAMES wlibcd wlibcds NAMES_PER_DIR)
 
 select_library_configurations(WLIBC)
 find_package_handle_standard_args(WLIBC REQUIRED_VARS WLIBC_INCLUDE_DIR WLIBC_LIBRARY)

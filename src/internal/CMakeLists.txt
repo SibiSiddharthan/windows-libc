@@ -11,31 +11,32 @@ error.c
 misc.c
 path.c
 registry.c
-security.c
-wmain.c)
+security.c)
 
-add_library(wlibc_internal OBJECT ${internal_SOURCES})
+add_library(internal OBJECT ${internal_SOURCES})
+add_library(wmain OBJECT wmain.c)
+
 if(CMAKE_C_COMPILER_ID STREQUAL "Clang")
-	target_link_options(wlibc_internal PUBLIC -Wl,-entry:wmainCRTStartup)
+	target_link_options(wmain PUBLIC -Wl,-entry:wmainCRTStartup)
 elseif(CMAKE_C_COMPILER_ID STREQUAL "MSVC")
-	target_link_options(wlibc_internal PUBLIC /ENTRY:wmainCRTStartup /SUBSYSTEM:CONSOLE)
+	target_link_options(wmain PUBLIC /ENTRY:wmainCRTStartup /SUBSYSTEM:CONSOLE)
 endif()
 
 if(ENABLE_POSIX_IO)
-	target_compile_definitions(wlibc_internal PRIVATE WLIBC_IO)
+	target_compile_definitions(wmain PRIVATE WLIBC_IO)
 endif()
 if(ENABLE_POSIX_SIGNALS)
-	target_compile_definitions(wlibc_internal PRIVATE WLIBC_SIGNALS)
+	target_compile_definitions(wmain PRIVATE WLIBC_SIGNALS)
 endif()
 if(ENABLE_SPAWN)
-	target_compile_definitions(wlibc_internal PRIVATE WLIBC_SPAWN)
+	target_compile_definitions(wmain PRIVATE WLIBC_SPAWN)
 endif()
 if(ENABLE_THREADS)
-	target_compile_definitions(wlibc_internal PRIVATE WLIBC_THREADS)
+	target_compile_definitions(wmain PRIVATE WLIBC_THREADS)
 endif()
 if(ENABLE_ACLS)
-	target_compile_definitions(wlibc_internal PRIVATE WLIBC_ACLS)
+	target_compile_definitions(wmain PRIVATE WLIBC_ACLS)
 endif()
 if(ENABLE_EXTENDED_ERRNO)
-	target_compile_definitions(wlibc_internal PRIVATE WLIBC_ERRNO)
+	target_compile_definitions(wmain PRIVATE WLIBC_ERRNO)
 endif()
