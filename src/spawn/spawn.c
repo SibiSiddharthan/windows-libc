@@ -34,9 +34,15 @@ typedef struct _inherit_information
 	inherit_fdinfo *fdinfo;
 } inherit_information;
 
-static void initialize_inherit_information(inherit_information *info, int max_fd)
+static int initialize_inherit_information(inherit_information *info, int max_fd)
 {
-	info->fdinfo = (inherit_fdinfo *)malloc(sizeof(inherit_fdinfo) * (max_fd + 1));
+	info->fdinfo = (inherit_fdinfo *)RtlAllocateHeap(NtCurrentProcessHeap(), 0, sizeof(inherit_fdinfo) * (max_fd + 1));
+	if (info->fdinfo == NULL)
+	{
+		errno = ENOMEM;
+		return -1;
+	}
+
 	info->fds = max_fd;
 
 	SHARED_LOCK_FD_TABLE();
@@ -57,6 +63,8 @@ static void initialize_inherit_information(inherit_information *info, int max_fd
 		}
 	}
 	SHARED_UNLOCK_FD_TABLE();
+
+	return 0;
 }
 
 static void cleanup_inherit_information(inherit_information *restrict info, const spawn_actions_t *restrict actions)
@@ -80,7 +88,7 @@ static void cleanup_inherit_information(inherit_information *restrict info, cons
 		}
 	}
 
-	free(info->fdinfo);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, info->fdinfo);
 }
 
 // osfile values from corecrt_internal_lowio.h.
@@ -94,7 +102,7 @@ static void cleanup_inherit_information(inherit_information *restrict info, cons
 #define FTEXT_FLAG      0x80 // file handle is in text mode
 
 // Processes spawned by wlibc should be compatible with the initialization routine of msvcrt.
-static void give_inherit_information_to_startupinfo(inherit_information *inherit_info, STARTUPINFOW *startup_info, VOID **buffer)
+static int give_inherit_information_to_startupinfo(inherit_information *inherit_info, STARTUPINFOW *startup_info, VOID **buffer)
 {
 	// First count the maximum fd that is to be inherited.
 	int number_of_fds_to_inherit = 0;
@@ -118,8 +126,14 @@ static void give_inherit_information_to_startupinfo(inherit_information *inherit
 	// NOTE: The documentation in lowio/ioinit.cpp says the HANDLES are passed as DWORDS.
 	// This is incorrect.
 	startup_info->cbReserved2 = (WORD)(sizeof(DWORD) + (sizeof(HANDLE) + sizeof(UCHAR)) * number_of_fds_to_inherit);
-	*buffer = malloc(startup_info->cbReserved2);
+	*buffer = RtlAllocateHeap(NtCurrentProcessHeap(), 0, startup_info->cbReserved2);
 	startup_info->lpReserved2 = *buffer;
+
+	if (*buffer == NULL)
+	{
+		errno = ENOMEM;
+		return -1;
+	}
 
 	*(DWORD *)startup_info->lpReserved2 = number_of_fds_to_inherit;
 	off_t handle_start = sizeof(DWORD) + number_of_fds_to_inherit;
@@ -162,6 +176,8 @@ static void give_inherit_information_to_startupinfo(inherit_information *inherit
 			break;
 		}
 	}
+
+	return 0;
 }
 
 // Return the dospath only if the file has executable permissions, else return NULL.
@@ -192,7 +208,7 @@ static UNICODE_STRING *get_absolute_dospath_of_executable(const char *path)
 	dospath = ntpath_to_dospath(ntpath);
 
 finish:
-	free(ntpath);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, ntpath);
 	return dospath;
 }
 
@@ -223,7 +239,13 @@ static UNICODE_STRING *search_for_program(const char *path)
 	}
 
 	// No extension was given. Append an supposed extension and search.
-	program = (char *)malloc(length + 5);
+	program = (char *)RtlAllocateHeap(NtCurrentProcessHeap(), 0, length + 5);
+	if (program == NULL)
+	{
+		errno = ENOMEM;
+		return NULL;
+	}
+
 	memcpy(program, path, length);
 
 	// Given a program without an executable extension append the possible
@@ -269,7 +291,7 @@ static UNICODE_STRING *search_for_program(const char *path)
 	// No executable file was found.
 
 finish:
-	free(program);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, program);
 	return dospath;
 }
 
@@ -300,7 +322,13 @@ UNICODE_STRING *search_path_for_program(const char *path)
 		return NULL;
 	}
 
-	program = malloc(buffer_size);
+	program = RtlAllocateHeap(NtCurrentProcessHeap(), 0, buffer_size);
+	if (program == NULL)
+	{
+		errno = ENOMEM;
+		return NULL;
+	}
+
 	length = strlen(path);
 
 	size_t i = 0, j = 0;
@@ -318,7 +346,12 @@ UNICODE_STRING *search_path_for_program(const char *path)
 					buffer_size *= 2;
 				}
 
-				program = realloc(program, buffer_size);
+				program = RtlReAllocateHeap(NtCurrentProcessHeap(), 0, program, buffer_size);
+				if (program == NULL)
+				{
+					errno = ENOMEM;
+					return NULL;
+				}
 			}
 
 			// Append program to path. Eg PATH\PROGRAM
@@ -349,7 +382,7 @@ UNICODE_STRING *search_path_for_program(const char *path)
 	}
 
 finish:
-	free(program);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, program);
 	return dospath;
 }
 
@@ -443,7 +476,12 @@ static char *convert_argv_to_windows_cmd(const char *arg, size_t *size)
 	size_t new_arg_index = 0;
 	char *new_arg = NULL;
 
-	new_arg = (char *)malloc(*size + 1);
+	new_arg = (char *)RtlAllocateHeap(NtCurrentProcessHeap(), 0, *size + 1);
+	if (new_arg == NULL)
+	{
+		errno = ENOMEM;
+		return (char *)-1; // Dirty hack to catch errors here.
+	}
 
 	new_arg[new_arg_index++] = '"';
 	for (size_t i = 0; arg[i] != '\0'; ++i)
@@ -508,6 +546,11 @@ static UNICODE_STRING *shebang_get_executable_and_args(const UNICODE_STRING *dos
 	HANDLE handle;
 	UNICODE_STRING *ntpath;
 
+	UNICODE_STRING *dos_shebang_exe = NULL;
+	UNICODE_STRING *dos_shebang_exe_with_args = NULL;
+	char *shebang_arg_normalized = NULL;
+	char *shebang_exe = NULL;
+
 	char *line_buffer = NULL;
 	size_t line_buffer_size = 4096;
 	size_t length_of_first_line = 0;
@@ -516,9 +559,14 @@ static UNICODE_STRING *shebang_get_executable_and_args(const UNICODE_STRING *dos
 	// Execution flow enters here only in the case of a shebang execution.
 	// The dospath will be valid and it will exist.
 	ntpath = dospath_to_ntpath(dospath);
+	if (ntpath == NULL)
+	{
+		// errno will be set by `dospath_to_ntpath`.
+		return NULL;
+	}
 
 	handle = just_open2(ntpath, FILE_READ_DATA | SYNCHRONIZE, FILE_SYNCHRONOUS_IO_NONALERT);
-	free(ntpath);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, ntpath);
 
 	if (handle == INVALID_HANDLE_VALUE)
 	{
@@ -526,8 +574,12 @@ static UNICODE_STRING *shebang_get_executable_and_args(const UNICODE_STRING *dos
 		return NULL;
 	}
 
-	line_buffer = malloc(line_buffer_size);
-	memset(line_buffer, 0, line_buffer_size);
+	line_buffer = RtlAllocateHeap(NtCurrentProcessHeap(), HEAP_ZERO_MEMORY, line_buffer_size);
+	if (line_buffer == NULL)
+	{
+		errno = ENOMEM;
+		return NULL;
+	}
 
 	// Read the first line of the file.
 	status = NtReadFile(handle, NULL, NULL, NULL, &io, line_buffer, 4096, NULL, NULL);
@@ -561,9 +613,12 @@ static UNICODE_STRING *shebang_get_executable_and_args(const UNICODE_STRING *dos
 		{
 			// Need to read more data.
 			// Read 32768 bytes. This is the command line limit on Windows.
-			char *temp = malloc(32768);
-			memcpy(temp, line_buffer, line_buffer_size);
-			free(line_buffer);
+			char *temp = RtlReAllocateHeap(NtCurrentProcessHeap(), HEAP_ZERO_MEMORY, line_buffer, 32768);
+			if (temp == NULL)
+			{
+				errno = ENOMEM;
+				goto finish;
+			}
 
 			line_buffer = temp;
 			line_buffer_size = 32768;
@@ -571,7 +626,7 @@ static UNICODE_STRING *shebang_get_executable_and_args(const UNICODE_STRING *dos
 			status = NtReadFile(handle, NULL, NULL, NULL, &io, line_buffer + 4096, 32768 - 4096, NULL, NULL);
 			if (status != STATUS_SUCCESS && status != STATUS_END_OF_FILE)
 			{
-				return NULL;
+				goto finish;
 			}
 
 			// Find where the first line ends.
@@ -592,7 +647,7 @@ static UNICODE_STRING *shebang_get_executable_and_args(const UNICODE_STRING *dos
 			if (length_of_first_line == 0)
 			{
 				errno = E2BIG;
-				return NULL;
+				goto finish;
 			}
 		}
 		else
@@ -636,13 +691,12 @@ static UNICODE_STRING *shebang_get_executable_and_args(const UNICODE_STRING *dos
 	{
 		// File only has "#!" plus zero or more whitespaces in its first line.
 		errno = ENOEXEC;
-		return NULL;
+		goto finish;
 	}
 
 	// In Unix systems the executables are usually given as /bin/sh, /usr/bin/sh, etc.
 	// In Windows there is no proper root directory, so only consider the last component (sh)
 	// and try to find it in the PATH.
-	char *shebang_exe = NULL;
 	size_t start_of_last_component_of_exe = position_of_first_character_after_shebang;
 	size_t end_of_last_component_of_exe = length_of_first_line - 1;
 	// bool shebang_exe_is_quoted = line_buffer[position_of_first_character_after_shebang] == '"';
@@ -662,19 +716,22 @@ static UNICODE_STRING *shebang_get_executable_and_args(const UNICODE_STRING *dos
 	}
 
 	// Copy the last component to the buffer.
-	shebang_exe = (char *)malloc(end_of_last_component_of_exe - start_of_last_component_of_exe + 2);
+	shebang_exe = (char *)RtlAllocateHeap(NtCurrentProcessHeap(), 0, end_of_last_component_of_exe - start_of_last_component_of_exe + 2);
+	if (shebang_exe == NULL)
+	{
+		errno = ENOMEM;
+		goto finish;
+	}
+
 	memcpy(shebang_exe, line_buffer + start_of_last_component_of_exe, end_of_last_component_of_exe - start_of_last_component_of_exe + 1);
 	shebang_exe[end_of_last_component_of_exe - start_of_last_component_of_exe + 1] = '\0';
-
-	UNICODE_STRING *dos_shebang_exe = NULL;
 
 	dos_shebang_exe = search_path_for_program(shebang_exe);
 	if (dos_shebang_exe == NULL)
 	{
 		if (errno != ENOENT)
 		{
-			free(shebang_exe);
-			return NULL;
+			goto finish;
 		}
 
 		// If we can't find the specified program in the path, search for it in the
@@ -684,8 +741,7 @@ static UNICODE_STRING *shebang_get_executable_and_args(const UNICODE_STRING *dos
 
 		if (dos_shebang_exe == NULL)
 		{
-			free(shebang_exe);
-			return NULL;
+			goto finish;
 		}
 	}
 
@@ -702,25 +758,39 @@ static UNICODE_STRING *shebang_get_executable_and_args(const UNICODE_STRING *dos
 
 	size_t shebang_arg_normalized_size = 0;
 	size_t dos_shebang_exe_with_args_used = 0;
-	char *shebang_arg_normalized = NULL;
 	UTF8_STRING u8_shebang_arg = {0, 0, NULL};
 	UNICODE_STRING u16_shebang_arg = {0, 0, NULL};
-	UNICODE_STRING *dos_shebang_exe_with_args = NULL;
 
 	if (start_of_args != 0)
 	{
 		shebang_arg_normalized = convert_argv_to_windows_cmd(line_buffer + start_of_args, &shebang_arg_normalized_size);
+		if (shebang_arg_normalized == (char *)-1)
+		{
+			goto finish;
+		}
 
 		u8_shebang_arg.Buffer = shebang_arg_normalized == NULL ? &line_buffer[start_of_args] : shebang_arg_normalized;
 		u8_shebang_arg.Length = (USHORT)shebang_arg_normalized_size;
 		u8_shebang_arg.MaximumLength = u8_shebang_arg.Length + 1;
 
-		RtlUTF8StringToUnicodeString(&u16_shebang_arg, &u8_shebang_arg, TRUE);
+		status = RtlUTF8StringToUnicodeString(&u16_shebang_arg, &u8_shebang_arg, TRUE);
+		if (status != STATUS_SUCCESS)
+		{
+			map_ntstatus_to_errno(status);
+			goto finish;
+		}
 	}
 
 	dos_shebang_exe_with_args =
-		(UNICODE_STRING *)malloc(sizeof(UNICODE_STRING) + dos_shebang_exe->MaximumLength + u16_shebang_arg.MaximumLength +
-								 dospath->MaximumLength + sizeof(WCHAR)); // For an extra NULL if no args are given.
+		(UNICODE_STRING *)RtlAllocateHeap(NtCurrentProcessHeap(), 0,
+										  sizeof(UNICODE_STRING) + dos_shebang_exe->MaximumLength + u16_shebang_arg.MaximumLength +
+											  dospath->MaximumLength + sizeof(WCHAR)); // For an extra NULL if no args are given.
+
+	if (dos_shebang_exe_with_args == NULL)
+	{
+		errno = ENOMEM;
+		goto finish;
+	}
 
 	// executable
 	memcpy((CHAR *)dos_shebang_exe_with_args + sizeof(UNICODE_STRING), dos_shebang_exe->Buffer, dos_shebang_exe->MaximumLength);
@@ -751,16 +821,18 @@ static UNICODE_STRING *shebang_get_executable_and_args(const UNICODE_STRING *dos
 	dos_shebang_exe_with_args->Length = (USHORT)dos_shebang_exe_with_args_used;
 	dos_shebang_exe_with_args->MaximumLength = (USHORT)dos_shebang_exe_with_args_used;
 
-	free(shebang_arg_normalized);
-	free(shebang_exe);
-	free(dos_shebang_exe);
-	free(line_buffer);
+finish:
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, shebang_arg_normalized);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, shebang_exe);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, dos_shebang_exe);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, line_buffer);
 
 	return dos_shebang_exe_with_args;
 }
 
 static WCHAR *convert_argv_to_wargv(char *const argv[], size_t *size)
 {
+	NTSTATUS status;
 	UNICODE_STRING *u16_args = NULL;
 	UTF8_STRING *u8_args = NULL;
 	WCHAR *wargv = NULL;
@@ -770,6 +842,8 @@ static WCHAR *convert_argv_to_wargv(char *const argv[], size_t *size)
 	size_t argv_used = 0;
 	char *const *pargv = argv;
 	char **argv_normalized = NULL;
+
+	*size = -1ull;
 
 	// Count the number of elements in argv.
 	while (*argv)
@@ -786,11 +860,15 @@ static WCHAR *convert_argv_to_wargv(char *const argv[], size_t *size)
 		return NULL;
 	}
 
-	u8_args = (UTF8_STRING *)malloc(sizeof(UTF8_STRING) * argc);
-	u16_args = (UNICODE_STRING *)malloc(sizeof(UNICODE_STRING) * argc);
+	u8_args = (UTF8_STRING *)RtlAllocateHeap(NtCurrentProcessHeap(), 0, sizeof(UTF8_STRING) * argc);
+	u16_args = (UNICODE_STRING *)RtlAllocateHeap(NtCurrentProcessHeap(), 0, sizeof(UNICODE_STRING) * argc);
+	argv_normalized = (char **)RtlAllocateHeap(NtCurrentProcessHeap(), HEAP_ZERO_MEMORY, sizeof(char *) * argc);
 
-	argv_normalized = (char **)malloc(sizeof(char *) * argc);
-	memset(argv_normalized, 0, sizeof(char *) * argc);
+	if (argc != 0 && (u8_args == NULL || u16_args == NULL || argv_normalized == NULL))
+	{
+		errno = ENOMEM;
+		return NULL;
+	}
 
 	for (int i = 0; i < argc; ++i)
 	{
@@ -798,6 +876,11 @@ static WCHAR *convert_argv_to_wargv(char *const argv[], size_t *size)
 		size_t arg_size;
 
 		new_arg = convert_argv_to_windows_cmd(argv[i], &arg_size);
+		if (new_arg == (char *)-1)
+		{
+			goto finish;
+		}
+
 		argv_normalized[i] = new_arg;
 
 		u8_args[i].Buffer = new_arg == NULL ? argv[i] : argv_normalized[i];
@@ -808,7 +891,13 @@ static WCHAR *convert_argv_to_wargv(char *const argv[], size_t *size)
 	}
 
 	argv_size *= sizeof(WCHAR);
-	wargv = (WCHAR *)malloc(argv_size);
+	wargv = (WCHAR *)RtlAllocateHeap(NtCurrentProcessHeap(), 0, argv_size);
+
+	if (wargv == NULL)
+	{
+		errno = ENOMEM;
+		goto finish;
+	}
 
 	for (int i = 0; i < argc; ++i)
 	{
@@ -816,7 +905,12 @@ static WCHAR *convert_argv_to_wargv(char *const argv[], size_t *size)
 		u16_args[i].Length = (USHORT)(argv_size - argv_used);
 		u16_args[i].MaximumLength = u16_args[i].Length;
 
-		RtlUTF8StringToUnicodeString(&u16_args[i], &u8_args[i], FALSE);
+		status = RtlUTF8StringToUnicodeString(&u16_args[i], &u8_args[i], FALSE);
+		if (status != STATUS_SUCCESS)
+		{
+			map_ntstatus_to_errno(status);
+			goto finish;
+		}
 
 		// In Windows program arguments are separated by a ' '.
 		// Change the terminating NULL to a L' '.
@@ -828,17 +922,18 @@ static WCHAR *convert_argv_to_wargv(char *const argv[], size_t *size)
 	wargv[(argv_used - sizeof(WCHAR)) / sizeof(WCHAR)] = L'\0';
 	argv_used += sizeof(WCHAR);
 
-	free(u16_args);
-	free(u8_args);
+	*size = argv_size;
+
+finish:
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, u16_args);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, u8_args);
 
 	for (int i = 0; i < argc; ++i)
 	{
 		// Some pointers may be NULL here.
-		// NOTE: free(NULL) -> nop.
-		free(argv_normalized[i]);
+		// NOTE: RtlFreeHeap(..., NULL) -> nop.
+		RtlFreeHeap(NtCurrentProcessHeap(), 0, argv_normalized[i]);
 	}
-
-	*size = argv_size;
 
 	return wargv;
 }
@@ -905,7 +1000,12 @@ static WCHAR *prepend_shebang_to_wargv(const WCHAR *old_argv, size_t old_size, c
 		shebang_size += 2 * sizeof(WCHAR);
 	}
 
-	new_argv = (WCHAR *)malloc(shebang_size);
+	new_argv = (WCHAR *)RtlAllocateHeap(NtCurrentProcessHeap(), 0, shebang_size);
+	if (new_argv == NULL)
+	{
+		errno = ENOMEM;
+		return NULL;
+	}
 
 	// executable
 	if (quote_executable)
@@ -1021,13 +1121,20 @@ static WCHAR *prepend_shebang_to_wargv(const WCHAR *old_argv, size_t old_size, c
 		old_argv_needed = start_of_arg1 == 0 ? 0 : old_size - start_of_arg1;
 	}
 
-	final_argv = (WCHAR *)malloc(new_argv_used + old_argv_needed + sizeof(WCHAR)); // Terminating NULL if needed.
+	final_argv =
+		(WCHAR *)RtlAllocateHeap(NtCurrentProcessHeap(), 0, new_argv_used + old_argv_needed + sizeof(WCHAR)); // Terminating NULL if needed.
+	if (final_argv == NULL)
+	{
+		errno = ENOMEM;
+		RtlFreeHeap(NtCurrentProcessHeap(), 0, new_argv);
+		return NULL;
+	}
 
 	memcpy(final_argv, new_argv, new_argv_used);
 
 	if (old_argv_needed > 0)
 	{
-		// This will copy the terminating NULL of old_argv.
+		// This will copy the terminating NULL of old_argv also.
 		memcpy((CHAR *)final_argv + new_argv_used, (CHAR *)old_argv + start_of_arg1, old_argv_needed);
 	}
 	else
@@ -1036,7 +1143,7 @@ static WCHAR *prepend_shebang_to_wargv(const WCHAR *old_argv, size_t old_size, c
 		*(WCHAR *)((CHAR *)final_argv + new_argv_used) = L'\0';
 	}
 
-	free(new_argv);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, new_argv);
 
 	*new_size = new_argv_used + old_argv_needed;
 
@@ -1045,6 +1152,7 @@ static WCHAR *prepend_shebang_to_wargv(const WCHAR *old_argv, size_t old_size, c
 
 static WCHAR *convert_env_to_wenv(char *const env[], size_t *size)
 {
+	NTSTATUS status;
 	UNICODE_STRING *u16_envs = NULL;
 	UTF8_STRING *u8_envs = NULL;
 	WCHAR *wenv = NULL;
@@ -1054,6 +1162,8 @@ static WCHAR *convert_env_to_wenv(char *const env[], size_t *size)
 	size_t env_used = 0;
 	char *const *penv = env;
 
+	*size = -1ull;
+
 	// Count the number of elements in env.
 	while (*env)
 	{
@@ -1062,8 +1172,14 @@ static WCHAR *convert_env_to_wenv(char *const env[], size_t *size)
 	}
 	env = penv;
 
-	u8_envs = (UTF8_STRING *)malloc(sizeof(UTF8_STRING) * envc);
-	u16_envs = (UNICODE_STRING *)malloc(sizeof(UNICODE_STRING) * envc);
+	u8_envs = (UTF8_STRING *)RtlAllocateHeap(NtCurrentProcessHeap(), 0, sizeof(UTF8_STRING) * envc);
+	u16_envs = (UNICODE_STRING *)RtlAllocateHeap(NtCurrentProcessHeap(), 0, sizeof(UNICODE_STRING) * envc);
+
+	if (u8_envs == NULL || u16_envs == NULL)
+	{
+		errno = ENOMEM;
+		return NULL;
+	}
 
 	for (int i = 0; i < envc; ++i)
 	{
@@ -1073,7 +1189,13 @@ static WCHAR *convert_env_to_wenv(char *const env[], size_t *size)
 
 	++env_size; // For the terminating 2 NULLs.
 	env_size *= sizeof(WCHAR);
-	wenv = (WCHAR *)malloc(env_size);
+	wenv = (WCHAR *)RtlAllocateHeap(NtCurrentProcessHeap(), 0, env_size);
+
+	if (wenv == NULL)
+	{
+		errno = ENOMEM;
+		goto finish;
+	}
 
 	for (int i = 0; i < envc; ++i)
 	{
@@ -1081,7 +1203,12 @@ static WCHAR *convert_env_to_wenv(char *const env[], size_t *size)
 		u16_envs[i].Length = (USHORT)(env_size - env_used);
 		u16_envs[i].MaximumLength = u16_envs[i].Length;
 
-		RtlUTF8StringToUnicodeString(&u16_envs[i], &u8_envs[i], FALSE);
+		status = RtlUTF8StringToUnicodeString(&u16_envs[i], &u8_envs[i], FALSE);
+		if (status != STATUS_SUCCESS)
+		{
+			map_ntstatus_to_errno(status);
+			goto finish;
+		}
 
 		env_used += u16_envs[i].Length + sizeof(WCHAR);
 	}
@@ -1091,10 +1218,11 @@ static WCHAR *convert_env_to_wenv(char *const env[], size_t *size)
 	// we only need to put the other terminating NULL to denote the end of the environment.
 	wenv[env_used / sizeof(WCHAR)] = L'\0';
 
-	free(u16_envs);
-	free(u8_envs);
-
 	*size = env_size;
+
+finish:
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, u16_envs);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, u8_envs);
 
 	return wenv;
 }
@@ -1131,6 +1259,11 @@ int wlibc_common_spawn(pid_t *restrict pid, const char *restrict path, const spa
 	// Convert args to UTF-16.
 	wargv = convert_argv_to_wargv((char *const *)argv, &wargv_size);
 
+	if (wargv_size == -1ull) // Out of memory error.
+	{
+		goto finish;
+	}
+
 	// The arguments have exceeded the command line limit on Windows.
 	if (wargv_size >= 65536)
 	{
@@ -1142,6 +1275,11 @@ int wlibc_common_spawn(pid_t *restrict pid, const char *restrict path, const spa
 	if (env)
 	{
 		wenv = convert_env_to_wenv((char *const *)env, &wenv_size);
+
+		if (wenv_size == -1ull) // Out of memory error.
+		{
+			goto finish;
+		}
 	}
 
 	// Perform the actions.
@@ -1190,7 +1328,10 @@ int wlibc_common_spawn(pid_t *restrict pid, const char *restrict path, const spa
 
 	max_fd_requested = __max(max_fd_requested, (int)(_wlibc_fd_table_size - 1));
 
-	initialize_inherit_information(&inherit_info, max_fd_requested);
+	if (initialize_inherit_information(&inherit_info, max_fd_requested) != 0)
+	{
+		goto finish;
+	}
 
 	NTSTATUS ntstatus;
 
@@ -1312,7 +1453,7 @@ int wlibc_common_spawn(pid_t *restrict pid, const char *restrict path, const spa
 			u16_cwd = get_absolute_dospath(AT_FDCWD, actions->actions[i].chdir_action.path);
 			if (u16_cwd == NULL)
 			{
-				errno = ENOENT;
+				// errno will be set by `get_absolute_dospath`.
 				goto finish;
 			}
 			wcwd = u16_cwd->Buffer;
@@ -1333,14 +1474,16 @@ int wlibc_common_spawn(pid_t *restrict pid, const char *restrict path, const spa
 		}
 	}
 
-	STARTUPINFOW sinfo;
+	STARTUPINFOW sinfo = {0};
 	PROCESS_INFORMATION pinfo = {0};
 	DWORD priority_class = NORMAL_PRIORITY_CLASS;
 
-	memset(&sinfo, 0, sizeof(STARTUPINFOW));
 	sinfo.cb = sizeof(STARTUPINFOW);
 
-	give_inherit_information_to_startupinfo(&inherit_info, &sinfo, &inherit_info_buffer);
+	if (give_inherit_information_to_startupinfo(&inherit_info, &sinfo, &inherit_info_buffer) != 0)
+	{
+		goto finish;
+	}
 
 	if (attributes)
 	{
@@ -1391,8 +1534,8 @@ int wlibc_common_spawn(pid_t *restrict pid, const char *restrict path, const spa
 		shebang_argv =
 			prepend_shebang_to_wargv(wargv, wargv_size, u16_path_and_args->Buffer, u16_path_and_args->MaximumLength, &wargv_size);
 
-		free(u16_path);
-		free(wargv);
+		RtlFreeHeap(NtCurrentProcessHeap(), 0, u16_path);
+		RtlFreeHeap(NtCurrentProcessHeap(), 0, wargv);
 
 		u16_path = u16_path_and_args;
 		wpath = u16_path->Buffer; // The executable will be NULL separated.
@@ -1425,16 +1568,20 @@ int wlibc_common_spawn(pid_t *restrict pid, const char *restrict path, const spa
 	}
 
 	// Add the child information to our process table.
-	add_child(pinfo.dwProcessId, pinfo.hProcess);
+	if (add_child(pinfo.dwProcessId, pinfo.hProcess) != 0)
+	{
+		goto finish;
+	}
+
 	*pid = pinfo.dwProcessId;
 	result = 0;
 
 finish:
-	free(u16_path);
-	free(wargv);
-	free(wenv);
-	free(u16_cwd);
-	free(inherit_info_buffer);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, u16_path);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, wargv);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, wenv);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, u16_cwd);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, inherit_info_buffer);
 	cleanup_inherit_information(&inherit_info, actions);
 
 	return result;

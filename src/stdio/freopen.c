@@ -63,7 +63,7 @@ FILE *wlibc_freopen(const char *restrict name, const char *restrict mode, FILE *
 		// Failed to create a new stream, cleanup the current stream properly
 		if ((stream->buf_mode & _IOBUFFER_INTERNAL) && (stream->buf_mode & _IOBUFFER_ALLOCATED))
 		{
-			free(stream->buffer);
+			RtlFreeHeap(NtCurrentProcessHeap(), 0, stream->buffer);
 		}
 		delete_stream(stream);
 		return NULL;
