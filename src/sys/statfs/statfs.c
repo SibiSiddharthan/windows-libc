@@ -162,7 +162,7 @@ int do_statfs(HANDLE handle, struct statfs *restrict statfsbuf)
 	}
 
 	u16_dospath = ntpath_to_dospath(u16_ntpath);
-	RtlFreeHeap(NtCurrentProcessHeap(), 0, u16_dospath);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, u16_ntpath);
 
 	if (u16_dospath == NULL)
 	{
@@ -173,7 +173,7 @@ int do_statfs(HANDLE handle, struct statfs *restrict statfsbuf)
 	statfsbuf->f_mntonname[0] = (char)u16_dospath->Buffer[0];
 	statfsbuf->f_mntonname[1] = ':';
 
-	RtlFreeHeap(NtCurrentProcessHeap(), 0, u16_ntpath);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, u16_dospath);
 
 	// TODO removable
 	return 0;

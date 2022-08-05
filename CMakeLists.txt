@@ -59,6 +59,7 @@ option(ENABLE_SPAWN "Enable POSIX spawn API" ON)
 # Only enable the address sanitizer with MSVC.
 if(ENABLE_ASAN)
 	if(CMAKE_C_COMPILER_ID STREQUAL "MSVC")
+		add_compile_definitions(WLIBC_ASAN_BUILD)
 		add_compile_options(/fsanitize=address)
 		add_link_options(/incremental:no)
 	endif()

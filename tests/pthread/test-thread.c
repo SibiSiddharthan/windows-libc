@@ -586,11 +586,17 @@ int main()
 	test_variable = 0;
 	TEST(test_cancel());
 	TEST(test_concurrency());
+
+	// When ASAN is enabled a bug is thrown in KernelBase.dll.
+	// Exclude these tests for the time being.
+#ifndef WLIBC_ASAN_BUILD
 	TEST(test_affinity());
 	TEST(test_sched());
+#endif
+
 	// Don't execute this test case. Setting and retrieving a thread's name causes the process
 	// to hang indefinitely upon exit.
-	//TEST(test_name());
+	// TEST(test_name());
 
 	VERIFY_RESULT_AND_EXIT();
 }

@@ -7,12 +7,19 @@
 
 #include <tests/test.h>
 #include <threads.h>
+#include <stdbool.h>
 #include <sys/time.h>
 #include <unistd.h>
 
 static int signal_variable = 0;
 static int broadcast_variable_1 = 0;
 static int broadcast_variable_2 = 0;
+
+#ifndef WLIBC_ASAN_BUILD
+static bool asan_build = false;
+#else
+static bool asan_build = true;
+#endif
 
 typedef struct _locking
 {
@@ -87,7 +94,7 @@ int timed(void *arg)
 	return 0;
 }
 
-int test_cond_signal()
+int test_cnd_signal()
 {
 	int status;
 	thrd_t thread;
@@ -128,7 +135,7 @@ int test_cond_signal()
 	return 0;
 }
 
-int test_cond_broadcast()
+int test_cnd_broadcast()
 {
 	int status;
 	thrd_t thread_1, thread_2;
@@ -184,7 +191,7 @@ int test_cond_broadcast()
 	return 0;
 }
 
-int test_cond_timed()
+int test_cnd_timed()
 {
 	int status;
 	thrd_t thread;
@@ -225,9 +232,18 @@ int test_cond_timed()
 int main()
 {
 	INITIAILIZE_TESTS();
-	TEST(test_cond_signal());
-	TEST(test_cond_broadcast());
+	int concurrency = wlibc_thread_getconcurrency();
+
+	TEST(test_cnd_signal());
+
+	// In the CI where each runner is allocated 2 cpus, this test hangs when ASAN is enabled.
+	if (!(asan_build && concurrency <= 2))
+	{
+		TEST(test_cnd_broadcast());
+	}
+
 	signal_variable = 0;
-	TEST(test_cond_timed());
+	TEST(test_cnd_timed());
+
 	VERIFY_RESULT_AND_EXIT();
 }
