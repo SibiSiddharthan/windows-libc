@@ -21,6 +21,7 @@ int wlibc_raise(int sig)
 
 	VALIDATE_SIGNAL(sig);
 
+	// If the signal is blocked ignore it.
 	if (blocked_signals & (1u << sig))
 	{
 		tinfo->pending |= (1u << sig);
@@ -28,6 +29,12 @@ int wlibc_raise(int sig)
 	}
 
 	get_siginfo(sig, &sinfo);
+
+	// If the action for the specified signal is set to SIG_IGN just return.
+	if (sinfo.action == SIG_IGN)
+	{
+		return 0;
+	}
 
 	// Block signals according to sa_mask given during setup of this signal.
 	tinfo->sigmask |= sinfo.mask;

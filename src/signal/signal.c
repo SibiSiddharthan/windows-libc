@@ -5,8 +5,8 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <signal.h>
 #include <internal/signal.h>
+#include <signal.h>
 #include <errno.h>
 
 int do_sigaction(int sig, const struct sigaction *new_action, struct sigaction *old_action);
