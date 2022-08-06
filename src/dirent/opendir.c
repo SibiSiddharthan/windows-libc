@@ -48,6 +48,12 @@ DIR *wlibc_opendir(const char *path)
 
 	DIR *dirstream = initialize_dirstream(fd);
 
+	// Close the file descriptor if we fail to initialize the stream.
+	if (dirstream == NULL)
+	{
+		close_fd(fd);
+	}
+
 	return dirstream;
 }
 
