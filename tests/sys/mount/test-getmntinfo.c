@@ -31,7 +31,7 @@ int test_getmntinfo()
 	struct statfs *statfsbuf;
 
 	status = getmntinfo(&statfsbuf, MNT_WAIT);
-	ASSERT_NOTEQ(status, -1);
+	ASSERT_NOTEQ(status, 0);
 
 	printf("Got %d entries.\n", status);
 	for (int i = 0; i < status; ++i)

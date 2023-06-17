@@ -57,7 +57,7 @@ int wlibc_getmntinfo(struct statfs **mounts, int mode)
 								   sizeof(MOUNTMGR_MOUNT_POINT), mount_points, required_size);
 	if (status != STATUS_SUCCESS)
 	{
-		if (status != STATUS_BUFFER_OVERFLOW)
+		if (status == STATUS_BUFFER_OVERFLOW)
 		{
 			required_size = roundup(mount_points->Size, 4096);
 
