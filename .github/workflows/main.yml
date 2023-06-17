@@ -6,7 +6,7 @@ jobs:
   msvc-asan:
     runs-on: windows-2022
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Install ninja
       shell: cmd
       run: choco install ninja
@@ -21,7 +21,7 @@ jobs:
   msvc-debug:
     runs-on: windows-2022
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Install ninja
       shell: cmd
       run: choco install ninja
@@ -36,7 +36,7 @@ jobs:
   msvc-release:
     runs-on: windows-2022
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Install ninja
       shell: cmd
       run: choco install ninja
@@ -51,7 +51,7 @@ jobs:
   clang:
     runs-on: windows-2022
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Install ninja
       shell: cmd
       run: choco install ninja
