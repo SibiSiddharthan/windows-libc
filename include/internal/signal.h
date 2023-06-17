@@ -19,7 +19,7 @@ typedef struct _siginfo
 	int mask;
 } siginfo;
 
-extern RTL_CRITICAL_SECTION _wlibc_signal_critical;
+extern RTL_SRWLOCK _wlibc_signal_srw;
 extern siginfo _wlibc_signal_table[NSIG];
 
 void signal_init(void);
@@ -28,8 +28,10 @@ void signal_cleanup(void);
 void get_siginfo(int sig, siginfo *sinfo);
 void set_siginfo(int sig, const siginfo *sinfo);
 
-#define LOCK_SIGNAL_TABLE()   RtlEnterCriticalSection(&_wlibc_signal_critical)
-#define UNLOCK_SIGNAL_TABLE() RtlLeaveCriticalSection(&_wlibc_signal_critical)
+#define SHARED_LOCK_SIGNAL_TABLE()      RtlAcquireSRWLockShared(&_wlibc_signal_srw)
+#define SHARED_UNLOCK_SIGNAL_TABLE()    RtlReleaseSRWLockShared(&_wlibc_signal_srw)
+#define EXCLUSIVE_LOCK_SIGNAL_TABLE()   RtlAcquireSRWLockExclusive(&_wlibc_signal_srw)
+#define EXCLUSIVE_UNLOCK_SIGNAL_TABLE() RtlReleaseSRWLockExclusive(&_wlibc_signal_srw)
 
 #define VALIDATE_SIGSET(sigset) VALIDATE_PTR(sigset, EINVAL, -1)
 

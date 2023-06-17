@@ -8,7 +8,7 @@
 #include <internal/signal.h>
 #include <thread.h>
 
-RTL_CRITICAL_SECTION _wlibc_signal_critical;
+RTL_SRWLOCK _wlibc_signal_srw;
 siginfo _wlibc_signal_table[NSIG];
 
 static void console_raise(int sig)
@@ -57,7 +57,7 @@ static BOOL console_handler(DWORD ctrl)
 
 void signal_init(void)
 {
-	RtlInitializeCriticalSection(&_wlibc_signal_critical);
+	RtlInitializeSRWLock(&_wlibc_signal_srw);
 	memset(_wlibc_signal_table, 0, NSIG * sizeof(siginfo));
 
 	// Initialize the console control signal handler.
@@ -66,19 +66,19 @@ void signal_init(void)
 
 void signal_cleanup(void)
 {
-	RtlDeleteCriticalSection(&_wlibc_signal_critical);
+	return;
 }
 
 void get_siginfo(int sig, siginfo *sinfo)
 {
-	LOCK_SIGNAL_TABLE();
+	SHARED_LOCK_SIGNAL_TABLE();
 	memcpy(sinfo, &_wlibc_signal_table[sig], sizeof(siginfo));
-	UNLOCK_SIGNAL_TABLE();
+	SHARED_UNLOCK_SIGNAL_TABLE();
 }
 
 void set_siginfo(int sig, const siginfo *sinfo)
 {
-	LOCK_SIGNAL_TABLE();
+	EXCLUSIVE_LOCK_SIGNAL_TABLE();
 	memcpy(&_wlibc_signal_table[sig], sinfo, sizeof(siginfo));
-	UNLOCK_SIGNAL_TABLE();
+	EXCLUSIVE_UNLOCK_SIGNAL_TABLE();
 }

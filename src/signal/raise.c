@@ -48,9 +48,9 @@ int wlibc_raise(int sig)
 	// Restore the default signal handler.
 	if (sinfo.flags & SA_RESETHAND)
 	{
-		LOCK_SIGNAL_TABLE();
+		EXCLUSIVE_LOCK_SIGNAL_TABLE();
 		_wlibc_signal_table[sig].action = SIG_DFL;
-		UNLOCK_SIGNAL_TABLE();
+		EXCLUSIVE_UNLOCK_SIGNAL_TABLE();
 	}
 
 	if (sinfo.action == SIG_DFL)
