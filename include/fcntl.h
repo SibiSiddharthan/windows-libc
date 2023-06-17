@@ -25,36 +25,36 @@ _WLIBC_BEGIN_DECLS
 #define O_TRUNC  0x0200 // open and truncate
 
 // Creation flags
-#define O_CREAT      0x0100    // create and open file
-#define O_EXCL       0x0400    // open only if file doesn't already exist
-#define O_DIRECT     0x400000  // Disable caching
-#define O_NOFOLLOW   0x2000000 // Don't open symlinks
-#define O_DIRECTORY  0x2000    // Fail if not a directory
-#define O_NOTDIR     0x20000   // Fail if a directory (not posix, but simplifies fopen)
+#define O_CREAT      0x0100      // create and open file
+#define O_EXCL       0x0400      // open only if file doesn't already exist
+#define O_DIRECT     0x400000    // Disable caching
+#define O_NOFOLLOW   0x2000000   // Don't open symlinks
+#define O_DIRECTORY  0x2000      // Fail if not a directory
+#define O_NOTDIR     0x20000     // Fail if a directory (not posix, but simplifies fopen)
 #define O_OBTAIN_DIR O_DIRECTORY
 #define O_SEARCH     O_DIRECTORY // Open directory for searching
 
 // Attributes
 #define O_ASYNC       0x100000
-#define O_DSYNC       0x0800    // Currently Unsupported
-#define O_SYNC        0x800000  // Flush the file buffer immediately
-#define O_NOATIME     0x200000  // Don't update last access time for read operations
-#define O_NONBLOCK    0x4000000 // Nonblocking IO
+#define O_DSYNC       0x0800     // Currently Unsupported
+#define O_SYNC        0x800000   // Flush the file buffer immediately
+#define O_NOATIME     0x200000   // Don't update last access time for read operations
+#define O_NONBLOCK    0x4000000  // Nonblocking IO
 #define O_NDELAY      O_NONBLOCK
-#define O_NOINHERIT   0x0080 // child processes doesn't inherit file
+#define O_NOINHERIT   0x0080     // child processes doesn't inherit file
 #define O_CLOEXEC     O_NOINHERIT
-#define O_PATH        0x80000 // Dont open the file for read or write
-#define O_SEQUENTIAL  0x0020  // file access is primarily sequential
-#define O_RANDOM      0x0010  // file access is primarily random
-#define O_TMPFILE     0x0040  // temporary file
+#define O_PATH        0x80000    // Dont open the file for read or write
+#define O_SEQUENTIAL  0x0020     // file access is primarily sequential
+#define O_RANDOM      0x0010     // file access is primarily random
+#define O_TMPFILE     0x0040     // temporary file
 #define O_TEMPORARY   O_TMPFILE
-#define O_SHORT_LIVED 0x1000  // like temporary file but name of file is given(to implement msvc T,D)
-#define O_READONLY    0x10000 // file is read-only
+#define O_SHORT_LIVED 0x1000     // like temporary file but name of file is given(to implement msvc T,D)
+#define O_READONLY    0x10000    // file is read-only
 #define O_IMMUTABLE   O_READONLY
-#define O_HIDDEN      0x20000   // file is hidden
-#define O_SYSTEM      0x40000   // file is a system file
-#define O_ARCHIVE     0x0004    // file can be backed up
-#define O_ENCRYPTED   0x8000000 // file is encrypted by the file system
+#define O_ARCHIVE     0x0004     // file can be backed up
+#define O_HIDDEN      0x10000000 // file is hidden
+#define O_ENCRYPTED   0x20000000 // file is encrypted by the file system
+#define O_SYSTEM      0x40000000 // file is a system file
 
 // Unsupported
 #define O_LARGEFILE 0x0 // We always use 64 bit file offsets
