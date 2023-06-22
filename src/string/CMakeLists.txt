@@ -10,6 +10,7 @@ MODULE string
 
 SOURCES
 ffs.c
+strsignal.c
 #memchr.c
 #mempcpy.c
 #stpcpy.c

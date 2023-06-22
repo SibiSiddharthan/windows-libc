@@ -64,6 +64,7 @@ struct sigaction
 #define SIGBREAK SIGTSTP // Ctrl-Break sequence
 
 #define NSIG 32 // Biggest signal number + 1
+extern const char *const sys_siglist[NSIG]; // Names of the signals
 
 // Signal action codes
 #define SIG_ERR ((signal_t)-1) // Signal error value
@@ -162,6 +163,13 @@ WLIBC_API int wlibc_sigaction(int sig, const struct sigaction *new_action, struc
 WLIBC_INLINE int sigaction(int sig, const struct sigaction *new_action, struct sigaction *old_action)
 {
 	return wlibc_sigaction(sig, new_action, old_action);
+}
+
+// Should be in string.h
+WLIBC_API char *wlibc_strsignal(int sig);
+WLIBC_INLINE char *strsignal(int sig)
+{
+	return wlibc_strsignal(sig);
 }
 
 _WLIBC_END_DECLS
