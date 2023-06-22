@@ -19,6 +19,7 @@ dup.c
 exec.c
 fsync.c
 getcwd.c
+getdtablesize.c
 getpagesize.c
 gid.c
 hostname.c

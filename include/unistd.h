@@ -243,6 +243,12 @@ WLIBC_INLINE int gethostname(char *name, size_t length)
 	return wlibc_gethostname(name, length);
 }
 
+WLIBC_API int wlibc_getdtablesize(void);
+WLIBC_INLINE int getdtablesize(void)
+{
+	return wlibc_getdtablesize();
+}
+
 WLIBC_API int wlibc_getpagesize(void);
 WLIBC_INLINE int getpagesize(void)
 {
