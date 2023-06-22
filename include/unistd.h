@@ -11,6 +11,7 @@
 #include <wlibc.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <getopt.h>
 #include <process.h>
 #include <sys/types.h>
 

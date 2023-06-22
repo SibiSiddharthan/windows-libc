@@ -16,6 +16,10 @@ if(ENABLE_DLFCN)
 	wlibc_add_module(dlfcn)
 endif()
 
+if(ENABLE_GETOPT)
+	wlibc_add_module(getopt)
+endif()
+
 if(ENABLE_POSIX_IO)
 	wlibc_add_module(dirent fcntl poll stdio sys.file sys.ioctl sys.mount sys.stat sys.statfs sys.statvfs unistd)
 endif()

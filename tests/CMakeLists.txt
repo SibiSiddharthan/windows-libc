@@ -11,6 +11,10 @@ if(ENABLE_DLFCN)
 	add_subdirectory(dlfcn)
 endif()
 
+if(ENABLE_GETOPT)
+	add_subdirectory(getopt)
+endif()
+
 if(ENABLE_POSIX_IO)
 	add_subdirectory(dirent)
 	add_subdirectory(fcntl)

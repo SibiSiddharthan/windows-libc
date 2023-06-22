@@ -38,6 +38,7 @@ option(ENABLE_ASAN "Use address sanitizer" OFF)
 
 # List of modules
 option(ENABLE_DLFCN "Enable dlfcn module" ON)
+option(ENABLE_GETOPT "Enable getopt module" ON)
 option(ENABLE_POSIX_IO "Enable POSIX like IO" ON)
 option(ENABLE_POSIX_SIGNALS "Enable POSIX like signals" ON)
 option(ENABLE_SYS_TIME "Enable sys/time.h" ON)
@@ -54,7 +55,6 @@ option(ENABLE_ACCOUNTS "Enable user(pwd) and group(grp) functions" ON)
 option(ENABLE_MMAP "Enable POSIX mmap API" ON)
 option(ENABLE_THREADS "Enable pthreads and C11 threads API" ON)
 option(ENABLE_SPAWN "Enable POSIX spawn API" ON)
-#option(ENABLE_SOCKETS "Enable SOCKETS API" ON)
 
 # Only enable the address sanitizer with MSVC.
 if(ENABLE_ASAN)
