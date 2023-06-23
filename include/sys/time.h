@@ -9,6 +9,7 @@
 #define WLIBC_SYS_TIME_H
 
 #include <wlibc.h>
+#include <fcntl.h>
 #include <time.h>
 #include <sys/types.h>
 
@@ -31,6 +32,28 @@ WLIBC_INLINE int gettimeofday(struct timeval *restrict tp, void *restrict tz WLI
 }
 
 #pragma warning(pop)
+
+WLIBC_API int wlibc_common_utimes(int dirfd, const char *path, const struct timeval times[2], int flags);
+
+WLIBC_INLINE int utimes(const char *path, const struct timeval times[2])
+{
+	return wlibc_common_utimes(AT_FDCWD, path, times, 0);
+}
+
+WLIBC_INLINE int lutimes(const char *path, const struct timeval times[2])
+{
+	return wlibc_common_utimes(AT_FDCWD, path, times, AT_SYMLINK_NOFOLLOW);
+}
+
+WLIBC_INLINE int futimes(int fd, const struct timeval times[2])
+{
+	return wlibc_common_utimes(fd, NULL, times, AT_EMPTY_PATH);
+}
+
+WLIBC_INLINE int futimesat(int dirfd, const char *path, const struct timeval times[2], int flags)
+{
+	return wlibc_common_utimes(dirfd, path, times, flags);
+}
 
 _WLIBC_END_DECLS
 

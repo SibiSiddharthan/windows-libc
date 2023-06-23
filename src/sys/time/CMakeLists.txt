@@ -10,6 +10,7 @@ MODULE sys.time
 
 SOURCES
 gettimeofday.c
+utimes.c
 
 HEADERS
 sys/time.h
