@@ -10,6 +10,7 @@ MODULE unistd
 
 SOURCES
 access.c
+alarm.c
 chdir.c
 chown.c
 close.c

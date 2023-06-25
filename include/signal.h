@@ -12,7 +12,7 @@
 
 _WLIBC_BEGIN_DECLS
 
-typedef void(__cdecl *signal_t)(int);
+typedef void (*signal_t)(int);
 typedef int sig_atomic_t;
 typedef unsigned int sigset_t;
 
@@ -61,9 +61,9 @@ struct sigaction
 #define SIGIO    SIGPOLL
 #define SIGIOT   SIGABRT
 #define SIGCLD   SIGCHLD
-#define SIGBREAK SIGTSTP // Ctrl-Break sequence
+#define SIGBREAK SIGTSTP                    // Ctrl-Break sequence
 
-#define NSIG 32 // Biggest signal number + 1
+#define NSIG 32                             // Biggest signal number + 1
 extern const char *const sys_siglist[NSIG]; // Names of the signals
 
 // Signal action codes

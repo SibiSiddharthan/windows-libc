@@ -58,6 +58,12 @@ WLIBC_INLINE int faccessat(int dirfd, const char *path, int mode, int flags)
 	return wlibc_common_access(dirfd, path, mode, flags);
 }
 
+WLIBC_API unsigned int wlibc_alarm(unsigned int seconds);
+WLIBC_INLINE unsigned int alarm(unsigned int seconds)
+{
+	return wlibc_alarm(seconds);
+}
+
 WLIBC_API int wlibc_close(int fd);
 WLIBC_INLINE int close(int fd)
 {

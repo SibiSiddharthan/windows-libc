@@ -7,6 +7,7 @@
 
 wlibc_add_tests(
 access
+alarm
 close
 chdir
 chown
