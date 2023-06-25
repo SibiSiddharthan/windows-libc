@@ -24,10 +24,6 @@ if(ENABLE_POSIX_IO)
 	wlibc_add_module(dirent fcntl poll stdio sys.file sys.ioctl sys.mount sys.stat sys.statfs sys.statvfs unistd)
 endif()
 
-if(ENABLE_SYS_TIME)
-	wlibc_add_module(sys.time)
-endif()
-
 if(ENABLE_SYS_RESOURCE)
 	wlibc_add_module(sys.resource)
 endif()
@@ -86,6 +82,10 @@ endif()
 
 if(ENABLE_ACLS)
 	wlibc_add_module(sys.acl)
+endif()
+
+if(ENABLE_TIMERS)
+	wlibc_add_module(sys.time)
 endif()
 
 wlibc_add_module(sys.utsname)

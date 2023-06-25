@@ -74,6 +74,22 @@
 		return 1;                                                                                                                    \
 	}
 
+#define ASSERT_GTEQ(variable, value)                                                                                                      \
+	if (((long long)variable) < ((long long)value))                                                                                       \
+	{                                                                                                                                     \
+		printf("Assertion failed at %s:%d in %s. Expected value of %lld should be greater than %lld\n", __FILE__, __LINE__, __FUNCTION__, \
+			   (long long)variable, (long long)value);                                                                                    \
+		return 1;                                                                                                                         \
+	}
+
+#define ASSERT_LTEQ(variable, value)                                                                                                   \
+	if (((long long)variable) > ((long long)value))                                                                                    \
+	{                                                                                                                                  \
+		printf("Assertion failed at %s:%d in %s. Expected value of %lld should be less than %lld\n", __FILE__, __LINE__, __FUNCTION__, \
+			   (long long)variable, (long long)value);                                                                                 \
+		return 1;                                                                                                                      \
+	}
+
 #define ASSERT_SUCCESS(op)                                                                                                          \
 	{                                                                                                                               \
 		if (op != 0)                                                                                                                \

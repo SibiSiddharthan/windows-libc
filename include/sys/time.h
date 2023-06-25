@@ -21,6 +21,16 @@ struct timeval
 	suseconds_t tv_usec; // microseconds
 };
 
+#define ITIMER_REAL    0 // Realtime timer
+#define ITIMER_VIRTUAL 1 // Process timer
+#define ITIMER_PROF    2 // Profiling timer
+
+struct itimerval
+{
+	struct timeval it_interval; // Interval for periodic timer
+	struct timeval it_value;    // Time until next expiration
+};
+
 WLIBC_API int wlibc_gettimeofday(struct timeval *restrict tp);
 
 #pragma warning(push)
@@ -53,6 +63,19 @@ WLIBC_INLINE int futimes(int fd, const struct timeval times[2])
 WLIBC_INLINE int futimesat(int dirfd, const char *path, const struct timeval times[2], int flags)
 {
 	return wlibc_common_utimes(dirfd, path, times, flags);
+}
+
+WLIBC_API int wlibc_getitimer(int which, struct itimerval *current_value);
+WLIBC_API int wlibc_setitimer(int which, const struct itimerval *restrict new_value, struct itimerval *restrict old_value);
+
+WLIBC_INLINE int getitimer(int which, struct itimerval *current_value)
+{
+	return wlibc_getitimer(which, current_value);
+}
+
+WLIBC_INLINE int setitimer(int which, const struct itimerval *restrict new_value, struct itimerval *restrict old_value)
+{
+	return wlibc_setitimer(which, new_value, old_value);
 }
 
 _WLIBC_END_DECLS

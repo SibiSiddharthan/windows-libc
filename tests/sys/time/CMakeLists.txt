@@ -5,15 +5,4 @@
    Refer to the LICENSE file at the root directory for details.
 ]]
 
-wlibc_module(
-MODULE sys.time
-
-SOURCES
-gettimeofday.c
-internal.c
-itimer.c
-utimes.c
-
-HEADERS
-sys/time.h
-)
+wlibc_add_tests(itimers)

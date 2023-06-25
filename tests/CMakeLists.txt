@@ -89,3 +89,7 @@ endif()
 if(ENABLE_ACLS)
 	add_subdirectory(sys/acl)
 endif()
+
+if(ENABLE_TIMERS)
+	add_subdirectory(sys/time)
+endif()

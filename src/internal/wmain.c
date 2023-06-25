@@ -12,6 +12,7 @@
 #include <internal/signal.h>
 #include <internal/stdio.h>
 #include <internal/thread.h>
+#include <internal/timer.h>
 #include <stdlib.h>
 
 extern int main(int argc, char **argv);
@@ -113,6 +114,10 @@ int wmain(int argc, wchar_t **wargv)
 #ifdef WLIBC_ACLS
 	initialize_sids();
 	atexit(cleanup_security_decsriptors);
+#endif
+#ifdef WLIBC_TIMERS
+	initialize_itimers();
+	atexit(cleanup_itimers);
 #endif
 #ifdef WLIBC_ERRNO
 	init_program_name();

@@ -8,7 +8,6 @@
 #include <tests/test.h>
 #include <sys/times.h>
 #include <unistd.h>
-#include <Windows.h>
 
 // Not really a test, just see if it works.
 int test_times()

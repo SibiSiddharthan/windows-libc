@@ -2187,6 +2187,52 @@ NTSTATUS
 NTAPI
 NtWaitForAlertByThreadId(_In_ PVOID Address, _In_opt_ PLARGE_INTEGER Timeout);
 
+typedef struct _T2_SET_PARAMETERS_V0
+{
+	ULONG Version;
+	ULONG Reserved;
+	LONGLONG NoWakeTolerance;
+} T2_SET_PARAMETERS, *PT2_SET_PARAMETERS;
+
+typedef PVOID PT2_CANCEL_PARAMETERS;
+
+#define TIMER_HIGH_RESOLUTION 0x4
+#define TIMER_NO_WAKE 0x8
+
+NTSYSCALLAPI
+NTSTATUS
+NTAPI
+NtCreateTimer2(_Out_ PHANDLE TimerHandle, _In_opt_ PVOID Reserved1, _In_opt_ POBJECT_ATTRIBUTES ObjectAttributes, _In_ ULONG Attributes,
+			   _In_ ACCESS_MASK DesiredAccess);
+
+NTSYSCALLAPI
+NTSTATUS
+NTAPI
+NtSetTimer2(_In_ HANDLE TimerHandle, _In_ PLARGE_INTEGER DueTime, _In_opt_ PLARGE_INTEGER Period, _In_ PT2_SET_PARAMETERS Parameters);
+
+NTSYSCALLAPI
+NTSTATUS
+NTAPI
+NtCancelTimer2(_In_ HANDLE TimerHandle, _In_ PT2_CANCEL_PARAMETERS Parameters);
+
+typedef enum _TIMER_INFORMATION_CLASS
+{
+	TimerBasicInformation
+} TIMER_INFORMATION_CLASS;
+
+typedef struct _TIMER_BASIC_INFORMATION
+{
+	LARGE_INTEGER RemainingTime;
+	BOOLEAN TimerState;
+} TIMER_BASIC_INFORMATION, *PTIMER_BASIC_INFORMATION;
+
+NTSYSCALLAPI
+NTSTATUS
+NTAPI
+NtQueryTimer(_In_ HANDLE TimerHandle, _In_ TIMER_INFORMATION_CLASS TimerInformationClass,
+			 _Out_writes_bytes_(TimerInformationLength) PVOID TimerInformation, _In_ ULONG TimerInformationLength,
+			 _Out_opt_ PULONG ReturnLength);
+
 DECLSPEC_NORETURN
 NTSYSAPI
 VOID NTAPI RtlExitUserThread(_In_ NTSTATUS ExitStatus);
