@@ -1344,18 +1344,22 @@ int wlibc_common_spawn(pid_t *restrict pid, const char *restrict path, const spa
 
 		case open_action:
 		{
-			// TODO make this more efficient.
-			int fd = do_open(AT_FDCWD, actions->actions[i].open_action.path, actions->actions[i].open_action.oflag,
-							 actions->actions[i].open_action.mode);
+			int fd;
+			fdinfo info;
+
+			fd = do_open(AT_FDCWD, actions->actions[i].open_action.path, actions->actions[i].open_action.oflag,
+						 actions->actions[i].open_action.mode);
 			if (fd < 0)
 			{
 				// errno wil be set by `do_open`.
 				goto finish;
 			}
 
-			int flags = get_fd_flags(fd);
-			handle_t type = get_fd_type(fd);
-			HANDLE handle = get_fd_handle(fd);
+			get_fdinfo(fd, &info);
+
+			int flags = info.flags;
+			handle_t type = info.type;
+			HANDLE handle = info.handle;
 			HANDLE nhandle;
 			// Duplicate this fd and make sure it is inheritable.
 			ntstatus = NtDuplicateObject(NtCurrentProcess(), handle, NtCurrentProcess(), &nhandle, 0, OBJ_CASE_INSENSITIVE | OBJ_INHERIT,
@@ -1379,18 +1383,20 @@ int wlibc_common_spawn(pid_t *restrict pid, const char *restrict path, const spa
 
 		case close_action:
 		{
-			// TODO make this more efficient.
 			int fd = actions->actions[i].close_action.fd;
 			OBJECT_HANDLE_FLAG_INFORMATION flag_info;
+			fdinfo info;
 
-			if (!validate_fd(fd))
+			get_fdinfo(fd, &info);
+
+			if (info.type == INVALID_HANDLE)
 			{
 				errno = EBADF;
 				goto finish;
 			}
 
-			int flags = get_fd_flags(fd);
-			HANDLE handle = get_fd_handle(fd);
+			int flags = info.flags;
+			HANDLE handle = info.handle;
 
 			//  Make sure that this handle is not inheritable, if not make it so.
 			if ((flags & O_NOINHERIT) == 0)
@@ -1414,20 +1420,23 @@ int wlibc_common_spawn(pid_t *restrict pid, const char *restrict path, const spa
 
 		case dup2_action:
 		{
-			// TODO make this more efficient.
 			int oldfd = actions->actions[i].dup2_action.oldfd;
 			int newfd = actions->actions[i].dup2_action.newfd;
 
 			OBJECT_HANDLE_FLAG_INFORMATION flag_info;
-			if (!validate_fd(oldfd))
+			fdinfo info;
+
+			get_fdinfo(oldfd, &info);
+
+			if (info.type == INVALID_HANDLE)
 			{
 				errno = EBADF;
 				goto finish;
 			}
 
-			int flags = get_fd_flags(oldfd);
-			HANDLE handle = get_fd_handle(oldfd);
-			handle_t type = get_fd_type(oldfd);
+			int flags = info.flags;
+			HANDLE handle = info.handle;
+			handle_t type = info.type;
 
 			//  Make sure that this handle is inheritable, if not make it so.
 			if (flags & O_NOINHERIT)

@@ -18,7 +18,6 @@ char *common_fgets(char *restrict buffer, size_t count, FILE *restrict stream)
 
 	while (ch != '\n' && read_count + 1 < count)
 	{
-		// TODO make this faster
 		ch = (char)common_fgetc(stream);
 		if (ch == EOF)
 		{
@@ -26,6 +25,7 @@ char *common_fgets(char *restrict buffer, size_t count, FILE *restrict stream)
 		}
 		buffer[read_count++] = ch;
 	}
+
 	buffer[read_count] = '\0';
 	return buffer;
 }

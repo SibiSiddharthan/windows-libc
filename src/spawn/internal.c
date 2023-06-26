@@ -29,12 +29,8 @@ void process_init(void)
 	_wlibc_process_table_size = 4;
 	_wlibc_child_process_count = 0;
 
-	// TODO
-	for (size_t i = 0; i < _wlibc_process_table_size; i++)
-	{
-		_wlibc_process_table[i].id = 0;
-		_wlibc_process_table[i].handle = NULL;
-	}
+	// Initialize the table.
+	memset(_wlibc_process_table, 0, sizeof(processinfo) * _wlibc_process_table_size);
 }
 
 void process_cleanup(void)
