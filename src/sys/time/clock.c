@@ -36,7 +36,7 @@ int wlibc_clock_getres(clockid_t id, struct timespec *res)
 
 int wlibc_clock_gettime(clockid_t id, struct timespec *ts)
 {
-	LARGE_INTEGER epoch;
+	LARGE_INTEGER epoch = {0};
 
 	VALIDATE_CLOCK(id);
 	VALIDATE_PTR(ts, EINVAL, -1);

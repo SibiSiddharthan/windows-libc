@@ -5,9 +5,7 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <internal/nt.h>
 #include <tests/test.h>
-#include <stdbool.h>
 #include <sys/resource.h>
 
 int test_priority()

@@ -463,8 +463,8 @@ int test_getopt_long_3()
 			break;
 		case 'c':
 			c = atoi(optarg);
-			break;
 			ASSERT_EQ(index, 2);
+			break;
 		default:
 			break;
 		}
@@ -509,8 +509,8 @@ int test_getopt_long_4()
 			break;
 		case 'c':
 			c = atoi(optarg);
-			break;
 			ASSERT_EQ(index, 2);
+			break;
 		default:
 			break;
 		}

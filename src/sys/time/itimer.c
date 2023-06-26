@@ -14,7 +14,7 @@
 
 int wlibc_getitimer(int which, struct itimerval *current_value)
 {
-	timerinfo tinfo;
+	timerinfo *tinfo = NULL;
 
 	VALIDATE_PTR(current_value, EINVAL, -1);
 
@@ -27,19 +27,20 @@ int wlibc_getitimer(int which, struct itimerval *current_value)
 	switch (which)
 	{
 	case ITIMER_REAL:
-		tinfo = real_itimer;
+		tinfo = &real_itimer;
 		break;
 	case ITIMER_VIRTUAL:
-		tinfo = virtual_itimer;
+		tinfo = &virtual_itimer;
 		break;
 	case ITIMER_PROF:
-		tinfo = prof_itimer;
+		tinfo = &prof_itimer;
 		break;
+
 	}
 
 	// Just fill in the period.
-	current_value->it_interval.tv_sec = tinfo.period / 10000000;
-	current_value->it_interval.tv_usec = (tinfo.period % 10000000) / 10;
+	current_value->it_interval.tv_sec = tinfo->period / 10000000;
+	current_value->it_interval.tv_usec = (tinfo->period % 10000000) / 10;
 	current_value->it_value.tv_sec = 0;
 	current_value->it_value.tv_usec = 0;
 

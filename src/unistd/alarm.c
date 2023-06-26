@@ -20,7 +20,7 @@ unsigned int wlibc_alarm(unsigned int seconds)
 	due.it_value.tv_sec = seconds;
 	setitimer(ITIMER_REAL, &due, NULL);
 
-	result = old.it_value.tv_sec;
+	result = (unsigned int)old.it_value.tv_sec;
 
 	return result;
 }
