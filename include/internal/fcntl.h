@@ -60,7 +60,7 @@ int close_fd(int _fd);
 int get_fd(HANDLE _h);
 
 // Return information on the fd.
-// If fd given is invalid, type is set to INVALID_HANDLE, and handle is set to INVALID_HANDLE_VALUE.
+// If fd given is invalid, type is set to INVALID_HANDLE, and handle is set to NULL.
 void get_fdinfo(int fd, fdinfo *info);
 
 // Getters

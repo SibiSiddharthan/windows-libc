@@ -159,7 +159,7 @@ finish:
 ssize_t common_readlink(int dirfd, const char *restrict path, char *restrict buffer, size_t bufsiz)
 {
 	HANDLE handle = just_open(dirfd, path, FILE_READ_ATTRIBUTES, FILE_OPEN_REPARSE_POINT);
-	if (handle == INVALID_HANDLE_VALUE)
+	if (handle == NULL)
 	{
 		// errno wil be set by just_open
 		return -1;

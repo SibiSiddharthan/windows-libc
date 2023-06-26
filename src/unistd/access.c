@@ -66,7 +66,7 @@ int common_access(int dirfd, const char *path, int mode, int flags)
 	int result = -1;
 
 	HANDLE handle = just_open(dirfd, path, FILE_READ_ATTRIBUTES | READ_CONTROL, flags == AT_SYMLINK_NOFOLLOW ? FILE_OPEN_REPARSE_POINT : 0);
-	if (handle == INVALID_HANDLE_VALUE)
+	if (handle == NULL)
 	{
 		// errno wil be set by just_open
 		return -1;

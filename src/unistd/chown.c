@@ -119,7 +119,7 @@ int common_chown(int dirfd, const char *path, uid_t owner, gid_t group, int flag
 	HANDLE handle;
 
 	handle = just_open(dirfd, path, WRITE_OWNER, flags == AT_SYMLINK_NOFOLLOW ? FILE_OPEN_REPARSE_POINT : 0);
-	if (handle == INVALID_HANDLE_VALUE)
+	if (handle == NULL)
 	{
 		if (errno == EACCES)
 		{
@@ -135,7 +135,7 @@ int common_chown(int dirfd, const char *path, uid_t owner, gid_t group, int flag
 			errno = 0;
 
 			handle = just_open(dirfd, path, WRITE_OWNER, flags == AT_SYMLINK_NOFOLLOW ? FILE_OPEN_REPARSE_POINT : 0);
-			if (handle == INVALID_HANDLE_VALUE)
+			if (handle == NULL)
 			{
 				// Failed again release privilege and return.
 				// errno will be set by `just_open`.
@@ -198,7 +198,7 @@ int wlibc_common_chown(int dirfd, const char *path, uid_t owner, gid_t group, in
 
 		// 'open' does not give WRITE_OWNER permission, reopen the file with 'WRITE_OWNER'.
 		handle = just_reopen(info.handle, WRITE_OWNER, 0);
-		if (handle == INVALID_HANDLE_VALUE)
+		if (handle == NULL)
 		{
 			if (errno == EACCES)
 			{
@@ -214,7 +214,7 @@ int wlibc_common_chown(int dirfd, const char *path, uid_t owner, gid_t group, in
 				errno = 0;
 
 				handle = just_reopen(info.handle, WRITE_OWNER, 0);
-				if (handle == INVALID_HANDLE_VALUE)
+				if (handle == NULL)
 				{
 					// Failed again release privilege and return.
 					// errno will be set by `just_reopen`.

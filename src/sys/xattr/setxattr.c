@@ -108,7 +108,7 @@ int common_setxattr(int fd, const char *restrict path, const char *restrict name
 {
 	HANDLE handle = just_open(fd, path, FILE_READ_EA | FILE_WRITE_EA | SYNCHRONIZE,
 							  FILE_SYNCHRONOUS_IO_ALERT | (flags == AT_SYMLINK_NOFOLLOW ? FILE_OPEN_REPARSE_POINT : 0));
-	if (handle == INVALID_HANDLE_VALUE)
+	if (handle == NULL)
 	{
 		// errno wil be set by just_open
 		return -1;

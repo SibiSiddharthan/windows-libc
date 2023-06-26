@@ -134,7 +134,7 @@ acl_t wlibc_acl_get(int fd, const char *path, int flags)
 		VALIDATE_PATH(path, ENOENT, NULL);
 
 		HANDLE handle = just_open(AT_FDCWD, path, READ_CONTROL, (flags == AT_SYMLINK_NOFOLLOW ? FILE_OPEN_REPARSE_POINT : 0));
-		if (handle == INVALID_HANDLE_VALUE)
+		if (handle == NULL)
 		{
 			// errno wil be set by just_open
 			return NULL;
@@ -178,7 +178,7 @@ int wlibc_acl_set(int fd, const char *path, acl_t acl, int flags)
 		}
 
 		handle = just_reopen(info.handle, WRITE_DAC, 0);
-		if (handle == INVALID_HANDLE_VALUE)
+		if (handle == NULL)
 		{
 			// errno wil be set by `just_reopen`.
 			return -1;
@@ -194,7 +194,7 @@ int wlibc_acl_set(int fd, const char *path, acl_t acl, int flags)
 		VALIDATE_PATH(path, ENOENT, -1);
 
 		HANDLE handle = just_open(AT_FDCWD, path, WRITE_DAC, (flags == AT_SYMLINK_NOFOLLOW ? FILE_OPEN_REPARSE_POINT : 0));
-		if (handle == INVALID_HANDLE_VALUE)
+		if (handle == NULL)
 		{
 			// errno wil be set by `just_open`.
 			return -1;

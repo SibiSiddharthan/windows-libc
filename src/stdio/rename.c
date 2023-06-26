@@ -82,7 +82,7 @@ int do_rename(HANDLE handle, const UNICODE_STRING *path, int flags)
 int common_rename(int olddirfd, const char *restrict oldpath, int newdirfd, const char *restrict newpath, int flags)
 {
 	HANDLE old_handle = just_open(olddirfd, oldpath, FILE_READ_ATTRIBUTES | DELETE, FILE_OPEN_REPARSE_POINT);
-	if (old_handle == INVALID_HANDLE_VALUE)
+	if (old_handle == NULL)
 	{
 		// errno wil be set by just_open
 		return -1;
@@ -98,7 +98,7 @@ int common_rename(int olddirfd, const char *restrict oldpath, int newdirfd, cons
 	}
 
 	HANDLE new_handle = just_open2(u16_ntnewpath, FILE_READ_ATTRIBUTES, FILE_OPEN_REPARSE_POINT);
-	if (new_handle != INVALID_HANDLE_VALUE)
+	if (new_handle != NULL)
 	{
 		if (are_they_hardlinks(old_handle, new_handle))
 		{

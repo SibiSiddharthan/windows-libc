@@ -180,7 +180,7 @@ static HANDLE do_reopen(HANDLE old_handle, ACCESS_MASK access, ULONG attributes,
 	IO_STATUS_BLOCK io;
 	OBJECT_ATTRIBUTES object;
 	UNICODE_STRING empty = {0, 0, NULL};
-	HANDLE new_handle = INVALID_HANDLE_VALUE;
+	HANDLE new_handle = NULL;
 	ULONG share = FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE;
 
 	// NOTE: An empty UNICODE_STRING needs to passed, for this to work.
@@ -215,7 +215,7 @@ static HANDLE really_do_open(OBJECT_ATTRIBUTES *object, ACCESS_MASK access, ULON
 {
 	NTSTATUS status;
 	IO_STATUS_BLOCK io;
-	HANDLE handle = INVALID_HANDLE_VALUE;
+	HANDLE handle = NULL;
 	ULONG share = FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE;
 
 	status = NtCreateFile(&handle, access, object, &io, NULL, attributes, share, disposition, options, NULL, 0);
@@ -255,7 +255,7 @@ HANDLE just_open2(UNICODE_STRING *ntpath, ACCESS_MASK access, ULONG options)
 HANDLE just_open(int dirfd, const char *path, ACCESS_MASK access, ULONG options)
 {
 	handle_t type;
-	HANDLE handle = INVALID_HANDLE_VALUE;
+	HANDLE handle = NULL;
 	UNICODE_STRING *u16_ntpath = get_absolute_ntpath2(dirfd, path, &type);
 
 	if (u16_ntpath == NULL)
@@ -390,7 +390,7 @@ int do_open(int dirfd, const char *name, int oflags, mode_t perm)
 
 	handle = really_do_open(&object, access_rights, attributes, disposition, options);
 
-	if (handle != INVALID_HANDLE_VALUE)
+	if (handle != NULL)
 	{
 		if (type == FILE_HANDLE) // Type set by `get_absolute_ntpath2` when file to be opened is on disk.
 		{

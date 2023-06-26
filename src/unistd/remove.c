@@ -28,7 +28,7 @@ int common_remove(int dirfd, const char *path, int flags)
 	}
 
 	HANDLE handle = just_open(dirfd, path, DELETE, options);
-	if (handle == INVALID_HANDLE_VALUE)
+	if (handle == NULL)
 	{
 		// errno wil be set by just_open
 		return -1;

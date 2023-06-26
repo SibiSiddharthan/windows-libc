@@ -57,7 +57,7 @@ int do_link(HANDLE handle, int dirfd, const char *restrict target)
 
 int common_link(int olddirfd, const char *restrict source, int newdirfd, const char *restrict target, int flags)
 {
-	HANDLE handle = INVALID_HANDLE_VALUE;
+	HANDLE handle;
 	ULONG options = FILE_NON_DIRECTORY_FILE; // We can't create hardlinks between directories
 	if (flags != AT_SYMLINK_FOLLOW)
 	{
@@ -66,7 +66,7 @@ int common_link(int olddirfd, const char *restrict source, int newdirfd, const c
 
 	// If the file does not have FILE_WRITE_ATTRIBUTES, link creation fails.
 	handle = just_open(olddirfd, source, FILE_READ_ATTRIBUTES | FILE_WRITE_ATTRIBUTES | SYNCHRONIZE, options);
-	if (handle == INVALID_HANDLE_VALUE)
+	if (handle == NULL)
 	{
 		// errno wil be set by just_open
 		return -1;

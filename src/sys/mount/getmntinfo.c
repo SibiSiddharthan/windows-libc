@@ -39,7 +39,7 @@ int wlibc_getmntinfo(struct statfs **mounts, int mode)
 
 	// This should not fail, but just in case.
 	mountmgr_handle = open_mountmgr();
-	if (mountmgr_handle == INVALID_HANDLE_VALUE)
+	if (mountmgr_handle == NULL)
 	{
 		return -1;
 	}
@@ -131,7 +131,7 @@ int wlibc_getmntinfo(struct statfs **mounts, int mode)
 
 			// Ignore errors here.
 			drive_handle = just_open2(&drive_path, FILE_READ_ATTRIBUTES, 0);
-			if (drive_handle != INVALID_HANDLE_VALUE)
+			if (drive_handle != NULL)
 			{
 				do_statfs(drive_handle, (*mounts + index++));
 				NtClose(drive_handle);

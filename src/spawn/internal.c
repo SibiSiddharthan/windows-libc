@@ -29,10 +29,11 @@ void process_init(void)
 	_wlibc_process_table_size = 4;
 	_wlibc_child_process_count = 0;
 
+	// TODO
 	for (size_t i = 0; i < _wlibc_process_table_size; i++)
 	{
 		_wlibc_process_table[i].id = 0;
-		_wlibc_process_table[i].handle = INVALID_HANDLE_VALUE;
+		_wlibc_process_table[i].handle = NULL;
 	}
 }
 
@@ -43,7 +44,7 @@ void process_cleanup(void)
 
 void get_processinfo(pid_t pid, processinfo *pinfo)
 {
-	pinfo->handle = INVALID_HANDLE_VALUE;
+	pinfo->handle = NULL;
 	pinfo->id = 0;
 
 	SHARED_LOCK_PROCESS_TABLE();
@@ -93,7 +94,7 @@ int add_child(DWORD id, HANDLE child)
 
 		for (i = _wlibc_process_table_size + 1; i < 2 * _wlibc_process_table_size; i++)
 		{
-			_wlibc_process_table[i].handle = INVALID_HANDLE_VALUE;
+			_wlibc_process_table[i].handle = NULL;
 			_wlibc_process_table[i].id = 0;
 		}
 
@@ -119,7 +120,7 @@ void delete_child(DWORD id)
 	{
 		if (id == _wlibc_process_table[i].id)
 		{
-			_wlibc_process_table[i].handle = INVALID_HANDLE_VALUE;
+			_wlibc_process_table[i].handle = NULL;
 			_wlibc_process_table[i].id = 0;
 
 			/* We don't care about the order in which children are spawned. To maintain a continuous array
@@ -128,7 +129,7 @@ void delete_child(DWORD id)
 			size_t j = i + 2;
 			for (j = i + 2; j < _wlibc_process_table_size; j++)
 			{
-				if (_wlibc_process_table[j].handle == INVALID_HANDLE_VALUE)
+				if (_wlibc_process_table[j].handle == NULL)
 				{
 					break;
 				}
@@ -137,7 +138,7 @@ void delete_child(DWORD id)
 			if (j != i)
 			{
 				_wlibc_process_table[i] = _wlibc_process_table[j - 1];
-				_wlibc_process_table[j - 1].handle = INVALID_HANDLE_VALUE;
+				_wlibc_process_table[j - 1].handle = NULL;
 				_wlibc_process_table[j - 1].id = 0;
 			}
 

@@ -39,7 +39,7 @@ int do_chflags(HANDLE handle, uint32_t attributes)
 int common_chflags(int dirfd, const char *path, uint32_t attributes, int flags)
 {
 	HANDLE handle = just_open(dirfd, path, FILE_READ_ATTRIBUTES | FILE_WRITE_ATTRIBUTES, flags == AT_SYMLINK_NOFOLLOW ? FILE_OPEN_REPARSE_POINT : 0);
-	if (handle == INVALID_HANDLE_VALUE)
+	if (handle == NULL)
 	{
 		// errno wil be set by just_open
 		return -1;

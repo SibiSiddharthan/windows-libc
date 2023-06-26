@@ -38,7 +38,7 @@ DIR *wlibc_opendir(const char *path)
 
 	HANDLE handle = just_open(AT_FDCWD, path, FILE_READ_ATTRIBUTES | FILE_TRAVERSE | FILE_LIST_DIRECTORY | SYNCHRONIZE,
 							  FILE_DIRECTORY_FILE | FILE_SYNCHRONOUS_IO_NONALERT);
-	if (handle == INVALID_HANDLE_VALUE)
+	if (handle == NULL)
 	{
 		// errno wil be set by just_open
 		return NULL;

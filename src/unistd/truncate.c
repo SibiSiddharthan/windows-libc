@@ -110,7 +110,7 @@ int wlibc_truncate(const char *path, off_t length)
 
 	HANDLE handle =
 		just_open(AT_FDCWD, path, FILE_WRITE_DATA | FILE_APPEND_DATA | SYNCHRONIZE, FILE_NON_DIRECTORY_FILE | FILE_SYNCHRONOUS_IO_NONALERT);
-	if (handle == INVALID_HANDLE_VALUE)
+	if (handle == NULL)
 	{
 		// errno wil be set by just_open
 		return -1;

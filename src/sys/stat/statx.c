@@ -63,7 +63,7 @@ int common_statx(int dirfd, const char *restrict path, int flags, unsigned int m
 	int result;
 
 	HANDLE handle = just_open(dirfd, path, FILE_READ_ATTRIBUTES | READ_CONTROL, flags == AT_SYMLINK_NOFOLLOW ? FILE_OPEN_REPARSE_POINT : 0);
-	if (handle == INVALID_HANDLE_VALUE)
+	if (handle == NULL)
 	{
 		// errno will be set by just_open
 		return -1;

@@ -23,7 +23,7 @@ intptr_t wlibc_get_osfhandle(int fd)
 
 int wlibc_open_osfhandle(intptr_t handle, int flags)
 {
-	if (handle == (intptr_t)INVALID_HANDLE_VALUE)
+	if (handle == (intptr_t)INVALID_HANDLE_VALUE || handle == (intptr_t)NULL)
 	{
 		errno = EINVAL;
 		return -1;

@@ -42,7 +42,7 @@ FILE *wlibc_freopen(const char *restrict name, const char *restrict mode, FILE *
 
 		// Remove the O_CREAT and O_TMPFILE bits aas we are reopening an existing file.
 		new_handle = reopen_handle(info.handle, ((flags | O_NOTDIR) & ~(O_CREAT | O_TMPFILE)));
-		if (new_handle == INVALID_HANDLE_VALUE)
+		if (new_handle == NULL)
 		{
 			goto reopen_same_file_fail;
 		}

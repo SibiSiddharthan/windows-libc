@@ -56,7 +56,7 @@ int common_chmod(int dirfd, const char *path, mode_t mode, int flags)
 
 	HANDLE handle =
 		just_open(dirfd, path, FILE_READ_ATTRIBUTES | READ_CONTROL | WRITE_DAC, flags == AT_SYMLINK_NOFOLLOW ? FILE_OPEN_REPARSE_POINT : 0);
-	if (handle == INVALID_HANDLE_VALUE)
+	if (handle == NULL)
 	{
 		// errno will be set by `just_open`.
 		return -1;
@@ -93,7 +93,7 @@ int wlibc_common_chmod(int dirfd, const char *path, mode_t mode, int flags)
 
 		// 'open' does not give WRITE_DAC permission, reopen the file with 'WRITE_DAC'.
 		HANDLE handle = just_reopen(info.handle, FILE_READ_ATTRIBUTES | READ_CONTROL | WRITE_DAC, 0);
-		if (handle == INVALID_HANDLE_VALUE)
+		if (handle == NULL)
 		{
 			// errno wil be set by `just_reopen`.
 			return -1;

@@ -57,7 +57,7 @@ static int initialize_inherit_information(inherit_information *info, int max_fd)
 		}
 		else
 		{
-			info->fdinfo[i].handle = INVALID_HANDLE_VALUE;
+			info->fdinfo[i].handle = NULL;
 			info->fdinfo[i].type = 0;
 			info->fdinfo[i].flags = 0;
 		}
@@ -110,7 +110,7 @@ static int give_inherit_information_to_startupinfo(inherit_information *inherit_
 
 	for (int i = 0; i <= inherit_info->fds; ++i)
 	{
-		if (inherit_info->fdinfo[i].handle != INVALID_HANDLE_VALUE)
+		if (inherit_info->fdinfo[i].handle != NULL)
 		{
 			real_max_fd = i;
 		}
@@ -157,8 +157,10 @@ static int give_inherit_information_to_startupinfo(inherit_information *inherit_
 			flag |= FDEV_FLAG;
 		}
 
+		// Pass the invalid handles as INVALID_HANDLE_VALUE to maintain compatibility with msvcrt.
 		((UCHAR *)(startup_info->lpReserved2 + sizeof(DWORD)))[i] = flag;
-		((HANDLE *)(startup_info->lpReserved2 + handle_start))[i] = inherit_info->fdinfo[i].handle;
+		((HANDLE *)(startup_info->lpReserved2 + handle_start))[i] =
+			inherit_info->fdinfo[i].handle != NULL ? inherit_info->fdinfo[i].handle : INVALID_HANDLE_VALUE;
 
 		// Give the std handles to startupinfo also.
 		switch (i)
@@ -196,7 +198,7 @@ static UNICODE_STRING *get_absolute_dospath_of_executable(const char *path)
 	// Make sure the file has execute permissions. If it doesn't an exectuable section
 	// can't be created and `CreateProcessW` will fail.
 	handle = just_open2(ntpath, FILE_EXECUTE, FILE_NON_DIRECTORY_FILE);
-	if (handle == INVALID_HANDLE_VALUE)
+	if (handle == NULL)
 	{
 		// errno will be set by `just_open`.
 		// EACCESS if we do not have execute access.
@@ -568,7 +570,7 @@ static UNICODE_STRING *shebang_get_executable_and_args(const UNICODE_STRING *dos
 	handle = just_open2(ntpath, FILE_READ_DATA | SYNCHRONIZE, FILE_SYNCHRONOUS_IO_NONALERT);
 	RtlFreeHeap(NtCurrentProcessHeap(), 0, ntpath);
 
-	if (handle == INVALID_HANDLE_VALUE)
+	if (handle == NULL)
 	{
 		// This should not happen as the file exists. Just in case.
 		return NULL;
@@ -1404,7 +1406,7 @@ int wlibc_common_spawn(pid_t *restrict pid, const char *restrict path, const spa
 				}
 			}
 
-			inherit_info.fdinfo[fd].handle = INVALID_HANDLE_VALUE;
+			inherit_info.fdinfo[fd].handle = NULL;
 			inherit_info.fdinfo[fd].flags = 0;
 			inherit_info.fdinfo[fd].type = 0;
 		}

@@ -324,7 +324,7 @@ int do_stat(HANDLE handle, struct stat *restrict statbuf)
 int common_stat(int dirfd, const char *restrict path, struct stat *restrict statbuf, int flags)
 {
 	HANDLE handle = just_open(dirfd, path, FILE_READ_ATTRIBUTES | READ_CONTROL, flags == AT_SYMLINK_NOFOLLOW ? FILE_OPEN_REPARSE_POINT : 0);
-	if (handle == INVALID_HANDLE_VALUE)
+	if (handle == NULL)
 	{
 		// errno will be set by just_open
 		return -1;

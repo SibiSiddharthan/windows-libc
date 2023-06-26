@@ -134,7 +134,7 @@ int wlibc_common_statvfs(int fd, const char *restrict path, struct statvfs *rest
 		HANDLE handle;
 
 		handle = just_open(AT_FDCWD, path, FILE_READ_ATTRIBUTES, 0);
-		if (handle == INVALID_HANDLE_VALUE)
+		if (handle == NULL)
 		{
 			// errno will be set by `just_open`
 			return -1;

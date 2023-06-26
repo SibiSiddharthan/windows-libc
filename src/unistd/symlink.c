@@ -157,7 +157,7 @@ int common_symlink(const char *restrict source, int dirfd, const char *restrict 
 	ULONG options = FILE_NON_DIRECTORY_FILE;
 	HANDLE source_handle = just_open2(u16_ntsource, FILE_READ_ATTRIBUTES, FILE_OPEN_REPARSE_POINT | FILE_NON_DIRECTORY_FILE);
 
-	if (source_handle == INVALID_HANDLE_VALUE)
+	if (source_handle == NULL)
 	{
 		if (errno == EISDIR)
 		{

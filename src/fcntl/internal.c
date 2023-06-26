@@ -141,7 +141,7 @@ int determine_handle_flags(HANDLE handle)
 // Opening the console handle should not fail as we are only doing it if there is a console attached.
 HANDLE open_conin(void)
 {
-	HANDLE handle = INVALID_HANDLE_VALUE;
+	HANDLE handle = NULL;
 	IO_STATUS_BLOCK io;
 	UNICODE_STRING name;
 	OBJECT_ATTRIBUTES object;
@@ -158,7 +158,7 @@ HANDLE open_conin(void)
 
 HANDLE open_conout(void)
 {
-	HANDLE handle = INVALID_HANDLE_VALUE;
+	HANDLE handle = NULL;
 	IO_STATUS_BLOCK io;
 	UNICODE_STRING name;
 	OBJECT_ATTRIBUTES object;
@@ -179,7 +179,7 @@ HANDLE open_mountmgr(void)
 	UNICODE_STRING name;
 	OBJECT_ATTRIBUTES object;
 	IO_STATUS_BLOCK io;
-	HANDLE handle = INVALID_HANDLE_VALUE;
+	HANDLE handle = NULL;
 
 	name.Buffer = MOUNTMGR_DEVICE_NAME;
 	name.Length = 50;
@@ -205,7 +205,7 @@ void initialize_std_handles(HANDLE handle, int index, bool console_subsystem, bo
 	else if (console_subsystem)
 	{
 		_wlibc_fd_table[index].handle = output == true ? open_conout() : open_conin();
-		if (_wlibc_fd_table[index].handle != INVALID_HANDLE_VALUE)
+		if (_wlibc_fd_table[index].handle != NULL)
 		{
 			_wlibc_fd_table[index].type = CONSOLE_HANDLE;
 			_wlibc_fd_table[index].flags = output == true ? O_WRONLY : O_RDONLY;
@@ -213,7 +213,7 @@ void initialize_std_handles(HANDLE handle, int index, bool console_subsystem, bo
 		}
 		else
 		{
-			_wlibc_fd_table[index].handle = INVALID_HANDLE_VALUE;
+			_wlibc_fd_table[index].handle = NULL;
 		}
 	}
 }
@@ -271,7 +271,7 @@ void init_fd_table(void)
 	// Mark all handles as invalid at the start.
 	for (size_t i = 0; i < _wlibc_fd_table_size; ++i)
 	{
-		_wlibc_fd_table[i].handle = INVALID_HANDLE_VALUE;
+		_wlibc_fd_table[i].handle = NULL;
 	}
 
 	// Standard Input,Output,Error.
@@ -280,7 +280,7 @@ void init_fd_table(void)
 	initialize_std_handles(herr, 2, console_subsystem, true);
 
 	// Cygwin/MSYS gives the same handle as stdout and stderr, duplicate the handle.
-	if ((_wlibc_fd_table[1].handle != INVALID_HANDLE_VALUE && _wlibc_fd_table[2].handle != INVALID_HANDLE_VALUE) &&
+	if ((_wlibc_fd_table[1].handle != NULL && _wlibc_fd_table[2].handle != NULL) &&
 		_wlibc_fd_table[1].handle == _wlibc_fd_table[2].handle)
 	{
 		NTSTATUS status;
@@ -306,16 +306,17 @@ void init_fd_table(void)
 			// After all the handle flags the handles values are passed.
 			HANDLE inherited_handle = *(HANDLE *)((CHAR *)data->Buffer + sizeof(DWORD) + number_of_handles_inherited + i * sizeof(HANDLE));
 
+			// msvcrt sets invalid handles to INVALID_HANDLE_VALUE to inherited processes.
 			if ((handle_flag & FOPEN_FLAG) == 0 || inherited_handle == INVALID_HANDLE_VALUE)
 			{
-				_wlibc_fd_table[i].handle = INVALID_HANDLE_VALUE;
+				_wlibc_fd_table[i].handle = NULL;
 				continue;
 			}
 
 			inherited_handle_type = determine_handle_type(inherited_handle);
 			if (inherited_handle_type == INVALID_HANDLE)
 			{
-				_wlibc_fd_table[i].handle = INVALID_HANDLE_VALUE;
+				_wlibc_fd_table[i].handle = NULL;
 				continue;
 			}
 
@@ -370,7 +371,7 @@ static int register_to_fd_table_internal(HANDLE _h, handle_t _type, int _flags)
 	int fd = -1;
 	for (size_t i = 0; i < _wlibc_fd_table_size; i++)
 	{
-		if (_wlibc_fd_table[i].handle == INVALID_HANDLE_VALUE)
+		if (_wlibc_fd_table[i].handle == NULL)
 		{
 			is_there_free_space = true;
 			index = (int)i;
@@ -398,7 +399,7 @@ static int register_to_fd_table_internal(HANDLE _h, handle_t _type, int _flags)
 
 		for (size_t i = _wlibc_fd_table_size + 1; i < _wlibc_fd_table_size * 2; i++)
 		{
-			_wlibc_fd_table[i].handle = INVALID_HANDLE_VALUE;
+			_wlibc_fd_table[i].handle = NULL;
 		}
 
 		_wlibc_fd_table_size *= 2;
@@ -433,7 +434,7 @@ static int insert_into_fd_table_internal(int _fd, HANDLE _h, handle_t _type, int
 
 		for (int i = (int)_wlibc_fd_table_size; i < _fd * 2; ++i)
 		{
-			_wlibc_fd_table[i].handle = INVALID_HANDLE_VALUE;
+			_wlibc_fd_table[i].handle = NULL;
 		}
 
 		_wlibc_fd_table_size = _fd * 2;
@@ -459,7 +460,7 @@ static void unregister_from_fd_table_internal(HANDLE _h)
 		if (_wlibc_fd_table[i].handle != INVALID_HANDLE_VALUE && _wlibc_fd_table[i].handle == _h)
 		{
 			// Calling this function after the handle has been closed
-			_wlibc_fd_table[i].handle = INVALID_HANDLE_VALUE;
+			_wlibc_fd_table[i].handle = NULL;
 			break;
 		}
 	}
@@ -503,7 +504,7 @@ static int close_fd_internal(int _fd)
 		return -1;
 	}
 	// Closing the file descriptor. Mark the handle as invalid, so we can reuse the same fd again.
-	_wlibc_fd_table[_fd].handle = INVALID_HANDLE_VALUE;
+	_wlibc_fd_table[_fd].handle = NULL;
 	_wlibc_fd_table[_fd].type = INVALID_HANDLE;
 	return 0;
 }
@@ -570,13 +571,11 @@ void get_fdinfo(int fd, fdinfo *info)
 
 	if (validate_fd_internal(fd))
 	{
-		// TODO try to avoid a jmp here.
 		memcpy(info, &_wlibc_fd_table[fd], sizeof(fdinfo));
 	}
 	else
 	{
-		// TODO do this in a single load.
-		info->handle = INVALID_HANDLE_VALUE;
+		info->handle = NULL;
 		info->type = INVALID_HANDLE;
 	}
 
@@ -641,7 +640,7 @@ static bool validate_fd_internal(int _fd)
 {
 	if (_fd < 0 || _fd >= (int)_wlibc_fd_table_size)
 		return false;
-	if (_wlibc_fd_table[_fd].handle == INVALID_HANDLE_VALUE)
+	if (_wlibc_fd_table[_fd].handle == NULL)
 		return false;
 	return true;
 }

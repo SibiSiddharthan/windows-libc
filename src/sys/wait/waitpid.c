@@ -22,7 +22,7 @@ pid_t wait_child(pid_t pid, int *wstatus, int options)
 
 	get_processinfo(pid, &pinfo);
 
-	if (pinfo.handle == INVALID_HANDLE_VALUE)
+	if (pinfo.handle == NULL)
 	{
 		errno = ECHILD;
 		return -1;
@@ -63,9 +63,10 @@ pid_t wait_all_children(int *wstatus, int options)
 
 	// We can only wait for 64(MAXIMUM_WAIT_OBJECTS) children simultaneously at a time. Ignore the rest.
 	SHARED_LOCK_PROCESS_TABLE();
+
 	for (size_t i = 0; i < _wlibc_process_table_size; ++i)
 	{
-		if (_wlibc_process_table[i].handle != INVALID_HANDLE_VALUE)
+		if (_wlibc_process_table[i].handle != NULL)
 		{
 			child_handles[count] = _wlibc_process_table[i].handle;
 			child_pids[count] = _wlibc_process_table[i].id;
