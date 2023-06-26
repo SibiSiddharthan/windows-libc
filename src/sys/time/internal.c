@@ -17,9 +17,6 @@ timerinfo virtual_itimer;
 timerinfo prof_itimer;
 thread_t itimer_thread;
 
-void *itimer_proc(void *arg);
-void *timer_proc(void *arg);
-
 void initialize_itimers(void)
 {
 	// Real timer
@@ -41,13 +38,12 @@ void initialize_itimers(void)
 void cleanup_itimers(void)
 {
 	// First kill the timer thread.
-	//NtTerminateThread(((threadinfo *)itimer_thread)->handle, 0);
+	// NtTerminateThread(((threadinfo *)itimer_thread)->handle, 0); // TODO: This causes child processes to hang.
 
 	// Next close the timers.
 	NtClose(real_itimer.handle);
 	NtClose(virtual_itimer.handle);
 	NtClose(prof_itimer.handle);
-	
 }
 
 void *itimer_proc(void *arg)
@@ -74,6 +70,38 @@ void *itimer_proc(void *arg)
 			break;
 		default:
 			break;
+		}
+	}
+}
+
+void *timer_proc(void *arg)
+{
+	NTSTATUS status;
+	timerinfo *tinfo = (timerinfo *)arg;
+
+	while (1)
+	{
+		status = NtWaitForSingleObject(tinfo->handle, TRUE, NULL);
+
+		if (status == STATUS_SUCCESS)
+		{
+			switch (tinfo->event.sigev_notify)
+			{
+			case SIGEV_NONE:
+				// nop
+				continue;
+				break;
+			case SIGEV_SIGNAL:
+				wlibc_raise(tinfo->event.sigev_signo);
+				break;
+			case SIGEV_THREAD:
+				if (tinfo->event.sigev_notify_function != NULL)
+				{
+					// Invoke the notification function.
+					tinfo->event.sigev_notify_function(tinfo->event.sigev_value);
+				}
+				break;
+			}
 		}
 	}
 }

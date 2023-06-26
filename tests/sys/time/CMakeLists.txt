@@ -5,4 +5,6 @@
    Refer to the LICENSE file at the root directory for details.
 ]]
 
-wlibc_add_tests(itimers)
+wlibc_add_tests(
+itimers
+timer)

@@ -10,6 +10,7 @@
 
 #include <wlibc.h>
 #include <fcntl.h>
+#include <signal.h>
 #include <time.h>
 #include <sys/types.h>
 
@@ -76,6 +77,73 @@ WLIBC_INLINE int getitimer(int which, struct itimerval *current_value)
 WLIBC_INLINE int setitimer(int which, const struct itimerval *restrict new_value, struct itimerval *restrict old_value)
 {
 	return wlibc_setitimer(which, new_value, old_value);
+}
+
+// Should be in time.h
+
+typedef int clockid_t;
+typedef void *timer_t;
+
+struct itimerspec
+{
+	struct timespec it_interval;
+	struct timespec it_value;
+};
+
+#define CLOCK_REALTIME  0 // Real time clock
+#define CLOCK_MONOTONIC 1 // Monotonic clock
+
+#define TIMER_ABSTIME 1 // Absolute time
+
+WLIBC_API int wlibc_clock_getres(clockid_t id, struct timespec *res);
+WLIBC_API int wlibc_clock_gettime(clockid_t id, struct timespec *ts);
+WLIBC_API int wlibc_clock_settime(clockid_t id, const struct timespec *ts);
+
+WLIBC_INLINE int clock_getres(clockid_t id, struct timespec *res)
+{
+	return wlibc_clock_getres(id, res);
+}
+
+WLIBC_INLINE int clock_gettime(clockid_t id, struct timespec *ts)
+{
+	return wlibc_clock_gettime(id, ts);
+}
+
+WLIBC_INLINE int clock_settime(clockid_t id, const struct timespec *ts)
+{
+	return wlibc_clock_settime(id, ts);
+}
+
+WLIBC_API int wlibc_timer_create(clockid_t id, struct sigevent *restrict event, timer_t *restrict timer);
+WLIBC_API int wlibc_timer_delete(timer_t timer);
+WLIBC_API int wlibc_timer_getoverrun(timer_t timer);
+WLIBC_API int wlibc_timer_gettime(timer_t timer, struct itimerspec *current_value);
+WLIBC_API int wlibc_timer_settime(timer_t timer, int flags, const struct itimerspec *restrict new_value,
+								  struct itimerspec *restrict old_value);
+
+WLIBC_INLINE int timer_create(clockid_t id, struct sigevent *restrict event, timer_t *restrict timer)
+{
+	return wlibc_timer_create(id, event, timer);
+}
+
+WLIBC_INLINE int timer_delete(timer_t timer)
+{
+	return wlibc_timer_delete(timer);
+}
+
+WLIBC_INLINE int timer_getoverrun(timer_t timer)
+{
+	return wlibc_timer_getoverrun(timer);
+}
+
+WLIBC_INLINE int timer_gettime(timer_t timer, struct itimerspec *current_value)
+{
+	return wlibc_timer_gettime(timer, current_value);
+}
+
+WLIBC_INLINE int timer_settime(timer_t timer, int flags, const struct itimerspec *restrict new_value, struct itimerspec *restrict old_value)
+{
+	return wlibc_timer_settime(timer, flags, new_value, old_value);
 }
 
 _WLIBC_END_DECLS

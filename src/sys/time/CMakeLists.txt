@@ -9,9 +9,11 @@ wlibc_module(
 MODULE sys.time
 
 SOURCES
+clock.c
 gettimeofday.c
 internal.c
 itimer.c
+timer.c
 utimes.c
 
 HEADERS

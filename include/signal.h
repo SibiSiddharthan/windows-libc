@@ -25,6 +25,24 @@ struct sigaction
 	void (*sa_restorer)(void); // Not intended for public use. See POSIX doc
 };
 
+#define SIGEV_NONE   0 // No notification
+#define SIGEV_SIGNAL 1 // Raise a signal
+#define SIGEV_THREAD 2 // Invoke notification function
+
+union sigval {
+	int sival_int;
+	void *sival_ptr;
+};
+
+struct sigevent
+{
+	int sigev_notify;                            // Notification method
+	int sigev_signo;                             // Notification signal
+	union sigval sigev_value;                    // Data passed with notification
+	void (*sigev_notify_function)(union sigval); // Notification function
+	void *sigev_notify_attributes;               // Notification attributes
+};
+
 #define SIGHUP    1  // Hangup
 #define SIGINT    2  // Interrupt
 #define SIGQUIT   3  // Quit
