@@ -23,8 +23,9 @@ int wlibc_common_getopt(int argc, char *argv[], const char *optstring, const str
 	static int index = 0;
 	static bool processing_short_option = false;
 	static bool processing_long_option = false;
+	static bool stop_at_first_nonoption = false;
+	static bool getopt_intialized = false;
 
-	bool stop_at_first_nonoption = false;
 	bool print_errors = true;
 
 	if (optstring == NULL)
@@ -38,9 +39,13 @@ int wlibc_common_getopt(int argc, char *argv[], const char *optstring, const str
 		print_errors = false;
 	}
 
-	if (optstring[0] == '+' || getenv("POSIXLY_CORRECT") != NULL)
+	if (!getopt_intialized)
 	{
-		stop_at_first_nonoption = true;
+		if (optstring[0] == '+' || getenv("POSIXLY_CORRECT") != NULL)
+		{
+			stop_at_first_nonoption = true;
+			getopt_intialized = true;
+		}
 	}
 
 	// Preferred reset value according to POSIX.
@@ -48,6 +53,15 @@ int wlibc_common_getopt(int argc, char *argv[], const char *optstring, const str
 	{
 		index = 0;
 		optind = 1;
+
+		// Reinitialize getopt.
+		stop_at_first_nonoption = false;
+		
+		if (optstring[0] == '+' || getenv("POSIXLY_CORRECT") != NULL)
+		{
+			stop_at_first_nonoption = true;
+			getopt_intialized = true;
+		}
 	}
 
 	if (optind == argc)
