@@ -15,7 +15,7 @@ dirfd.c
 opendir.c
 readdir.c
 rewinddir.c
-#scandir.c
+scandir.c
 seekdir.c
 telldir.c
 

@@ -8,4 +8,5 @@
 wlibc_add_tests(
 dirent
 fdopendir
-opendir)
+opendir
+scandir)
