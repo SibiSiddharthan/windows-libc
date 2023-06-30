@@ -26,6 +26,9 @@ cmake -DENABLE_<MOUDLE_NAME>=ON ..
  * DLFCN
 	* Headers: dlfcn.h
 	* Functions for loading functions from shared libraries.
+ * GETOPT
+	* Headers: getopt.h
+	* Funtions for handling command line arguments.
  * POSIX_IO
 	* Headers: dirent.h, fcntl.h, stdio.h, sys/file.h, sys/ioctl.h, sys/mount.h, sys/stat.h, sys/statfs.h, sys/statvfs.h, unistd.h
 	* Functions for doing file and directory operations.
@@ -79,9 +82,8 @@ cmake -DENABLE_<MOUDLE_NAME>=ON ..
 		* Implemented
 			* opendir, fdopendir, closedir, dirfd
 			* readdir, readdir_r, rewinddir, seekdir, telldir
-			* alphasort
-		* Unimplementd
 			* scandir, scandirat
+			* alphasort
 	* Notes
 		* `struct dirent` has an extra member `d_namelen` to denote the length of the string in `d_name`.
  * dlfcn.h
@@ -107,6 +109,9 @@ cmake -DENABLE_<MOUDLE_NAME>=ON ..
 	* Notes
 		* Extra flags are provided for `open` and `openat` to match the `CreateFile` API. These are `O_READONLY`, `O_HIDDEN`, `O_SYSTEM`, `O_ARCHIVE`, `O_ENCRYPTED`.
 		* Supported fcntl operations are `F_DUPFD`, `F_DUPFD_CLOEXEC`, `F_GETFD`, `F_SETFD`, `F_GETFL`, `F_SETFL`.
+ * getopt.h
+	* Functions
+		* getopt, getopt_long
  * grp.h
 	* Functions
 		* getgrent, getgrnam, getgrgid, endgrent, setgrent, 
@@ -236,6 +241,7 @@ cmake -DENABLE_<MOUDLE_NAME>=ON ..
  * unistd.h
 	* Functions
 		* Implemented
+			* alarm
 			* access, eaccess, euidaccess, faccessat
 			* close
 			* chdir, fchdir
@@ -246,7 +252,7 @@ cmake -DENABLE_<MOUDLE_NAME>=ON ..
 			* getuid, geteuid, setuid, seteuid
 			* getgid, getegid, setgid, setegid
 			* getpid, getppid, gettid
-			* getdomainname, gethostname, getpagesize
+			* getdomainname, gethostname, getpagesize, getdtablesize
 			* nice
 			* pipe, pipe2
 			* isatty
@@ -259,10 +265,10 @@ cmake -DENABLE_<MOUDLE_NAME>=ON ..
 			* sleep, msleep, usleep
 			* truncate, ftruncate
 			* ttyname, ttyname_r
-			* pathconf, sysconf
+			* sysconf, constr, pathconf, fpathconf
 		* Unimplemented
 			* fork, vfork
-			* pause, alarm
+			* pause
 	* Notes
 		* `access`, `eaccess` perform the same operation.
 		* Setting uid, gid is unsupported.
@@ -344,6 +350,7 @@ cmake -DENABLE_<MOUDLE_NAME>=ON ..
  * sys/time.h
 	* Functions
 		* gettimeofday
+		* getitimer, setitimer
  * sys/times.h
 	* Functions
 		* times
