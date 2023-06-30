@@ -6,6 +6,8 @@
 */
 
 #include <sys/param.h>
+#include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 long wlibc_common_pathconf(int name)
@@ -62,4 +64,33 @@ long wlibc_sysconf(int name)
 		errno = EINVAL;
 		return -1;
 	}
+}
+
+size_t wlibc_confstr(int name, char *buffer, size_t size)
+{
+	char *value = NULL;
+	size_t result = 0;
+
+	switch (name)
+	{
+	case _CS_WLIBC_VERSION:
+		value = "1.0";
+		result = strlen(value) + 1;
+		break;
+	case _CS_PATH:
+		value = getenv("PATH");
+		result = strlen(value) + 1;
+		break;
+	default:
+		errno = EINVAL;
+		return 0;
+	}
+
+	if (buffer != NULL && size != 0)
+	{
+		strncpy(buffer, value, size);
+		buffer[size - 1] = '\0'; // Null terminate end always.
+	}
+
+	return result;
 }

@@ -467,6 +467,15 @@ WLIBC_INLINE long sysconf(int name)
 	return wlibc_sysconf(name);
 }
 
+#define _CS_WLIBC_VERSION 0 // Version of wlibc
+#define _CS_PATH          1 // Environment PATH
+
+WLIBC_API size_t wlibc_confstr(int name, char *buffer, size_t size);
+WLIBC_INLINE size_t confstr(int name, char *buffer, size_t size)
+{
+	return wlibc_confstr(name, buffer, size);
+}
+
 _WLIBC_END_DECLS
 
 #endif
