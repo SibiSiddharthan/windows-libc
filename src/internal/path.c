@@ -14,6 +14,7 @@
 #include <fcntl.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 static int path_components_size = 16;
 
@@ -249,28 +250,29 @@ UNICODE_STRING *get_handle_ntpath(HANDLE handle)
 // NOTE: The returned pointer should not be freed.
 UNICODE_STRING *get_fd_ntpath_internal(int fd)
 {
-	HANDLE handle;
+	fdinfo info;
 	UNICODE_STRING *path = NULL;
-	int sequence;
 
-	SHARED_LOCK_FD_TABLE();
-	sequence = _wlibc_fd_table[fd].sequence;
-	handle = _wlibc_fd_table[fd].handle;
-	SHARED_UNLOCK_FD_TABLE();
+	get_fdinfo(fd, &info);
+
+	if (info.type == INVALID_HANDLE)
+	{
+		return NULL;
+	}
 
 	// Check the cache first.
-	path = check_fd_path_cache(fd, sequence);
+	path = check_fd_path_cache(fd, info.sequence);
 	if (path != NULL)
 	{
 		return path;
 	}
 
 	// Not in cache do the lookup.
-	path = get_handle_ntpath(handle);
+	path = get_handle_ntpath(info.handle);
 	if (path != NULL)
 	{
 		// Update the cache.
-		update_fd_path_cache(fd, sequence, path);
+		update_fd_path_cache(fd, info.sequence, path);
 	}
 
 	return path;
@@ -367,54 +369,78 @@ UNICODE_STRING *get_absolute_ntpath2(int dirfd, const char *path, handle_t *type
 
 			return u16_ntpath;
 		}
-		if (strncmp(path + 5, "stdin", 6) == 0)
+		if (strncmp(path + 5, "std", 3) == 0)
 		{
-			u16_ntpath = (UNICODE_STRING *)RtlAllocateHeap(NtCurrentProcessHeap(), 0, sizeof(UNICODE_STRING));
-			if (u16_ntpath == NULL)
+			fdinfo info;
+			int fd;
+			if (strncmp(path + 8, "in", 3) == 0)
 			{
-				errno = ENOMEM;
-				return NULL;
+				fd = 0;
+				get_fdinfo(fd, &info);
+
+				if (info.type == INVALID_HANDLE)
+				{
+					errno = ENOENT;
+					return NULL;
+				}
+
+				u16_ntpath = get_fd_ntpath(fd);
+				if (u16_ntpath == NULL)
+				{
+					errno = ENOMEM;
+					return NULL;
+				}
+
+				*type = info.type;
+
+				return u16_ntpath;
 			}
-
-			u16_ntpath->Length = 48;
-			u16_ntpath->MaximumLength = u16_ntpath->Length;
-			u16_ntpath->Buffer = L"\\Device\\ConDrv\\CurrentIn";
-			*type = CONSOLE_HANDLE;
-
-			return u16_ntpath;
-		}
-		if (strncmp(path + 5, "stdout", 7) == 0)
-		{
-			u16_ntpath = (UNICODE_STRING *)RtlAllocateHeap(NtCurrentProcessHeap(), 0, sizeof(UNICODE_STRING));
-			if (u16_ntpath == NULL)
+			if (strncmp(path + 8, "out", 4) == 0)
 			{
-				errno = ENOMEM;
-				return NULL;
+				fd = 1;
+				get_fdinfo(fd, &info);
+
+				if (info.type == INVALID_HANDLE)
+				{
+					errno = ENOENT;
+					return NULL;
+				}
+
+				u16_ntpath = get_fd_ntpath(fd);
+				if (u16_ntpath == NULL)
+				{
+					errno = ENOMEM;
+					return NULL;
+				}
+
+				*type = info.type;
+
+				return u16_ntpath;
 			}
-
-			u16_ntpath->Length = 50;
-			u16_ntpath->MaximumLength = u16_ntpath->Length;
-			u16_ntpath->Buffer = L"\\Device\\ConDrv\\CurrentOut";
-			*type = CONSOLE_HANDLE;
-
-			return u16_ntpath;
-		}
-		if (strncmp(path + 5, "stderr", 7) == 0)
-		{
-			u16_ntpath = (UNICODE_STRING *)RtlAllocateHeap(NtCurrentProcessHeap(), 0, sizeof(UNICODE_STRING));
-			if (u16_ntpath == NULL)
+			if (strncmp(path + 8, "err", 4) == 0)
 			{
-				errno = ENOMEM;
-				return NULL;
+				fd = 2;
+				get_fdinfo(fd, &info);
+
+				if (info.type == INVALID_HANDLE)
+				{
+					errno = ENOENT;
+					return NULL;
+				}
+
+				u16_ntpath = get_fd_ntpath(fd);
+				if (u16_ntpath == NULL)
+				{
+					errno = ENOMEM;
+					return NULL;
+				}
+
+				*type = info.type;
+
+				return u16_ntpath;
 			}
-
-			u16_ntpath->Length = 50;
-			u16_ntpath->MaximumLength = u16_ntpath->Length;
-			u16_ntpath->Buffer = L"\\Device\\ConDrv\\CurrentOut";
-			*type = CONSOLE_HANDLE;
-
-			return u16_ntpath;
 		}
+
 		// Other devices to be implemented via drivers. TODO
 		if (strncmp(path + 5, "zero", 5) == 0)
 		{
@@ -477,6 +503,36 @@ UNICODE_STRING *get_absolute_ntpath2(int dirfd, const char *path, handle_t *type
 			u16_ntpath->MaximumLength = u16_ntpath->Length;
 			u16_ntpath->Buffer = L"\\Device\\Random";
 			*type = NULL_HANDLE;
+
+			return u16_ntpath;
+		}
+		if (strncmp(path + 5, "fd/", 3) == 0)
+		{
+			fdinfo info;
+			int fd = atoi(path + 8);
+
+			if (fd < 0)
+			{
+				errno = ENOENT;
+				return NULL;
+			}
+
+			get_fdinfo(fd, &info);
+
+			if (info.type == INVALID_HANDLE)
+			{
+				errno = ENOENT;
+				return NULL;
+			}
+
+			u16_ntpath = get_fd_ntpath(fd);
+			if (u16_ntpath == NULL)
+			{
+				errno = ENOMEM;
+				return NULL;
+			}
+
+			*type = info.type;
 
 			return u16_ntpath;
 		}

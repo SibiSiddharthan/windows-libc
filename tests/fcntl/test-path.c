@@ -493,6 +493,29 @@ int test_pipe()
 	return 0;
 }
 
+int test_fd()
+{
+	int fd;
+	char str[64] = {0};
+	UNICODE_STRING *ntpath_1, *ntpath_2;
+
+	fd = open("t-path", O_RDONLY);
+	ASSERT_NOTEQ(fd, -1);
+
+	sprintf(str, "/dev/fd/%d", fd);
+
+	ntpath_1 = get_absolute_ntpath(AT_FDCWD, "t-path");
+	ntpath_2 = get_absolute_ntpath(AT_FDCWD, str);
+
+	ASSERT_WSTREQ(ntpath_2->Buffer, ntpath_1->Buffer);
+
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, ntpath_1);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, ntpath_2);
+	close(fd);
+
+	return 0;
+}
+
 int main()
 {
 	char cwd_buf[32768];
@@ -536,10 +559,11 @@ int main()
 	cdrive[cdrive_length] = L'\0';
 	TEST(test_absolute_cygwin_path());
 
-	rmdir("t-path");
-
 	TEST(test_root());
 	TEST(test_pipe());
+	TEST(test_fd());
+
+	rmdir("t-path");
 
 	VERIFY_RESULT_AND_EXIT();
 }
