@@ -88,6 +88,10 @@ if(ENABLE_TIMERS)
 	wlibc_add_module(sys.time)
 endif()
 
+if(ENABLE_TERMIOS)
+	wlibc_add_module(termios)
+endif()
+
 wlibc_add_module(sys.utsname)
 wlibc_add_module(sys.times)
 
