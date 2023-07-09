@@ -738,10 +738,10 @@ UNICODE_STRING *get_absolute_ntpath2(int dirfd, const char *path, handle_t *type
 				if (i - start == 2 && memcmp(ntpath_buffer + start, L"..", 4) == 0)
 				{
 					--index;       // pop stack
-					if (index < 1) // bad path
+					if (index < 1)
 					{
-						errno = ENOENT;
-						goto finish;
+						// root path -> C:/.. -> C:/, C:/../.. -> C:/
+						index = 1;
 					}
 				}
 				else if (i - start == 1 && memcmp(ntpath_buffer + start, L".\\", 2) == 0)

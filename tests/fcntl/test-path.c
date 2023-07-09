@@ -295,10 +295,9 @@ int test_absolute_nt()
 	ASSERT_WSTREQ(path->Buffer, cdrive);
 	RtlFreeHeap(NtCurrentProcessHeap(), 0, path);
 
-	// bad path
 	path = get_absolute_ntpath(AT_FDCWD, "C:/..");
-	ASSERT_NULL(path);
-	RtlFreeHeap(NtCurrentProcessHeap(), 0, path); // should be a nop
+	ASSERT_WSTREQ(path->Buffer, cdrive);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, path);
 
 	fd = open("t-path", O_RDONLY);
 	ASSERT_NOTEQ(fd, -1);
@@ -351,10 +350,9 @@ int test_absolute_dos()
 	ASSERT_WSTREQ(path->Buffer, L"C:\\");
 	RtlFreeHeap(NtCurrentProcessHeap(), 0, path);
 
-	// bad path
 	path = get_absolute_dospath(AT_FDCWD, "C:/..");
-	ASSERT_NULL(path);
-	RtlFreeHeap(NtCurrentProcessHeap(), 0, path); // should be a nop
+	ASSERT_WSTREQ(path->Buffer, L"C:\\");
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, path);
 
 	fd = open("t-path", O_RDONLY);
 	ASSERT_NOTEQ(fd, -1);
@@ -437,10 +435,10 @@ int test_absolute_cygwin_path()
 	// bad path
 	ntpath = get_absolute_ntpath(AT_FDCWD, "/c/..");
 	dospath = get_absolute_dospath(AT_FDCWD, "/c/..");
-	ASSERT_NULL(ntpath);
-	ASSERT_NULL(dospath);
-	RtlFreeHeap(NtCurrentProcessHeap(), 0, ntpath);  // should be a nop
-	RtlFreeHeap(NtCurrentProcessHeap(), 0, dospath); // should be a nop
+	ASSERT_WSTREQ(ntpath->Buffer, cdrive);
+	ASSERT_WSTREQ(dospath->Buffer, L"C:\\");
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, ntpath);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, dospath);
 
 	fd = open("t-path", O_RDONLY);
 	ASSERT_NOTEQ(fd, -1);
