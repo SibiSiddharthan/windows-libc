@@ -482,6 +482,17 @@ int test_root()
 	return 0;
 }
 
+int test_pipe()
+{
+	UNICODE_STRING *ntpath;
+
+	ntpath = get_absolute_ntpath(AT_FDCWD, "\\\\.\\pipe\\mypipe");
+	ASSERT_WSTREQ(ntpath->Buffer, L"\\Device\\NamedPipe\\mypipe");
+
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, ntpath);
+	return 0;
+}
+
 int main()
 {
 	char cwd_buf[32768];
@@ -528,6 +539,7 @@ int main()
 	rmdir("t-path");
 
 	TEST(test_root());
+	TEST(test_pipe());
 
 	VERIFY_RESULT_AND_EXIT();
 }

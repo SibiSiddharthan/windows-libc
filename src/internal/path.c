@@ -551,6 +551,40 @@ UNICODE_STRING *get_absolute_ntpath2(int dirfd, const char *path, handle_t *type
 		}
 	}
 
+	// Pipes
+	if (strnicmp(path, "\\\\.\\pipe\\", 9) == 0)
+	{
+		size_t length = strlen(path) - 9;              // Length of the pipe name only.
+		USHORT required_size = 18 * sizeof(WCHAR);     // '\Device\NamedPipe\'.
+
+		required_size += (length * sizeof(WCHAR)) + 2; // L'\0'.
+		u16_ntpath = (UNICODE_STRING *)RtlAllocateHeap(NtCurrentProcessHeap(), 0, sizeof(UNICODE_STRING) + required_size);
+
+		u16_ntpath->Buffer = (WCHAR *)((char *)u16_ntpath + sizeof(UNICODE_STRING));
+		u16_ntpath->Length = 0;
+		u16_ntpath->MaximumLength = required_size;
+
+		u8_path.Buffer = (char *)path + 9;
+		u8_path.Length = length;
+		u8_path.MaximumLength = length;
+
+		status = RtlUTF8StringToUnicodeString(u16_ntpath, &u8_path, FALSE);
+
+		if (status != STATUS_SUCCESS)
+		{
+			RtlFreeHeap(NtCurrentProcessHeap(), 0, u16_ntpath);
+			return NULL;
+		}
+
+		memmove((char *)u16_ntpath->Buffer + 18 * sizeof(WCHAR), u16_ntpath->Buffer, u16_ntpath->Length);
+		memcpy(u16_ntpath->Buffer, L"\\Device\\NamedPipe\\", 18 * sizeof(WCHAR));
+
+		u16_ntpath->Length += 18 * sizeof(WCHAR);
+
+		*type = PIPE_HANDLE;
+		return u16_ntpath;
+	}
+
 	// After this point the path will be either a FILE_HANDLE or DIRECTORY_HANDLE. Set it to FILE_HANDLE.
 	*type = FILE_HANDLE;
 
@@ -659,9 +693,9 @@ UNICODE_STRING *get_absolute_ntpath2(int dirfd, const char *path, handle_t *type
 	{
 		required_size += u16_rootdir.Length + 2; // L'\'
 	}
-	else // absolute path
+	else                                         // absolute path
 	{
-		required_size += 54; // "\\Device\\HarddiskVolumeXXXX\\"
+		required_size += 54;                     // "\\Device\\HarddiskVolumeXXXX\\"
 	}
 
 	ntpath_buffer = (WCHAR *)RtlAllocateHeap(NtCurrentProcessHeap(), 0, required_size);
@@ -723,7 +757,7 @@ UNICODE_STRING *get_absolute_ntpath2(int dirfd, const char *path, handle_t *type
 	{
 		if (ntpath_buffer[i] == L'\\' || ntpath_buffer[i] == L'\0')
 		{
-			if (i - start > 2) // not '.' or '..'
+			if (i - start > 2)                                                                      // not '.' or '..'
 			{
 				void *temp = add_component(components, &index, start, (i - start) * sizeof(WCHAR)); // push stack
 				if (temp == NULL)
@@ -737,7 +771,7 @@ UNICODE_STRING *get_absolute_ntpath2(int dirfd, const char *path, handle_t *type
 			{
 				if (i - start == 2 && memcmp(ntpath_buffer + start, L"..", 4) == 0)
 				{
-					--index;       // pop stack
+					--index; // pop stack
 					if (index < 1)
 					{
 						// root path -> C:/.. -> C:/, C:/../.. -> C:/
