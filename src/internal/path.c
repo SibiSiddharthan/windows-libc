@@ -610,7 +610,7 @@ UNICODE_STRING *get_absolute_ntpath2(int dirfd, const char *path, handle_t *type
 	// Pipes
 	if (strnicmp(path, "\\\\.\\pipe\\", 9) == 0)
 	{
-		size_t length = strlen(path) - 9;              // Length of the pipe name only.
+		USHORT length = (USHORT)strlen(path) - 9;              // Length of the pipe name only.
 		USHORT required_size = 18 * sizeof(WCHAR);     // '\Device\NamedPipe\'.
 
 		required_size += (length * sizeof(WCHAR)) + 2; // L'\0'.
@@ -636,6 +636,7 @@ UNICODE_STRING *get_absolute_ntpath2(int dirfd, const char *path, handle_t *type
 		memcpy(u16_ntpath->Buffer, L"\\Device\\NamedPipe\\", 18 * sizeof(WCHAR));
 
 		u16_ntpath->Length += 18 * sizeof(WCHAR);
+		u16_ntpath->Buffer[u16_ntpath->Length / sizeof(WCHAR)] = L'\0'; // Null terminate the path.
 
 		*type = PIPE_HANDLE;
 		return u16_ntpath;

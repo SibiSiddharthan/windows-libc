@@ -201,7 +201,7 @@ WLIBC_INLINE speed_t cfgetispeed(const struct termios *termio)
 	if (termio == NULL)
 	{
 		errno = EINVAL;
-		return -1;
+		return -1u;
 	}
 
 	return termio->c_ispeed;
@@ -212,7 +212,7 @@ WLIBC_INLINE int cfsetispeed(struct termios *termio, speed_t speed)
 	if (termio == NULL)
 	{
 		errno = EINVAL;
-		return -1;
+		return -1u;
 	}
 
 	termio->c_ispeed = speed;
@@ -225,7 +225,7 @@ WLIBC_INLINE speed_t cfgetospeed(const struct termios *termio)
 	if (termio == NULL)
 	{
 		errno = EINVAL;
-		return -1;
+		return -1u;
 	}
 
 	return termio->c_ospeed;
@@ -236,7 +236,7 @@ WLIBC_INLINE int cfsetospeed(struct termios *termio, speed_t speed)
 	if (termio == NULL)
 	{
 		errno = EINVAL;
-		return -1;
+		return -1u;
 	}
 
 	termio->c_ospeed = speed;
