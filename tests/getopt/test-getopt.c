@@ -20,7 +20,7 @@ int test_getopt_1()
 	int argc = 5;
 	char *argv[] = {TEST_PROGRAM, "-a", "dummy", "-b", "-c", NULL};
 
-	optind = 1;
+	optind = 0;
 	while ((ch = getopt(argc, argv, "abc")) != -1)
 	{
 		switch (ch)
@@ -53,7 +53,7 @@ int test_getopt_2()
 	int argc = 2;
 	char *argv[] = {TEST_PROGRAM, "-abc", NULL};
 
-	optind = 1;
+	optind = 0;
 	while ((ch = getopt(argc, argv, "abc")) != -1)
 	{
 		switch (ch)
@@ -86,7 +86,7 @@ int test_getopt_3()
 	int argc = 5;
 	char *argv[] = {TEST_PROGRAM, "-a", "dummy", "-b2", "-c", NULL};
 
-	optind = 1;
+	optind = 0;
 	while ((ch = getopt(argc, argv, "ab:c")) != -1)
 	{
 		switch (ch)
@@ -119,7 +119,7 @@ int test_getopt_4()
 	int argc = 3;
 	char *argv[] = {TEST_PROGRAM, "-ab2", "-c", NULL};
 
-	optind = 1;
+	optind = 0;
 	while ((ch = getopt(argc, argv, "ab:c")) != -1)
 	{
 		switch (ch)
@@ -152,7 +152,7 @@ int test_getopt_5()
 	int argc = 6;
 	char *argv[] = {TEST_PROGRAM, "-a", "dummy", "-b", "3", "-c", NULL};
 
-	optind = 1;
+	optind = 0;
 	while ((ch = getopt(argc, argv, "ab:c")) != -1)
 	{
 		switch (ch)
@@ -185,7 +185,7 @@ int test_getopt_6()
 	int argc = 5;
 	char *argv[] = {TEST_PROGRAM, "-a", "-b", "3", "-c4", NULL};
 
-	optind = 1;
+	optind = 0;
 	while ((ch = getopt(argc, argv, "ab:c:")) != -1)
 	{
 		switch (ch)
@@ -218,7 +218,7 @@ int test_getopt_7()
 	int argc = 5;
 	char *argv[] = {TEST_PROGRAM, "-a", "-b", "3", "-c", NULL};
 
-	optind = 1;
+	optind = 0;
 	while ((ch = getopt(argc, argv, "ab:c:")) != -1)
 	{
 		switch (ch)
@@ -254,7 +254,7 @@ int test_getopt_8()
 	int argc = 5;
 	char *argv[] = {TEST_PROGRAM, "-a", "-b", "3", "-c", NULL};
 
-	optind = 1;
+	optind = 0;
 	while ((ch = getopt(argc, argv, "ab:c::")) != -1)
 	{
 		switch (ch)
@@ -294,7 +294,7 @@ int test_getopt_9()
 	int argc = 5;
 	char *argv[] = {TEST_PROGRAM, "-a", "-b", "3", "-d", NULL};
 
-	optind = 1;
+	optind = 0;
 	while ((ch = getopt(argc, argv, "ab:c")) != -1)
 	{
 		switch (ch)
@@ -331,7 +331,7 @@ int test_getopt_10()
 	int argc = 5;
 	char *argv[] = {TEST_PROGRAM, "-a", "-b", "3", "-d", NULL};
 
-	optind = 1;
+	optind = 0;
 	while ((ch = getopt(argc, argv, ":ab:c")) != -1)
 	{
 		switch (ch)
@@ -361,6 +361,69 @@ int test_getopt_10()
 	return 0;
 }
 
+int test_getopt_11()
+{
+	int a = 0, b = 0;
+	int ch;
+	int argc = 5;
+	char *argv[] = {TEST_PROGRAM, "-a", "file", "-b", "2", NULL};
+
+	optind = 0;
+	while ((ch = getopt(argc, argv, "ab:")) != -1)
+	{
+		switch (ch)
+		{
+		case 'a':
+			a = 1;
+			break;
+		case 'b':
+			b = atoi(optarg);
+			break;
+		default:
+			break;
+		}
+	}
+
+	ASSERT_EQ(a, 1);
+	ASSERT_EQ(b, 2);
+	ASSERT_EQ(optind, 4);
+	ASSERT_STREQ(argv[optind], "file");
+
+	return 0;
+}
+
+int test_getopt_12()
+{
+	int a = 0, b = 0, e = 0;
+	int ch;
+	int argc = 4;
+	char *argv[] = {TEST_PROGRAM, "-a", "file", "-b", NULL};
+
+	optind = 0;
+	while ((ch = getopt(argc, argv, "ab:")) != -1)
+	{
+		switch (ch)
+		{
+		case 'a':
+			a = 1;
+			break;
+		case 'b':
+			b = atoi(optarg);
+			break;
+		case '?':
+			e = 1;
+		default:
+			break;
+		}
+	}
+
+	ASSERT_EQ(a, 1);
+	ASSERT_EQ(b, 0);
+	ASSERT_EQ(e, 1);
+
+	return 0;
+}
+
 int test_getopt_long_1()
 {
 	int a = 0, b = 0, c = 0;
@@ -369,7 +432,7 @@ int test_getopt_long_1()
 	char *argv[] = {TEST_PROGRAM, "-a", "dummy", "--b", "-c", NULL};
 	struct option longoptions[] = {{"b", no_argument, NULL, 'b'}, {0, 0, 0, 0}};
 
-	optind = 1;
+	optind = 0;
 	while ((ch = getopt_long(argc, argv, "ac", longoptions, NULL)) != -1)
 	{
 		switch (ch)
@@ -404,7 +467,7 @@ int test_getopt_long_2()
 	struct option longoptions[] = {{"b", required_argument, NULL, 'b'}, {0, 0, 0, 0}};
 	int index;
 
-	optind = 1;
+	optind = 0;
 	while ((ch = getopt_long(argc, argv, "ac:", longoptions, &index)) != -1)
 	{
 		switch (ch)
@@ -441,7 +504,7 @@ int test_getopt_long_3()
 		{"a", no_argument, NULL, 'a'}, {"b", optional_argument, NULL, 'b'}, {"c", required_argument, NULL, 'c'}, {0, 0, 0, 0}};
 	int index;
 
-	optind = 1;
+	optind = 0;
 	while ((ch = getopt_long(argc, argv, "", longoptions, &index)) != -1)
 	{
 		switch (ch)
@@ -487,7 +550,7 @@ int test_getopt_long_4()
 		{"a", no_argument, NULL, 'a'}, {"b", optional_argument, NULL, 'b'}, {"c", required_argument, NULL, 'c'}, {0, 0, 0, 0}};
 	int index;
 
-	optind = 1;
+	optind = 0;
 	while ((ch = getopt_long(argc, argv, "", longoptions, &index)) != -1)
 	{
 		switch (ch)
@@ -530,7 +593,7 @@ int test_getopt_stop_1()
 	int argc = 5;
 	char *argv[] = {TEST_PROGRAM, "-a", "dummy", "-b", "-c", NULL};
 
-	optind = 1;
+	optind = 0;
 	while ((ch = getopt(argc, argv, "+abc")) != -1)
 	{
 		switch (ch)
@@ -563,7 +626,7 @@ int test_getopt_stop_2()
 	int argc = 5;
 	char *argv[] = {TEST_PROGRAM, "-a", "--", "-b", "-c", NULL};
 
-	optind = 1;
+	optind = 0;
 	while ((ch = getopt(argc, argv, "abc")) != -1)
 	{
 		switch (ch)
@@ -598,7 +661,7 @@ int test_getopt_posix()
 
 	setenv("POSIXLY_CORRECT", "YES", 1);
 
-	optind = 1;
+	optind = 0;
 	while ((ch = getopt(argc, argv, "abc")) != -1)
 	{
 		switch (ch)
@@ -638,6 +701,8 @@ int main()
 	TEST(test_getopt_8());
 	TEST(test_getopt_9());
 	TEST(test_getopt_10());
+	TEST(test_getopt_11());
+	TEST(test_getopt_12());
 
 	TEST(test_getopt_long_1());
 	TEST(test_getopt_long_2());

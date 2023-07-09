@@ -21,6 +21,7 @@ int optopt = '?';
 int wlibc_common_getopt(int argc, char *argv[], const char *optstring, const struct option *longopts, int *longindex)
 {
 	static int index = 0;
+	static int exchange = 0;
 	static bool processing_short_option = false;
 	static bool processing_long_option = false;
 	static bool stop_at_first_nonoption = false;
@@ -41,6 +42,8 @@ int wlibc_common_getopt(int argc, char *argv[], const char *optstring, const str
 
 	if (!getopt_intialized)
 	{
+		exchange = argc;
+
 		if (optstring[0] == '+' || getenv("POSIXLY_CORRECT") != NULL)
 		{
 			stop_at_first_nonoption = true;
@@ -56,7 +59,8 @@ int wlibc_common_getopt(int argc, char *argv[], const char *optstring, const str
 
 		// Reinitialize getopt.
 		stop_at_first_nonoption = false;
-		
+		exchange = argc;
+
 		if (optstring[0] == '+' || getenv("POSIXLY_CORRECT") != NULL)
 		{
 			stop_at_first_nonoption = true;
@@ -121,6 +125,9 @@ int wlibc_common_getopt(int argc, char *argv[], const char *optstring, const str
 			}
 
 			// If so, move the non argument to the end.
+			// In case of an invocation like this 'program.exe file --arg' where arg requires a value.
+			// The getopt routine will shuffle the arguments like this 'program.exe --arg file'.
+			// The exchange variable prevents --arg from getting file as it is optarg.
 			if (exchange_arguments)
 			{
 				for (int j = i + 1; j < argc; ++j)
@@ -129,6 +136,7 @@ int wlibc_common_getopt(int argc, char *argv[], const char *optstring, const str
 				}
 
 				argv[argc - 1] = argument;
+				--exchange;
 				--i;
 			}
 
@@ -200,7 +208,7 @@ int wlibc_common_getopt(int argc, char *argv[], const char *optstring, const str
 						{
 							// --arg value
 							char *parameter = argv[optind];
-							if (parameter == NULL || parameter[0] == '-')
+							if (parameter == NULL || optind >= exchange || parameter[0] == '-')
 							{
 								if (print_errors)
 								{
@@ -226,7 +234,7 @@ int wlibc_common_getopt(int argc, char *argv[], const char *optstring, const str
 						{
 							// --arg value
 							char *parameter = argv[optind];
-							if (parameter != NULL && parameter[0] != '-')
+							if (parameter != NULL && optind < exchange && parameter[0] != '-')
 							{
 								optarg = parameter;
 								++optind;
@@ -300,7 +308,7 @@ int wlibc_common_getopt(int argc, char *argv[], const char *optstring, const str
 					{
 						// -o value
 						argument = argv[optind];
-						if (argument != NULL)
+						if (argument != NULL && optind < exchange)
 						{
 							optarg = argument;
 							++optind;
@@ -323,7 +331,7 @@ int wlibc_common_getopt(int argc, char *argv[], const char *optstring, const str
 					else
 					{
 						argument = argv[optind];
-						if (argument != NULL)
+						if (argument != NULL && optind < exchange)
 						{
 							optarg = argument;
 							++optind;
