@@ -56,6 +56,7 @@ option(ENABLE_THREADS "Enable pthreads and C11 threads API" ON)
 option(ENABLE_SPAWN "Enable POSIX spawn API" ON)
 option(ENABLE_TIMERS "Enable POSIX timers" ON)
 option(ENABLE_TERMIOS "Enable termios module" ON)
+option(ENABLE_WCHAR_EXT "Enable wchar extensions" ON)
 
 # Only enable the address sanitizer with MSVC.
 if(ENABLE_ASAN)

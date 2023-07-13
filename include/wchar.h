@@ -17,8 +17,6 @@
 #include <corecrt.h>
 #include <vcruntime_string.h>
 
-_WLIBC_BEGIN_DECLS
-
 #define WCHAR_MIN 0x0000
 #define WCHAR_MAX 0xffff
 
@@ -86,6 +84,22 @@ _ACRTIMP errno_t __cdecl wmemcpy_s(wchar_t *dest, rsize_t destsz, wchar_t const 
 _ACRTIMP errno_t __cdecl wmemmove_s(wchar_t *dest, rsize_t destsz, wchar_t const *source, rsize_t count);
 
 #endif
+
+/* Extensions */
+_WLIBC_BEGIN_DECLS
+
+WLIBC_API int wlibc_wcwidth(wchar_t wc);
+WLIBC_API int wlibc_wcswidth(const wchar_t *wstr, size_t size);
+
+WLIBC_INLINE int wcwidth(wchar_t wc)
+{
+	return wlibc_wcwidth(wc);
+}
+
+WLIBC_INLINE int wcswidth(const wchar_t *wstr, size_t size)
+{
+	return wlibc_wcswidth(wstr, size);
+}
 
 _WLIBC_END_DECLS
 
