@@ -63,7 +63,6 @@ pid_t wait_all_children(int *wstatus, int options)
 
 	// We can only wait for 64(MAXIMUM_WAIT_OBJECTS) children simultaneously at a time. Ignore the rest.
 	SHARED_LOCK_PROCESS_TABLE();
-
 	for (size_t i = 0; i < _wlibc_process_table_size; ++i)
 	{
 		if (_wlibc_process_table[i].handle != NULL)
@@ -74,6 +73,11 @@ pid_t wait_all_children(int *wstatus, int options)
 		}
 	}
 	SHARED_UNLOCK_PROCESS_TABLE();
+
+	if (count == 0)
+	{
+		return 0;
+	}
 
 	status = NtWaitForMultipleObjects(count, child_handles, WaitAny, FALSE, (options & WNOHANG) ? &timeout : NULL);
 
@@ -94,11 +98,14 @@ pid_t wait_all_children(int *wstatus, int options)
 	}
 
 	// After this point status will be between 0 (STATUS_WAIT_0) and 63 (STATUS_WAIT_63).
-	status =
-		NtQueryInformationProcess(child_handles[status], ProcessBasicInformation, &basic_info, sizeof(PROCESS_BASIC_INFORMATION), NULL);
-	if (status == STATUS_SUCCESS)
+	if (wstatus)
 	{
-		*wstatus = (int)basic_info.ExitStatus;
+		status =
+			NtQueryInformationProcess(child_handles[status], ProcessBasicInformation, &basic_info, sizeof(PROCESS_BASIC_INFORMATION), NULL);
+		if (status == STATUS_SUCCESS)
+		{
+			*wstatus = (int)basic_info.ExitStatus;
+		}
 	}
 
 	delete_child(child_pids[status]);

@@ -50,10 +50,8 @@ static int initialize_inherit_information(inherit_information *info, int max_fd)
 	{
 		if (i < (int)_wlibc_fd_table_size)
 		{
-			// This can be memcpy'd. TODO
-			info->fdinfo[i].handle = _wlibc_fd_table[i].handle;
-			info->fdinfo[i].type = _wlibc_fd_table[i].type;
-			info->fdinfo[i].flags = _wlibc_fd_table[i].flags;
+			// The 2 structures have same alignment. Thus can be memcpy'd.
+			memcpy(&(info->fdinfo[i]), &_wlibc_fd_table[i], sizeof(inherit_fdinfo));
 		}
 		else
 		{
@@ -228,7 +226,8 @@ static UNICODE_STRING *search_for_program(const char *path)
 	{
 		if (path[length - 4] == '.')
 		{
-			if (strncmp(&path[length - 3], "exe", 3) == 0 || strncmp(&path[length - 3], "cmd", 3) || strncmp(&path[length - 3], "bat", 3))
+			if (strnicmp(&path[length - 3], "exe", 3) == 0 || strnicmp(&path[length - 3], "cmd", 3) == 0 ||
+				strnicmp(&path[length - 3], "bat", 3) == 0)
 			{
 				executable_extension_given = true;
 			}
@@ -1488,6 +1487,7 @@ int wlibc_common_spawn(pid_t *restrict pid, const char *restrict path, const spa
 	STARTUPINFOW sinfo = {0};
 	PROCESS_INFORMATION pinfo = {0};
 	DWORD priority_class = NORMAL_PRIORITY_CLASS;
+	DWORD process_flags = CREATE_UNICODE_ENVIRONMENT;
 
 	sinfo.cb = sizeof(STARTUPINFOW);
 
@@ -1521,10 +1521,22 @@ int wlibc_common_spawn(pid_t *restrict pid, const char *restrict path, const spa
 				priority_class = NORMAL_PRIORITY_CLASS;
 			}
 		}
+
+		process_flags |= priority_class;
+
+		if (attributes->flags & POSIX_SPAWN_DETACH)
+		{
+			process_flags |= DETACHED_PROCESS;
+		}
+
+		if (attributes->flags & POSIX_SPAWN_SETPGROUP)
+		{
+			process_flags |= CREATE_NEW_PROCESS_GROUP;
+		}
 	}
 
 	// Do the spawn.
-	BOOL status = CreateProcessW(wpath, wargv, NULL, NULL, TRUE, CREATE_UNICODE_ENVIRONMENT | priority_class, wenv, wcwd, &sinfo, &pinfo);
+	BOOL status = CreateProcessW(wpath, wargv, NULL, NULL, TRUE, process_flags, wenv, wcwd, &sinfo, &pinfo);
 	if (status == 0)
 	{
 		DWORD error = GetLastError();
@@ -1559,7 +1571,7 @@ int wlibc_common_spawn(pid_t *restrict pid, const char *restrict path, const spa
 			goto finish;
 		}
 
-		status = CreateProcessW(wpath, wargv, NULL, NULL, TRUE, CREATE_UNICODE_ENVIRONMENT | priority_class, wenv, wcwd, &sinfo, &pinfo);
+		status = CreateProcessW(wpath, wargv, NULL, NULL, TRUE, process_flags, wenv, wcwd, &sinfo, &pinfo);
 
 		// Shebang spawn failed.
 		if (status == 0)

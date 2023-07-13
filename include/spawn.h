@@ -15,7 +15,7 @@
 
 _WLIBC_BEGIN_DECLS
 
-/* Data structure to contain attributes for thread creation.  */
+/* Data structure to contain attributes for process creation.  */
 typedef struct _spawnattr_t
 {
 	short int flags;
@@ -96,6 +96,7 @@ typedef spawn_actions_t posix_spawn_file_actions_t;
 #define POSIX_SPAWN_SETSIGMASK    0x04
 #define POSIX_SPAWN_SETSCHEDPARAM 0x08
 #define POSIX_SPAWN_SETSCHEDULER  0x10
+#define POSIX_SPAWN_DETACH        0x20
 
 // Spawn API.
 WLIBC_API int wlibc_common_spawn(pid_t *restrict pid, const char *restrict path, const spawn_actions_t *restrict actions,

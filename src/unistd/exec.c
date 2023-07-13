@@ -106,13 +106,16 @@ int wlibc_execl(int use_path, int env_given, const char *path, const char *arg0,
 
 int wlibc_spawnve(int use_path, int mode, const char *restrict path, char *restrict const argv[], char *restrict const env[])
 {
-	// TODO P_DETACH
 	int status;
 	pid_t pid;
+	spawnattr_t attributes;
 
 	WLIBC_VALIDATE_SPAWN_MODE(mode);
 
-	status = wlibc_common_spawn(&pid, path, NULL, NULL, use_path, argv, env);
+	wlibc_spawnattr_init(&attributes);
+	wlibc_spawnattr_setflags(&attributes, POSIX_SPAWN_SETSCHEDULER | POSIX_SPAWN_SETSCHEDPARAM | POSIX_SPAWN_DETACH);
+
+	status = wlibc_common_spawn(&pid, path, NULL, &attributes, use_path, argv, env);
 
 	if (status != 0)
 	{
