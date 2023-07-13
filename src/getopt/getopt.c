@@ -22,9 +22,12 @@ int wlibc_common_getopt(int argc, char *argv[], const char *optstring, const str
 {
 	static int index = 0;
 	static int exchange = 0;
+	static int error_return = 0;
 	static bool processing_short_option = false;
 	static bool processing_long_option = false;
 	static bool stop_at_first_nonoption = false;
+	static bool assign_nonoption_to_one = false;
+	static bool skip_first_char_option = false;
 	static bool getopt_intialized = false;
 
 	bool print_errors = true;
@@ -40,17 +43,6 @@ int wlibc_common_getopt(int argc, char *argv[], const char *optstring, const str
 		print_errors = false;
 	}
 
-	if (!getopt_intialized)
-	{
-		exchange = argc;
-
-		if (optstring[0] == '+' || getenv("POSIXLY_CORRECT") != NULL)
-		{
-			stop_at_first_nonoption = true;
-			getopt_intialized = true;
-		}
-	}
-
 	// Preferred reset value according to POSIX.
 	if (optind == 0)
 	{
@@ -58,14 +50,34 @@ int wlibc_common_getopt(int argc, char *argv[], const char *optstring, const str
 		optind = 1;
 
 		// Reinitialize getopt.
+		processing_short_option = false;
+		processing_long_option = false;
 		stop_at_first_nonoption = false;
-		exchange = argc;
+		assign_nonoption_to_one = false;
+		skip_first_char_option = false;
+		getopt_intialized = false;
+	}
 
+	if (!getopt_intialized)
+	{
 		if (optstring[0] == '+' || getenv("POSIXLY_CORRECT") != NULL)
 		{
 			stop_at_first_nonoption = true;
-			getopt_intialized = true;
 		}
+
+		if (optstring[0] == '-')
+		{
+			assign_nonoption_to_one = true;
+		}
+
+		if (optstring[0] == '+' || optstring[0] == '-' || optstring[0] == ':')
+		{
+			skip_first_char_option = true;
+		}
+
+		error_return = optstring[0] == ':' ? ':' : '?';
+		exchange = argc;
+		getopt_intialized = true;
 	}
 
 	if (optind == argc)
@@ -89,6 +101,8 @@ int wlibc_common_getopt(int argc, char *argv[], const char *optstring, const str
 				if (argument[index + 2] == '\0')
 				{
 					// End of options.
+					// Consume current argument.
+					++optind;
 					return -1;
 				}
 				else
@@ -114,10 +128,17 @@ int wlibc_common_getopt(int argc, char *argv[], const char *optstring, const str
 				return -1;
 			}
 
+			if (assign_nonoption_to_one)
+			{
+				++optind;
+				optarg = argument;
+				return '\x1';
+			}
+
 			// Check if there are options after this argument.
 			for (int j = i + 1; j < argc; ++j)
 			{
-				if (argv[j][0] == '-')
+				if (argv[j][0] == '-' && argv[j][1] != '\0')
 				{
 					exchange_arguments = true;
 					break;
@@ -150,7 +171,7 @@ int wlibc_common_getopt(int argc, char *argv[], const char *optstring, const str
 			{
 				index = 0;
 				++optind;
-				return optstring[0] == ':' ? ':' : '?'; // Ambiguous
+				return error_return; // Ambiguous
 			}
 
 			size_t argument_length;
@@ -191,7 +212,7 @@ int wlibc_common_getopt(int argc, char *argv[], const char *optstring, const str
 							{
 								fprintf(stderr, "%s: option '--%s' does not allow a paramter\n", program_invocation_name, long_option);
 							}
-							return optstring[0] == ':' ? ':' : '?';
+							return error_return;
 						}
 
 						optarg = NULL;
@@ -215,7 +236,7 @@ int wlibc_common_getopt(int argc, char *argv[], const char *optstring, const str
 									fprintf(stderr, "%s: '--%s' requires a parameter\n", program_invocation_name, long_option);
 								}
 
-								return optstring[0] == ':' ? ':' : '?';
+								return error_return;
 							}
 
 							optarg = parameter;
@@ -271,6 +292,7 @@ int wlibc_common_getopt(int argc, char *argv[], const char *optstring, const str
 
 		if (processing_short_option)
 		{
+
 			// Short options
 			if (optstring[0] == '\0')
 			{
@@ -279,7 +301,7 @@ int wlibc_common_getopt(int argc, char *argv[], const char *optstring, const str
 			}
 
 			char option = argument[index];
-			char *start = (char *)(optstring[0] == '+' ? &optstring[1] : &optstring[0]);
+			char *start = (char *)(skip_first_char_option ? &optstring[1] : &optstring[0]);
 			char *found = strchr(start, option);
 
 			index += 1;
@@ -344,7 +366,7 @@ int wlibc_common_getopt(int argc, char *argv[], const char *optstring, const str
 							}
 
 							optarg = NULL;
-							return optstring[0] == ':' ? ':' : '?';
+							return error_return;
 						}
 					}
 				}
@@ -364,7 +386,7 @@ int wlibc_common_getopt(int argc, char *argv[], const char *optstring, const str
 
 				optarg = NULL;
 				optopt = option;
-				return optstring[0] == ':' ? ':' : '?';
+				return error_return;
 			}
 		}
 	}

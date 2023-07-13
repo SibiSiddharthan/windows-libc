@@ -234,6 +234,7 @@ int test_getopt_7()
 			break;
 		case '?':
 			e = 1;
+			break;
 		default:
 			break;
 		}
@@ -311,6 +312,7 @@ int test_getopt_9()
 		case '?':
 			e = 1;
 			ASSERT_EQ(optopt, 'd');
+			break;
 		default:
 			break;
 		}
@@ -348,6 +350,7 @@ int test_getopt_10()
 		case ':':
 			e = 1;
 			ASSERT_EQ(optopt, 'd');
+			break;
 		default:
 			break;
 		}
@@ -412,6 +415,7 @@ int test_getopt_12()
 			break;
 		case '?':
 			e = 1;
+			break;
 		default:
 			break;
 		}
@@ -420,6 +424,75 @@ int test_getopt_12()
 	ASSERT_EQ(a, 1);
 	ASSERT_EQ(b, 0);
 	ASSERT_EQ(e, 1);
+
+	return 0;
+}
+
+int test_getopt_13()
+{
+	int a = 0, b = 0, e = 0;
+	int ch;
+	int argc = 4;
+	char *argv[] = {TEST_PROGRAM, "-a", "--", "-b", NULL};
+
+	optind = 0;
+	while ((ch = getopt(argc, argv, "ab:")) != -1)
+	{
+		switch (ch)
+		{
+		case 'a':
+			a = 1;
+			break;
+		case 'b':
+			b = atoi(optarg);
+			break;
+		case '?':
+			e = 1;
+			break;
+		default:
+			break;
+		}
+	}
+
+	ASSERT_EQ(a, 1);
+	ASSERT_EQ(b, 0);
+	ASSERT_EQ(e, 0);
+	ASSERT_EQ((argc - optind), 1);
+
+	return 0;
+}
+
+int test_getopt_14()
+{
+	int a = 0, b = 0, n = 0;
+	int ch;
+	int argc = 4;
+	char *argv[] = {TEST_PROGRAM, "-a", "file", "-b2", NULL};
+
+	optind = 0;
+	while ((ch = getopt(argc, argv, "-ab:")) != -1)
+	{
+		switch (ch)
+		{
+		case '\x1':
+			ASSERT_STREQ(optarg, "file");
+			n = 1;
+			break;
+		case 'a':
+			a = 1;
+			break;
+		case 'b':
+			b = atoi(optarg);
+			break;
+		default:
+			break;
+		}
+	}
+
+	ASSERT_EQ(a, 1);
+	ASSERT_EQ(b, 2);
+	ASSERT_EQ(n, 1);
+	ASSERT_EQ((argc - optind), 0);
 
 	return 0;
 }
@@ -703,6 +776,8 @@ int main()
 	TEST(test_getopt_10());
 	TEST(test_getopt_11());
 	TEST(test_getopt_12());
+	TEST(test_getopt_13());
+	TEST(test_getopt_14());
 
 	TEST(test_getopt_long_1());
 	TEST(test_getopt_long_2());
