@@ -15,7 +15,7 @@
 #include <internal/timer.h>
 #include <stdlib.h>
 
-extern int main(int argc, char **argv);
+extern int main(int argc, char **argv, char **env);
 
 // From errno/program.c
 void init_program_name(void);
@@ -58,10 +58,11 @@ int exception_handler(DWORD code)
 	}
 }
 
-int wmain(int argc, wchar_t **wargv)
+int wmain(int argc, wchar_t **wargv, wchar_t **wenv)
 {
-	char **argv = NULL;
-	UTF8_STRING *u8_args = NULL;
+	int envc = 0;
+	char **argv = NULL, **env = NULL;
+	UTF8_STRING *u8_args = NULL, *u8_env = NULL;
 
 	if (argc)
 	{
@@ -69,7 +70,7 @@ int wmain(int argc, wchar_t **wargv)
 		u8_args = (UTF8_STRING *)RtlAllocateHeap(NtCurrentProcessHeap(), 0, sizeof(UTF8_STRING) * argc);
 
 		// Exit the process if we cannot create argv.
-		if(argv == NULL || u8_args == NULL)
+		if (argv == NULL || u8_args == NULL)
 		{
 			RtlExitUserProcess(STATUS_NO_MEMORY);
 		}
@@ -90,6 +91,41 @@ int wmain(int argc, wchar_t **wargv)
 			argv[i] = u8_args[i].Buffer;
 		}
 		argv[argc] = NULL;
+	}
+
+	if (wenv)
+	{
+		for (envc = 0; wenv[envc] != NULL; ++envc)
+		{
+			;
+		}
+		--envc;
+
+		env = (char **)RtlAllocateHeap(NtCurrentProcessHeap(), 0, sizeof(char *) * (envc + 1)); // env ends with NULL
+		u8_env = (UTF8_STRING *)RtlAllocateHeap(NtCurrentProcessHeap(), 0, sizeof(UTF8_STRING) * envc);
+
+		// Exit the process if we cannot create env.
+		if (env == NULL || u8_env == NULL)
+		{
+			RtlExitUserProcess(STATUS_NO_MEMORY);
+		}
+
+		for (int i = 0; i < envc; i++)
+		{
+			NTSTATUS status;
+			UNICODE_STRING u16_env;
+			RtlInitUnicodeString(&u16_env, wenv[i]);
+			status = RtlUnicodeStringToUTF8String(&u8_env[i], &u16_env, TRUE);
+
+			// Exit the process if we cannot create env.
+			if (status != STATUS_SUCCESS)
+			{
+				RtlExitUserProcess(status);
+			}
+
+			env[i] = u8_env[i].Buffer;
+		}
+		env[envc] = NULL;
 	}
 
 #ifdef WLIBC_IO
@@ -127,7 +163,7 @@ int wmain(int argc, wchar_t **wargv)
 
 	__try
 	{
-		exit_status = main(argc, argv);
+		exit_status = main(argc, argv, env);
 	}
 	__except (exception_handler(GetExceptionCode()))
 	{
@@ -142,6 +178,16 @@ int wmain(int argc, wchar_t **wargv)
 		}
 		RtlFreeHeap(NtCurrentProcessHeap(), 0, u8_args);
 		RtlFreeHeap(NtCurrentProcessHeap(), 0, argv);
+	}
+
+	if (wenv)
+	{
+		for (int i = 0; i < envc; i++)
+		{
+			RtlFreeUTF8String(&u8_env[i]);
+		}
+		RtlFreeHeap(NtCurrentProcessHeap(), 0, u8_env);
+		RtlFreeHeap(NtCurrentProcessHeap(), 0, env);
 	}
 
 	return exit_status;
