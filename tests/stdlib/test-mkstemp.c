@@ -7,7 +7,6 @@
 
 #include <tests/test.h>
 #include <stdlib.h>
-#include <stdlib-ext.h>
 #include <string.h>
 #include <unistd.h>
 

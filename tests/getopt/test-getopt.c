@@ -9,7 +9,6 @@
 #include <getopt.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <stdlib-ext.h>
 
 #define TEST_PROGRAM "test-getopt.exe"
 

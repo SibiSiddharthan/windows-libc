@@ -5,10 +5,6 @@
    Refer to the LICENSE file at the root directory for details.
 */
 
-#include <stdlib-ext.h>
-#include <stdlib.h>
-
-#include <stdlib-ext.h>
 #include <stdlib.h>
 #include <errno.h>
 

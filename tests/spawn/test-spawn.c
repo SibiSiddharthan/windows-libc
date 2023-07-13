@@ -8,7 +8,6 @@
 #include <tests/test.h>
 #include <spawn.h>
 #include <stdlib.h>
-#include <stdlib-ext.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <unistd.h>

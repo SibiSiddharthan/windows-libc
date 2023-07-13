@@ -10,7 +10,6 @@
 #include <internal/fcntl.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <stdlib-ext.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <sys/stat.h>

@@ -14,5 +14,5 @@ setenv.c
 unsetenv.c
 
 HEADERS
-stdlib-ext.h
+stdlib.h
 )
