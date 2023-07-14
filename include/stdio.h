@@ -222,34 +222,28 @@ WLIBC_INLINE int setbuf(FILE *restrict stream, char *restrict buffer)
 
 // file error handling
 WLIBC_API int wlibc_feof(FILE *stream);
-
 WLIBC_INLINE int feof(FILE *stream)
 {
 	return wlibc_feof(stream);
 }
 
 WLIBC_API int wlibc_ferror(FILE *stream);
-
 WLIBC_INLINE int ferror(FILE *stream)
 {
 	return wlibc_ferror(stream);
 }
 
 WLIBC_API void wlibc_clearerr(FILE *stream);
-
 WLIBC_INLINE void clearerr(FILE *stream)
 {
 	wlibc_clearerr(stream);
 }
 
-#if 0
 WLIBC_API void wlibc_perror(char const *message);
-
 WLIBC_INLINE void perror(char const *message)
 {
-	return wlibc_perror(message);
+	wlibc_perror(message);
 }
-#endif
 
 /*
 #define LOCK    0

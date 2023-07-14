@@ -90,20 +90,6 @@ _ACRTIMP _invalid_parameter_handler __cdecl _get_thread_local_invalid_parameter_
 
 _ACRTIMP int __cdecl _set_error_mode(int _Mode);
 
-// This is non-const for backwards compatibility; do not modify it.
-#if _CRT_FUNCTIONS_REQUIRED
-
-char **__cdecl __sys_errlist(void);
-#	define _sys_errlist (__sys_errlist())
-
-int *__cdecl __sys_nerr(void);
-#	define _sys_nerr (*__sys_nerr())
-
-#	define sys_errlist _sys_errlist
-#	define sys_nerr    _sys_nerr
-
-#endif // _CRT_FUNCTIONS_REQUIRED
-
 // These point to the executable module name.
 _CRT_INSECURE_DEPRECATE_GLOBALS(_get_pgmptr) _ACRTIMP char **__cdecl __p__pgmptr(void);
 _CRT_INSECURE_DEPRECATE_GLOBALS(_get_wpgmptr) _ACRTIMP wchar_t **__cdecl __p__wpgmptr(void);

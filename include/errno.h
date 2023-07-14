@@ -20,6 +20,15 @@ _ACRTIMP errno_t __cdecl _set_doserrno(unsigned long error);
 _ACRTIMP errno_t __cdecl _get_doserrno(unsigned long *error);
 #define _doserrno (*__doserrno())
 
+char **__cdecl __sys_errlist(void);
+#define _sys_errlist (__sys_errlist())
+
+int *__cdecl __sys_nerr(void);
+#define _sys_nerr (*__sys_nerr())
+
+#define sys_errlist _sys_errlist
+#define sys_nerr    _sys_nerr
+
 // GNU extensions
 extern char *program_invocation_name;
 extern char *program_invocation_short_name;
