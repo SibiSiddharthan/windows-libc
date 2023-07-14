@@ -183,13 +183,6 @@ WLIBC_INLINE int sigaction(int sig, const struct sigaction *new_action, struct s
 	return wlibc_sigaction(sig, new_action, old_action);
 }
 
-// Should be in string.h
-WLIBC_API char *wlibc_strsignal(int sig);
-WLIBC_INLINE char *strsignal(int sig)
-{
-	return wlibc_strsignal(sig);
-}
-
 _WLIBC_END_DECLS
 
 #endif

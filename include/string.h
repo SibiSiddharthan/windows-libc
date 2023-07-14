@@ -199,6 +199,12 @@ WLIBC_INLINE char *strndup(const char *str, size_t size)
 	return wlibc_strndup(str, size);
 }
 
+WLIBC_API char *wlibc_strsignal(int sig);
+WLIBC_INLINE char *strsignal(int sig)
+{
+	return wlibc_strsignal(sig);
+}
+
 WLIBC_API void *wlibc_memrchr(const void *str, int character, size_t size);
 WLIBC_INLINE void *memrchr(const void *str, int character, size_t size)
 {
