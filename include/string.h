@@ -9,6 +9,7 @@
 #define WLIBC_STRING_EXT_H
 
 #include <wlibc.h>
+#include <wchar.h>
 #include <corecrt_memory.h>
 
 #define _NLSCMPERROR _CRT_INT_MAX // currently == INT_MAX
@@ -124,11 +125,6 @@ WLIBC_INLINE char *stpncpy(char *destination, const char *source, size_t size)
 	return strncpy(destination, source, size) + strnlen(source, size);
 }
 
-WLIBC_INLINE int strcasecmp(char const *str1, char const *str2)
-{
-	return _stricmp(str1, str2);
-}
-
 WLIBC_INLINE int strcasecoll(char const *str1, char const *str2)
 {
 	return _stricoll(str1, str2);
@@ -139,22 +135,22 @@ WLIBC_INLINE int stricoll(char const *str1, char const *str2)
 	return _stricoll(str1, str2);
 }
 
-WLIBC_INLINE mbslen(unsigned char const *str)
+WLIBC_INLINE int mbslen(unsigned char const *str)
 {
-	return _mbslen(str);
+	return (int)_mbslen(str);
 }
 
 WLIBC_INLINE char *mbschr(unsigned char const *str, unsigned int ch)
 {
-	return _mbschr(str, ch);
+	return (char *)_mbschr(str, ch);
 }
 
 WLIBC_INLINE char *mbsstr(unsigned char const *str, unsigned char const *sub)
 {
-	return _mbsstr(str, sub);
+	return (char *)_mbsstr(str, sub);
 }
 
-WLIBC_INLINE mbscasecmp(unsigned char const *str1, unsigned char const *str2)
+WLIBC_INLINE int mbscasecmp(unsigned char const *str1, unsigned char const *str2)
 {
 	return _mbsicmp(str1, str2);
 }
