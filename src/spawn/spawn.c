@@ -1060,7 +1060,6 @@ static WCHAR *prepend_shebang_to_wargv(const WCHAR *old_argv, size_t old_size, c
 	// When prepending we need to skip arg0.
 	size_t start_of_arg1 = 0;
 	size_t old_argv_needed = old_size;
-	short quote_count = 0;
 	bool quoted_arg0 = false;
 
 	if (old_argv != NULL)
@@ -1072,7 +1071,6 @@ static WCHAR *prepend_shebang_to_wargv(const WCHAR *old_argv, size_t old_size, c
 				if (old_argv[i] == L'"')
 				{
 					quoted_arg0 = true;
-					++quote_count;
 				}
 
 				continue;
@@ -1286,9 +1284,6 @@ int wlibc_common_spawn(pid_t *restrict pid, const char *restrict path, const spa
 	// Perform the actions.
 	int max_fd_requested = 0;
 	int number_of_actions = 0;
-	int num_of_open_actions = 0;
-	int num_of_close_actions = 0;
-	int num_of_dup2_actions = 0;
 	int num_of_chdir_actions = 0;
 	int num_of_fchdir_actions = 0;
 
@@ -1302,14 +1297,11 @@ int wlibc_common_spawn(pid_t *restrict pid, const char *restrict path, const spa
 		switch (actions->actions[i].type)
 		{
 		case open_action:
-			++num_of_open_actions;
 			max_fd_requested = __max(actions->actions[i].open_action.fd, max_fd_requested);
 			break;
 		case close_action:
-			++num_of_close_actions;
 			break;
 		case dup2_action:
-			++num_of_dup2_actions;
 			max_fd_requested = __max(actions->actions[i].dup2_action.newfd, max_fd_requested);
 			break;
 		case chdir_action:
