@@ -38,11 +38,11 @@ _ACRTIMP void __cdecl swab(char *source, char *destination, int size);
 #define EXIT_SUCCESS 0
 #define EXIT_FAILURE 1
 
-_ACRTIMP __declspec(noreturn) void __cdecl exit(int code);
-_ACRTIMP __declspec(noreturn) void __cdecl _exit(int code);
-_ACRTIMP __declspec(noreturn) void __cdecl _Exit(int code);
-_ACRTIMP __declspec(noreturn) void __cdecl quick_exit(int code);
-_ACRTIMP __declspec(noreturn) void __cdecl abort(void);
+_ACRTIMP _Noreturn void __cdecl exit(int code);
+_ACRTIMP _Noreturn void __cdecl _exit(int code);
+_ACRTIMP _Noreturn void __cdecl _Exit(int code);
+_ACRTIMP _Noreturn void __cdecl quick_exit(int code);
+_ACRTIMP _Noreturn void __cdecl abort(void);
 
 // Argument values for _set_abort_behavior().
 #define _WRITE_ABORT_MSG  0x1 // debug only, has no effect in release
