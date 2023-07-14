@@ -32,6 +32,10 @@ if(ENABLE_STDLIB_EXT)
 	wlibc_add_module(stdlib)
 endif()
 
+if(ENABLE_STRING_EXT)
+	wlibc_add_module(string)
+endif()
+
 if(ENABLE_WCHAR_EXT)
 	wlibc_add_module(wchar)
 endif()
@@ -42,10 +46,6 @@ endif()
 
 if(ENABLE_POSIX_SIGNALS)
 	wlibc_add_module(signal)
-endif()
-
-if(ENABLE_STRINGS)
-	wlibc_add_module(string)
 endif()
 
 if(ENABLE_RANDOM)

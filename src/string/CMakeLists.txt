@@ -10,12 +10,10 @@ MODULE string
 
 SOURCES
 ffs.c
+strerror.c
 strsignal.c
-#memchr.c
-#mempcpy.c
-#stpcpy.c
 
 HEADERS
-#string-ext.h
+string.h
 strings.h
 )
