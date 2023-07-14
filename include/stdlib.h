@@ -556,6 +556,12 @@ WLIBC_INLINE char *mkdtemp(char *template)
 	return NULL;
 }
 
+WLIBC_INLINE void *reallocarray(void *block, size_t count, size_t size)
+{
+	// Don't bother with overflow.
+	return realloc(block, size * count);
+}
+
 _WLIBC_END_DECLS
 
 #endif

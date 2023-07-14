@@ -28,6 +28,11 @@ WLIBC_INLINE void bzero(void *buffer, size_t size)
 	memset(buffer, 0, size);
 }
 
+WLIBC_INLINE void explicit_bzero(void *buffer, size_t size)
+{
+	memset(buffer, 0, size);
+}
+
 WLIBC_INLINE char *index(const char *str, int ch)
 {
 	return strchr(str, ch);

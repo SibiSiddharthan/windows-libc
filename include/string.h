@@ -17,13 +17,13 @@
 
 _ACRTIMP char *__cdecl strcat(char *destination, char const *source);
 _ACRTIMP char *__cdecl strncat(char *destination, char const *source, size_t count);
-_ACRTIMP errno_t __cdecl strcat_s(char *dest, rsize_t size, char const *src);
-_ACRTIMP errno_t __cdecl strncat_s(char *dest, rsize_t size, char const *src, rsize_t maxsize);
+_ACRTIMP errno_t __cdecl strcat_s(char *destination, rsize_t size, char const *source);
+_ACRTIMP errno_t __cdecl strncat_s(char *destination, rsize_t size, char const *source, rsize_t maxsize);
 
 _ACRTIMP char *__cdecl strcpy(char *destination, char const *source);
 _ACRTIMP char *__cdecl strncpy(char *destination, char const *source, size_t count);
-_ACRTIMP errno_t __cdecl strcpy_s(char *dest, rsize_t size, char const *src);
-_ACRTIMP errno_t __cdecl strncpy_s(char *dest, rsize_t size, char const *src, rsize_t maxsize);
+_ACRTIMP errno_t __cdecl strcpy_s(char *destination, rsize_t size, char const *source);
+_ACRTIMP errno_t __cdecl strncpy_s(char *destination, rsize_t size, char const *source, rsize_t maxsize);
 
 _ACRTIMP char *__cdecl strlwr(char *str);
 _ACRTIMP char *__cdecl _strlwr(char *str);
@@ -112,6 +112,65 @@ _ACRTIMP _CRTALLOCATOR char *__cdecl strdup(char const *source);
 /* Extensions */
 _WLIBC_BEGIN_DECLS
 
+/* Inline implementations */
+
+WLIBC_INLINE char *stpcpy(char *destination, const char *source)
+{
+	return strcpy(destination, source) + strlen(source);
+}
+
+WLIBC_INLINE char *stpncpy(char *destination, const char *source, size_t size)
+{
+	return strncpy(destination, source, size) + strnlen(source, size);
+}
+
+WLIBC_INLINE int strcasecmp(char const *str1, char const *str2)
+{
+	return _stricmp(str1, str2);
+}
+
+WLIBC_INLINE int strcasecoll(char const *str1, char const *str2)
+{
+	return _stricoll(str1, str2);
+}
+
+WLIBC_INLINE int stricoll(char const *str1, char const *str2)
+{
+	return _stricoll(str1, str2);
+}
+
+WLIBC_INLINE mbslen(unsigned char const *str)
+{
+	return _mbslen(str);
+}
+
+WLIBC_INLINE char *mbschr(unsigned char const *str, unsigned int ch)
+{
+	return _mbschr(str, ch);
+}
+
+WLIBC_INLINE char *mbsstr(unsigned char const *str, unsigned char const *sub)
+{
+	return _mbsstr(str, sub);
+}
+
+WLIBC_INLINE mbscasecmp(unsigned char const *str1, unsigned char const *str2)
+{
+	return _mbsicmp(str1, str2);
+}
+
+WLIBC_INLINE void *mempcpy(void *destination, const void *source, size_t size)
+{
+	return (void *)((char *)memcpy(destination, source, size) + size);
+}
+
+WLIBC_INLINE void *rawmemchr(const void *str, int character)
+{
+	return memchr(str, character, -1ull);
+}
+
+/* API implementations */
+
 WLIBC_API char *wlibc_common_strerror(int errnum, _locale_t locale);
 
 WLIBC_INLINE char *strerror(int errnum)
@@ -134,35 +193,16 @@ WLIBC_INLINE char *strerror_l(int errnum, _locale_t locale)
 	return wlibc_common_strerror(errnum, locale);
 }
 
-
-WLIBC_INLINE void *mempcpy(void *dest, const void *src, size_t size)
+WLIBC_API char *wlibc_strndup(const char *str, size_t size);
+WLIBC_INLINE char *strndup(const char *str, size_t size)
 {
-	return (void *)((char *)memcpy(dest, src, size) + size);
+	return wlibc_strndup(str, size);
 }
 
 WLIBC_API void *wlibc_memrchr(const void *str, int character, size_t size);
 WLIBC_INLINE void *memrchr(const void *str, int character, size_t size)
 {
 	return (void *)wlibc_memrchr(str, character, size);
-}
-
-WLIBC_API void *wlibc_rawmemchr(const void *str, int character);
-WLIBC_INLINE void *rawmemchr(const void *str, int character)
-{
-	return wlibc_rawmemchr(str, character);
-}
-
-WLIBC_API char *wlibc_stpcpy(char *dest, const char *src);
-WLIBC_API char *wlibc_stpncpy(char *dest, const char *src, size_t size);
-
-WLIBC_INLINE char *stpcpy(char *dest, const char *src)
-{
-	return wlibc_stpcpy(dest, src);
-}
-
-WLIBC_INLINE char *stpncpy(char *dest, const char *src, size_t size)
-{
-	return wlibc_stpncpy(dest, src, size);
 }
 
 _WLIBC_END_DECLS

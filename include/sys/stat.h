@@ -238,6 +238,11 @@ WLIBC_INLINE int fstat(int fd, struct stat *statbuf)
 	return wlibc_common_stat(fd, NULL, statbuf, AT_EMPTY_PATH);
 }
 
+WLIBC_INLINE int lstatat(int dirfd, const char *restrict path, struct stat *restrict statbuf)
+{
+	return wlibc_common_stat(dirfd, path, statbuf, AT_SYMLINK_NOFOLLOW);
+}
+
 WLIBC_INLINE int fstatat(int dirfd, const char *restrict path, struct stat *restrict statbuf, int flags)
 {
 	return wlibc_common_stat(dirfd, path, statbuf, flags);
