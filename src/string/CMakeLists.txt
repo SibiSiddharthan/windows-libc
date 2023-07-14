@@ -11,6 +11,7 @@ MODULE string
 SOURCES
 ffs.c
 strerror.c
+strndup.c
 strsignal.c
 
 HEADERS
