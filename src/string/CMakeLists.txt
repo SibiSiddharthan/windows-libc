@@ -10,6 +10,7 @@ MODULE string
 
 SOURCES
 ffs.c
+memrchr.c
 strerror.c
 strndup.c
 strsignal.c
