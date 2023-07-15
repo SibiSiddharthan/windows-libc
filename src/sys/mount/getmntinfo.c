@@ -139,6 +139,9 @@ int wlibc_getmntinfo(struct statfs **mounts, int mode)
 		}
 	}
 
+	// Return only the count of successful statfs calls.
+	drive_count = index;
+
 finish:
 	NtClose(mountmgr_handle);
 	RtlFreeHeap(NtCurrentProcessHeap(), 0, mount_points_buffer);
