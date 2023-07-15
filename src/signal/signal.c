@@ -37,6 +37,7 @@ signal_t wlibc_signal(int sig, signal_t handler)
 
 	new_action.sa_handler = handler;
 	new_action.sa_mask = 1u << sig; // Always add the signal to the mask.
+	new_action.sa_flags = 0;
 
 	status = do_sigaction(sig, &new_action, &old_action);
 

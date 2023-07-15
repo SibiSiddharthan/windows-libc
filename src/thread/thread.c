@@ -81,7 +81,7 @@ int wlibc_thread_create(thread_t *thread, thread_attr_t *attributes, thread_star
 	if (thread_handle == NULL)
 	{
 		map_doserror_to_errno(GetLastError());
-		return -1;
+		goto fail;
 	}
 
 	tinfo->handle = thread_handle;
@@ -116,6 +116,10 @@ int wlibc_thread_create(thread_t *thread, thread_attr_t *attributes, thread_star
 	}
 
 	return 0;
+
+fail:
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, *thread);
+	return -1;
 }
 
 // Detaching a thread doesn't really work in Windows, as we can always open

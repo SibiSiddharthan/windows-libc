@@ -7,6 +7,7 @@
 
 #include <internal/nt.h>
 #include <internal/error.h>
+#include <internal/thread.h>
 #include <internal/timer.h>
 #include <internal/validate.h>
 #include <sys/stat.h>
@@ -28,10 +29,10 @@ int wlibc_timer_create(clockid_t id, struct sigevent *restrict event, timer_t *r
 {
 	NTSTATUS status;
 	timerinfo *tinfo;
-	thread_t thread;
 	thread_attr_t *attributes = NULL;
 
 	VALIDATE_CLOCK(id);
+	VALIDATE_PTR(event, EINVAL, -1);
 	VALIDATE_PTR(timer, EINVAL, -1);
 
 	if (event->sigev_notify < SIGEV_NONE || event->sigev_notify > SIGEV_THREAD)
@@ -43,12 +44,17 @@ int wlibc_timer_create(clockid_t id, struct sigevent *restrict event, timer_t *r
 	*timer = RtlAllocateHeap(NtCurrentProcessHeap(), HEAP_ZERO_MEMORY, sizeof(timerinfo));
 	tinfo = (timerinfo *)*timer;
 
-	status = NtCreateTimer2(&(tinfo->handle), NULL, NULL, TIMER_HIGH_RESOLUTION, TIMER_ALL_ACCESS);
+	if (*timer == NULL)
+	{
+		errno = ENOMEM;
+		return -1;
+	}
 
+	status = NtCreateTimer2(&(tinfo->handle), NULL, NULL, TIMER_HIGH_RESOLUTION, TIMER_ALL_ACCESS);
 	if (status != STATUS_SUCCESS)
 	{
 		map_ntstatus_to_errno(status);
-		return -1;
+		goto fail;
 	}
 
 	// If the notification method is SIGEV_THREAD, make use of the passed in thread attributes.
@@ -57,38 +63,46 @@ int wlibc_timer_create(clockid_t id, struct sigevent *restrict event, timer_t *r
 		attributes = event->sigev_notify_attributes;
 	}
 
-	status = (NTSTATUS)wlibc_thread_create(&thread, attributes, timer_proc, tinfo);
-
+	status = (NTSTATUS)wlibc_thread_create(&(tinfo->thread), attributes, timer_proc, tinfo);
 	if (status != 0)
 	{
-		return -1;
+		goto fail;
 	}
 
-	tinfo->thread = thread;
 	memcpy(&(tinfo->event), event, sizeof(struct sigevent));
 
 	return 0;
+
+fail:
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, *timer);
+	return -1;
 }
 
 int wlibc_timer_delete(timer_t timer)
 {
 	NTSTATUS status;
+	threadinfo *thread;
 	timerinfo *tinfo = (timerinfo *)timer;
 
 	VALIDATE_TIMER(timer);
+	thread = (threadinfo *)tinfo->thread;
 
 	status = NtClose(tinfo->handle);
-
 	if (status != STATUS_SUCCESS)
 	{
 		map_ntstatus_to_errno(status);
 		return -1;
 	}
 
-	// Kill the timer thread.
-	wlibc_thread_cancel(tinfo->thread);
-	wlibc_thread_join(tinfo->thread, NULL);
+	// Kill the timer thread. Just use NtTerminateThread directly.
+	status = NtTerminateThread(thread->handle, (NTSTATUS)(LONG_PTR)WLIBC_THREAD_CANCELED);
+	if (status != STATUS_SUCCESS)
+	{
+		map_ntstatus_to_errno(status);
+		return -1;
+	}
 
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, thread);
 	RtlFreeHeap(NtCurrentProcessHeap(), 0, timer);
 
 	return 0;
