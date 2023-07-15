@@ -176,5 +176,4 @@ int wlibc_ioctl(int fd, unsigned long request, va_list args)
 		return -1;
 	}
 
-	return 0;
 }

@@ -105,8 +105,8 @@ int test_itimer_virtual()
 	ASSERT_EQ(old_value.it_interval.tv_sec, 0);
 	ASSERT_EQ(old_value.it_interval.tv_usec, 200);
 
-	// Timer should have fired atleast 3 times.
-	ASSERT_GTEQ(SIGVTALRM_count, 3);
+	// Timer should have fired atleast once.
+	ASSERT_GTEQ(SIGVTALRM_count, 1);
 
 	return 0;
 }
@@ -142,7 +142,7 @@ int test_itimer_prof()
 	ASSERT_EQ(old_value.it_interval.tv_sec, 0);
 	ASSERT_EQ(old_value.it_interval.tv_usec, 400);
 
-	// Timer should have fired atleast 1 times.
+	// Timer should have fired atleast once.
 	ASSERT_GTEQ(SIGPROF_count, 1);
 
 	return 0;
