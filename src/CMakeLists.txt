@@ -104,15 +104,15 @@ add_subdirectory(internal)
 add_library(wlibc)
 target_link_libraries(wlibc ${wlibc_enabled_modules} internal ntdll Netapi32)
 
-if(BUILD_SHARED_LIBS)
+#if(BUILD_SHARED_LIBS)
 	# TODO Merge wmain with the import library.
+	target_link_libraries(wlibc wmain)
 	set_target_properties(wlibc PROPERTIES RUNTIME_OUTPUT_NAME_DEBUG "wlibcd" LIBRARY_OUTPUT_NAME_DEBUG "wlibcd" ARCHIVE_OUTPUT_NAME_DEBUG "wlibcd")
 	set_target_properties(wlibc PROPERTIES RUNTIME_OUTPUT_NAME_RELEASE "wlibc" LIBRARY_OUTPUT_NAME_RELEASE "wlibc" ARCHIVE_OUTPUT_NAME_RELEASE "wlibc")
-else()
-	target_link_libraries(wlibc wmain)
-	set_target_properties(wlibc PROPERTIES RUNTIME_OUTPUT_NAME_DEBUG "wlibcds" LIBRARY_OUTPUT_NAME_DEBUG "wlibcds" ARCHIVE_OUTPUT_NAME_DEBUG "wlibcds")
-	set_target_properties(wlibc PROPERTIES RUNTIME_OUTPUT_NAME_RELEASE "wlibcs" LIBRARY_OUTPUT_NAME_RELEASE "wlibcs" ARCHIVE_OUTPUT_NAME_RELEASE "wlibcs")
-endif()
+#else()
+#	set_target_properties(wlibc PROPERTIES RUNTIME_OUTPUT_NAME_DEBUG "wlibcds" LIBRARY_OUTPUT_NAME_DEBUG "wlibcds" ARCHIVE_OUTPUT_NAME_DEBUG "wlibcds")
+#	set_target_properties(wlibc PROPERTIES RUNTIME_OUTPUT_NAME_RELEASE "wlibcs" LIBRARY_OUTPUT_NAME_RELEASE "wlibcs" ARCHIVE_OUTPUT_NAME_RELEASE "wlibcs")
+#endif()
 
 # Force the output directory to be root of the build directory for all configurations.
 set_target_properties(wlibc PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
