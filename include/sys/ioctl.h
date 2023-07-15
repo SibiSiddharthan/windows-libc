@@ -13,6 +13,20 @@
 
 _WLIBC_BEGIN_DECLS
 
+struct winsize
+{
+	unsigned short ws_row;    // row characters
+	unsigned short ws_col;    // column characters
+	unsigned short ws_xpixel; // horizontal pixels
+	unsigned short ws_ypixel; // vertical pixels
+};
+
+// Supported IOCTLS
+#define TIOCGWINSZ 1 // Get console window size
+#define TIOCSWINSZ 2 // Set console window size
+#define FIONREAD   3 // Bytes available for reading
+#define FIONWRITE  4 // Bytes already written
+
 WLIBC_API int wlibc_ioctl(int fd, unsigned long request, va_list args);
 
 WLIBC_INLINE int ioctl(int fd, unsigned long request, ...)
