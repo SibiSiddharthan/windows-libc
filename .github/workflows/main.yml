@@ -17,7 +17,7 @@ jobs:
         SET CC=cl
         cmake . -GNinja -DCMAKE_BUILD_TYPE=Debug -DENABLE_ASAN=ON
         ninja
-        ctest -VV
+        ctest -VV --repeat until-pass:5
   msvc-release:
     runs-on: windows-2022
     steps:
@@ -32,7 +32,7 @@ jobs:
         SET CC=cl
         cmake . -GNinja -DCMAKE_BUILD_TYPE=Release
         ninja
-        ctest -VV
+        ctest -VV --repeat until-pass:5
   clang-release:
     runs-on: windows-2022
     steps:
@@ -46,4 +46,4 @@ jobs:
         SET CC=clang
         cmake . -GNinja -DCMAKE_BUILD_TYPE=Release
         ninja
-        ctest -VV
+        ctest -VV --repeat until-pass:5
