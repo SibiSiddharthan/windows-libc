@@ -18,21 +18,6 @@ jobs:
         cmake . -GNinja -DCMAKE_BUILD_TYPE=Debug -DENABLE_ASAN=ON
         ninja
         ctest -VV
-  msvc-debug:
-    runs-on: windows-2022
-    steps:
-    - uses: actions/checkout@v3
-    - name: Install ninja
-      shell: cmd
-      run: choco install ninja
-    - name: Build & Test
-      shell: cmd
-      run: |
-        CALL "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" AMD64
-        SET CC=cl
-        cmake . -GNinja -DCMAKE_BUILD_TYPE=Debug
-        ninja
-        ctest -VV
   msvc-release:
     runs-on: windows-2022
     steps:
@@ -48,7 +33,7 @@ jobs:
         cmake . -GNinja -DCMAKE_BUILD_TYPE=Release
         ninja
         ctest -VV
-  clang:
+  clang-release:
     runs-on: windows-2022
     steps:
     - uses: actions/checkout@v3
