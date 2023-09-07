@@ -267,16 +267,26 @@ WLIBC_INLINE int nice(int change)
 	return wlibc_nice(change);
 }
 
-WLIBC_API int wlibc_common_pipe(int pipefd[2], int flags);
+WLIBC_API int wlibc_common_pipe(const char *name, int pipefd[2], int flags, size_t size);
 
 WLIBC_INLINE int pipe(int pipefd[2])
 {
-	return wlibc_common_pipe(pipefd, 0);
+	return wlibc_common_pipe(NULL, pipefd, 0, 16384); // 16 KB
 }
 
 WLIBC_INLINE int pipe2(int pipefd[2], int flags)
 {
-	return wlibc_common_pipe(pipefd, flags);
+	return wlibc_common_pipe(NULL, pipefd, flags, 16384); // 16 KB
+}
+
+WLIBC_INLINE int pipe3(int pipefd[2], int flags, size_t size)
+{
+	return wlibc_common_pipe(NULL, pipefd, flags, size);
+}
+
+WLIBC_INLINE int named_pipe(const char *name, int pipefd[2])
+{
+	return wlibc_common_pipe(name, pipefd, 0, 16384); // 16 KB
 }
 
 WLIBC_API ssize_t wlibc_pread(int fd, void *buffer, size_t count, off_t offset);

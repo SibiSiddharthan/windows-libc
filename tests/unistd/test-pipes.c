@@ -79,10 +79,50 @@ int test_pipe2_nonblocking()
 	return 0;
 }
 
+int test_named_pipe()
+{
+	int status;
+	int pipefd[2];
+	ssize_t result;
+	char buf[32];
+	const char *content = "Hello World";
+	const char *pipe_name = "\\\\.\\pipe\\mypipe";
+
+	status = named_pipe(pipe_name, pipefd);
+	ASSERT_EQ(status, 0);
+
+	ASSERT_NOTEQ(pipefd[0], -1);
+	ASSERT_NOTEQ(pipefd[1], -1);
+
+	result = write(pipefd[1], content, 12);
+	ASSERT_EQ(result, 12);
+
+	result = read(pipefd[0], buf, 32);
+	ASSERT_EQ(result, 12);
+	ASSERT_MEMEQ(buf, content, 12);
+
+	// Try to do the same operation but switch the ends. It should fail.
+	errno = 0;
+	result = write(pipefd[0], content, 12);
+	ASSERT_EQ(result, -1);
+	ASSERT_ERRNO(EACCES);
+
+	errno = 0;
+	result = read(pipefd[1], buf, 32);
+	ASSERT_EQ(result, -1);
+	ASSERT_ERRNO(EACCES);
+
+	ASSERT_SUCCESS(close(pipefd[0]));
+	ASSERT_SUCCESS(close(pipefd[1]));
+
+	return 0;
+}
+
 int main()
 {
 	INITIAILIZE_TESTS();
 	TEST(test_pipe());
 	TEST(test_pipe2_nonblocking());
+	TEST(test_named_pipe());
 	VERIFY_RESULT_AND_EXIT();
 }
