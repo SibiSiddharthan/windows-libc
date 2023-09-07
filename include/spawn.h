@@ -37,7 +37,9 @@ typedef enum _spawn_action_type
 	close_action,
 	dup2_action,
 	chdir_action,
-	fchdir_action
+	fchdir_action,
+	vm_alloc_action,
+	vm_write_action
 } spawn_action_type;
 
 struct spawn_action
@@ -75,6 +77,19 @@ struct spawn_action
 		{
 			int fd;
 		} fchdir_action;
+
+		struct
+		{
+			void *base;
+			size_t size;
+		} vm_alloc_action;
+
+		struct
+		{
+			void *parent_va;
+			void *child_va;
+			size_t size;
+		} vm_write_action;
 	};
 };
 
@@ -211,6 +226,8 @@ WLIBC_API int wlibc_spawn_file_actions_addclose(spawn_actions_t *actions, int fd
 WLIBC_API int wlibc_spawn_file_actions_adddup2(spawn_actions_t *actions, int oldfd, int newfd);
 WLIBC_API int wlibc_spawn_file_actions_addchdir(spawn_actions_t *restrict actions, const char *restrict path);
 WLIBC_API int wlibc_spawn_file_actions_addfchdir(spawn_actions_t *actions, int fd);
+WLIBC_API int wlibc_spawn_file_actions_addvm_alloc(spawn_actions_t *actions, void *base, size_t size);
+WLIBC_API int wlibc_spawn_file_actions_addvm_write(spawn_actions_t *actions, void *parent_va, void *child_va, size_t size);
 
 WLIBC_INLINE int posix_spawn_file_actions_init(posix_spawn_file_actions_t *actions)
 {
@@ -246,6 +263,16 @@ WLIBC_INLINE int posix_spawn_file_actions_addchdir(posix_spawn_file_actions_t *r
 WLIBC_INLINE int posix_spawn_file_actions_addfchdir(posix_spawn_file_actions_t *actions, int fd)
 {
 	return wlibc_spawn_file_actions_addfchdir(actions, fd);
+}
+
+WLIBC_INLINE int posix_spawn_file_actions_addvm_alloc(posix_spawn_file_actions_t *actions, void *base, size_t size)
+{
+	return wlibc_spawn_file_actions_addvm_alloc(actions, base, size);
+}
+
+WLIBC_INLINE int posix_spawn_file_actions_addvm_write(posix_spawn_file_actions_t *actions, void *parent_va, void *child_va, size_t size)
+{
+	return wlibc_spawn_file_actions_addvm_write(actions, parent_va, child_va, size);
 }
 
 #define posix_spawn_file_actions_addchdir_np  posix_spawn_file_actions_addchdir

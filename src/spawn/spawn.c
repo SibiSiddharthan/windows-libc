@@ -1286,6 +1286,8 @@ int wlibc_common_spawn(pid_t *restrict pid, const char *restrict path, const spa
 	int number_of_actions = 0;
 	int num_of_chdir_actions = 0;
 	int num_of_fchdir_actions = 0;
+	int num_vm_alloc_actions = 0;
+	int num_vm_write_actions = 0;
 
 	if (actions)
 	{
@@ -1306,14 +1308,28 @@ int wlibc_common_spawn(pid_t *restrict pid, const char *restrict path, const spa
 			break;
 		case chdir_action:
 			++num_of_chdir_actions;
+			break;
 		case fchdir_action:
 			++num_of_fchdir_actions;
+			break;
+		case vm_alloc_action:
+			++num_vm_alloc_actions;
+			break;
+		case vm_write_action:
+			++num_vm_write_actions;
 			break;
 		}
 
 		if (num_of_chdir_actions + num_of_fchdir_actions > 2)
 		{
 			// More than one directory change requested.
+			errno = EINVAL;
+			goto finish;
+		}
+
+		if (num_vm_write_actions > 1 && num_vm_alloc_actions == 0)
+		{
+			// Cannot write to child virtual address without allocating first.
 			errno = EINVAL;
 			goto finish;
 		}
@@ -1473,13 +1489,18 @@ int wlibc_common_spawn(pid_t *restrict pid, const char *restrict path, const spa
 			wcwd = u16_cwd->Buffer;
 		}
 		break;
+
+		case vm_alloc_action:
+		case vm_write_action:
+			// Nops for now, these will be handled after process creation.
+			break;
 		}
 	}
 
 	STARTUPINFOW sinfo = {0};
 	PROCESS_INFORMATION pinfo = {0};
 	DWORD priority_class = NORMAL_PRIORITY_CLASS;
-	DWORD process_flags = CREATE_UNICODE_ENVIRONMENT;
+	DWORD process_flags = CREATE_UNICODE_ENVIRONMENT | CREATE_SUSPENDED;
 
 	sinfo.cb = sizeof(STARTUPINFOW);
 
@@ -1582,9 +1603,56 @@ int wlibc_common_spawn(pid_t *restrict pid, const char *restrict path, const spa
 		}
 	}
 
+	if (num_vm_alloc_actions > 0 || num_vm_write_actions > 0)
+	{
+		for (int i = 0; i < number_of_actions; ++i)
+		{
+			if (actions->actions[i].type == vm_alloc_action)
+			{
+				ntstatus = NtAllocateVirtualMemoryEx(pinfo.hProcess, &(actions->actions[i].vm_alloc_action.base),
+													 &(actions->actions[i].vm_alloc_action.size), MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE,
+													 NULL, 0);
+
+				if (ntstatus != 0)
+				{
+					// Kill the child as well.
+					NtTerminateProcess(pinfo.hProcess, ntstatus);
+					map_ntstatus_to_errno(ntstatus);
+					goto finish;
+				}
+			}
+
+			if (actions->actions[i].type == vm_write_action)
+			{
+				ntstatus =
+					NtWriteVirtualMemory(pinfo.hProcess, actions->actions[i].vm_write_action.child_va,
+										 actions->actions[i].vm_write_action.parent_va, actions->actions[i].vm_write_action.size, NULL);
+
+				if (ntstatus != 0)
+				{
+					// Kill the child as well.
+					NtTerminateProcess(pinfo.hProcess, ntstatus);
+					map_ntstatus_to_errno(ntstatus);
+					goto finish;
+				}
+			}
+		}
+	}
+
 	// Add the child information to our process table.
 	if (add_child(pinfo.dwProcessId, pinfo.hProcess) != 0)
 	{
+		goto finish;
+	}
+
+	// Start the child
+	ntstatus = NtResumeProcess(pinfo.hProcess);
+
+	if (ntstatus != 0)
+	{
+		// Kill the child as well.
+		NtTerminateProcess(pinfo.hProcess, ntstatus);
+		map_ntstatus_to_errno(ntstatus);
 		goto finish;
 	}
 

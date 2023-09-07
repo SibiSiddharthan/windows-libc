@@ -165,3 +165,21 @@ int wlibc_spawn_file_actions_addfchdir(spawn_actions_t *actions, int fd)
 	actions->actions[actions->used++] = (struct spawn_action){.type = fchdir_action, .fchdir_action = {fd}};
 	return 0;
 }
+
+int wlibc_spawn_file_actions_addvm_alloc(spawn_actions_t *actions, void *base, size_t size)
+{
+	VALIDATE_ACTIONS(actions);
+	DOUBLE_ACTIONS_IF_NEEDED(actions);
+
+	actions->actions[actions->used++] = (struct spawn_action){.type = vm_alloc_action, .vm_alloc_action = {base, size}};
+	return 0;
+}
+
+int wlibc_spawn_file_actions_addvm_write(spawn_actions_t *actions, void *parent_va, void *child_va, size_t size)
+{
+	VALIDATE_ACTIONS(actions);
+	DOUBLE_ACTIONS_IF_NEEDED(actions);
+
+	actions->actions[actions->used++] = (struct spawn_action){.type = vm_write_action, .vm_write_action = {parent_va, child_va, size}};
+	return 0;
+}
