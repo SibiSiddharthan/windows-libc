@@ -34,24 +34,35 @@ void close_all_streams(void)
 {
 	LOCK_STDIO();
 
+	FILE *head = _wlibc_stdio_head;
+
+	// Flush all streams first.
 	while (_wlibc_stdio_head != NULL)
 	{
 		FILE *prev = _wlibc_stdio_head->prev;
 
-		// flush buffered data
+		// Flush buffered data.
 		common_fflush(_wlibc_stdio_head);
 
-		// free internal buffers if any
+		// Free internal buffers if any.
 		if (_wlibc_stdio_head->buffer != NULL && (_wlibc_stdio_head->buf_mode & _IOBUFFER_INTERNAL))
 		{
 			RtlFreeHeap(NtCurrentProcessHeap(), 0, _wlibc_stdio_head->buffer);
 		}
 		RtlDeleteCriticalSection(&(_wlibc_stdio_head->critical));
 
-		// close the underlying file descriptor
-		close_fd(_wlibc_stdio_head->fd);
-
 		RtlFreeHeap(NtCurrentProcessHeap(), 0, _wlibc_stdio_head);
+		_wlibc_stdio_head = prev;
+	}
+
+	_wlibc_stdio_head = head;
+
+	// Then close all associated file descriptors.
+	while (_wlibc_stdio_head != NULL)
+	{
+		FILE *prev = _wlibc_stdio_head->prev;
+
+		close_fd(_wlibc_stdio_head->fd);
 		_wlibc_stdio_head = prev;
 	}
 

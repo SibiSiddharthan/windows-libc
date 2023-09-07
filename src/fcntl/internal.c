@@ -279,22 +279,6 @@ void init_fd_table(void)
 	initialize_std_handles(hout, 1, console_subsystem, true);
 	initialize_std_handles(herr, 2, console_subsystem, true);
 
-	// Cygwin/MSYS gives the same handle as stdout and stderr, duplicate the handle.
-	if ((_wlibc_fd_table[1].handle != NULL && _wlibc_fd_table[2].handle != NULL) &&
-		_wlibc_fd_table[1].handle == _wlibc_fd_table[2].handle)
-	{
-		NTSTATUS status;
-		HANDLE new_stderr;
-
-		status = NtDuplicateObject(NtCurrentProcess(), _wlibc_fd_table[1].handle, NtCurrentProcess(), &new_stderr, 0, 0,
-								   DUPLICATE_SAME_ACCESS | DUPLICATE_SAME_ATTRIBUTES);
-		if (status == STATUS_SUCCESS)
-		{
-			// Don't do anything in case of failure
-			_wlibc_fd_table[2].handle = new_stderr;
-		}
-	}
-
 	// Initialize the remaining inherited file descriptors if any.
 	if (number_of_handles_inherited != 0)
 	{
