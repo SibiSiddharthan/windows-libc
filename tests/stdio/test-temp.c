@@ -40,7 +40,7 @@ int test_tmpnam()
 	ASSERT_EQ(status, -1);
 
 	strcpy(tempname, P_tmpdir);
-	strcat(tempname, "file");
+	strcat(tempname, "/file");
 
 	stream = fopen(tempname, "wD");
 	ASSERT_NOTNULL(stream);
@@ -58,6 +58,7 @@ int test_tempnam()
 {
 	int status;
 	char *filename = NULL;
+	char cwd[260] = {0};
 
 	filename = tempnam(NULL, NULL);
 	printf("Temporary file: %s\n", filename);
@@ -76,6 +77,17 @@ int test_tempnam()
 	free(filename);
 
 	filename = tempnam("dir", "prefix");
+	printf("Temporary file: %s\n", filename);
+
+	status = access(filename, F_OK);
+	ASSERT_EQ(status, -1);
+
+	free(filename);
+
+	getcwd(cwd, 260);
+	setenv("TMPDIR", cwd, 1);
+
+	filename = tempnam(NULL, "prefix");
 	printf("Temporary file: %s\n", filename);
 
 	status = access(filename, F_OK);

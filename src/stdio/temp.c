@@ -85,7 +85,7 @@ char *wlibc_tmpdir(void)
 			// The directory will be of the form "C:\Users\XXXXX\AppData\Local\Temp".
 			// In Windows the user name for the home directory will be truncated to 5 characters.(Don't ask me why.)
 			// As a result there will be plenty of space left in the buffer.
-			strcat(tmpdir, "\\Temp\\");
+			strcat(tmpdir, "\\Temp");
 			tmpdir_initialized = 1;
 		}
 	}
@@ -102,6 +102,7 @@ FILE *wlibc_tmpfile(void)
 
 	old_errno = errno;
 	strcpy(filename, wlibc_tmpdir());
+	strcat(filename, "\\");
 
 	do
 	{
@@ -140,6 +141,7 @@ char *wlibc_tempnam(const char *restrict dir, const char *restrict prefix)
 
 	   WLIBC directory preference
 	   1. dir argument if not NULL
+	   2. Environment variable 'TMPDIR'
 	   2. C:\Users\XXXXX\Appdata\Local\Temp (Same as P_tmpdir)
 	*/
 
@@ -152,32 +154,31 @@ char *wlibc_tempnam(const char *restrict dir, const char *restrict prefix)
 	{
 		// It does not matter whether dir is relative or absolute, as all the open functions will handle them appropriately.
 		dir_length = strlen(dir);
-		tempname = (char *)malloc(dir_length + prefix_length + 10); // NULL + slash if needed + random string
-		if (tempname == NULL)
-		{
-			errno = ENOMEM;
-			return NULL;
-		}
-
-		strcpy(tempname, dir);
-
-		if (dir[dir_length - 1] != '/' && dir[dir_length - 1] != '\\')
-		{
-			tempname[dir_length] = '/';
-			tempname[dir_length + 1] = '\0';
-		}
+	}
+	else if (getenv("TMPDIR") != NULL)
+	{
+		dir = getenv("TMPDIR");
+		dir_length = strlen(dir);
 	}
 	else
 	{
-		dir_length = strlen(wlibc_tmpdir());
-		tempname = (char *)malloc(dir_length + prefix_length + 10);
-		if (tempname == NULL)
-		{
-			errno = ENOMEM;
-			return NULL;
-		}
+		dir = wlibc_tmpdir();
+		dir_length = strlen(dir);
+	}
 
-		strcpy(tempname, wlibc_tmpdir());
+	tempname = (char *)malloc(dir_length + prefix_length + 10); // NULL + slash if needed + random string
+	if (tempname == NULL)
+	{
+		errno = ENOMEM;
+		return NULL;
+	}
+
+	strcpy(tempname, dir);
+
+	if (dir[dir_length - 1] != '/' && dir[dir_length - 1] != '\\')
+	{
+		tempname[dir_length] = '/';
+		tempname[dir_length + 1] = '\0';
 	}
 
 	if (prefix != NULL)
@@ -215,6 +216,7 @@ char *wlibc_tmpnam(const char *name)
 
 	old_errno = errno;
 	strcpy(tempname, wlibc_tmpdir());
+	strcat(tempname, "\\");
 
 	if (name == NULL)
 	{
@@ -238,7 +240,6 @@ char *wlibc_tmpnam(const char *name)
 	}
 	else
 	{
-		strcpy(tempname, wlibc_tmpdir());
 		strcat(tempname, name);
 
 		status = wlibc_common_access(AT_FDCWD, tempname, F_OK, AT_SYMLINK_NOFOLLOW);
