@@ -25,6 +25,12 @@ int wlibc_kill(pid_t pid, int sig)
 		return -1;
 	}
 
+	// If pid is us, then call raise directly.
+	if (pid == (pid_t)NtCurrentProcessId())
+	{
+		return wlibc_raise(sig);
+	}
+
 	process = open_process(pid, PROCESS_TERMINATE | PROCESS_SUSPEND_RESUME);
 	if (process == NULL)
 	{
