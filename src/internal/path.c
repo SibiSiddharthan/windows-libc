@@ -16,6 +16,9 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+// temp.c
+char *wlibc_tmpdir(void);
+
 static int path_components_size = 16;
 
 typedef struct
@@ -286,6 +289,7 @@ UNICODE_STRING *get_absolute_ntpath2(int dirfd, const char *path, handle_t *type
 
 	// User should free the allocated memory.
 	UNICODE_STRING *u16_ntpath = NULL;
+	USHORT required_size = 0;
 
 	nt_device *device = NULL;
 	// malloc'ed resources
@@ -296,6 +300,7 @@ UNICODE_STRING *get_absolute_ntpath2(int dirfd, const char *path, handle_t *type
 	bool path_is_absolute = false;
 	bool cygwin_path = false;
 	bool rootdir_has_trailing_slash = false;
+	bool temp_path_requested = false;
 
 	handle_t unused;
 
@@ -610,11 +615,17 @@ UNICODE_STRING *get_absolute_ntpath2(int dirfd, const char *path, handle_t *type
 	// Pipes
 	if (strnicmp(path, "\\\\.\\pipe\\", 9) == 0)
 	{
-		USHORT length = (USHORT)strlen(path) - 9;  // Length of the pipe name only.
-		USHORT required_size = 18 * sizeof(WCHAR); // '\Device\NamedPipe\'.
+		USHORT length = (USHORT)strlen(path) - 9; // Length of the pipe name only.
 
+		required_size = 18 * sizeof(WCHAR);            // '\Device\NamedPipe\'.
 		required_size += (length * sizeof(WCHAR)) + 2; // L'\0'.
+
 		u16_ntpath = (UNICODE_STRING *)RtlAllocateHeap(NtCurrentProcessHeap(), 0, sizeof(UNICODE_STRING) + required_size);
+		if (u16_ntpath == NULL)
+		{
+			errno = ENOMEM;
+			return NULL;
+		}
 
 		u16_ntpath->Buffer = (WCHAR *)((char *)u16_ntpath + sizeof(UNICODE_STRING));
 		u16_ntpath->Length = 0;
@@ -637,6 +648,7 @@ UNICODE_STRING *get_absolute_ntpath2(int dirfd, const char *path, handle_t *type
 
 		u16_ntpath->Length += 18 * sizeof(WCHAR);
 		u16_ntpath->Buffer[u16_ntpath->Length / sizeof(WCHAR)] = L'\0'; // Null terminate the path.
+		u16_ntpath->MaximumLength = u16_ntpath->Length + sizeof(WCHAR);
 
 		*type = PIPE_HANDLE;
 		return u16_ntpath;
@@ -644,6 +656,76 @@ UNICODE_STRING *get_absolute_ntpath2(int dirfd, const char *path, handle_t *type
 
 	// After this point the path will be either a FILE_HANDLE or DIRECTORY_HANDLE. Set it to FILE_HANDLE.
 	*type = FILE_HANDLE;
+
+	// Network Shares
+	if ((path[0] == '\\' && path[1] == '\\') || (path[0] == '/' && path[1] == '/'))
+	{
+		RtlInitUTF8String(&u8_path, path);
+		status = RtlUTF8StringToUnicodeString(&u16_path, &u8_path, TRUE);
+
+		if (status != STATUS_SUCCESS)
+		{
+			map_ntstatus_to_errno(status);
+			return NULL;
+		}
+
+		// Convert forward slashes to backward slashes
+		for (int i = 0; u16_path.Buffer[i] != L'\0'; ++i)
+		{
+			if (u16_path.Buffer[i] == L'/')
+			{
+				u16_path.Buffer[i] = L'\\';
+			}
+		}
+
+		required_size = (u8_path.Length + 12 - 1) * sizeof(WCHAR); // (+) "\Device\Mup\" (-) "\\" (+) '\0'
+		ntpath_buffer = (WCHAR *)RtlAllocateHeap(NtCurrentProcessHeap(), 0, required_size);
+
+		if (ntpath_buffer == NULL)
+		{
+			RtlFreeUnicodeString(&u16_path);
+			errno = ENOMEM;
+			return NULL;
+		}
+
+		memcpy(ntpath_buffer, L"\\Device\\Mup\\", 12 * sizeof(WCHAR));
+		memcpy((CHAR *)ntpath_buffer + 12 * sizeof(WCHAR), &(u16_path.Buffer[2]), u16_path.Length - sizeof(WCHAR));
+
+		RtlFreeUnicodeString(&u16_path);
+
+		goto path_coalesce;
+	}
+
+	// Temporary directory.
+	if (strnicmp(path, "/tmp", 4) == 0)
+	{
+		char *new_path;
+		char *tmp = wlibc_tmpdir();
+
+		if (tmp == NULL)
+		{
+			errno = ENOENT;
+			goto finish;
+		}
+
+		size_t path_length = strlen(path);
+		size_t tmp_length = strlen(tmp);
+
+		required_size = (USHORT)(tmp_length + path_length - 4 + 1);
+		new_path = (char *)RtlAllocateHeap(NtCurrentProcessHeap(), 0, required_size);
+
+		if (new_path == NULL)
+		{
+			errno = ENOMEM;
+			return NULL;
+		}
+
+		memcpy(new_path, tmp, tmp_length);
+		memcpy(new_path + tmp_length, path + 4, path_length - 3);
+
+		path = new_path;
+		temp_path_requested = true;
+	}
 
 	if (IS_ABSOLUTE_PATH(path))
 	{
@@ -744,7 +826,7 @@ UNICODE_STRING *get_absolute_ntpath2(int dirfd, const char *path, handle_t *type
 		}
 	}
 
-	USHORT required_size = u16_path.MaximumLength; // Includes L'\0'
+	required_size = u16_path.MaximumLength; // Includes L'\0'
 
 	if (!path_is_absolute)
 	{
@@ -801,6 +883,7 @@ UNICODE_STRING *get_absolute_ntpath2(int dirfd, const char *path, handle_t *type
 
 	RtlFreeUnicodeString(&u16_path);
 
+path_coalesce:
 	/*
 	   This works like a stack.
 	   When the component is other than '..' or '.' we push the contents onto the stack.
@@ -897,6 +980,11 @@ finish:
 	RtlFreeHeap(NtCurrentProcessHeap(), 0, rootdir_buffer);
 	RtlFreeHeap(NtCurrentProcessHeap(), 0, ntpath_buffer);
 
+	if (temp_path_requested)
+	{
+		RtlFreeHeap(NtCurrentProcessHeap(), 0, (void *)path);
+	}
+
 	return u16_ntpath;
 }
 
@@ -938,6 +1026,88 @@ UNICODE_STRING *ntpath_to_dospath(const UNICODE_STRING *ntpath)
 	char label = '\0';
 	int second_slash_pos = 0;
 	bool second_slash_found = false;
+
+	// Special devices
+	if (memcmp(ntpath->Buffer, L"\\Device\\Null", 13 * sizeof(WCHAR)) == 0)
+	{
+		dospath = (UNICODE_STRING *)RtlAllocateHeap(NtCurrentProcessHeap(), 0, sizeof(UNICODE_STRING));
+		if (dospath == NULL)
+		{
+			errno = ENOMEM;
+			return NULL;
+		}
+
+		dospath->Buffer = L"NUL";
+		dospath->Length = 3 * sizeof(WCHAR);
+		dospath->MaximumLength = dospath->Length;
+
+		return dospath;
+	}
+	if (memcmp(ntpath->Buffer, L"\\Device\\ConDrv", 14 * sizeof(WCHAR)) == 0)
+	{
+		dospath = (UNICODE_STRING *)RtlAllocateHeap(NtCurrentProcessHeap(), 0, sizeof(UNICODE_STRING));
+		if (dospath == NULL)
+		{
+			errno = ENOMEM;
+			return NULL;
+		}
+
+		dospath->Buffer = L"CON";
+		dospath->Length = 3 * sizeof(WCHAR);
+		dospath->MaximumLength = dospath->Length;
+
+		return dospath;
+	}
+
+	// Pipes
+	if (memcmp(ntpath->Buffer, L"\\Device\\NamedPipe", 17 * sizeof(WCHAR)) == 0)
+	{
+		dospath = (UNICODE_STRING *)RtlAllocateHeap(NtCurrentProcessHeap(), 0,
+													sizeof(UNICODE_STRING) + ntpath->Length - ((17 - 9) * sizeof(WCHAR)));
+		if (dospath == NULL)
+		{
+			errno = ENOMEM;
+			return NULL;
+		}
+
+		dospath->Buffer = (WCHAR *)((CHAR *)dospath + sizeof(UNICODE_STRING));
+
+		memcpy(dospath->Buffer, L"\\\\.\\pipe", 8 * sizeof(WCHAR));
+		dospath->Length = 8 * sizeof(WCHAR);
+
+		memcpy((CHAR *)dospath->Buffer + dospath->Length, (CHAR *)ntpath->Buffer + (17 * sizeof(WCHAR)),
+			   ntpath->Length - (16 * sizeof(WCHAR)));
+		dospath->Length += ntpath->Length - (17 * sizeof(WCHAR)); // Exclude L'\0'
+
+		dospath->MaximumLength = dospath->Length + sizeof(WCHAR);
+
+		return dospath;
+	}
+
+	// Network shares
+	if (memcmp(ntpath->Buffer, L"\\Device\\Mup", 11 * sizeof(WCHAR)) == 0)
+	{
+		dospath = (UNICODE_STRING *)RtlAllocateHeap(NtCurrentProcessHeap(), 0,
+													sizeof(UNICODE_STRING) + ntpath->Length - ((11 - 2) * sizeof(WCHAR)));
+		if (dospath == NULL)
+		{
+			errno = ENOMEM;
+			return NULL;
+		}
+
+		dospath->Buffer = (WCHAR *)((CHAR *)dospath + sizeof(UNICODE_STRING));
+
+		memcpy(dospath->Buffer, L"\\", sizeof(WCHAR));
+		dospath->Length = sizeof(WCHAR);
+
+		memcpy((CHAR *)dospath->Buffer + dospath->Length, (CHAR *)ntpath->Buffer + (11 * sizeof(WCHAR)),
+			   ntpath->Length - (10 * sizeof(WCHAR)));
+		dospath->Length += ntpath->Length - (11 * sizeof(WCHAR)); // Exclude L'\0'
+
+		dospath->MaximumLength = dospath->Length + sizeof(WCHAR);
+
+		return dospath;
+	}
 
 	// Perform a simple 'atoi' (UTF16-LE).
 	// Find the second slash as well if present.

@@ -51,7 +51,6 @@ void close_all_streams(void)
 		}
 		RtlDeleteCriticalSection(&(_wlibc_stdio_head->critical));
 
-		RtlFreeHeap(NtCurrentProcessHeap(), 0, _wlibc_stdio_head);
 		_wlibc_stdio_head = prev;
 	}
 
@@ -63,6 +62,8 @@ void close_all_streams(void)
 		FILE *prev = _wlibc_stdio_head->prev;
 
 		close_fd(_wlibc_stdio_head->fd);
+		RtlFreeHeap(NtCurrentProcessHeap(), 0, _wlibc_stdio_head);
+
 		_wlibc_stdio_head = prev;
 	}
 

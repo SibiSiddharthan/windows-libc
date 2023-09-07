@@ -482,6 +482,22 @@ int test_root()
 	return 0;
 }
 
+int test_tmp()
+{
+	UNICODE_STRING *ntpath, *dospath;
+
+	ntpath = get_absolute_ntpath(AT_FDCWD, "/tmp/file");
+	dospath = get_absolute_dospath(AT_FDCWD, "/tmp/file");
+
+	printf("Temporary File (NT)  : %ls\n", ntpath->Buffer);
+	printf("Temporary File (DOS) : %ls\n", dospath->Buffer);
+
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, ntpath);
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, dospath);
+
+	return 0;
+}
+
 int test_pipe()
 {
 	UNICODE_STRING *ntpath;
@@ -493,7 +509,7 @@ int test_pipe()
 	return 0;
 }
 
-int test_fd()
+int test_dev_fd()
 {
 	int fd;
 	char str[64] = {0};
@@ -512,6 +528,52 @@ int test_fd()
 	RtlFreeHeap(NtCurrentProcessHeap(), 0, ntpath_1);
 	RtlFreeHeap(NtCurrentProcessHeap(), 0, ntpath_2);
 	close(fd);
+
+	return 0;
+}
+
+int test_fd_dospath()
+{
+	int fd;
+	int pipefd[2];
+	UNICODE_STRING *dospath;
+
+	// Devices
+	fd = open("/dev/null", O_RDONLY);
+	ASSERT_NOTEQ(fd, -1);
+
+	dospath = get_fd_dospath(fd);
+	ASSERT_WSTREQ(dospath->Buffer, L"NUL");
+
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, dospath);
+	close(fd);
+
+	fd = open("/dev/tty", O_RDONLY);
+	ASSERT_NOTEQ(fd, -1);
+
+	dospath = get_fd_dospath(fd);
+	ASSERT_WSTREQ(dospath->Buffer, L"CON");
+
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, dospath);
+	close(fd);
+
+	// Named pipe
+	named_pipe("\\\\.\\pipe\\mypipe", pipefd);
+	ASSERT_NOTEQ(pipefd[0], -1);
+	ASSERT_NOTEQ(pipefd[1], -1);
+
+	dospath = get_fd_dospath(pipefd[0]);
+	ASSERT_WSTREQ(dospath->Buffer, L"\\\\.\\pipe\\mypipe");
+
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, dospath);
+
+	dospath = get_fd_dospath(pipefd[1]);
+	ASSERT_WSTREQ(dospath->Buffer, L"\\\\.\\pipe\\mypipe");
+
+	RtlFreeHeap(NtCurrentProcessHeap(), 0, dospath);
+
+	close(pipefd[0]);
+	close(pipefd[1]);
 
 	return 0;
 }
@@ -560,8 +622,10 @@ int main()
 	TEST(test_absolute_cygwin_path());
 
 	TEST(test_root());
+	TEST(test_tmp());
 	TEST(test_pipe());
-	TEST(test_fd());
+	TEST(test_dev_fd());
+	TEST(test_fd_dospath());
 
 	rmdir("t-path");
 
