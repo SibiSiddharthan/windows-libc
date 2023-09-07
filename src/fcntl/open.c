@@ -284,19 +284,16 @@ HANDLE just_open(int dirfd, const char *path, ACCESS_MASK access, ULONG options)
 	return handle;
 }
 
-int do_open(int dirfd, const char *name, int oflags, mode_t perm)
+HANDLE do_os_open(int dirfd, const char *name, int oflags, mode_t perm, handle_t *type)
 {
-	HANDLE handle;
+	HANDLE handle = NULL;
 	OBJECT_ATTRIBUTES object;
-	handle_t type;
 	ACCESS_MASK access_rights = determine_access_rights(oflags);
 	ULONG attributes = 0;
 	ULONG disposition = determine_create_dispostion(oflags);
 	ULONG options = determine_create_options(oflags);
 	PSECURITY_DESCRIPTOR security_descriptor = NULL;
-	UNICODE_STRING *u16_ntpath = get_absolute_ntpath2(dirfd, name, &type);
-
-	int fd = -1;
+	UNICODE_STRING *u16_ntpath = get_absolute_ntpath2(dirfd, name, type);
 
 	if (u16_ntpath == NULL)
 	{
@@ -361,14 +358,14 @@ int do_open(int dirfd, const char *name, int oflags, mode_t perm)
 		object.Attributes &= ~OBJ_INHERIT;
 	}
 
-	if (type == NULL_HANDLE) // Include the NULL in comparison as well.
+	if (*type == NULL_HANDLE) // Include the NULL in comparison as well.
 	{
 		attributes = 0;
 		options = FILE_SYNCHRONOUS_IO_NONALERT;
 	}
 
 	// Opening console requires these.
-	if (type == CONSOLE_HANDLE) // skip "\Device\"
+	if (*type == CONSOLE_HANDLE) // skip "\Device\"
 	{
 		attributes = 0;
 		options = FILE_SYNCHRONOUS_IO_NONALERT;
@@ -392,7 +389,7 @@ int do_open(int dirfd, const char *name, int oflags, mode_t perm)
 
 	if (handle != NULL)
 	{
-		if (type == FILE_HANDLE) // Type set by `get_absolute_ntpath2` when file to be opened is on disk.
+		if (*type == FILE_HANDLE) // Type set by `get_absolute_ntpath2` when file to be opened is on disk.
 		{
 			// Handle belongs to a disk file, find out whether it is a file or directory
 			NTSTATUS status;
@@ -406,6 +403,7 @@ int do_open(int dirfd, const char *name, int oflags, mode_t perm)
 				// This should not happen at all.
 				map_ntstatus_to_errno(status);
 				NtClose(handle);
+				handle = NULL;
 				goto finish;
 			}
 
@@ -413,6 +411,7 @@ int do_open(int dirfd, const char *name, int oflags, mode_t perm)
 			{
 				// Close the handle if file is a symbolic link but only O_NOFOLLOW is specified. (Specify O_PATH also)
 				NtClose(handle);
+				handle = NULL;
 				errno = ELOOP;
 				goto finish;
 			}
@@ -421,13 +420,14 @@ int do_open(int dirfd, const char *name, int oflags, mode_t perm)
 			{
 				// Close the handle if we request write access to a directory
 				NtClose(handle);
+				handle = NULL;
 				errno = EISDIR;
 				goto finish;
 			}
 
 			if (tag_info.FileAttributes & FILE_ATTRIBUTE_DIRECTORY)
 			{
-				type = DIRECTORY_HANDLE;
+				*type = DIRECTORY_HANDLE;
 			}
 
 			if (oflags & O_NOATIME && (oflags & O_PATH) == 0)
@@ -450,13 +450,25 @@ int do_open(int dirfd, const char *name, int oflags, mode_t perm)
 				}
 			}
 		}
-
-		fd = register_to_fd_table(handle, type, oflags);
 	}
 
 finish:
 	// u16_ntpath is malloc'ed, so free it.
 	RtlFreeHeap(NtCurrentProcessHeap(), 0, u16_ntpath);
+	return handle;
+}
+
+int do_open(int dirfd, const char *name, int oflags, mode_t perm)
+{
+	int fd = -1;
+	handle_t type = INVALID_HANDLE;
+	HANDLE handle = do_os_open(dirfd, name, oflags, perm, &type);
+
+	if(handle != NULL)
+	{	
+		fd = register_to_fd_table(handle, type, oflags);
+	}
+
 	return fd;
 }
 

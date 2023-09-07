@@ -18,7 +18,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
-int do_open(int dirfd, const char *name, int oflags, mode_t perm);
+HANDLE do_os_open(int dirfd, const char *name, int oflags, mode_t perm, handle_t *type);
 int adjust_priority_of_process(HANDLE process, KPRIORITY new_priority);
 
 typedef struct _inherit_fdinfo
@@ -1351,40 +1351,24 @@ int wlibc_common_spawn(pid_t *restrict pid, const char *restrict path, const spa
 
 		case open_action:
 		{
-			int fd;
-			fdinfo info;
+			HANDLE handle;
+			handle_t type;
 
-			fd = do_open(AT_FDCWD, actions->actions[i].open_action.path, actions->actions[i].open_action.oflag,
-						 actions->actions[i].open_action.mode);
-			if (fd < 0)
+			handle = do_os_open(AT_FDCWD, actions->actions[i].open_action.path, actions->actions[i].open_action.oflag,
+								actions->actions[i].open_action.mode, &type);
+			if (handle == NULL)
 			{
-				// errno wil be set by `do_open`.
-				goto finish;
-			}
-
-			get_fdinfo(fd, &info);
-
-			int flags = info.flags;
-			handle_t type = info.type;
-			HANDLE handle = info.handle;
-			HANDLE nhandle;
-			// Duplicate this fd and make sure it is inheritable.
-			ntstatus = NtDuplicateObject(NtCurrentProcess(), handle, NtCurrentProcess(), &nhandle, 0, OBJ_CASE_INSENSITIVE | OBJ_INHERIT,
-										 DUPLICATE_SAME_ACCESS);
-			if (ntstatus != STATUS_SUCCESS)
-			{
-				map_ntstatus_to_errno(ntstatus);
+				// errno wil be set by `do_os_open`.
 				goto finish;
 			}
 
 			int nfd = actions->actions[i].open_action.fd;
+			int flags = actions->actions[i].open_action.oflag;
+
 			// Populate the inherit info.
-			inherit_info.fdinfo[nfd].handle = nhandle;
+			inherit_info.fdinfo[nfd].handle = handle;
 			inherit_info.fdinfo[nfd].flags = flags;
 			inherit_info.fdinfo[nfd].type = type;
-
-			// Internal close function should not fail.
-			close_fd(fd);
 		}
 		break;
 
