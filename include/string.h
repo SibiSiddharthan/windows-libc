@@ -135,6 +135,16 @@ WLIBC_INLINE int stricoll(char const *str1, char const *str2)
 	return _stricoll(str1, str2);
 }
 
+WLIBC_INLINE char *strchrnul(const char *str, int ch)
+{
+	char *ptr = strchr(str, ch);
+	if (ptr == NULL)
+	{
+		return (char *)str + strlen(str);
+	}
+	return ptr;
+}
+
 WLIBC_INLINE int mbslen(unsigned char const *str)
 {
 	return (int)_mbslen(str);
@@ -148,6 +158,11 @@ WLIBC_INLINE char *mbschr(unsigned char const *str, unsigned int ch)
 WLIBC_INLINE char *mbsstr(unsigned char const *str, unsigned char const *sub)
 {
 	return (char *)_mbsstr(str, sub);
+}
+
+WLIBC_INLINE int mbscmp(unsigned char const *str1, unsigned char const *str2)
+{
+	return _mbscmp(str1, str2);
 }
 
 WLIBC_INLINE int mbscasecmp(unsigned char const *str1, unsigned char const *str2)

@@ -610,8 +610,8 @@ UNICODE_STRING *get_absolute_ntpath2(int dirfd, const char *path, handle_t *type
 	// Pipes
 	if (strnicmp(path, "\\\\.\\pipe\\", 9) == 0)
 	{
-		USHORT length = (USHORT)strlen(path) - 9;              // Length of the pipe name only.
-		USHORT required_size = 18 * sizeof(WCHAR);     // '\Device\NamedPipe\'.
+		USHORT length = (USHORT)strlen(path) - 9;  // Length of the pipe name only.
+		USHORT required_size = 18 * sizeof(WCHAR); // '\Device\NamedPipe\'.
 
 		required_size += (length * sizeof(WCHAR)) + 2; // L'\0'.
 		u16_ntpath = (UNICODE_STRING *)RtlAllocateHeap(NtCurrentProcessHeap(), 0, sizeof(UNICODE_STRING) + required_size);
@@ -750,9 +750,9 @@ UNICODE_STRING *get_absolute_ntpath2(int dirfd, const char *path, handle_t *type
 	{
 		required_size += u16_rootdir.Length + 2; // L'\'
 	}
-	else                                         // absolute path
+	else // absolute path
 	{
-		required_size += 54;                     // "\\Device\\HarddiskVolumeXXXX\\"
+		required_size += 54; // "\\Device\\HarddiskVolumeXXXX\\"
 	}
 
 	ntpath_buffer = (WCHAR *)RtlAllocateHeap(NtCurrentProcessHeap(), 0, required_size);
@@ -814,7 +814,7 @@ UNICODE_STRING *get_absolute_ntpath2(int dirfd, const char *path, handle_t *type
 	{
 		if (ntpath_buffer[i] == L'\\' || ntpath_buffer[i] == L'\0')
 		{
-			if (i - start > 2)                                                                      // not '.' or '..'
+			if (i - start > 2) // not '.' or '..'
 			{
 				void *temp = add_component(components, &index, start, (i - start) * sizeof(WCHAR)); // push stack
 				if (temp == NULL)

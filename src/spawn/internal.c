@@ -18,7 +18,7 @@ void process_init(void)
 {
 	RtlInitializeSRWLock(&_wlibc_process_table_srwlock);
 
-	_wlibc_process_table = (processinfo *)RtlAllocateHeap(NtCurrentProcessHeap(), 0, sizeof(processinfo) * 4);
+	_wlibc_process_table = (processinfo *)RtlAllocateHeap(NtCurrentProcessHeap(), HEAP_ZERO_MEMORY, sizeof(processinfo) * 4);
 
 	// Exit the process if this initialization routine fails.
 	if (_wlibc_process_table == NULL)
@@ -28,9 +28,6 @@ void process_init(void)
 
 	_wlibc_process_table_size = 4;
 	_wlibc_child_process_count = 0;
-
-	// Initialize the table.
-	memset(_wlibc_process_table, 0, sizeof(processinfo) * _wlibc_process_table_size);
 }
 
 void process_cleanup(void)
