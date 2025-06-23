@@ -12,48 +12,9 @@
 #include <errno.h>
 #include <stdlib.h>
 
-int wlibc_raise(int sig)
+static void execute_signal_handler(const siginfo *sinfo, int sig)
 {
-	threadinfo *tinfo = (threadinfo *)TlsGetValue(_wlibc_threadinfo_index);
-	sigset_t blocked_signals = tinfo->sigmask;
-	siginfo sinfo;
-	sigset_t oldmask = tinfo->sigmask;
-
-	VALIDATE_SIGNAL(sig);
-
-	// If the signal is blocked ignore it.
-	if (blocked_signals & (1u << sig))
-	{
-		tinfo->pending |= (1u << sig);
-		return 0;
-	}
-
-	get_siginfo(sig, &sinfo);
-
-	// If the action for the specified signal is set to SIG_IGN just return.
-	if (sinfo.action == SIG_IGN)
-	{
-		return 0;
-	}
-
-	// Block signals according to sa_mask given during setup of this signal.
-	tinfo->sigmask |= sinfo.mask;
-
-	// Block this signal as well if SA_NODEFER is not given.
-	if ((sinfo.flags & SA_NODEFER) == 0)
-	{
-		tinfo->sigmask |= 1u << sig;
-	}
-
-	// Restore the default signal handler.
-	if (sinfo.flags & SA_RESETHAND)
-	{
-		EXCLUSIVE_LOCK_SIGNAL_TABLE();
-		_wlibc_signal_table[sig].action = SIG_DFL;
-		EXCLUSIVE_UNLOCK_SIGNAL_TABLE();
-	}
-
-	if (sinfo.action == SIG_DFL)
+	if (sinfo->action == SIG_DFL)
 	{
 		switch (sig)
 		{
@@ -111,8 +72,72 @@ int wlibc_raise(int sig)
 	else
 	{
 		// Execute the action.
-		sinfo.action(sig);
+		sinfo->action(sig);
 	}
+}
+
+int wlibc_raise(int sig)
+{
+	threadinfo *tinfo;
+	siginfo sinfo;
+
+	sigset_t blocked_signals;
+	sigset_t oldmask;
+
+	VALIDATE_SIGNAL(sig);
+
+	tinfo = (threadinfo *)TlsGetValue(_wlibc_threadinfo_index);
+	get_siginfo(sig, &sinfo);
+
+	// For threads injected into the process. Console control handlers do this.
+	// Directly execute the signal handler and return.
+	if (tinfo == NULL)
+	{
+		if (sinfo.action == SIG_IGN)
+		{
+			return 0;
+		}
+
+		execute_signal_handler(&sinfo, sig);
+
+		return 0;
+	}
+
+	blocked_signals = tinfo->sigmask;
+	oldmask = tinfo->sigmask;
+
+	// If the signal is blocked ignore it.
+	if (blocked_signals & (1u << sig))
+	{
+		tinfo->pending |= (1u << sig);
+		return 0;
+	}
+
+	// If the action for the specified signal is set to SIG_IGN just return.
+	if (sinfo.action == SIG_IGN)
+	{
+		return 0;
+	}
+
+	// Block signals according to sa_mask given during setup of this signal.
+	tinfo->sigmask |= sinfo.mask;
+
+	// Block this signal as well if SA_NODEFER is not given.
+	if ((sinfo.flags & SA_NODEFER) == 0)
+	{
+		tinfo->sigmask |= 1u << sig;
+	}
+
+	// Restore the default signal handler.
+	if (sinfo.flags & SA_RESETHAND)
+	{
+		EXCLUSIVE_LOCK_SIGNAL_TABLE();
+		_wlibc_signal_table[sig].action = SIG_DFL;
+		EXCLUSIVE_UNLOCK_SIGNAL_TABLE();
+	}
+
+	// Execute the handler.
+	execute_signal_handler(&sinfo, sig);
 
 	// Reset the signal mask of the thread.
 	tinfo->sigmask = oldmask;
