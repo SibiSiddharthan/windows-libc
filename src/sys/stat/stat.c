@@ -253,6 +253,7 @@ int do_stat(HANDLE handle, struct stat *restrict statbuf)
 				else
 				{
 					// Don't return just set errno.
+					RtlFreeHeap(NtCurrentProcessHeap(), 0, reparse_buffer);
 					map_ntstatus_to_errno(status);
 				}
 			}

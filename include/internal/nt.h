@@ -814,68 +814,6 @@ typedef struct _FILE_MODE_INFORMATION
 	ULONG Mode;
 } FILE_MODE_INFORMATION, *PFILE_MODE_INFORMATION;
 
-//================ FileStatInformation ========================================
-
-typedef struct _FILE_STAT_INFORMATION
-{
-	LARGE_INTEGER FileId;
-	LARGE_INTEGER CreationTime;
-	LARGE_INTEGER LastAccessTime;
-	LARGE_INTEGER LastWriteTime;
-	LARGE_INTEGER ChangeTime;
-	LARGE_INTEGER AllocationSize;
-	LARGE_INTEGER EndOfFile;
-	ULONG FileAttributes;
-	ULONG ReparseTag;
-	ULONG NumberOfLinks;
-	ACCESS_MASK EffectiveAccess;
-} FILE_STAT_INFORMATION, *PFILE_STAT_INFORMATION;
-
-//
-// LxFlags for FILE_STAT_LX_INFORMATION that specify which metadata fields
-// were present for the file.
-//
-
-#define LX_FILE_METADATA_HAS_UID       0x1
-#define LX_FILE_METADATA_HAS_GID       0x2
-#define LX_FILE_METADATA_HAS_MODE      0x4
-#define LX_FILE_METADATA_HAS_DEVICE_ID 0x8
-#define LX_FILE_CASE_SENSITIVE_DIR     0x10
-
-typedef struct _FILE_STAT_LX_INFORMATION
-{
-	LARGE_INTEGER FileId;
-	LARGE_INTEGER CreationTime;
-	LARGE_INTEGER LastAccessTime;
-	LARGE_INTEGER LastWriteTime;
-	LARGE_INTEGER ChangeTime;
-	LARGE_INTEGER AllocationSize;
-	LARGE_INTEGER EndOfFile;
-	ULONG FileAttributes;
-	ULONG ReparseTag;
-	ULONG NumberOfLinks;
-	ACCESS_MASK EffectiveAccess;
-	ULONG LxFlags;
-	ULONG LxUid;
-	ULONG LxGid;
-	ULONG LxMode;
-	ULONG LxDeviceIdMajor;
-	ULONG LxDeviceIdMinor;
-} FILE_STAT_LX_INFORMATION, *PFILE_STAT_LX_INFORMATION;
-
-//
-// Flag definitions for Flags in FILE_CASE_SENSITIVE_INFO.
-//
-
-#define FILE_CS_FLAG_CASE_SENSITIVE_DIR 0x00000001
-
-// end_winnt
-
-typedef struct _FILE_CASE_SENSITIVE_INFORMATION
-{
-	ULONG Flags;
-} FILE_CASE_SENSITIVE_INFORMATION, *PFILE_CASE_SENSITIVE_INFORMATION;
-
 //================ FileAllocationInformation ==================================
 
 typedef struct _FILE_ALLOCATION_INFORMATION
