@@ -1391,13 +1391,10 @@ typedef struct _LDR_DATA_TABLE_ENTRY
 	UNICODE_STRING FullDllName;
 	BYTE Reserved4[8];
 	PVOID Reserved5[3];
-#pragma warning(push)
-#pragma warning(disable : 4201) // we'll always use the Microsoft compiler
 	union {
 		ULONG CheckSum;
 		PVOID Reserved6;
 	} DUMMYUNIONNAME;
-#pragma warning(pop)
 	ULONG TimeDateStamp;
 } LDR_DATA_TABLE_ENTRY, *PLDR_DATA_TABLE_ENTRY;
 
