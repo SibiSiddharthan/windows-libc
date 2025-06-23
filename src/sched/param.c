@@ -43,7 +43,7 @@ int adjust_priority_of_process(HANDLE process, KPRIORITY new_priority)
 	KPRIORITY new_base_priority;
 	KPRIORITY priority_of_class;
 	PROCESS_BASIC_INFORMATION basic_info;
-	PROCESS_PRIORITY_CLASS priority_class;
+	__declspec(align(4)) PROCESS_PRIORITY_CLASS priority_class;
 
 	status = NtQueryInformationProcess(process, ProcessPriorityClass, &priority_class, sizeof(PROCESS_PRIORITY_CLASS), NULL);
 	if (status != STATUS_SUCCESS)
@@ -125,7 +125,7 @@ int wlibc_sched_getparam(pid_t pid, struct sched_param *param)
 	NTSTATUS status;
 	HANDLE handle;
 	PROCESS_BASIC_INFORMATION basic_info;
-	PROCESS_PRIORITY_CLASS priority_class;
+	__declspec(align(4)) PROCESS_PRIORITY_CLASS priority_class;
 
 	if (param == NULL)
 	{

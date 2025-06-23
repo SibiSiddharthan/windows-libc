@@ -19,8 +19,7 @@ int wlibc_sched_getscheduler(pid_t pid)
 	int result = -1;
 	NTSTATUS status;
 	HANDLE handle;
-	PROCESS_PRIORITY_CLASS priority_class;
-	priority_class.PriorityClass = PROCESS_PRIORITY_CLASS_UNKNOWN;
+	__declspec(align(4)) PROCESS_PRIORITY_CLASS priority_class;
 
 	handle = open_process(pid, PROCESS_QUERY_INFORMATION);
 	if (handle == 0)
@@ -51,7 +50,7 @@ int wlibc_sched_setscheduler(pid_t pid, int policy, const struct sched_param *pa
 	int result = -1;
 	NTSTATUS status;
 	HANDLE handle;
-	PROCESS_PRIORITY_CLASS priority_class;
+	__declspec(align(4)) PROCESS_PRIORITY_CLASS priority_class;
 
 	// To set a process with realtime priority we need 'SeIncreaseBasePriorityPrivilege'.
 	// This is will not be supported here.
