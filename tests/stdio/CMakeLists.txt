@@ -15,7 +15,9 @@ freopen
 getdelim
 internal
 pipe
+printf
 rename
+scanf
 stream
 temp
 ungetc)
