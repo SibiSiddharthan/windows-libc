@@ -137,4 +137,100 @@
 	}                                                                                                                                   \
 	return __wlibc_test_result == 0 ? 0 : 1;
 
+#include <internal/minmax.h>
+#include <stdint.h>
+#include <math.h>
+#include <float.h>
+
+static inline int check_value_string(const char *actual, const char *expected, const char *expression, const char *function, int line)
+{
+	if (strcmp(actual, expected) != 0)
+	{
+		printf("Value does not match in %s:%d.\n(%s) -> (%s == %s)\n", function, line, expression, actual, expected);
+		return 1;
+	}
+
+	return 0;
+}
+
+static inline int check_result(int actual, int expected, const char *expression, const char *function, int line)
+{
+	if (actual != expected)
+	{
+		printf("Value does not match in %s:%d.\n(%s) -> (%u == %u)\n", function, line, expression, actual, expected);
+		return 1;
+	}
+
+	return 0;
+}
+
+static inline int check_value_signed(intmax_t actual, intmax_t expected, const char *expression, const char *function, int line)
+{
+	if (actual != expected)
+	{
+		printf("Value does not match in %s:%d.\n(%s) -> (%jd == %jd)\n", function, line, expression, actual, expected);
+		return 1;
+	}
+
+	return 0;
+}
+
+static inline int check_value_unsigned(uintmax_t actual, uintmax_t expected, const char *expression, const char *function, int line)
+{
+	if (actual != expected)
+	{
+		printf("Value does not match in %s:%d.\n(%s) -> (%ju == %ju)\n", function, line, expression, actual, expected);
+		return 1;
+	}
+
+	return 0;
+}
+
+static inline int check_value_float(float actual, float expected, const char *expression, const char *function, int line)
+{
+	if ((MAX(actual, expected) - MIN(actual, expected)) > FLT_EPSILON)
+	{
+		if (fabs(1 - (MIN(actual, expected) / MAX(actual, expected))) > FLT_EPSILON)
+		{
+			printf("Value does not match in %s:%d.\n(%s) -> (%.20f == %.20f)\n", function, line, expression, actual, expected);
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
+static inline int check_value_double(double actual, double expected, const char *expression, const char *function, int line)
+{
+	if ((MAX(actual, expected) - MIN(actual, expected)) > DBL_EPSILON)
+	{
+		if (fabs(1 - (MIN(actual, expected) / MAX(actual, expected))) > DBL_EPSILON)
+		{
+			printf("Value does not match in %s:%d.\n(%s) -> (%.20f == %.20f)\n", function, line, expression, actual, expected);
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
+static inline int check_value_wstring(void *actual, void *expected, size_t size, const char *expression, const char *function, int line)
+{
+	if (memcmp(actual, expected, size) != 0)
+	{
+		printf("Value does not match in %s:%d.\n(%s)\n", function, line, expression);
+		return 1;
+	}
+
+	return 0;
+}
+
+#define CHECK_STRING(ACTUAL, EXPECT)  check_value_string(ACTUAL, EXPECT, #ACTUAL " == " #EXPECT, __FUNCTION__, __LINE__)
+#define CHECK_WSTRING(ACTUAL, EXPECT) check_value_wstring(ACTUAL, EXPECT, sizeof(EXPECT), #ACTUAL " == " #EXPECT, __FUNCTION__, __LINE__)
+#define CHECK_RESULT(ACTUAL, EXPECT)  check_result(ACTUAL, EXPECT, #ACTUAL " == " #EXPECT, __FUNCTION__, __LINE__)
+#define CHECK_UVALUE(ACTUAL, EXPECT)  check_value_unsigned(ACTUAL, EXPECT, #ACTUAL " == " #EXPECT, __FUNCTION__, __LINE__)
+#define CHECK_IVALUE(ACTUAL, EXPECT)  check_value_signed(ACTUAL, EXPECT, #ACTUAL " == " #EXPECT, __FUNCTION__, __LINE__)
+#define CHECK_FLOAT32(ACTUAL, EXPECT) check_value_float(ACTUAL, EXPECT, #ACTUAL " == " #EXPECT, __FUNCTION__, __LINE__)
+#define CHECK_FLOAT64(ACTUAL, EXPECT) check_value_double(ACTUAL, EXPECT, #ACTUAL " == " #EXPECT, __FUNCTION__, __LINE__)
+
 #endif
