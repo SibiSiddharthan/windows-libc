@@ -114,3 +114,5 @@ static inline size_t writen(buffer_t *buffer, void *in, size_t size)
 }
 
 size_t memory_buffer_write(buffer_t *buffer, size_t size);
+
+#endif
