@@ -17,6 +17,11 @@
 #pragma warning(disable : 4475) // format
 #pragma warning(disable : 4476) // format
 
+#ifdef __clang__
+#	pragma clang diagnostic push
+#	pragma clang diagnostic ignored "-Wformat"
+#endif
+
 int test_simple(void)
 {
 	int status = 0;
@@ -1231,6 +1236,10 @@ int test_suppress(void)
 }
 
 #pragma warning(pop)
+
+#ifdef __clang__
+#	pragma clang diagnostic pop
+#endif
 
 int main()
 {

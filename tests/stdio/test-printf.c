@@ -16,6 +16,11 @@
 #pragma warning(disable : 4477) // format
 #pragma warning(disable : 4778) // format
 
+#ifdef __clang__
+#	pragma clang diagnostic push
+#	pragma clang diagnostic ignored "-Wformat"
+#	pragma clang diagnostic ignored "-Wimplicitly-unsigned-literal"
+#endif
 
 int test_simple(void)
 {
@@ -1002,6 +1007,10 @@ int test_error()
 }
 
 #pragma warning(pop)
+
+#ifdef __clang__
+#	pragma clang diagnostic pop
+#endif
 
 int main()
 {
