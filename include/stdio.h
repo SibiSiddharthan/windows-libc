@@ -291,7 +291,7 @@ WLIBC_INLINE char *vasnprintf(char *restrict buffer, size_t *size, const char *r
 
 WLIBC_INLINE int vsprintf(char *restrict buffer, const char *restrict format, va_list args)
 {
-	return wlibc_vsnprintf(buffer, (size_t)-1, format, args);
+	return wlibc_vsnprintf(buffer, buffer == NULL ? 0 : (size_t)-1, format, args);
 }
 
 WLIBC_INLINE int vdprintf(int fd, const char *restrict format, va_list args)
@@ -322,7 +322,7 @@ WLIBC_INLINE int sprintf(char *restrict buffer, const char *restrict format, ...
 {
 	va_list args;
 	va_start(args, format);
-	int result = wlibc_vsnprintf(buffer, (size_t)-1, format, args);
+	int result = wlibc_vsnprintf(buffer, buffer == NULL ? 0 : (size_t)-1, format, args);
 	va_end(args);
 	return result;
 }
