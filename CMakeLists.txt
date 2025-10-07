@@ -28,7 +28,8 @@ if(CMAKE_C_COMPILER_ID STREQUAL "MSVC")
 						/wd4146 # Unary minus
 						/wd4714 # No inline in debug build
 						/wd5072 # ASAN enabled with O2
-						/std:c11)
+						/std:c11
+						/utf-8)
 endif()
 
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)

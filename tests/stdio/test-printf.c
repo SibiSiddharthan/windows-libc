@@ -8,6 +8,14 @@
 #include <tests/test.h>
 #include <stdio.h>
 
+#pragma warning(push)
+#pragma warning(disable : 4244) // conversion from 'intmax_t' to 'int'
+#pragma warning(disable : 4474) // format
+#pragma warning(disable : 4476) // format
+#pragma warning(disable : 4477) // format
+#pragma warning(disable : 4778) // format
+
+
 int test_simple(void)
 {
 	int status = 0;
@@ -991,6 +999,8 @@ int test_error()
 
 	return status;
 }
+
+#pragma warning(pop)
 
 int main()
 {

@@ -10,6 +10,13 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#pragma warning(push)
+#pragma warning(disable : 4305) // truncation from 'double' to 'float'
+#pragma warning(disable : 4474) // format
+#pragma warning(disable : 4477) // format
+#pragma warning(disable : 4475) // format
+#pragma warning(disable : 4476) // format
+
 int test_simple(void)
 {
 	int status = 0;
@@ -1222,6 +1229,8 @@ int test_suppress(void)
 
 	return status;
 }
+
+#pragma warning(pop)
 
 int main()
 {
