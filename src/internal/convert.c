@@ -327,7 +327,7 @@ uint32_t uint_from_dec_common(buffer_t *buffer, uintmax_t *value, uint32_t flags
 	uint32_t count = 0;
 	uint8_t byte = 0;
 
-	digit_parse_state state = {.flags = flags};
+	digit_parse_state state = {.flags = (uint8_t)flags};
 
 	*value = 0;
 	byte = peekbyte(buffer, 0);
@@ -380,7 +380,7 @@ uint32_t int_from_dec_common(buffer_t *buffer, intmax_t *value, uint32_t flags)
 	uint8_t minus = 0;
 	uint8_t byte = 0;
 
-	digit_parse_state state = {.flags = flags};
+	digit_parse_state state = {.flags = (uint8_t)flags};
 
 	*value = 0;
 	byte = peekbyte(buffer, 0);
@@ -857,7 +857,7 @@ uint32_t float_from_normal_common(buffer_t *buffer, double *value, uint32_t flag
 		return count + inf_or_nan;
 	}
 
-	state = (digit_parse_state){.flags = flags};
+	state = (digit_parse_state){.flags = (uint8_t)flags};
 
 	while ((byte = parse_digits(&state, buffer, &count)) != '\0')
 	{
@@ -888,7 +888,7 @@ uint32_t float_from_normal_common(buffer_t *buffer, double *value, uint32_t flag
 	{
 		double div = 10.0;
 
-		state = (digit_parse_state){.fraction = 1, .flags = flags};
+		state = (digit_parse_state){.fraction = 1, .flags = (uint8_t)flags};
 
 		while ((byte = parse_digits(&state, buffer, &count)) != '\0')
 		{
@@ -975,21 +975,26 @@ uint32_t pointer_encode(uint8_t buffer[32], void *ptr)
 	*buffer++ = '0';
 	*buffer++ = 'x';
 
+#pragma warning(push)
+#pragma warning(disable : 4127) // conditional expression is constant
+
 	if (sizeof(void *) == 8)
 	{
-		value = _byteswap_uint64(value);
+		value = _byteswap_uint64((unsigned long long)value);
 		size = 8;
 	}
 	else if (sizeof(void *) == 4)
 	{
-		value = _byteswap_ulong(value);
+		value = _byteswap_ulong((unsigned long)value);
 		size = 4;
 	}
 	else // 2
 	{
-		value = _byteswap_ushort(value);
+		value = _byteswap_ushort((unsigned short)value);
 		size = 2;
 	}
+
+#pragma warning(pop)
 
 	for (uint32_t i = 0; i < size; ++i)
 	{

@@ -10,6 +10,7 @@
 
 #pragma warning(push)
 #pragma warning(disable : 4244) // conversion from 'intmax_t' to 'int'
+#pragma warning(disable : 4313) // format
 #pragma warning(disable : 4474) // format
 #pragma warning(disable : 4476) // format
 #pragma warning(disable : 4477) // format

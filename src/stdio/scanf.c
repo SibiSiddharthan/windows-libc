@@ -679,7 +679,7 @@ static uint32_t do_scan(buffer_t *buffer, scan_config *config)
 			byte_t data[8] = {0};
 			uint32_t count = 0;
 
-			result = utf8_decode(current(buffer), pending(buffer), &codepoint);
+			result = utf8_decode(current(buffer), (uint8_t)pending(buffer), &codepoint);
 			advance(buffer, result);
 
 			if (result != 0)
@@ -697,7 +697,7 @@ static uint32_t do_scan(buffer_t *buffer, scan_config *config)
 		break;
 		case SCAN_MOD_LONG_LONG:
 		{
-			result = utf8_decode(current(buffer), pending(buffer), &codepoint);
+			result = utf8_decode(current(buffer), (uint8_t)pending(buffer), &codepoint);
 			advance(buffer, result);
 
 			if (result != 0)
@@ -765,7 +765,7 @@ static uint32_t do_scan(buffer_t *buffer, scan_config *config)
 				break;
 			case SCAN_MOD_LONG:
 			{
-				count = utf8_decode(current(buffer), pending(buffer), &codepoint);
+				count = utf8_decode(current(buffer), (uint8_t)pending(buffer), &codepoint);
 				advance(buffer, count);
 				result += count;
 
@@ -780,7 +780,7 @@ static uint32_t do_scan(buffer_t *buffer, scan_config *config)
 			break;
 			case SCAN_MOD_LONG_LONG:
 			{
-				count = utf8_decode(current(buffer), pending(buffer), &codepoint);
+				count = utf8_decode(current(buffer), (uint8_t)pending(buffer), &codepoint);
 				advance(buffer, count);
 				result += count;
 

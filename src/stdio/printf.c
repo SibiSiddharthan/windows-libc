@@ -994,7 +994,7 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 		case PRINT_MOD_NONE:
 		{
 			writen(buffer, config->data, count * sizeof(byte_t));
-			result += count * sizeof(byte_t);
+			result += (uint32_t)(count * sizeof(byte_t));
 		}
 		break;
 		case PRINT_MOD_LONG:
@@ -1038,7 +1038,7 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 		default:
 		{
 			writen(buffer, config->data, count * sizeof(byte_t));
-			result += count * sizeof(byte_t);
+			result += (uint32_t)(count * sizeof(byte_t));
 		}
 		break;
 		}
