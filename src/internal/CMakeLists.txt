@@ -6,6 +6,7 @@
 ]]
 
 set(internal_SOURCES
+buffer.c
 convert.c
 error.c
 misc.c
