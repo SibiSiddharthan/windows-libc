@@ -230,7 +230,6 @@ cmake -DENABLE_<MOUDLE_NAME>=ON ..
 		* tempnam, tmpnam, tmpnam_r
 	* Notes
 		* `freopen` of the same file is implemented.
-		* `scanf`, `fscanf` are not yet implemented.
 		* Line buffered and fully buffered have the same meaning here.
  * stdio_ext.h
 	* Functions
