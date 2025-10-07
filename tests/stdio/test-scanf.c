@@ -372,12 +372,12 @@ int test_float(void)
 
 	result = sscanf("1.00", "%f%n", &f32, &n);
 	status += CHECK_FLOAT32(f32, 1.00);
-	status += CHECK_UVALUE(n, 3);
+	status += CHECK_UVALUE(n, 4);
 	status += CHECK_RESULT(result, 1);
 
 	result = sscanf("-1.00", "%f%n", &f32, &n);
 	status += CHECK_FLOAT32(f32, -1.00);
-	status += CHECK_UVALUE(n, 4);
+	status += CHECK_UVALUE(n, 5);
 	status += CHECK_RESULT(result, 1);
 
 	result = sscanf("1.5788987434987", "%f%n", &f32, &n);
@@ -502,12 +502,12 @@ int test_float(void)
 
 	result = sscanf("1.00", "%lf%n", &f64, &n);
 	status += CHECK_FLOAT64(f64, 1.00);
-	status += CHECK_UVALUE(n, 3);
+	status += CHECK_UVALUE(n, 4);
 	status += CHECK_RESULT(result, 1);
 
 	result = sscanf("-1.00", "%lf%n", &f64, &n);
 	status += CHECK_FLOAT64(f64, -1.00);
-	status += CHECK_UVALUE(n, 4);
+	status += CHECK_UVALUE(n, 5);
 	status += CHECK_RESULT(result, 1);
 
 	result = sscanf("1.5788987434987", "%lf%n", &f64, &n);
