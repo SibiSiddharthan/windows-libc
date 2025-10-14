@@ -1199,6 +1199,10 @@ uint32_t wlibc_printf_internal(buffer_t *buffer, const char *format, va_list lis
 
 int wlibc_vfprintf(FILE *restrict stream, const char *restrict format, va_list args)
 {
+	int result = 0;
+	size_t fresult = 0;
+	buffer_t out = {.write = memory_buffer_write};
+
 	if (format == NULL)
 	{
 		errno = EINVAL;
@@ -1211,12 +1215,25 @@ int wlibc_vfprintf(FILE *restrict stream, const char *restrict format, va_list a
 		return -1;
 	}
 
-	return wlibc_printf_internal(&(buffer_t){.data = NULL, .size = 0}, format, args);
+	result = wlibc_printf_internal(&out, format, args);
+	fresult = fwrite(out.data, 1, out.pos, stream);
+
+	free(out.data);
+
+	if (fresult == 0)
+	{
+		return -1;
+	}
+
+	return result;
 }
 
 int wlibc_vdprintf(int fd, const char *restrict format, va_list args)
 {
+	int result = 0;
+	ssize_t fresult = 0;
 	fdinfo info = {0};
+	buffer_t out = {.write = memory_buffer_write};
 
 	if (format == NULL)
 	{
@@ -1232,7 +1249,17 @@ int wlibc_vdprintf(int fd, const char *restrict format, va_list args)
 		return -1;
 	}
 
-	return wlibc_printf_internal(&(buffer_t){.data = NULL, .size = 0}, format, args);
+	result = wlibc_printf_internal(&out, format, args);
+	fresult = write(fd, out.data, out.pos);
+
+	free(out.data);
+
+	if (fresult == -1)
+	{
+		return -1;
+	}
+
+	return result;
 }
 
 int wlibc_vasprintf(char **restrict buffer, const char *restrict format, va_list args)
