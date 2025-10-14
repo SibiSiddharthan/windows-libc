@@ -1281,6 +1281,8 @@ int wlibc_vasprintf(char **restrict buffer, const char *restrict format, va_list
 
 int wlibc_vsnprintf(char *restrict buffer, size_t size, const char *restrict format, va_list args)
 {
+	int result = 0;
+
 	if (format == NULL)
 	{
 		errno = EINVAL;
@@ -1293,7 +1295,14 @@ int wlibc_vsnprintf(char *restrict buffer, size_t size, const char *restrict for
 		return -1;
 	}
 
-	return wlibc_printf_internal(&(buffer_t){.data = (void *)buffer, .size = size}, format, args);
+	result = wlibc_printf_internal(&(buffer_t){.data = (void *)buffer, .size = size}, format, args);
+
+	if (result < (int)size)
+	{
+		buffer[result] = '\0';
+	}
+
+	return result;
 }
 
 char *wlibc_vasnprintf(char *restrict buffer, size_t *size, const char *restrict format, va_list args)
@@ -1322,6 +1331,7 @@ char *wlibc_vasnprintf(char *restrict buffer, size_t *size, const char *restrict
 
 	if (out.size <= *size)
 	{
+		memset(buffer, 0, *size);
 		memcpy(buffer, out.data, out.size);
 		free(out.data);
 
