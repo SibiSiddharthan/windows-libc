@@ -1142,7 +1142,7 @@ static uint32_t print_arg(buffer_t *buffer, print_config *config)
 	return 0;
 }
 
-uint32_t wlibc_printf_internal(buffer_t *buffer, const char *format, va_list list)
+int wlibc_printf_internal(buffer_t *buffer, const char *format, va_list list)
 {
 	variadic_args args = {0};
 	print_config config = {0};
@@ -1191,6 +1191,12 @@ uint32_t wlibc_printf_internal(buffer_t *buffer, const char *format, va_list lis
 
 			config.result = result;
 			result += print_arg(buffer, &config);
+
+			if (buffer->error)
+			{
+				return -1;
+			}
+
 			continue;
 		}
 
@@ -1200,7 +1206,7 @@ uint32_t wlibc_printf_internal(buffer_t *buffer, const char *format, va_list lis
 
 	variadic_args_free(&args);
 
-	return result;
+	return (int)result;
 }
 
 int wlibc_vfprintf(FILE *restrict stream, const char *restrict format, va_list args)

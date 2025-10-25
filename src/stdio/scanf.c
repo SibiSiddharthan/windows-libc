@@ -1001,7 +1001,7 @@ static uint32_t scan_arg(buffer_t *buffer, scan_config *config)
 	return result;
 }
 
-static uint32_t wlibc_scanf_internal(buffer_t *buffer, const char *format, va_list list)
+static int wlibc_scanf_internal(buffer_t *buffer, const char *format, va_list list)
 {
 	variadic_args args = {0};
 	scan_config config = {0};
@@ -1044,11 +1044,16 @@ static uint32_t wlibc_scanf_internal(buffer_t *buffer, const char *format, va_li
 
 			if (config.type == SCAN_UNKNOWN)
 			{
-				break;
+				return -1;
 			}
 
 			config.result = processed;
 			count = scan_arg(buffer, &config);
+
+			if (buffer->error)
+			{
+				return -1;
+			}
 
 			if ((config.type != SCAN_RESULT) && ((config.flags & SCAN_SUPPRESS_INPUT) == 0))
 			{
@@ -1087,7 +1092,7 @@ static uint32_t wlibc_scanf_internal(buffer_t *buffer, const char *format, va_li
 
 	variadic_args_free(&args);
 
-	return result;
+	return (int)result;
 }
 
 int wlibc_vfscanf(FILE *restrict stream, const char *restrict format, va_list args)
