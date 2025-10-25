@@ -13,7 +13,10 @@ size_t memory_buffer_write(buffer_t *buffer, size_t size)
 {
 	size_t old_size = buffer->size;
 
-	buffer->error = 0;
+	if (buffer->error)
+	{
+		return 0;
+	}
 
 	if (size == 0)
 	{

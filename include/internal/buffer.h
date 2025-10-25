@@ -49,6 +49,11 @@ static inline void flush(buffer_t *buffer)
 
 static inline uint8_t readbyte(buffer_t *buffer)
 {
+	if (buffer->error)
+	{
+		return 0;
+	}
+
 	if ((buffer->pos + 1) > buffer->size)
 	{
 		return 0;
@@ -59,6 +64,11 @@ static inline uint8_t readbyte(buffer_t *buffer)
 
 static inline uint8_t peekbyte(buffer_t *buffer, uint32_t offset)
 {
+	if (buffer->error)
+	{
+		return 0;
+	}
+
 	if ((buffer->pos + offset) >= buffer->size)
 	{
 		return 0;
@@ -69,6 +79,11 @@ static inline uint8_t peekbyte(buffer_t *buffer, uint32_t offset)
 
 static inline size_t writebyte(buffer_t *buffer, uint8_t byte)
 {
+	if (buffer->error)
+	{
+		return 0;
+	}
+
 	if ((buffer->pos + 1) > buffer->size)
 	{
 		if (buffer->write == NULL)
@@ -92,6 +107,11 @@ static inline size_t writebyte(buffer_t *buffer, uint8_t byte)
 
 static inline size_t writen(buffer_t *buffer, void *in, size_t size)
 {
+	if (buffer->error)
+	{
+		return 0;
+	}
+
 	if ((buffer->pos + size) > buffer->size)
 	{
 		if (buffer->write == NULL)
